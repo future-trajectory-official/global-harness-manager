@@ -1,0 +1,18 @@
+# global-harness-manager: .gitignore
+
+# バイナリと展開済みディレクトリ
+/bin/
+*.tar.gz
+*.zip
+
+# ローカル設定 (config.json.example を元に個別に作成)
+/config/config.json
+
+# ログと一時ファイル
+*.log
+/tmp/
+
+# OS/エディタ固有のファイル
+.DS_Store
+.vscode/
+.idea/
