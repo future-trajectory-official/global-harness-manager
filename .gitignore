@@ -12,6 +12,9 @@
 # ログと一時ファイル
 *.log
 /tmp/
+/.local/*
+!/.local/.gitkeep
+
 
 # OS/エディタ固有のファイル
 .DS_Store
