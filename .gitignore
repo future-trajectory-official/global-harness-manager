@@ -5,8 +5,9 @@
 *.tar.gz
 *.zip
 
-# ローカル設定 (config.json.example を元に個別に作成)
-/config/config.json
+# ローカル設定 (config ディレクトリ全体を除外し、.example のみ追跡)
+/config/*
+!/config/*.example
 
 # ログと一時ファイル
 *.log
