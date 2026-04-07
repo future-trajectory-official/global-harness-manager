@@ -72,15 +72,18 @@ while read -r TARGET_PATH || [[ -n "$TARGET_PATH" ]]; do
     # 相対パスを絶対パスに変換
     ABS_PATH=$(cd "$HARNESS_ROOT" && realpath -m "$TARGET_PATH")
 
-    if [ -d "$ABS_PATH" ]; then
-        if ! grep -Fxq "$ABS_PATH" "$CONFIG_FILE"; then
-            echo "スキルパスを登録中: $ABS_PATH"
-            echo "$ABS_PATH" >> "$CONFIG_FILE"
-        else
-            echo "Info: $ABS_PATH は既に登録済みです。"
-        fi
+    # ディレクトリが存在しない場合は作成を試みる
+    if [ ! -d "$ABS_PATH" ]; then
+        echo "ディレクトリを作成中: $ABS_PATH"
+        mkdir -p "$ABS_PATH" || { echo "警告: ディレクトリの作成に失敗しました: $ABS_PATH"; continue; }
+    fi
+
+    # skills.txt への登録 (重複チェック)
+    if ! grep -Fxq "$ABS_PATH" "$CONFIG_FILE"; then
+        echo "スキルパスを登録中: $ABS_PATH"
+        echo "$ABS_PATH" >> "$CONFIG_FILE"
     else
-        echo "警告: ディレクトリが見つかりません: $ABS_PATH (スキップします)"
+        echo "Info: $ABS_PATH は既に登録済みです。"
     fi
 done < "$HARNESS_CONFIG"
 
