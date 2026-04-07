@@ -69,13 +69,42 @@ nano config/identities.txt
 
 ---
 
+## スキルのグローバル同期（Publishing）
+
+ワークスペース（`.agents/skills/`）で開発・調整したスキルを、共通のグローバルディレクトリへ同期して「出版」するフローです。
+
+### 1. 同期対象の選択 (準備)
+どのスキルを同期対象にするかを `publish-targets.md` で指定します。
+
+```bash
+# 設定ファイルの作成（初回のみ）
+cp config/publish-targets.md.example config/publish-targets.md
+
+# 同期したいスキルのフォルダ名を ## 見出しとして記述
+nano config/publish-targets.md
+```
+
+### 2. エージェントへの同期依頼 (実行)
+準備ができたら、Antigravity に対して以下のように依頼してください。
+
+> 「ワークスペースのスキルをグローバルに同期して」
+
+エージェントが管理用スキル（`publish-harness-skills`）を自動的に呼び出し、同期を完了させます。
+
+> [!TIP]
+> **手動実行**: コマンドラインから直接同期を行いたい場合は、以下のスクリプトを直接実行することも可能です。
+> `./.agents/skills/publish-harness-skills/scripts/publish.sh`
+
+---
+
 ## ディレクトリ構成
 
 - `scripts/`: プラットフォームを汚さず、安全な隔離空間を構築する制御エンジン。
   - `initialize-harness.sh` (初期化)
   - `add-identity.sh` (アイデンティティ設定)
   - `harness-attach.sh` (装着・固定)
-- `config/`: 認証および環境設定を管理（※実際の `.txt` は Git で無視され、ローカルに保護されます）。
+- `config/`: 認証および環境設定を管理（※実際の `.txt` や `.md` は Git で無視され、ローカルに保護されます）。
+  - `publish-targets.md` (スキル同期対象の定義)
 - `bin/`: ダウンロードされたスタンドアロンバイナリ等が格納されます。
 - `.agents/`: エージェントに供給される専門ツール群（Skills / Rules / Workflows）。
 - `.local/`: コミットされない個人的な未完了タスク（Task）やメモを安全に保存するための保護領域。
