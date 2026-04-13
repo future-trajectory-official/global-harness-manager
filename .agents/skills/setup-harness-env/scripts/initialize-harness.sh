@@ -6,7 +6,7 @@
 
 set -e
 
-HARNESS_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+HARNESS_ROOT=$(cd "$(dirname "$0")/../../../../" && pwd)
 BIN_DIR="$HARNESS_ROOT/bin"
 CONFIG_FILE="$HOME/.gemini/antigravity/skills.txt"
 HARNESS_CONFIG="$HARNESS_ROOT/config/global-skills-path.txt"
