@@ -16,7 +16,7 @@ fi
 ACCOUNT_NAME=$1
 PROJECT_DIR=$(readlink -f "$2")
 HOST_ALIAS="github.com-$ACCOUNT_NAME"
-HARNESS_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+HARNESS_ROOT=$(cd "$(dirname "$0")/../../../../" && pwd)
 IDENTITY_CONFIG="$HARNESS_ROOT/config/identities.txt"
 
 echo "--- ハーネスをプロジェクトに装着中 (Harness Attachment) ---"
