@@ -1,0 +1,25 @@
+# ワークスペースルールの配布先と対象指定
+このファイルに記述されたプロジェクトに対して、指定されたルールを `.agents/rules/` ディレクトリ配下に同期・コピーします。
+あなたにとって不要なプロジェクトやルールの `###` を削除またはコメントアウトすることで、配布対象から外すことができます。
+
+## Target Projects
+配布先のプロジェクトの絶対パスを指定します。
+
+### /home/your/project
+
+## Target Rules
+配布したいルール（`global-harness-manager/.agents/rules/` 内のファイルから `.md` を除いた名前）を指定します。
+
+### architect
+### consultant
+### debugger
+### designer
+### developer
+### documentation-writer
+### git
+### platform-engineer
+### prompt-engineer
+### refactor
+### scrum-master
+### skill-writer
+### tester
