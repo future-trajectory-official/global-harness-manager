@@ -6,7 +6,7 @@
 
 set -e
 
-HARNESS_ROOT=$(cd "$(dirname "$0")/.." && pwd)
+HARNESS_ROOT=$(cd "$(dirname "$0")/../../../../" && pwd)
 IDENTITY_CONFIG="$HARNESS_ROOT/config/identities.txt"
 EXAMPLE_CONFIG="$HARNESS_ROOT/config/identities.txt.example"
 SSH_CONFIG="$HOME/.ssh/config"
