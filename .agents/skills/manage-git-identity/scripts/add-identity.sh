@@ -48,23 +48,28 @@ while read -r line || [[ -n "$line" ]]; do
 
     # SSH 鍵の生成
     if [ -f "$SSH_KEY_PATH" ]; then
-        echo "Info: $ACCOUNT_NAME 用の鍵は既に存在します。スキップします。"
-    else
-        echo "$ACCOUNT_NAME 用の SSH 鍵を生成中..."
-        mkdir -p "$HOME/.ssh"
-        ssh-keygen -t ed25519 -C "$ACCOUNT_EMAIL" -f "$SSH_KEY_PATH" -N ""
-        
-        # 報告用リストに追加
-        {
-            echo "--------------------------------------------------------"
-            echo "■ アカウント: $ACCOUNT_NAME"
-            echo "【重要】GitHubでこのアカウントにログインしていることを確認してください！"
-            echo "登録先URL: https://github.com/settings/ssh/new"
-            echo ""
-            cat "${SSH_KEY_PATH}.pub"
-            echo "--------------------------------------------------------"
-        } >> "$REPORT_TMP"
+        BACKUP_PATH="${SSH_KEY_PATH}.bak_$(date +%Y%m%d%H%M%S)"
+        echo "Info: $ACCOUNT_NAME 用の鍵は既に存在します。古い鍵を退避します: $BACKUP_PATH"
+        mv "$SSH_KEY_PATH" "$BACKUP_PATH"
+        if [ -f "${SSH_KEY_PATH}.pub" ]; then
+            mv "${SSH_KEY_PATH}.pub" "${BACKUP_PATH}.pub"
+        fi
     fi
+
+    echo "$ACCOUNT_NAME 用の SSH 鍵を生成中..."
+    mkdir -p "$HOME/.ssh"
+    ssh-keygen -t ed25519 -C "$ACCOUNT_EMAIL" -f "$SSH_KEY_PATH" -N ""
+        
+    # 報告用リストに追加
+    {
+        echo "--------------------------------------------------------"
+        echo "■ アカウント: $ACCOUNT_NAME"
+        echo "【重要】GitHubでこのアカウントにログインしていることを確認してください！"
+        echo "登録先URL: https://github.com/settings/ssh/new"
+        echo ""
+        cat "${SSH_KEY_PATH}.pub"
+        echo "--------------------------------------------------------"
+    } >> "$REPORT_TMP"
 
     # ~/.ssh/config への追加
     touch "$SSH_CONFIG"
