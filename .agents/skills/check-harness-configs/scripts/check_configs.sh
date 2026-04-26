@@ -2,10 +2,10 @@
 # オンボーディングに必要な設定ファイルが揃っているかを事前にチェックするスクリプト
 
 FILES=(
-  ".agents/skills/manage-git-identity/config/identities.txt"
-  ".agents/skills/setup-harness-env/config/global-skills-path.txt"
-  ".agents/skills/publish-harness-rules/config/publish-rules-targets.md"
-  ".agents/skills/publish-harness-skills/config/publish-targets.txt"
+  "config/identities.txt"
+  "config/global-skills-path.txt"
+  "config/publish-rules-targets.md"
+  "config/publish-targets.md"
 )
 MISSING=0
 

@@ -5,18 +5,15 @@
 ## 1. 認証関連
 - **`config/identities.txt`**:
   - **役割**: 管理する GitHub アカウントのリスト。
-  - **形式**: `アカウント名,メールアドレス`
-- **`config/identities.txt.example`**:
-  - `identities.txt` のテンプレート。
+  - **形式**: `アカウント名,メールアドレス` (例: `your-name,your-email@example.com`)
 
 ## 2. スキル・パス管理
 - **`config/global-skills-path.txt`**:
   - **役割**: エージェントが読み込むスキルのルートディレクトリ。
-- **`config/global-skills-path.txt.example`**:
-  - `global-skills-path.txt` のテンプレート。
+  - **形式**: 1行に1つのディレクトリパス
 
-## 3. 同期ターゲット
-- **`config/publish-targets.md`**:
-  - **役割**: スキルを同期・公開する際のリモートリポジトリやディレクトリ。
+## 3. 同期ターゲット (Markdown 形式)
 - **`config/publish-rules-targets.md`**:
-  - **役割**: ルール（.md）を同期する際のターゲット。
+  - **役割**: ルール（.md）を同期する際のターゲットと対象指定。
+- **`config/publish-targets.md`**:
+  - **役割**: スキルを同期・公開する際のリモートリポジトリやディレクトリの指定。
