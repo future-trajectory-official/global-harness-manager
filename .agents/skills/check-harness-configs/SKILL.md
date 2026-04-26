@@ -12,6 +12,7 @@ description: "[検証] オンボーディングや環境同期に必要な各種
 - 不備がある場合は異常終了（exit 1）し、後続のワークフローを停止させます。
 
 ## 実行方法
+// turbo
 ```bash
 bash .agents/skills/check-harness-configs/scripts/check_configs.sh
 ```
