@@ -1,108 +1,110 @@
 import { logger, pathUtil, fsUtil, executeCommand } from "../../../core/harness-core.ts";
 
-async function main() {
-  const args = Deno.args;
-  if (args.length < 2) {
-    console.log("使用法: deno run -A harness-attach.ts <アカウント名> <プロジェクトディレクトリ>");
-    console.log("例: deno run -A harness-attach.ts your-account-name path/to/your/project");
-    Deno.exit(1);
-  }
-
-  const accountName = args[0];
-  const projectDir = pathUtil.resolvePath(args[1]);
-  const hostAlias = `github.com-${accountName}`;
-  const harnessRoot = pathUtil.resolvePath(Deno.cwd());
-  const identityConfig = pathUtil.joinPath(harnessRoot, "config", "identities.txt");
-
-  console.log("--- ハーネスをプロジェクトに装着中 (Harness Attachment) ---");
-  console.log(`Project: ${projectDir}`);
-  console.log(`Account: ${accountName} (エイリアス ${hostAlias} を使用)`);
-
-  // --- 1. アカウント情報の検索 ---
-  if (!(await fsUtil.exists(identityConfig))) {
-    logger.error(`${identityConfig} が見つかりません。`);
-    logger.error("まず manage-git-identity スキルでアイデンティティを作成してください。");
-    Deno.exit(1);
-  }
-
-  const configText = await fsUtil.readTextFile(identityConfig);
-  const lines = configText.split(/\r?\n/);
-  let accountEmail = "";
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith(`${accountName},`)) {
-      accountEmail = trimmed.split(",")[1]?.trim() || "";
-      break;
-    }
-  }
-
-  if (!accountEmail) {
-    logger.error(`${accountName} に対するメールアドレスの設定が ${identityConfig} に見当たりません。`);
-    Deno.exit(1);
-  }
-
-  const gitDir = pathUtil.joinPath(projectDir, ".git");
-  if (!(await fsUtil.exists(gitDir))) {
-    logger.error(`${projectDir} は有効な Git リポジトリではありません。`);
-    Deno.exit(1);
-  }
-
-  // --- 2. リモート URL の書き換え (SSH エイリアス化) ---
-  const getRemoteResult = await executeCommand({
-    cmd: "git",
-    args: ["remote", "get-url", "origin"],
-    cwd: projectDir
-  });
-
-  if (getRemoteResult.code !== 0) {
-    logger.error("リモートURLの取得に失敗しました。origin が設定されていますか？");
-    Deno.exit(1);
-  }
-
-  const currentRemote = getRemoteResult.stdout.trim();
-  console.log(`現在のリモート: ${currentRemote}`);
-
-  // HTTPS または 標準SSH を、ハーネスで管理しているエイリアス形式へ変換
-  const newRemote = currentRemote.replace(
+async function processProject(project: {
+  name: string;
+  repo: string;
+  path: string;
+  account: string;
+  email: string;
+}) {
+  const homeDir = Deno.env.get("HOME") || Deno.env.get("USERPROFILE") || "";
+  const resolvedPath = project.path.replace(/^~/, homeDir);
+  const hostAlias = `github.com-${project.account}`;
+  
+  // SSHエイリアス形式のリモートURLを作成
+  const aliasRepo = project.repo.replace(
     /^(https:\/\/github\.com\/|git@github\.com:)/,
     `git@${hostAlias}:`
   );
 
-  if (currentRemote === newRemote) {
-    console.log("Info: リモート URL は既にエイリアス形式、またはカスタム設定になっています。");
-  } else {
-    console.log(`リモート URL を更新中: ${newRemote}`);
-    const setRemoteResult = await executeCommand({
+  console.log(`\n--- [${project.name}] (${project.account}) ---`);
+
+  // 1. クローンまたはディレクトリ確認
+  if (!(await fsUtil.exists(resolvedPath))) {
+    console.log(`Info: ターゲットパスが存在しません。クローンを開始します: ${resolvedPath}`);
+    const parentDir = pathUtil.dirname(resolvedPath);
+    await Deno.mkdir(parentDir, { recursive: true });
+
+    const cloneResult = await executeCommand({
       cmd: "git",
-      args: ["remote", "set-url", "origin", newRemote],
-      cwd: projectDir
+      args: ["clone", aliasRepo, resolvedPath],
     });
 
-    if (setRemoteResult.code !== 0) {
-      logger.error("リモートURLの更新に失敗しました。");
-      Deno.exit(1);
+    if (cloneResult.code !== 0) {
+      logger.error(`クローンに失敗しました: ${project.name}`);
+      return;
     }
   }
 
-  // --- 3. Git アイデンティティ設定 (プロジェクト内限定) ---
-  console.log(`Git アイデンティティを設定中: ${accountName} <${accountEmail}> ...`);
-  
-  await executeCommand({
+  const gitDir = pathUtil.joinPath(resolvedPath, ".git");
+  if (!(await fsUtil.exists(gitDir))) {
+    logger.error(`エラー: ${resolvedPath} は有効な Git リポジトリではありません。スキップします。`);
+    return;
+  }
+
+  // 2. リモート URL の同期
+  const getRemoteResult = await executeCommand({
     cmd: "git",
-    args: ["config", "user.name", accountName],
-    cwd: projectDir
+    args: ["remote", "get-url", "origin"],
+    cwd: resolvedPath
   });
 
-  await executeCommand({
-    cmd: "git",
-    args: ["config", "user.email", accountEmail],
-    cwd: projectDir
-  });
+  if (getRemoteResult.code === 0) {
+    const currentRemote = getRemoteResult.stdout.trim();
+    if (currentRemote !== aliasRepo) {
+      console.log(`リモート URL をエイリアス形式に更新中: ${aliasRepo}`);
+      await executeCommand({
+        cmd: "git",
+        args: ["remote", "set-url", "origin", aliasRepo],
+        cwd: resolvedPath
+      });
+    }
+  }
 
-  console.log(`Success: ${accountName} <${accountEmail}> としてアイデンティティを固定しました。`);
-  console.log(`Success: 以後、このプロジェクトでの通信はアカウント ${accountName} を経由します。`);
-  console.log("--------------------------------------------------------");
+  // 3. Git アイデンティティの強制上書き
+  console.log(`Git 設定を同期中: ${project.account} <${project.email}>`);
+  await executeCommand({ cmd: "git", args: ["config", "user.name", project.account], cwd: resolvedPath });
+  await executeCommand({ cmd: "git", args: ["config", "user.email", project.email], cwd: resolvedPath });
+
+  console.log(`Success: ${project.name} の配備と接続が完了しました。`);
+}
+
+async function main() {
+  const harnessRoot = pathUtil.resolvePath(Deno.cwd());
+  const identityConfig = pathUtil.joinPath(harnessRoot, "config", "identities.md");
+
+  console.log("--- プロジェクト配備・ハーネス装着処理 (Deploy & Attach) ---");
+
+  if (!(await fsUtil.exists(identityConfig))) {
+    logger.error(`${identityConfig} が見つかりません。`);
+    return;
+  }
+
+  const content = await fsUtil.readTextFile(identityConfig);
+  const sections = content.split(/^##\s+/m).slice(1);
+
+  for (const section of sections) {
+    const lines = section.split("\n");
+    const name = lines[0].trim().replace(/^\[|\]$/g, "");
+    
+    const repoMatch = section.match(/-\s+\*\*Repository\*\*:\s+`(.+?)`/);
+    const pathMatch = section.match(/-\s+\*\*Local Path\*\*:\s+`(.+?)`/);
+    const accountMatch = section.match(/-\s+\*\*Account Name\*\*:\s+`(.+?)`/);
+    const emailMatch = section.match(/-\s+\*\*User Email\*\*:\s+`(.+?)`/);
+
+    if (repoMatch && pathMatch && accountMatch && emailMatch) {
+      await processProject({
+        name,
+        repo: repoMatch[1].trim(),
+        path: pathMatch[1].trim(),
+        account: accountMatch[1].trim(),
+        email: emailMatch[1].trim(),
+      });
+    }
+  }
+
+  console.log("\n--------------------------------------------------------");
+  console.log("処理が完了しました。");
 }
 
 if (import.meta.main) {

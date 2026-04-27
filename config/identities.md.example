@@ -1,0 +1,10 @@
+# Global Harness Identities
+
+各プロジェクトで使用する Git アイデンティティと接続設定を定義します。
+このファイルに基づいて、SSH 鍵の生成、クローン、および Git 設定の同期が行われます。
+
+## [Project Name]
+- **Repository**: `git@github.com:[Organization]/[Repository].git`
+- **Local Path**: `~/projects/[Repository]`
+- **Account Name**: `your-account-id`
+- **User Email**: `your-name@users.noreply.github.com`
