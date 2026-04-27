@@ -42,6 +42,16 @@ export async function executeCommand(options: ExecuteOptions): Promise<ExecuteRe
     stderr: interactive ? "inherit" : "piped",
   });
 
+  if (interactive) {
+    const child = command.spawn();
+    const status = await child.status;
+    return {
+      code: status.code,
+      stdout: "",
+      stderr: "",
+    };
+  }
+
   const { code, stdout, stderr } = await command.output();
 
   // 2バイト文字対応のためのUTF-8デコード
