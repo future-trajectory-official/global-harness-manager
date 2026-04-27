@@ -15,6 +15,8 @@ export interface ExecuteOptions {
   cwd?: string;
   dryRun?: boolean;
   env?: Record<string, string>;
+  /** 対話型コマンドを実行する場合は true に設定（標準入出力をコンソールに接続します） */
+  interactive?: boolean;
 }
 
 export interface ExecuteResult {
@@ -24,7 +26,7 @@ export interface ExecuteResult {
 }
 
 export async function executeCommand(options: ExecuteOptions): Promise<ExecuteResult> {
-  const { cmd, args = [], cwd, dryRun = false, env } = options;
+  const { cmd, args = [], cwd, dryRun = false, env, interactive = false } = options;
 
   if (dryRun) {
     logger.dryRun(`Executing: ${cmd} ${args.join(" ")}${cwd ? ` (cwd: ${cwd})` : ""}`);
@@ -35,8 +37,9 @@ export async function executeCommand(options: ExecuteOptions): Promise<ExecuteRe
     args,
     cwd,
     env,
-    stdout: "piped",
-    stderr: "piped",
+    stdin: interactive ? "inherit" : "piped",
+    stdout: interactive ? "inherit" : "piped",
+    stderr: interactive ? "inherit" : "piped",
   });
 
   const { code, stdout, stderr } = await command.output();

@@ -14,7 +14,7 @@ description: "[検証] オンボーディングや環境同期に必要な各種
 ## 実行方法
 // turbo
 ```bash
-bash .agents/skills/check-harness-configs/scripts/check_configs.sh
+deno run -A .agents/skills/check-harness-configs/scripts/check_configs.ts
 ```
 
 > [!TIP]
