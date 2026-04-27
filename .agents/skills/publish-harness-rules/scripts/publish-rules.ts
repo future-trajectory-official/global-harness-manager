@@ -55,8 +55,11 @@ async function main() {
       try {
         await Deno.mkdir(targetRulesDir, { recursive: true });
       } catch (e) {
-        logger.error(`Failed to create directory ${targetRulesDir}: ${e.message}`);
-        continue;
+        if (!(e instanceof Deno.errors.AlreadyExists)) {
+          const message = e instanceof Error ? e.message : String(e);
+          logger.error(`Failed to create directory ${targetRulesDir}: ${message}`);
+          continue;
+        }
       }
     }
 

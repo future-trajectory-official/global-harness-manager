@@ -64,7 +64,8 @@ async function main() {
     } catch (e) {
       // 既に存在していてもエラーにしない
       if (!(e instanceof Deno.errors.AlreadyExists)) {
-        logger.error(`Failed to create directory ${globalDestDir}: ${e.message}`);
+        const message = e instanceof Error ? e.message : String(e);
+        logger.error(`Failed to create directory ${globalDestDir}: ${message}`);
         Deno.exit(1);
       }
     }
