@@ -58,11 +58,10 @@ async function main() {
       await Deno.mkdir(sshDir, { recursive: true });
     }
 
-    // ssh-keygenの実行 (interactive: true を指定してパスフレーズ等の対話入力を可能にする)
+    // ssh-keygenの実行 (対話なし、パスフレーズ空で実行)
     const result = await executeCommand({
       cmd: "ssh-keygen",
-      args: ["-t", "ed25519", "-C", accountEmail, "-f", sshKeyPath],
-      interactive: true
+      args: ["-t", "ed25519", "-C", accountEmail, "-f", sshKeyPath, "-N", ""],
     });
 
     if (result.code !== 0) {
