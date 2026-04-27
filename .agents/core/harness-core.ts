@@ -37,7 +37,7 @@ export async function executeCommand(options: ExecuteOptions): Promise<ExecuteRe
     args,
     cwd,
     env,
-    stdin: interactive ? "inherit" : "piped",
+    stdin: interactive ? "inherit" : "null",
     stdout: interactive ? "inherit" : "piped",
     stderr: interactive ? "inherit" : "piped",
   });
