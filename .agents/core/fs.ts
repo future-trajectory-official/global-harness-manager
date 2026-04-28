@@ -28,6 +28,12 @@ export const pathUtil = {
       return normalize(join(home, path.slice(2)));
     }
     return normalize(path);
+  },
+  /**
+   * 親ディレクトリのパスを返します
+   */
+  dirname: (path: string): string => {
+    return dirname(path);
   }
 };
 
