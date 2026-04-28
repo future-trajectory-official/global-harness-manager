@@ -9,7 +9,8 @@ export const errorUtil = {
    */
   toError: (e: unknown): Error => {
     if (e instanceof Error) return e;
-    return new Error(typeof e === "string" ? e : JSON.stringify(e));
+    if (typeof e === "string") return new Error(e);
+    return new Error(e === undefined ? "undefined" : JSON.stringify(e));
   },
 
   /**
@@ -17,13 +18,9 @@ export const errorUtil = {
    */
   log: (e: unknown, context?: string) => {
     const error = errorUtil.toError(e);
-    const message = context ? `[${context}] ${error.message}` : error.message;
-    logger.error(message);
-    if (error.stack) {
-      // スタックトレースはデバッグ用に詳細ログとして出力（logger.debug があればそれを使うが、現状は error でも可）
-      // ここでは logger.error の後にスタックを表示する
-      console.error(error.stack);
-    }
+    const prefix = context ? `[${context}] ` : "";
+    logger.error(`${prefix}${error.message}`);
+    if (error.stack) console.error(error.stack);
   },
 
   /**
@@ -32,5 +29,5 @@ export const errorUtil = {
   fatal: (e: unknown, context?: string): never => {
     errorUtil.log(e, context);
     Deno.exit(1);
-  }
+  },
 };

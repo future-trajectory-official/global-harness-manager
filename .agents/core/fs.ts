@@ -1,4 +1,4 @@
-import { resolve, normalize, join, dirname } from "@std/path";
+import { dirname, join, normalize, resolve } from "@std/path";
 import { unzipSync } from "fflate";
 import { UntarStream } from "@std/tar";
 import { logger } from "./logger.ts";
@@ -34,7 +34,7 @@ export const pathUtil = {
    */
   dirname: (path: string): string => {
     return dirname(path);
-  }
+  },
 };
 
 export const fsUtil = {
@@ -69,9 +69,6 @@ export const fsUtil = {
       throw e;
     }
   },
-  /**
-   * ファイルをダウンロードします
-   */
   downloadFile: async (url: string, destPath: string): Promise<void> => {
     logger.info(`Downloading: ${url} -> ${destPath}`);
     const response = await fetch(url);
@@ -97,17 +94,13 @@ export const fsUtil = {
           if (total > 0) {
             const percentage = Math.round((downloaded / total) * 100);
             if (percentage > lastPercentage) {
-              const mbDownloaded = (downloaded / 1024 / 1024).toFixed(1);
-              const mbTotal = (total / 1024 / 1024).toFixed(1);
-              Deno.stdout.writeSync(new TextEncoder().encode(`\r[INFO] Downloading... ${percentage}% (${mbDownloaded}MB/${mbTotal}MB)`));
+              displayProgress(percentage, downloaded, total);
               lastPercentage = percentage;
             }
           }
         }
       }
-      if (total > 0) {
-        Deno.stdout.writeSync(new TextEncoder().encode("\n"));
-      }
+      if (total > 0) console.log(""); // 改行
     } finally {
       file.close();
     }
@@ -119,7 +112,10 @@ export const fsUtil = {
     try {
       await Deno.rename(src, dest);
     } catch (err) {
-      if (err instanceof Error && (err.message.includes("EXDEV") || err.message.includes("cross-device"))) {
+      if (
+        err instanceof Error &&
+        (err.message.includes("EXDEV") || err.message.includes("cross-device"))
+      ) {
         logger.info(`Cross-device link detected, falling back to copy/delete: ${src} -> ${dest}`);
         await fsUtil.copy(src, dest);
         await Deno.remove(src, { recursive: true });
@@ -128,55 +124,15 @@ export const fsUtil = {
       }
     }
   },
-  /**
-   * アーカイブファイルを展開します
-   */
-  extract: async (src: string, dest: string, options?: { stripComponents?: number }): Promise<void> => {
-    const isZip = src.endsWith(".zip");
-
-    if (isZip) {
-      // --- Zip のネイティブ解凍 (fflate) ---
-      const data = await Deno.readFile(src);
-      const unzipped = unzipSync(data) as Record<string, Uint8Array>;
-      
-      for (const [relativePath, content] of Object.entries(unzipped)) {
-        const fullPath = join(dest, relativePath);
-        if (relativePath.endsWith("/")) {
-          await Deno.mkdir(fullPath, { recursive: true });
-        } else {
-          await Deno.mkdir(dirname(fullPath), { recursive: true });
-          await Deno.writeFile(fullPath, content);
-        }
-      }
+  extract: async (
+    src: string,
+    dest: string,
+    options?: { stripComponents?: number },
+  ): Promise<void> => {
+    if (src.endsWith(".zip")) {
+      await extractZip(src, dest);
     } else {
-      // --- tar.gz のネイティブ解凍 (@std/tar + DecompressionStream) ---
-      const file = await Deno.open(src);
-      const decompressedStream = file.readable.pipeThrough(new DecompressionStream("gzip"));
-      const untarStream = decompressedStream.pipeThrough(new UntarStream());
-      
-      for await (const entry of untarStream) {
-        let entryPath = entry.path;
-        
-        // stripComponents の処理
-        if (options?.stripComponents) {
-          const parts = entryPath.split("/");
-          const filteredParts = parts.filter((p: string) => p !== "");
-          if (filteredParts.length <= options.stripComponents) continue;
-          entryPath = filteredParts.slice(options.stripComponents).join("/");
-        }
-        
-        const fullPath = join(dest, entryPath);
-        
-        if (entryPath.endsWith("/")) {
-          await Deno.mkdir(fullPath, { recursive: true });
-        } else {
-          await Deno.mkdir(dirname(fullPath), { recursive: true });
-          if (entry.readable) {
-            const outFile = await Deno.open(fullPath, { write: true, create: true, truncate: true });
-            await entry.readable.pipeTo(outFile.writable);
-          }
-        }
-      }
+      await extractTarGz(src, dest, options);
     }
   },
   /**
@@ -193,13 +149,74 @@ export const fsUtil = {
       await Deno.copyFile(src, dest);
     }
 
-    // Suggestion #2: パーミッションの保持 (Unix-like)
     if (Deno.build.os !== "windows" && stat.mode !== null) {
       try {
         await Deno.chmod(dest, stat.mode & 0o777);
       } catch (_e) {
-        // Ignore errors on file systems that don't support chmod
+        // Ignore
+      }
+    }
+  },
+};
+
+/**
+ * Zip ファイルを展開します (fflate)
+ */
+async function extractZip(src: string, dest: string): Promise<void> {
+  const data = await Deno.readFile(src);
+  const unzipped = unzipSync(data) as Record<string, Uint8Array>;
+
+  for (const [relativePath, content] of Object.entries(unzipped)) {
+    const fullPath = join(dest, relativePath);
+    if (relativePath.endsWith("/")) {
+      await Deno.mkdir(fullPath, { recursive: true });
+    } else {
+      await Deno.mkdir(dirname(fullPath), { recursive: true });
+      await Deno.writeFile(fullPath, content);
+    }
+  }
+}
+
+/**
+ * Tar.Gz ファイルを展開します (@std/tar)
+ */
+async function extractTarGz(
+  src: string,
+  dest: string,
+  options?: { stripComponents?: number },
+): Promise<void> {
+  const file = await Deno.open(src);
+  const decompressedStream = file.readable.pipeThrough(new DecompressionStream("gzip"));
+  const untarStream = decompressedStream.pipeThrough(new UntarStream());
+
+  for await (const entry of untarStream) {
+    let entryPath = entry.path;
+
+    if (options?.stripComponents) {
+      const parts = entryPath.split("/").filter((p) => p !== "");
+      if (parts.length <= options.stripComponents) continue;
+      entryPath = parts.slice(options.stripComponents).join("/");
+    }
+
+    const fullPath = join(dest, entryPath);
+    if (entryPath.endsWith("/")) {
+      await Deno.mkdir(fullPath, { recursive: true });
+    } else {
+      await Deno.mkdir(dirname(fullPath), { recursive: true });
+      if (entry.readable) {
+        const outFile = await Deno.open(fullPath, { write: true, create: true, truncate: true });
+        await entry.readable.pipeTo(outFile.writable);
       }
     }
   }
-};
+}
+
+/**
+ * ダウンロード進捗を表示します
+ */
+function displayProgress(percentage: number, downloaded: number, total: number) {
+  const mbDownloaded = (downloaded / 1024 / 1024).toFixed(1);
+  const mbTotal = (total / 1024 / 1024).toFixed(1);
+  const text = `\r[INFO] Downloading... ${percentage}% (${mbDownloaded}MB/${mbTotal}MB)`;
+  Deno.stdout.writeSync(new TextEncoder().encode(text));
+}
