@@ -1,4 +1,4 @@
-import { logger, pathUtil, fsUtil } from "../../../core/harness-core.ts";
+import { fsUtil, pathUtil } from "../../../core/harness-core.ts";
 
 async function extractFrontmatter(filePath: string): Promise<string> {
   try {
@@ -6,7 +6,7 @@ async function extractFrontmatter(filePath: string): Promise<string> {
     const lines = text.split(/\r?\n/);
     const result: string[] = [];
     let count = 0;
-    
+
     for (const line of lines) {
       if (line.match(/^---[\s]*$/)) {
         count++;
@@ -18,7 +18,7 @@ async function extractFrontmatter(filePath: string): Promise<string> {
         result.push(line);
       }
     }
-    
+
     if (count === 2) {
       return result.join("\n");
     }
@@ -58,7 +58,7 @@ async function main() {
 
   const homeDir = Deno.env.get("HOME") || "";
   const globalGemini = pathUtil.resolvePath(homeDir, ".gemini", "GEMINI.md");
-  
+
   if (await fsUtil.exists(globalGemini)) {
     console.log(`### GEMINI.md (最優先事項 / 憲法)`);
     try {
