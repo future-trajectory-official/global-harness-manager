@@ -1,5 +1,5 @@
-import { join, dirname, fromFileUrl } from "jsr:@std/path";
-import { executeCommand, logger, pathUtil, fsUtil } from "../../../core/harness-core.ts";
+import { dirname, fromFileUrl, join } from "jsr:@std/path";
+import { executeCommand, fsUtil, logger, pathUtil } from "../../../core/harness-core.ts";
 
 async function main() {
   logger.info("Starting Deno-first environment setup...");
@@ -11,7 +11,7 @@ async function main() {
   const harnessRoot = pathUtil.resolvePath(scriptDir, "..", "..", "..", "..");
   const binDir = join(harnessRoot, "bin");
   const configPath = join(harnessRoot, "config", "global-skills-path.txt");
-  
+
   // OS-specific variables
   let ghTarget = "";
   let isZip = false;
@@ -76,22 +76,30 @@ async function main() {
   if (os === "windows") {
     const res = await executeCommand({
       cmd: "powershell",
-      args: ["-Command", "[Environment]::GetEnvironmentVariable('Path', 'User')"]
+      args: ["-Command", "[Environment]::GetEnvironmentVariable('Path', 'User')"],
     });
     const userPath = res.stdout.trim();
     if (!userPath.includes(binDir)) {
       await executeCommand({
         cmd: "powershell",
-        args: ["-Command", `[Environment]::SetEnvironmentVariable('Path', '${userPath};${binDir}', 'User')`]
+        args: [
+          "-Command",
+          `[Environment]::SetEnvironmentVariable('Path', '${userPath};${binDir}', 'User')`,
+        ],
       });
       logger.info("Added to Windows User PATH. Please restart terminal.");
     }
   } else {
-    const profileFile = os === "darwin" ? join(Deno.env.get("HOME") || "", ".zshrc") : join(Deno.env.get("HOME") || "", ".bashrc");
+    const profileFile = os === "darwin"
+      ? join(Deno.env.get("HOME") || "", ".zshrc")
+      : join(Deno.env.get("HOME") || "", ".bashrc");
     if (await fsUtil.exists(profileFile)) {
       const content = await fsUtil.readTextFile(profileFile);
       if (!content.includes(binDir)) {
-        await fsUtil.writeTextFile(profileFile, content + `\n# global-harness-manager\nexport PATH="$PATH:${binDir}"\n`);
+        await fsUtil.writeTextFile(
+          profileFile,
+          content + `\n# global-harness-manager\nexport PATH="$PATH:${binDir}"\n`,
+        );
         logger.info(`Added to ${profileFile}. Please run 'source ${profileFile}'.`);
       }
     }
@@ -102,19 +110,24 @@ async function main() {
   if (await fsUtil.exists(configPath)) {
     const configContent = await fsUtil.readTextFile(configPath);
     const lines = configContent.split(/\r?\n/);
-    const skillsFilePath = join(Deno.env.get("HOME") || Deno.env.get("USERPROFILE") || "", ".gemini", "antigravity", "skills.txt");
-    
+    const skillsFilePath = join(
+      Deno.env.get("HOME") || Deno.env.get("USERPROFILE") || "",
+      ".gemini",
+      "antigravity",
+      "skills.txt",
+    );
+
     let existingPaths: string[] = [];
     if (await fsUtil.exists(skillsFilePath)) {
       const existingContent = await fsUtil.readTextFile(skillsFilePath);
-      existingPaths = existingContent.split(/\r?\n/).filter(p => p.trim() !== "");
+      existingPaths = existingContent.split(/\r?\n/).filter((p) => p.trim() !== "");
     }
 
     let modified = false;
     for (const line of lines) {
       if (line.trim() === "" || line.startsWith("#")) continue;
       const absPath = pathUtil.resolvePath(harnessRoot, line.trim());
-      
+
       // Ensure directory exists
       if (!(await fsUtil.exists(absPath))) {
         await Deno.mkdir(absPath, { recursive: true });
@@ -143,4 +156,4 @@ async function main() {
   logger.info("--- Setup Complete ---");
 }
 
-main().catch(e => logger.error(`Setup failed: ${e.message}`));
+main().catch((e) => logger.error(`Setup failed: ${e.message}`));

@@ -1,10 +1,10 @@
-import { logger, pathUtil, fsUtil } from "../../../core/harness-core.ts";
+import { fsUtil, logger, pathUtil } from "../../../core/harness-core.ts";
 
 const FILES = [
   "config/identities.txt",
   "config/global-skills-path.txt",
   "config/publish-rules-targets.md",
-  "config/publish-targets.md"
+  "config/publish-targets.md",
 ];
 
 async function main() {
@@ -13,7 +13,7 @@ async function main() {
 
   for (const file of FILES) {
     const fullPath = pathUtil.resolvePath(Deno.cwd(), file);
-    
+
     const exists = await fsUtil.exists(fullPath);
     if (!exists) {
       logger.error(`❌ ファイルがありません: ${file}`);

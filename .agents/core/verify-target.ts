@@ -19,7 +19,7 @@ export const verifyTarget = {
     const result = await executeCommand({
       cmd: "git",
       args: ["status", "--porcelain"],
-      cwd: path
+      cwd: path,
     });
     return result.stdout.trim().length > 0;
   },
@@ -41,5 +41,5 @@ export const verifyTarget = {
     }
 
     return { safe: true };
-  }
+  },
 };

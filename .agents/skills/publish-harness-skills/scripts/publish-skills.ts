@@ -1,9 +1,9 @@
 import {
+  errorUtil,
   fsUtil,
   logger,
   mdUtil,
   pathUtil,
-  errorUtil,
   verifyTarget,
 } from "../../../core/harness-core.ts";
 import { parseArgs } from "jsr:@std/cli/parse-args";
@@ -88,7 +88,7 @@ async function main() {
       }
 
       logger.info(`  Syncing skill: ${skillName}`);
-      
+
       if (isDryRun) {
         logger.dryRun(`Copy directory: ${sourceDir} -> ${targetDir}`);
       } else {

@@ -3,6 +3,7 @@
 環境に応じたコンテキスト退避用のコマンドリファレンスです。
 
 ## 1. Linux / macOS / WSL (Bash)
+
 現在の主要な実行環境です。
 
 ```bash
@@ -19,6 +20,7 @@ done
 ```
 
 ## 2. Windows (PowerShell)
+
 ネイティブな Windows 環境で実行する場合に使用します。
 
 ```powershell

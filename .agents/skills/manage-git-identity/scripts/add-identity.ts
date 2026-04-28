@@ -1,4 +1,4 @@
-import { logger, pathUtil, fsUtil, executeCommand } from "../../../core/harness-core.ts";
+import { executeCommand, fsUtil, logger, pathUtil } from "../../../core/harness-core.ts";
 
 async function main() {
   const homeDir = Deno.env.get("HOME") || Deno.env.get("USERPROFILE") || "";
@@ -68,14 +68,15 @@ async function main() {
     const configContent = await fsUtil.readTextFile(sshConfig);
     if (!configContent.includes(`Host ${hostAlias}`)) {
       console.log(`SSH エイリアスを構成中: ${hostAlias} ...`);
-      const aliasConfig = `\n# Harness managed identity: ${accountName}\nHost ${hostAlias}\n    HostName github.com\n    User git\n    IdentityFile ${sshKeyPath}\n`;
+      const aliasConfig =
+        `\n# Harness managed identity: ${accountName}\nHost ${hostAlias}\n    HostName github.com\n    User git\n    IdentityFile ${sshKeyPath}\n`;
       await Deno.writeTextFile(sshConfig, configContent + aliasConfig);
     }
   }
 
   if (reportItems.length > 0) {
     console.log("\n=== 以下の公開鍵を GitHub に登録してください ===");
-    reportItems.forEach(item => console.log(item + "\n"));
+    reportItems.forEach((item) => console.log(item + "\n"));
   }
 
   console.log("--------------------------------------------------------");

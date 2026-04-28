@@ -1,10 +1,10 @@
 import {
+  errorUtil,
   fsUtil,
   logger,
   mdUtil,
   pathUtil,
   verifyTarget,
-  errorUtil,
 } from "../../../core/harness-core.ts";
 import { parseArgs } from "jsr:@std/cli/parse-args";
 

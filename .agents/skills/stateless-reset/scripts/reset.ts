@@ -1,10 +1,12 @@
-import { logger, pathUtil, fsUtil } from "../../../core/harness-core.ts";
+import { fsUtil, logger, pathUtil } from "../../../core/harness-core.ts";
 
 async function main() {
   const args = Deno.args;
   const homeDir = Deno.env.get("HOME") || Deno.env.get("USERPROFILE") || "";
-  const targetRoot = args.length > 0 ? args[0] : pathUtil.resolvePath(homeDir, ".gemini", "antigravity");
-  
+  const targetRoot = args.length > 0
+    ? args[0]
+    : pathUtil.resolvePath(homeDir, ".gemini", "antigravity");
+
   console.log("--- 記憶のリセットを開始します (Stateless Reset) ---");
   console.log(`ターゲット: ${targetRoot}`);
 
@@ -24,7 +26,7 @@ async function main() {
     if (await fsUtil.exists(targetPath)) {
       const backupPath = pathUtil.joinPath(backupDir, dir);
       console.log(`退避中: ${dir} -> ${backupDir}/`);
-      
+
       try {
         await fsUtil.move(targetPath, backupPath);
         await Deno.mkdir(targetPath, { recursive: true });
