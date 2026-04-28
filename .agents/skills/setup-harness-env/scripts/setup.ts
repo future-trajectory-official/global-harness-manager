@@ -38,25 +38,31 @@ async function main() {
     const ghUrl = `https://github.com/cli/cli/releases/download/${ghVersion}/${ghFile}`;
     const downloadPath = join(binDir, ghFile);
 
-    // Download using curl (or powershell on windows)
+    // 1.1 Download
+    await fsUtil.downloadFile(ghUrl, downloadPath);
+
+    // 1.2 Extract and Move
     if (os === "windows") {
-      await executeCommand({ cmd: "powershell", args: ["-Command", `Invoke-WebRequest -Uri "${ghUrl}" -OutFile "${downloadPath}"`] });
-      await executeCommand({ cmd: "powershell", args: ["-Command", `Expand-Archive -Path "${downloadPath}" -DestinationPath "${binDir}" -Force`] });
+      await fsUtil.extract(downloadPath, binDir);
       const extractDir = join(binDir, `gh_${ghVersion.substring(1)}_${ghTarget}`);
-      await executeCommand({ cmd: "cmd", args: ["/c", "move", join(extractDir, "bin", "gh.exe"), ghPath] });
-      await executeCommand({ cmd: "cmd", args: ["/c", "rmdir", "/s", "/q", extractDir] });
-      await executeCommand({ cmd: "cmd", args: ["/c", "del", downloadPath] });
+      await fsUtil.move(join(extractDir, "bin", "gh.exe"), ghPath);
+      await Deno.remove(extractDir, { recursive: true });
+      await Deno.remove(downloadPath);
     } else {
-      await executeCommand({ cmd: "curl", args: ["-sL", ghUrl, "-o", downloadPath] });
       if (isZip) {
-        await executeCommand({ cmd: "unzip", args: ["-q", downloadPath, "-d", binDir] });
+        await fsUtil.extract(downloadPath, binDir);
         const extractDir = join(binDir, `gh_${ghVersion.substring(1)}_${ghTarget}`);
-        await executeCommand({ cmd: "mv", args: [join(extractDir, "bin", "gh"), ghPath] });
-        await executeCommand({ cmd: "rm", args: ["-rf", extractDir, downloadPath] });
+        await fsUtil.move(join(extractDir, "bin", "gh"), ghPath);
+        await Deno.remove(extractDir, { recursive: true });
+        await Deno.remove(downloadPath);
       } else {
-        await executeCommand({ cmd: "tar", args: ["xzf", downloadPath, "-C", binDir, "--strip-components=1"] });
-        await executeCommand({ cmd: "mv", args: [join(binDir, "bin", "gh"), ghPath] });
-        await executeCommand({ cmd: "rm", args: ["-rf", join(binDir, "bin"), join(binDir, "share"), downloadPath] });
+        await fsUtil.extract(downloadPath, binDir, { stripComponents: 1 });
+        await fsUtil.move(join(binDir, "bin", "gh"), ghPath);
+        await Deno.remove(join(binDir, "bin"), { recursive: true });
+        if (await fsUtil.exists(join(binDir, "share"))) {
+          await Deno.remove(join(binDir, "share"), { recursive: true });
+        }
+        await Deno.remove(downloadPath);
       }
       await executeCommand({ cmd: "chmod", args: ["+x", ghPath] });
     }

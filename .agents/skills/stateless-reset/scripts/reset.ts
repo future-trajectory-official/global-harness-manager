@@ -26,7 +26,7 @@ async function main() {
       console.log(`退避中: ${dir} -> ${backupDir}/`);
       
       try {
-        await Deno.rename(targetPath, backupPath);
+        await fsUtil.move(targetPath, backupPath);
         await Deno.mkdir(targetPath, { recursive: true });
         count++;
       } catch (e) {
