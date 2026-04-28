@@ -1,9 +1,10 @@
 import {
-  executeCommand,
   fsUtil,
   logger,
   mdUtil,
   pathUtil,
+  errorUtil,
+  verifyTarget,
 } from "../../../core/harness-core.ts";
 import { parseArgs } from "jsr:@std/cli/parse-args";
 
@@ -12,84 +13,93 @@ import { parseArgs } from "jsr:@std/cli/parse-args";
  */
 
 async function main() {
-  const args = parseArgs(Deno.args, {
-    boolean: ["dry-run"],
-    alias: { d: "dry-run" },
-  });
+  try {
+    const args = parseArgs(Deno.args, {
+      boolean: ["dry-run", "force"],
+      alias: { d: "dry-run", f: "force" },
+    });
 
-  const isDryRun = args["dry-run"] || false;
-  const configPath = pathUtil.resolvePath("config/publish-targets.md");
-  const globalPathFile = pathUtil.resolvePath("config/global-skills-path.txt");
-  const skillsSourceDir = pathUtil.resolvePath(".agents/skills");
+    const isDryRun = args["dry-run"] || false;
+    const force = args["force"] || false;
+    const configPath = pathUtil.resolvePath("config/publish-targets.md");
+    const globalPathFile = pathUtil.resolvePath("config/global-skills-path.txt");
+    const skillsSourceDir = pathUtil.resolvePath(".agents/skills");
 
-  if (!(await fsUtil.exists(configPath))) {
-    logger.error(`Config file not found: ${configPath}`);
-    Deno.exit(1);
-  }
+    if (!(await fsUtil.exists(configPath))) {
+      throw new Error(`Config file not found: ${configPath}`);
+    }
 
-  if (!(await fsUtil.exists(globalPathFile))) {
-    logger.error(`Global path file not found: ${globalPathFile}`);
-    Deno.exit(1);
-  }
+    if (!(await fsUtil.exists(globalPathFile))) {
+      throw new Error(`Global path file not found: ${globalPathFile}`);
+    }
 
-  // グローバルディレクトリパスの取得
-  const globalPathContent = await fsUtil.readTextFile(globalPathFile);
-  const globalRawPath = globalPathContent
-    .split("\n")
-    .map((line) => line.trim())
-    .find((line) => line && !line.startsWith("#"));
+    // グローバルディレクトリパスの取得
+    const globalPathContent = await fsUtil.readTextFile(globalPathFile);
+    const globalRawPath = globalPathContent
+      .split("\n")
+      .map((line) => line.trim())
+      .find((line) => line && !line.startsWith("#"));
 
-  if (!globalRawPath) {
-    logger.error("No valid path found in global-skills-path.txt");
-    Deno.exit(1);
-  }
+    if (!globalRawPath) {
+      throw new Error("No valid path found in global-skills-path.txt");
+    }
 
-  const globalDestDir = pathUtil.resolvePath(globalRawPath);
-  logger.info(`Global destination: ${globalDestDir}`);
+    const globalDestDir = pathUtil.resolvePath(globalRawPath);
+    logger.info(`Global destination: ${globalDestDir}`);
 
-  // 公開対象スキルの抽出 (H2)
-  const mdContent = await fsUtil.readTextFile(configPath);
-  const skillNames = mdUtil.getH2Titles(mdContent);
-
-  if (skillNames.length === 0) {
-    logger.warn("No skills found in publish-targets.md");
-    return;
-  }
-
-  logger.info(`Found ${skillNames.length} skills to publish.`);
-
-  if (!isDryRun) {
-    try {
-      await Deno.mkdir(globalDestDir, { recursive: true });
-    } catch (e) {
-      // 既に存在していてもエラーにしない
-      if (!(e instanceof Deno.errors.AlreadyExists)) {
-        const message = e instanceof Error ? e.message : String(e);
-        logger.error(`Failed to create directory ${globalDestDir}: ${message}`);
-        Deno.exit(1);
+    // 配布先の安全確認 (Git リポジトリの場合は dirty check)
+    if (await verifyTarget.isGitRepo(globalDestDir)) {
+      if (await verifyTarget.isDirty(globalDestDir) && !force) {
+        logger.warn(`Destination "${globalDestDir}" is a dirty git repository. Skipping.`);
+        logger.info("Use --force to ignore this.");
+        return;
       }
     }
-  }
 
-  for (const skillName of skillNames) {
-    const sourceDir = pathUtil.joinPath(skillsSourceDir, skillName);
+    // 公開対象スキルの抽出 (H2)
+    const mdContent = await fsUtil.readTextFile(configPath);
+    const skillNames = mdUtil.getH2Titles(mdContent);
 
-    if (!(await fsUtil.exists(sourceDir))) {
-      logger.warn(`Source skill not found: ${sourceDir}. Skipping.`);
-      continue;
+    if (skillNames.length === 0) {
+      logger.warn("No skills found in publish-targets.md");
+      return;
     }
 
-    logger.info(`  Syncing skill: ${skillName}`);
+    logger.info(`Found ${skillNames.length} skills to publish.`);
 
-    // cp -r を使用してディレクトリごと同期
-    await executeCommand({
-      cmd: "cp",
-      args: ["-r", sourceDir, globalDestDir],
-      dryRun: isDryRun,
-    });
+    if (!isDryRun) {
+      try {
+        await Deno.mkdir(globalDestDir, { recursive: true });
+      } catch (e) {
+        if (!(e instanceof Deno.errors.AlreadyExists)) {
+          errorUtil.log(e, `Dir creation: ${globalDestDir}`);
+          Deno.exit(1);
+        }
+      }
+    }
+
+    for (const skillName of skillNames) {
+      const sourceDir = pathUtil.joinPath(skillsSourceDir, skillName);
+      const targetDir = pathUtil.joinPath(globalDestDir, skillName);
+
+      if (!(await fsUtil.exists(sourceDir))) {
+        logger.warn(`Source skill not found: ${sourceDir}. Skipping.`);
+        continue;
+      }
+
+      logger.info(`  Syncing skill: ${skillName}`);
+      
+      if (isDryRun) {
+        logger.dryRun(`Copy directory: ${sourceDir} -> ${targetDir}`);
+      } else {
+        await fsUtil.copy(sourceDir, targetDir);
+      }
+    }
+
+    logger.info("Publish skills completed.");
+  } catch (e) {
+    errorUtil.fatal(e, "Publish Skills Main");
   }
-
-  logger.info("Publish skills completed.");
 }
 
 if (import.meta.main) {
