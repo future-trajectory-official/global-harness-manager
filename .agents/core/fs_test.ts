@@ -13,6 +13,17 @@ Deno.test("pathUtil.expandHome - should expand ~/", () => {
   assertEquals(pathUtil.expandHome("/abs/path"), "/abs/path");
 });
 
+Deno.test("pathUtil.resolvePath - should handle cross-platform slashes gracefully", () => {
+  const current = Deno.cwd();
+  // We use Deno's native behavior to normalize paths, so we test if backslashes are handled correctly based on OS.
+  // Actually, `@std/path` normalize does different things on win32 vs posix.
+  // Let's ensure it does not throw and produces a predictable path.
+  const pathWithBackslash = "folder\\subfolder\\file.txt";
+  const resolved = pathUtil.resolvePath(pathWithBackslash);
+  // It shouldn't crash, and should start with current dir.
+  assertEquals(resolved.startsWith(current) || resolved.startsWith(current.replace(/\//g, '\\')), true);
+});
+
 Deno.test("fsUtil.exists - should detect file existence", async () => {
   const tempFile = await Deno.makeTempFile();
   try {
@@ -21,6 +32,29 @@ Deno.test("fsUtil.exists - should detect file existence", async () => {
   } finally {
     await Deno.remove(tempFile);
   }
+});
+
+Deno.test("fsUtil.readTextFile - should throw error for non-existent file", async () => {
+  let threw = false;
+  try {
+    await fsUtil.readTextFile("/path/to/very/non/existent/file.txt");
+  } catch (e) {
+    threw = true;
+    assertEquals(e instanceof Deno.errors.NotFound, true);
+  }
+  assertEquals(threw, true);
+});
+
+Deno.test("fsUtil.writeTextFile - should throw error for read-only directory or invalid path", async () => {
+  let threw = false;
+  try {
+    // Cannot write to an invalid path like a directory that doesn't exist
+    await fsUtil.writeTextFile("/path/to/very/non/existent/dir/file.txt", "content");
+  } catch (e) {
+    threw = true;
+    assertEquals(e instanceof Deno.errors.NotFound || e instanceof Deno.errors.PermissionDenied, true);
+  }
+  assertEquals(threw, true);
 });
 
 Deno.test("fsUtil.read/writeTextFile - should work as expected", async () => {
