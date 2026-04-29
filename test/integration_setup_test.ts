@@ -32,7 +32,11 @@ Deno.test("Integration: setup-harness-env", async () => {
     const output = new TextDecoder().decode(stdout);
     const errOutput = new TextDecoder().decode(stderr);
 
-    assertEquals(code, 0, `Script failed with code ${code}\nStderr: ${errOutput}\nStdout: ${output}`);
+    assertEquals(
+      code,
+      0,
+      `Script failed with code ${code}\nStderr: ${errOutput}\nStdout: ${output}`,
+    );
 
     // Verify bashrc was updated (if not windows, windows uses powershell to check Path)
     if (Deno.build.os !== "windows") {
@@ -44,10 +48,9 @@ Deno.test("Integration: setup-harness-env", async () => {
     // Verify skills.txt was created
     const skillsFilePath = join(tempHome, ".gemini", "antigravity", "skills.txt");
     assertEquals(await fsUtil.exists(skillsFilePath), true, "skills.txt should be created");
-    
+
     const skillsContent = await Deno.readTextFile(skillsFilePath);
     assertStringIncludes(skillsContent, "global-skills");
-
   } finally {
     await Deno.remove(tempHome, { recursive: true });
   }

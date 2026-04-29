@@ -21,7 +21,10 @@ Deno.test("pathUtil.resolvePath - should handle cross-platform slashes gracefull
   const pathWithBackslash = "folder\\subfolder\\file.txt";
   const resolved = pathUtil.resolvePath(pathWithBackslash);
   // It shouldn't crash, and should start with current dir.
-  assertEquals(resolved.startsWith(current) || resolved.startsWith(current.replace(/\//g, '\\')), true);
+  assertEquals(
+    resolved.startsWith(current) || resolved.startsWith(current.replace(/\//g, "\\")),
+    true,
+  );
 });
 
 Deno.test("fsUtil.exists - should detect file existence", async () => {
@@ -52,7 +55,10 @@ Deno.test("fsUtil.writeTextFile - should throw error for read-only directory or 
     await fsUtil.writeTextFile("/path/to/very/non/existent/dir/file.txt", "content");
   } catch (e) {
     threw = true;
-    assertEquals(e instanceof Deno.errors.NotFound || e instanceof Deno.errors.PermissionDenied, true);
+    assertEquals(
+      e instanceof Deno.errors.NotFound || e instanceof Deno.errors.PermissionDenied,
+      true,
+    );
   }
   assertEquals(threw, true);
 });

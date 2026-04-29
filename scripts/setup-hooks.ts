@@ -54,7 +54,7 @@ exit 0
 
   try {
     await Deno.writeTextFile(prePushPath, hookScript);
-    
+
     // Windows 以外の環境では実行権限を付与する
     if (Deno.build.os !== "windows") {
       const chmodCmd = new Deno.Command("chmod", {
@@ -62,7 +62,7 @@ exit 0
       });
       await chmodCmd.output();
     }
-    
+
     console.log("✅ pre-push hook を正常に設定しました！");
     console.log(`設定先: ${prePushPath}`);
   } catch (error) {

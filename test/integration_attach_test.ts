@@ -20,9 +20,11 @@ Deno.test("Integration: harness-attach dry-run", async () => {
 `,
     );
 
-    const scriptPath =
-      new URL("../.agents/skills/attach-harness-to-project/scripts/harness-attach.ts", import.meta.url)
-        .pathname;
+    const scriptPath = new URL(
+      "../.agents/skills/attach-harness-to-project/scripts/harness-attach.ts",
+      import.meta.url,
+    )
+      .pathname;
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
@@ -83,9 +85,11 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
     });
     await remoteCmd.output();
 
-    const scriptPath =
-      new URL("../.agents/skills/attach-harness-to-project/scripts/harness-attach.ts", import.meta.url)
-        .pathname;
+    const scriptPath = new URL(
+      "../.agents/skills/attach-harness-to-project/scripts/harness-attach.ts",
+      import.meta.url,
+    )
+      .pathname;
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
@@ -127,7 +131,6 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
     const remoteUrlOutput = await remoteUrlCmd.output();
     const remoteUrl = new TextDecoder().decode(remoteUrlOutput.stdout).trim();
     assertEquals(remoteUrl, "git@github.com-TestUser:example/repo.git");
-
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
