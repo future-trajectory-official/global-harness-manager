@@ -1,6 +1,5 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { fsUtil } from "../.agents/core/fs.ts";
 
 Deno.test("Integration: harness-attach dry-run", async () => {
   const tempDir = await Deno.makeTempDir();
