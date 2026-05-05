@@ -1,4 +1,4 @@
-import { dirname, fromFileUrl, join } from "jsr:@std/path";
+import { dirname, fromFileUrl, join } from "jsr:@std/path@1.0.8";
 import { executeCommand, fsUtil, logger, pathUtil } from "../../../core/harness-core.ts";
 
 async function main() {

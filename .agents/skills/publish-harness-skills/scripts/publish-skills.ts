@@ -6,7 +6,7 @@ import {
   pathUtil,
   verifyTarget,
 } from "../../../core/harness-core.ts";
-import { parseArgs } from "jsr:@std/cli/parse-args";
+import { parseArgs } from "jsr:@std/cli@1.0.6/parse-args";
 
 /**
  * ワークスペース内のスキルをグローバルディレクトリへ同期するスクリプト

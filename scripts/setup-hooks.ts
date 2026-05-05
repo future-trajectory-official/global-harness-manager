@@ -1,4 +1,4 @@
-import { join } from "jsr:@std/path";
+import { join } from "jsr:@std/path@1.0.8";
 
 /**
  * .git/hooks/pre-push を設定するスクリプト。
