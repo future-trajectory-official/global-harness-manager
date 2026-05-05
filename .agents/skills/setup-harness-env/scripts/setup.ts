@@ -12,6 +12,10 @@ async function main() {
   const binDir = join(harnessRoot, "bin");
   const configPath = join(harnessRoot, "config", "global-skills-path.txt");
 
+  console.log(`DEBUG: scriptDir=${scriptDir}`);
+  console.log(`DEBUG: harnessRoot=${harnessRoot}`);
+  console.log(`DEBUG: binDir=${binDir}`);
+
   // OS-specific variables
   let ghTarget = "";
   let isZip = false;

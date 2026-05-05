@@ -32,6 +32,9 @@ Deno.test("Integration: setup-harness-env", async () => {
     const output = new TextDecoder().decode(stdout);
     const errOutput = new TextDecoder().decode(stderr);
 
+    console.log("--- DEBUG OUTPUT ---");
+    console.log(output);
+
     if (code !== 0) {
       console.log("--- STDOUT ---");
       console.log(output);
