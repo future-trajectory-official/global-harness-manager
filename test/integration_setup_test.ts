@@ -32,6 +32,13 @@ Deno.test("Integration: setup-harness-env", async () => {
     const output = new TextDecoder().decode(stdout);
     const errOutput = new TextDecoder().decode(stderr);
 
+    if (code !== 0) {
+      console.log("--- STDOUT ---");
+      console.log(output);
+      console.log("--- STDERR ---");
+      console.log(errOutput);
+    }
+
     assertEquals(
       code,
       0,
@@ -41,8 +48,14 @@ Deno.test("Integration: setup-harness-env", async () => {
     // Verify bashrc was updated (if not windows, windows uses powershell to check Path)
     if (Deno.build.os !== "windows") {
       const bashrcContent = await Deno.readTextFile(mockBashrc);
-      assertStringIncludes(bashrcContent, "global-harness-manager");
-      assertStringIncludes(bashrcContent, "export PATH=");
+      try {
+        assertStringIncludes(bashrcContent, "global-harness-manager");
+        assertStringIncludes(bashrcContent, "export PATH=");
+      } catch (e) {
+        console.log("--- .bashrc Content ---");
+        console.log(bashrcContent);
+        throw e;
+      }
     }
 
     // Verify skills.txt was created
