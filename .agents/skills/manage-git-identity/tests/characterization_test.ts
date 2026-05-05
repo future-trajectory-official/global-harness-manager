@@ -5,7 +5,7 @@ Deno.test("manage-git-identity characterization test", async () => {
   const tempDir = await Deno.makeTempDir();
   const mockHome = join(tempDir, "home");
   const mockRepo = join(tempDir, "repo");
-  
+
   await Deno.mkdir(mockHome, { recursive: true });
   await Deno.mkdir(join(mockRepo, "config"), { recursive: true });
 
@@ -35,16 +35,20 @@ Deno.test("manage-git-identity characterization test", async () => {
   });
 
   const { code: _code, stdout: _stdout, stderr: _stderr } = await command.output();
-  
+
   // 結果の検証
   const sshKeyPath = join(mockHome, ".ssh", "id_ed25519_testuser");
   const sshConfigPath = join(mockHome, ".ssh", "config");
 
   assertEquals(await exists(sshKeyPath), true, "SSH key should be generated");
   assertEquals(await exists(sshConfigPath), true, "SSH config should be updated");
-  
+
   const configContent = await Deno.readTextFile(sshConfigPath);
-  assertEquals(configContent.includes("Host github.com-testuser"), true, "SSH config should contain host alias");
+  assertEquals(
+    configContent.includes("Host github.com-testuser"),
+    true,
+    "SSH config should contain host alias",
+  );
 
   // クリーンアップ
   await Deno.remove(tempDir, { recursive: true });

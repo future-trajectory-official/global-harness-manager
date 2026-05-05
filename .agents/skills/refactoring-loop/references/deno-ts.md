@@ -5,22 +5,28 @@ Deno 環境でのコード品質測定とリファクタリングのポイント
 ## 計測・分析ツール
 
 ### 1. 静的解析
+
 ```bash
 deno lint
 ```
+
 - `cyclomatic-complexity` などの警告が出ていないか確認してください。
 
 ### 2. コード構造の可視化
+
 ```bash
 deno doc --json <file_path>
 ```
+
 - 依存関係やエクスポートされているインターフェースの肥大化を確認できます。
 
 ### 3. テストカバレッジ
+
 ```bash
 deno test --coverage=cov_profile
 deno coverage cov_profile
 ```
+
 - リファクタリング対象のコードがテストで保護されているか確認してください。
 
 ## リファクタリングのポイント
