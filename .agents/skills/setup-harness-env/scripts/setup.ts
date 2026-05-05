@@ -94,9 +94,10 @@ async function main() {
       logger.info("Added to Windows User PATH. Please restart terminal.");
     }
   } else {
-    const profileFile = os === "darwin"
-      ? join(Deno.env.get("HOME") || "", ".zshrc")
-      : join(Deno.env.get("HOME") || "", ".bashrc");
+    const home = Deno.env.get("HOME") || "";
+    const profileFile = os === "darwin" ? join(home, ".zshrc") : join(home, ".bashrc");
+    console.log(`DEBUG: HOME=${home}`);
+    console.log(`DEBUG: profileFile=${profileFile}`);
     if (await fsUtil.exists(profileFile)) {
       const content = await fsUtil.readTextFile(profileFile);
       if (!content.includes(binDir)) {
