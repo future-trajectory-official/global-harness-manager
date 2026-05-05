@@ -1,5 +1,5 @@
-import { parseArgs } from "jsr:@std/cli@1.0.6/parse-args";
-import { join } from "jsr:@std/path@1.0.8";
+import { parseArgs } from "@std/cli/parse-args";
+import { join } from "@std/path";
 import { executeCommand, fsUtil, logger } from "../../../core/harness-core.ts";
 
 const DEFAULT_SANDBOX_BASE = "/tmp/harness-sandboxes";

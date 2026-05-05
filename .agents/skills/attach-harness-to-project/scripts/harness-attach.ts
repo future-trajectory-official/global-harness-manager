@@ -6,7 +6,7 @@ import {
   mdUtil,
   pathUtil,
 } from "../../../core/harness-core.ts";
-import { parseArgs } from "jsr:@std/cli@1.0.6/parse-args";
+import { parseArgs } from "@std/cli/parse-args";
 
 async function processProject(project: {
   name: string;

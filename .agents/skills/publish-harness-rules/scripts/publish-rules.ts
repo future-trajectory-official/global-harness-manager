@@ -6,7 +6,7 @@ import {
   pathUtil,
   verifyTarget,
 } from "../../../core/harness-core.ts";
-import { parseArgs } from "jsr:@std/cli@1.0.6/parse-args";
+import { parseArgs } from "@std/cli/parse-args";
 
 /**
  * .agents/rules/*.md を指定のプロジェクトへ配布するスクリプト
