@@ -12,10 +12,6 @@ async function main() {
   const binDir = join(harnessRoot, "bin");
   const configPath = join(harnessRoot, "config", "global-skills-path.txt");
 
-  console.log(`DEBUG: scriptDir=${scriptDir}`);
-  console.log(`DEBUG: harnessRoot=${harnessRoot}`);
-  console.log(`DEBUG: binDir=${binDir}`);
-
   // OS-specific variables
   let ghTarget = "";
   let isZip = false;
@@ -33,7 +29,6 @@ async function main() {
   // 1. Download GitHub CLI (gh)
   const ghExe = os === "windows" ? "gh.exe" : "gh";
   const ghPath = join(binDir, ghExe);
-  console.log(`DEBUG: ghPath=${ghPath}`);
 
   if (!(await fsUtil.exists(ghPath))) {
     logger.info(`Downloading GitHub CLI for ${os}_${arch}...`);
@@ -102,8 +97,6 @@ async function main() {
   } else {
     const home = Deno.env.get("HOME") || "";
     const profileFile = os === "darwin" ? join(home, ".zshrc") : join(home, ".bashrc");
-    console.log(`DEBUG: HOME=${home}`);
-    console.log(`DEBUG: profileFile=${profileFile}`);
     if (await fsUtil.exists(profileFile)) {
       const content = await fsUtil.readTextFile(profileFile);
       if (!content.includes(binDir)) {
@@ -168,7 +161,6 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(`!!! FATAL ERROR !!!: ${e.message}`);
-  console.error(e.stack);
+  logger.error(`Setup failed: ${e.message}`);
   Deno.exit(1);
 });
