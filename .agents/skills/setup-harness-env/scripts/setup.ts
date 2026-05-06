@@ -33,6 +33,7 @@ async function main() {
   // 1. Download GitHub CLI (gh)
   const ghExe = os === "windows" ? "gh.exe" : "gh";
   const ghPath = join(binDir, ghExe);
+  console.log(`DEBUG: ghPath=${ghPath}`);
 
   if (!(await fsUtil.exists(ghPath))) {
     logger.info(`Downloading GitHub CLI for ${os}_${arch}...`);
@@ -41,6 +42,11 @@ async function main() {
     const ghFile = `gh_${ghVersion.substring(1)}_${ghTarget}.${ext}`;
     const ghUrl = `https://github.com/cli/cli/releases/download/${ghVersion}/${ghFile}`;
     const downloadPath = join(binDir, ghFile);
+
+    // Ensure binDir exists
+    if (!(await fsUtil.exists(binDir))) {
+      await Deno.mkdir(binDir, { recursive: true });
+    }
 
     // 1.1 Download
     await fsUtil.downloadFile(ghUrl, downloadPath);
@@ -161,4 +167,8 @@ async function main() {
   logger.info("--- Setup Complete ---");
 }
 
-main().catch((e) => logger.error(`Setup failed: ${e.message}`));
+main().catch((e) => {
+  console.error(`!!! FATAL ERROR !!!: ${e.message}`);
+  console.error(e.stack);
+  Deno.exit(1);
+});
