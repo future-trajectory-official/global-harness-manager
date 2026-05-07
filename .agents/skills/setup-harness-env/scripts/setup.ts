@@ -1,4 +1,4 @@
-import { dirname, fromFileUrl, join } from "jsr:@std/path@1.0.8";
+import { dirname, fromFileUrl, join } from "@std/path";
 import { executeCommand, fsUtil, logger, pathUtil } from "../../../core/harness-core.ts";
 
 async function main() {
@@ -37,6 +37,11 @@ async function main() {
     const ghFile = `gh_${ghVersion.substring(1)}_${ghTarget}.${ext}`;
     const ghUrl = `https://github.com/cli/cli/releases/download/${ghVersion}/${ghFile}`;
     const downloadPath = join(binDir, ghFile);
+
+    // Ensure binDir exists
+    if (!(await fsUtil.exists(binDir))) {
+      await Deno.mkdir(binDir, { recursive: true });
+    }
 
     // 1.1 Download
     await fsUtil.downloadFile(ghUrl, downloadPath);
@@ -90,9 +95,8 @@ async function main() {
       logger.info("Added to Windows User PATH. Please restart terminal.");
     }
   } else {
-    const profileFile = os === "darwin"
-      ? join(Deno.env.get("HOME") || "", ".zshrc")
-      : join(Deno.env.get("HOME") || "", ".bashrc");
+    const home = Deno.env.get("HOME") || "";
+    const profileFile = os === "darwin" ? join(home, ".zshrc") : join(home, ".bashrc");
     if (await fsUtil.exists(profileFile)) {
       const content = await fsUtil.readTextFile(profileFile);
       if (!content.includes(binDir)) {
@@ -156,4 +160,7 @@ async function main() {
   logger.info("--- Setup Complete ---");
 }
 
-main().catch((e) => logger.error(`Setup failed: ${e.message}`));
+main().catch((e) => {
+  logger.error(`Setup failed: ${e.message}`);
+  Deno.exit(1);
+});
