@@ -13,7 +13,6 @@ description: ワークスペース内のルールを定義に基づき、指定�
 - `~/.gemini/GEMINI.md` (Global System Prompt) の同期・自動構築。
 - 配布先でのディレクトリ自動生成と Git 保護設定。
 
-
 ## 実行方法
 
 1. `config/publish-rules-targets.md` を編集。
@@ -23,7 +22,6 @@ description: ワークスペース内のルールを定義に基づき、指定�
 # 全ルールの同期と GEMINI.md のセットアップ
 deno run -A .agents/skills/publish-harness-rules/scripts/publish-rules.ts --lang ja --os wsl
 ```
-
 
 > [!TIP]
 > 設定ファイルの書き方は [target-config-format.md](references/target-config-format.md)

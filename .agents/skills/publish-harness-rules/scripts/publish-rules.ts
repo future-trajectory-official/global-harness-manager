@@ -34,7 +34,9 @@ async function main() {
         lang = lang || mdUtil.getTitlesInSection(settingsContent, "Language", 3)[0];
         osEnv = osEnv || mdUtil.getTitlesInSection(settingsContent, "Environment", 3)[0];
         if (lang || osEnv) {
-          logger.info(`Using preset settings from ${globalSettingsPath}: lang=${lang}, os=${osEnv}`);
+          logger.info(
+            `Using preset settings from ${globalSettingsPath}: lang=${lang}, os=${osEnv}`,
+          );
         }
       }
     }
@@ -130,8 +132,10 @@ async function syncGlobalPrompt(
   // 環境説明文のマッピング定義
   const ENV_DESCRIPTIONS: Record<string, Record<string, string>> = {
     wsl: {
-      ja: "本プロジェクトは Windowsから接続された**WSL環境** で運用されています。ターミナル操作を行う際は、必ず **bash** の構文を使用してください。",
-      en: "This project is running in a **WSL environment** connected from Windows. Always use **bash** syntax for terminal operations.",
+      ja:
+        "本プロジェクトは Windowsから接続された**WSL環境** で運用されています。ターミナル操作を行う際は、必ず **bash** の構文を使用してください。",
+      en:
+        "This project is running in a **WSL environment** connected from Windows. Always use **bash** syntax for terminal operations.",
     },
     linux: {
       ja: "本プロジェクトは標準的な **Linux環境** で運用されています。",
@@ -147,7 +151,6 @@ async function syncGlobalPrompt(
     : "Display chat responses, progress messages, artifacts, tasks, and walkthroughs in English.";
 
   const envDesc = ENV_DESCRIPTIONS[currentOs][currentLang];
-
 
   templateContent = templateContent
     .replace("{{LANGUAGE_DESCRIPTION}}", langDesc)

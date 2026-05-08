@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { join, dirname as _dirname } from "@std/path";
+import { dirname as _dirname, join } from "@std/path";
 import { fsUtil } from "../.agents/core/fs.ts";
 
 Deno.test("Integration: GEMINI.md sync - basic generation (Linux/WSL)", async () => {
@@ -9,15 +9,20 @@ Deno.test("Integration: GEMINI.md sync - basic generation (Linux/WSL)", async ()
     const mockHome = join(tempDir, "mock_home");
     await Deno.mkdir(mockHome, { recursive: true });
 
-    const scriptPath = join(managerDir, ".agents/skills/publish-harness-rules/scripts/publish-rules.ts");
+    const scriptPath = join(
+      managerDir,
+      ".agents/skills/publish-harness-rules/scripts/publish-rules.ts",
+    );
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
         "run",
         "-A",
         scriptPath,
-        "--lang", "ja",
-        "--os", "wsl",
+        "--lang",
+        "ja",
+        "--os",
+        "wsl",
       ],
       env: {
         HOME: mockHome,
@@ -30,11 +35,15 @@ Deno.test("Integration: GEMINI.md sync - basic generation (Linux/WSL)", async ()
     const output = new TextDecoder().decode(stdout);
     const errOutput = new TextDecoder().decode(stderr);
 
-    assertEquals(code, 0, `Script failed with code ${code}\nStderr: ${errOutput}\nStdout: ${output}`);
+    assertEquals(
+      code,
+      0,
+      `Script failed with code ${code}\nStderr: ${errOutput}\nStdout: ${output}`,
+    );
 
     const geminiPath = join(mockHome, ".gemini/GEMINI.md");
     assertEquals(await fsUtil.exists(geminiPath), true, "GEMINI.md should be created");
-    
+
     const content = await Deno.readTextFile(geminiPath);
     assertStringIncludes(content, "日本語");
     assertStringIncludes(content, "WSL環境");
@@ -51,15 +60,20 @@ Deno.test("Integration: GEMINI.md sync - not implemented (Windows)", async () =>
     const mockHome = join(tempDir, "mock_home");
     await Deno.mkdir(mockHome, { recursive: true });
 
-    const scriptPath = join(managerDir, ".agents/skills/publish-harness-rules/scripts/publish-rules.ts");
+    const scriptPath = join(
+      managerDir,
+      ".agents/skills/publish-harness-rules/scripts/publish-rules.ts",
+    );
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
         "run",
         "-A",
         scriptPath,
-        "--lang", "ja",
-        "--os", "windows",
+        "--lang",
+        "ja",
+        "--os",
+        "windows",
       ],
       env: {
         HOME: mockHome,
@@ -84,20 +98,25 @@ Deno.test("Integration: GEMINI.md sync - append mode", async () => {
     const managerDir = Deno.cwd();
     const mockHome = join(tempDir, "mock_home");
     const geminiPath = join(mockHome, ".gemini/GEMINI.md");
-    
+
     await Deno.mkdir(join(mockHome, ".gemini"), { recursive: true });
     await Deno.writeTextFile(geminiPath, "# Existing Context\n\n## Custom Rule\nRule 1");
 
-    const scriptPath = join(managerDir, ".agents/skills/publish-harness-rules/scripts/publish-rules.ts");
+    const scriptPath = join(
+      managerDir,
+      ".agents/skills/publish-harness-rules/scripts/publish-rules.ts",
+    );
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
         "run",
         "-A",
         scriptPath,
-        "--lang", "ja",
-        "--os", "wsl",
-        "--append"
+        "--lang",
+        "ja",
+        "--os",
+        "wsl",
+        "--append",
       ],
       env: {
         HOME: mockHome,
@@ -122,15 +141,20 @@ Deno.test("Integration: GEMINI.md sync - basic generation (Standard Linux)", asy
     const mockHome = join(tempDir, "mock_home");
     await Deno.mkdir(mockHome, { recursive: true });
 
-    const scriptPath = join(managerDir, ".agents/skills/publish-harness-rules/scripts/publish-rules.ts");
+    const scriptPath = join(
+      managerDir,
+      ".agents/skills/publish-harness-rules/scripts/publish-rules.ts",
+    );
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
         "run",
         "-A",
         scriptPath,
-        "--lang", "ja",
-        "--os", "linux",
+        "--lang",
+        "ja",
+        "--os",
+        "linux",
       ],
       env: {
         HOME: mockHome,
