@@ -10,6 +10,7 @@ description: ワークスペース内のルールを定義に基づき、指定�
 ## 機能
 
 - `config/publish-rules-targets.md` に基づく複数プロジェクトへの一括配信。
+- `~/.gemini/GEMINI.md` (Global System Prompt) の同期・自動構築。
 - 配布先でのディレクトリ自動生成と Git 保護設定。
 
 ## 実行方法
@@ -18,7 +19,8 @@ description: ワークスペース内のルールを定義に基づき、指定�
 2. スクリプトを実行。
 
 ```bash
-deno run -A .agents/skills/publish-harness-rules/scripts/publish-rules.ts
+# 全ルールの同期と GEMINI.md のセットアップ
+deno run -A .agents/skills/publish-harness-rules/scripts/publish-rules.ts --lang ja --os wsl
 ```
 
 > [!TIP]
