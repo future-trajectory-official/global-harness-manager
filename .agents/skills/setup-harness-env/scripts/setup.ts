@@ -9,7 +9,7 @@ async function main() {
 
   const scriptDir = dirname(fromFileUrl(import.meta.url));
   const harnessRoot = pathUtil.resolvePath(scriptDir, "..", "..", "..", "..");
-  const binDir = join(harnessRoot, "bin");
+  const binDir = Deno.env.get("GLOBAL_HARNESS_BIN_DIR") || join(harnessRoot, "bin");
   const configPath = join(harnessRoot, "config", "global-skills-path.txt");
 
   // OS-specific variables

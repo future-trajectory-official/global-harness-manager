@@ -14,12 +14,13 @@ Deno.test("Integration: setup-harness-env", async () => {
         .pathname;
 
     const harnessRoot = fromFileUrl(new URL("..", import.meta.url));
-    const binDir = join(harnessRoot, "bin");
-    const ghPath = join(binDir, Deno.build.os === "windows" ? "gh.exe" : "gh");
+    const tempBinDir = join(tempHome, "bin");
+    await Deno.mkdir(tempBinDir, { recursive: true });
+    const ghPath = join(tempBinDir, Deno.build.os === "windows" ? "gh.exe" : "gh");
+    const realGhPath = join(harnessRoot, "bin", Deno.build.os === "windows" ? "gh.exe" : "gh");
 
     // CI環境の場合、ダウンロードエラー回避のためシステム gh をコピーする
     if (Deno.env.get("CI") === "true") {
-      await Deno.mkdir(binDir, { recursive: true });
       try {
         const whichCmd = new Deno.Command(Deno.build.os === "windows" ? "where" : "which", {
           args: ["gh"],
@@ -45,6 +46,7 @@ Deno.test("Integration: setup-harness-env", async () => {
       env: {
         HOME: tempHome,
         USERPROFILE: tempHome,
+        GLOBAL_HARNESS_BIN_DIR: tempBinDir,
       },
       stdout: "piped",
       stderr: "piped",
@@ -80,16 +82,20 @@ Deno.test("Integration: setup-harness-env", async () => {
       }
     }
 
-    // Verify skills.txt was created
-    if (Deno.env.get("CI") !== "true") {
-      const skillsFilePath = join(tempHome, ".gemini", "antigravity", "skills.txt");
-      assertEquals(await fsUtil.exists(skillsFilePath), true, "skills.txt should be created");
+    // Verify skills.txt was created (Always check, even in CI)
+    const skillsFilePath = join(tempHome, ".gemini", "antigravity", "skills.txt");
+    assertEquals(await fsUtil.exists(skillsFilePath), true, "skills.txt should be created");
 
-      const skillsContent = await Deno.readTextFile(skillsFilePath);
-      assertStringIncludes(skillsContent, "global-skills");
-    } else {
-      console.log("CI environment detected: Skipping skills.txt assertions.");
-    }
+    const skillsContent = await Deno.readTextFile(skillsFilePath);
+    assertStringIncludes(skillsContent, "global-skills");
+
+    // Verify bin/ was NOT polluted in the real project root
+    const binExists = await fsUtil.exists(realGhPath);
+    assertEquals(
+      binExists,
+      false,
+      `Side effect detected: ${realGhPath} should not exist in the project root after test.`,
+    );
   } finally {
     await Deno.remove(tempHome, { recursive: true });
   }
