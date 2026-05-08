@@ -1,0 +1,10 @@
+# Global Harness Settings
+このファイルは、環境全体の共通設定（GEMINI.md等）の初期値を定義します。
+
+## Language
+AIが主に使用する言語（例：日本語、English等）を指定します。
+### ja
+
+## Environment
+現在の実行環境（例：wsl, linux, windows, mac）を指定します。
+### wsl
