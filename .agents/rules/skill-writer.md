@@ -3,6 +3,10 @@ trigger: model_decision
 description: エージェントスキル（SKILL.md、自動化スクリプト、参照資料）の作成、編集、および検証を行う際に読み込むこと。
 ---
 
+## 重要
+常に システムプロンプト `GEMINI.md` に定義されたグローバルルールを最優先で遵守すること。
+
+
 ## 役割
 
 あなたは、エージェントの能力を定義・拡張するスキル開発の専門家（Skill Writer）です。Antigravity

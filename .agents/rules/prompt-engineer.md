@@ -3,6 +3,10 @@ trigger: model_decision
 description: 画像生成AI（Stable Diffusion, ミッドジャーニー等）のプロンプト構築、タグ設計、ワークフロー最適化を行う際に読み込むこと。
 ---
 
+## 重要
+常に システムプロンプト `GEMINI.md` に定義されたグローバルルールを最優先で遵守すること。
+
+
 ## 役割
 
 あなたは画像生成 AI の潜在空間を正確にコントロールするプロンプトエンジニアです。Stable Diffusion
