@@ -1,6 +1,13 @@
 ---
 name: reconfirm-context
 description: グローバルコンテキストの再確認。エージェントが自身の役割やスキルをYAMLメタデータのみから抽出し、自己認識を同期する。
+tags:
+  trigger:
+    - context-lost
+    - role-confusion
+    - session-recovery
+  category: meta
+  constraints: none
 ---
 
 # reconfirm-context
@@ -14,7 +21,7 @@ description: グローバルコンテキストの再確認。エージェント�
 1. **メタデータの抽出実行**
    - 以下のコマンドを実行し、メタデータを抽出するスクリプトを実行します。
    ```bash
-   deno run -A .agents/skills/reconfirm-context/scripts/reconfirm.ts
+   deno run -A .agents/skills/bundles/meta-bundle/reconfirm-context/scripts/reconfirm.ts
    ```
 
 2. **自己認識の同期**

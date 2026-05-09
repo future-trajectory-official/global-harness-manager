@@ -1,4 +1,4 @@
-import { fsUtil, pathUtil } from "../../../core/harness-core.ts";
+import { fsUtil, pathUtil } from "../../../../../core/harness-core.ts";
 
 async function extractFrontmatter(filePath: string): Promise<string> {
   try {
