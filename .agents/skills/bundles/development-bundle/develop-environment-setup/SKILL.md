@@ -1,6 +1,13 @@
 ---
 name: develop-environment-setup
 description: "タスクごとに独立した作業環境（サンドボックス）を構築し、ホスト環境を保護します。"
+tags:
+  trigger:
+    - setup-sandbox
+    - prepare-workspace
+    - safety-isolation
+  category: development
+  constraints: requires-docker-for-container-mode
 ---
 
 # develop-environment-setup
@@ -22,13 +29,13 @@ description: "タスクごとに独立した作業環境（サンドボックス
 
 1. **サンドボックスの作成**
    ```bash
-   deno run -A .agents/skills/develop-environment-setup/scripts/manage-sandbox.ts create --name [task-name] --mode [directory|container]
+   deno run -A .agents/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts create --name [task-name] --mode [directory|container]
    ```
 2. **サンドボックスへの進入**
    - 出力されたパス、またはコンテナ名を確認し、作業を開始してください。
 3. **作業の完了と破棄**
    ```bash
-   deno run -A .agents/skills/develop-environment-setup/scripts/manage-sandbox.ts destroy --name [task-name]
+   deno run -A .agents/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts destroy --name [task-name]
    ```
 
 ## 注意事項

@@ -3,7 +3,7 @@ import { join } from "jsr:@std/path@1.0.8";
 
 const SCRIPT_PATH = join(
   Deno.cwd(),
-  ".agents/skills/develop-environment-setup/scripts/manage-sandbox.ts",
+  ".agents/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts",
 );
 
 Deno.test("manage-sandbox create --mode directory", async () => {
