@@ -1,6 +1,13 @@
 ---
 name: refactoring-loop
 description: 既存コードの挙動を変えずに、保守性や可読性を向上させるための反復サイクルを定義するスキル
+tags:
+  trigger:
+    - code-cleanup
+    - reduce-complexity
+    - improve-maintainability
+  category: development
+  constraints: requires-high-test-coverage
 ---
 
 # refactoring-loop
