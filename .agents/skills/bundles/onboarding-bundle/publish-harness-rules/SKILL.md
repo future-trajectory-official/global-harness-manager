@@ -1,6 +1,13 @@
 ---
 name: publish-harness-rules
 description: ワークスペース内のルールを定義に基づき、指定の他プロジェクトへ同期・コピーします。
+tags:
+  trigger:
+    - sync-rules
+    - update-global-prompt
+    - setup-harness
+  category: onboarding
+  constraints: none
 ---
 
 # publish-harness-rules
@@ -20,7 +27,7 @@ description: ワークスペース内のルールを定義に基づき、指定�
 
 ```bash
 # 全ルールの同期と GEMINI.md のセットアップ
-deno run -A .agents/skills/publish-harness-rules/scripts/publish-rules.ts --lang ja --os wsl
+deno run -A .agents/skills/bundles/onboarding-bundle/publish-harness-rules/scripts/publish-rules.ts --lang ja --os wsl
 ```
 
 > [!TIP]

@@ -5,7 +5,7 @@ import {
   mdUtil,
   pathUtil,
   verifyTarget,
-} from "../../../core/harness-core.ts";
+} from "../../../../../core/harness-core.ts";
 import { parseArgs } from "@std/cli/parse-args";
 
 /**
