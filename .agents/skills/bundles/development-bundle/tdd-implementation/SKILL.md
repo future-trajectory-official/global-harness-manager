@@ -1,6 +1,13 @@
 ---
 name: tdd-implementation
 description: エージェントにテスト駆動開発（TDD）の能力を付与し、品質の高いコード実装をガイドするスキル
+tags:
+  trigger:
+    - new-feature
+    - bug-fix
+    - implementation-guide
+  category: development
+  constraints: requires-test-runner
 ---
 
 # tdd-implementation
