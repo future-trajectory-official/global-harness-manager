@@ -13,7 +13,7 @@ description: "[オンボーディング] 新規参加メンバーが同一の開
 以下のステップを順番に実行してください。
 
 1. **前提要件チェック (Pre-Check)**: 設定ファイルの有無と状態をチェックします。
-   - `bash .agents/skills/bundles/onboarding-bundle/check-harness-configs/scripts/check_configs.sh` を実行してください。
+   - `deno run -A .agents/skills/bundles/onboarding-bundle/check-harness-configs/scripts/check_configs.ts` を実行してください。
    - スクリプトが失敗した場合はユーザーに警告を伝えて待機してください。
 
 2. **実行計画の提示と承認**: どのような作業を行うかをユーザーに説明する
