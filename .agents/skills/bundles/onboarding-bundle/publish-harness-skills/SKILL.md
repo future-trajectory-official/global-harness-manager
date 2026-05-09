@@ -1,6 +1,13 @@
 ---
 name: publish-harness-skills
 description: ワークスペース内のスキルをグローバルディレクトリへ同期・公開します。
+tags:
+  trigger:
+    - sync-skills
+    - share-skills
+    - onboarding-tools
+  category: onboarding
+  constraints: none
 ---
 
 # publish-harness-skills
@@ -19,7 +26,7 @@ description: ワークスペース内のスキルをグローバルディレク�
 2. スクリプトを実行。
 
 ```bash
-deno run -A .agents/skills/publish-harness-skills/scripts/publish-skills.ts
+deno run -A .agents/skills/bundles/onboarding-bundle/publish-harness-skills/scripts/publish-skills.ts
 ```
 
 > [!TIP]
