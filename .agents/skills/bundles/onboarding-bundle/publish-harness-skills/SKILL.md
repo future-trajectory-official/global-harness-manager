@@ -1,6 +1,6 @@
 ---
 name: publish-harness-skills
-description: ワークスペース内のスキルをグローバルディレクトリへ同期・公開します。
+description: ワークスペース内のスキルをグローバルディレクトリへ同期・公開します。スキルを他環境へ配布したい時、またはglobal-skillsを最新に保ちたい時に使用します。
 tags:
   trigger:
     - sync-skills
@@ -22,7 +22,8 @@ tags:
 
 ## 使用方法
 
-1. `config/publish-targets.md` を編集（`##` でスキルを指定）。
+1. `config/publish-targets.md` を編集する。（形式は [target-config-format.md](references/target-config-format.md) 参照）
+   - ⚠️ このファイルはソース管理対象**外**（`.gitignore`）のローカル設定。
 2. スクリプトを実行。
 
 ```bash
