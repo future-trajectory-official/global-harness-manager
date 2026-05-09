@@ -5,7 +5,7 @@ import {
   logger,
   mdUtil,
   pathUtil,
-} from "../../../core/harness-core.ts";
+} from "../../../../../core/harness-core.ts";
 import { parseArgs } from "@std/cli/parse-args";
 
 async function processProject(project: {

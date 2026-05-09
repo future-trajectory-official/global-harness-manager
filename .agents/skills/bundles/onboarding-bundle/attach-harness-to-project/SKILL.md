@@ -1,6 +1,13 @@
 ---
 name: attach-harness-to-project
 description: "[作業準備] 新しいプロジェクト(Gitリポジトリ)での作業開始前に、そのリポジトリの通信経路を正しいアカウントに強制バインドさせるために使用する"
+tags:
+  trigger:
+    - project-setup
+    - link-account
+    - git-remote-fix
+  category: onboarding
+  constraints: requires-git-repo
 ---
 
 # attach-harness-to-project
@@ -19,7 +26,7 @@ SSH エイリアスに強制書き換えします。
 2. 以下のコマンドを実行。
 
 ```bash
-deno run -A .agents/skills/attach-harness-to-project/scripts/harness-attach.ts
+deno run -A .agents/skills/bundles/onboarding-bundle/attach-harness-to-project/scripts/harness-attach.ts
 ```
 
 > [!TIP]
