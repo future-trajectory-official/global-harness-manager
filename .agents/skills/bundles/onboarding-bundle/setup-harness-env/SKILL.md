@@ -1,6 +1,13 @@
 ---
 name: setup-harness-env
 description: "[初期構築] Deno/ghのダウンロードやPATHの設定など、ホスト環境を構築する。環境別ルーティング対応"
+tags:
+  trigger:
+    - environment-setup
+    - install-tools
+    - first-time-setup
+  category: onboarding
+  constraints: requires-host-access
 ---
 
 # setup-harness-env
@@ -18,10 +25,10 @@ OS ごとの分岐コマンドを組み立ててはいけません。以下の�
    をコピーして作成するようユーザーに促してください。
 2. 自身のコンテキスト（実行環境）から OS を判定し、以下のスクリプトを `run_command`
    で実行してください：
-   - **Linux / WSL 環境の場合**: `bash scripts/install-linux.sh`
+   - **Linux / WSL 環境の場合**: `bash .agents/skills/bundles/onboarding-bundle/setup-harness-env/scripts/install-linux.sh`
    - **Windows (Native PowerShell) 環境の場合**:
-     `powershell -ExecutionPolicy Bypass -File scripts\install-windows.ps1`
-   - **macOS 環境の場合**: `bash scripts/install-mac.sh`
+     `powershell -ExecutionPolicy Bypass -File .agents\skills\bundles\onboarding-bundle\setup-harness-env\scripts\install-windows.ps1`
+   - **macOS 環境の場合**: `bash .agents/skills/bundles/onboarding-bundle/setup-harness-env/scripts/install-mac.sh`
 3. 実行後、ユーザーに対して「ターミナルを再起動するか、\`source ~/.bashrc\` (またはプロファイル)
    を再読込してください」と伝えてください。
 
