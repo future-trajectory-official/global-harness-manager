@@ -2,7 +2,6 @@ import {
   errorUtil,
   fsUtil,
   logger,
-  mdUtil,
   pathUtil,
   verifyTarget,
 } from "../../../../../core/harness-core.ts";
@@ -56,16 +55,28 @@ async function main() {
       }
     }
 
-    // 公開対象スキルの抽出 (H2)
+    // 公開対象スキルの抽出 (H2: Bundle, H3: Skill)
     const mdContent = await fsUtil.readTextFile(configPath);
-    const skillNames = mdUtil.getH2Titles(mdContent);
+    
+    const skillPaths: string[] = [];
+    let currentBundle = "";
+    
+    for (const line of mdContent.split("\n")) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("## ")) {
+        currentBundle = trimmed.substring(3).trim();
+      } else if (trimmed.startsWith("### ") && currentBundle) {
+        const skillName = trimmed.substring(4).trim();
+        skillPaths.push(`bundles/${currentBundle}/${skillName}`);
+      }
+    }
 
-    if (skillNames.length === 0) {
+    if (skillPaths.length === 0) {
       logger.warn("No skills found in publish-targets.md");
       return;
     }
 
-    logger.info(`Found ${skillNames.length} skills to publish.`);
+    logger.info(`Found ${skillPaths.length} skills to publish.`);
 
     if (!isDryRun) {
       try {
@@ -78,16 +89,16 @@ async function main() {
       }
     }
 
-    for (const skillName of skillNames) {
-      const sourceDir = pathUtil.joinPath(skillsSourceDir, skillName);
-      const targetDir = pathUtil.joinPath(globalDestDir, skillName);
+    for (const skillPath of skillPaths) {
+      const sourceDir = pathUtil.joinPath(skillsSourceDir, skillPath);
+      const targetDir = pathUtil.joinPath(globalDestDir, skillPath);
 
       if (!(await fsUtil.exists(sourceDir))) {
         logger.warn(`Source skill not found: ${sourceDir}. Skipping.`);
         continue;
       }
 
-      logger.info(`  Syncing skill: ${skillName}`);
+      logger.info(`  Syncing skill: ${skillPath}`);
 
       if (isDryRun) {
         logger.dryRun(`Copy directory: ${sourceDir} -> ${targetDir}`);
