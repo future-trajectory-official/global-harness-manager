@@ -1,4 +1,4 @@
-import { fsUtil, logger, pathUtil } from "../../../core/harness-core.ts";
+import { fsUtil, logger, pathUtil } from "../../../../../core/harness-core.ts";
 
 export const DEFAULT_FILES = [
   "config/identities.txt",

@@ -1,6 +1,13 @@
 ---
 name: check-harness-configs
 description: "[検証] オンボーディングや環境同期に必要な各種設定ファイル群が存在し、記入されているか事前診断するスキル"
+tags:
+  trigger:
+    - onboarding-check
+    - pre-check
+    - diagnostic
+  category: onboarding
+  constraints: none
 ---
 
 # check-harness-configs
@@ -17,7 +24,7 @@ description: "[検証] オンボーディングや環境同期に必要な各種
 // turbo
 
 ```bash
-deno run -A .agents/skills/check-harness-configs/scripts/check_configs.ts
+deno run -A .agents/skills/bundles/onboarding-bundle/check-harness-configs/scripts/check_configs.ts
 ```
 
 > [!TIP]
