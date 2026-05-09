@@ -1,6 +1,15 @@
 ---
 name: stateless-reset
-description: 過去のAIの記憶やナレッジデータを一時フォルダへ退避させ、ステートレスな実行環境をリセット（構築）するスキル。
+description: 記憶のリセット。ハルシネーションが起きた際や、過去の文脈を破棄して「最初からやり直したい」時に使用します。
+tags:
+  trigger:
+    - context-reset
+    - clear-history
+    - start-fresh
+    - forget-memory
+    - reset-session
+  category: system
+  constraints: none
 ---
 
 # stateless-reset

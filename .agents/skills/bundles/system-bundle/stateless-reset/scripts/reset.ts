@@ -1,4 +1,4 @@
-import { fsUtil, logger, pathUtil } from "../../../core/harness-core.ts";
+import { fsUtil, logger, pathUtil } from "../../../../../core/harness-core.ts";
 
 async function main() {
   const args = Deno.args;
