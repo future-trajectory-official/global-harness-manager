@@ -4,7 +4,20 @@ import { executeCommand, fsUtil, logger } from "../../../core/harness-core.ts";
 
 const DEFAULT_SANDBOX_BASE = "/tmp/harness-sandboxes";
 
-async function createSandbox(name: string, mode: "directory" | "container", base: string) {
+export async function detectLanguage(): Promise<string> {
+  if (await fsUtil.exists("deno.json") || await fsUtil.exists("deno.jsonc")) return "deno";
+  if (await fsUtil.exists("package.json")) return "node";
+  if (await fsUtil.exists("requirements.txt") || await fsUtil.exists("pyproject.toml"))
+    return "python";
+  return "deno"; // デフォルト
+}
+
+export async function createSandbox(
+  name: string,
+  mode: "directory" | "container",
+  base: string,
+  lang?: string,
+) {
   const sandboxPath = join(base, name);
 
   if (await fsUtil.exists(sandboxPath)) {
@@ -23,15 +36,29 @@ async function createSandbox(name: string, mode: "directory" | "container", base
 
     logger.info(`✅ Sandbox created at ${sandboxPath}`);
   } else if (mode === "container") {
-    logger.info(`Building sandbox image...`);
+    const detectedLang = lang || await detectLanguage();
+    logger.info(`Detected language: ${detectedLang}`);
+
     const dockerfilePath = join(
       Deno.cwd(),
-      ".agents/skills/develop-environment-setup/assets/Dockerfile",
+      `.agents/skills/develop-environment-setup/assets/dockerfiles/${detectedLang}.Dockerfile`,
     );
 
+    if (!(await fsUtil.exists(dockerfilePath))) {
+      logger.warn(`Dockerfile for ${detectedLang} not found. Falling back to deno.Dockerfile.`);
+    }
+
+    const finalDockerfile = (await fsUtil.exists(dockerfilePath))
+      ? dockerfilePath
+      : join(
+        Deno.cwd(),
+        ".agents/skills/develop-environment-setup/assets/dockerfiles/deno.Dockerfile",
+      );
+
+    logger.info(`Building sandbox image using ${finalDockerfile}...`);
     await executeCommand({
       cmd: "docker",
-      args: ["build", "-t", "harness-sandbox-base", "-f", dockerfilePath, "."],
+      args: ["build", "-t", "harness-sandbox-base", "-f", finalDockerfile, "."],
     });
 
     const containerName = `harness-sandbox-${name}`;
@@ -92,7 +119,7 @@ async function destroySandbox(name: string, base: string) {
 
 async function main() {
   const args = parseArgs(Deno.args, {
-    string: ["name", "mode", "base"],
+    string: ["name", "mode", "base", "lang"],
     default: { base: DEFAULT_SANDBOX_BASE, mode: "directory" },
   });
 
@@ -100,10 +127,11 @@ async function main() {
   const name = args.name;
   const mode = args.mode as "directory" | "container";
   const base = args.base;
+  const lang = args.lang;
 
   if (!command || !name) {
     console.log(
-      "Usage: manage-sandbox [create|destroy] --name <name> [--mode directory|container]",
+      "Usage: manage-sandbox [create|destroy] --name <name> [--mode directory|container] [--lang deno|node|python]",
     );
     Deno.exit(1);
   }
@@ -111,7 +139,7 @@ async function main() {
   try {
     switch (command) {
       case "create":
-        await createSandbox(name, mode, base);
+        await createSandbox(name, mode, base, lang);
         break;
       case "destroy":
         await destroySandbox(name, base);
