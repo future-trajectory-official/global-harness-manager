@@ -22,7 +22,8 @@ tags:
 
 ## 使用方法
 
-1. `config/publish-targets.md` を編集する。（形式は [target-config-format.md](references/target-config-format.md) 参照）
+1. `config/publish-targets.md` を編集する。（形式は
+   [target-config-format.md](references/target-config-format.md) 参照）
    - ⚠️ このファイルはソース管理対象**外**（`.gitignore`）のローカル設定。
 2. スクリプトを実行。
 

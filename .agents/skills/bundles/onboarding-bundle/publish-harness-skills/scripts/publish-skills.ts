@@ -57,10 +57,10 @@ async function main() {
 
     // 公開対象スキルの抽出 (H2: Bundle, H3: Skill)
     const mdContent = await fsUtil.readTextFile(configPath);
-    
+
     const skillPaths: string[] = [];
     let currentBundle = "";
-    
+
     for (const line of mdContent.split("\n")) {
       const trimmed = line.trim();
       if (trimmed.startsWith("## ")) {

@@ -7,8 +7,9 @@ const DEFAULT_SANDBOX_BASE = "/tmp/harness-sandboxes";
 export async function detectLanguage(): Promise<string> {
   if (await fsUtil.exists("deno.json") || await fsUtil.exists("deno.jsonc")) return "deno";
   if (await fsUtil.exists("package.json")) return "node";
-  if (await fsUtil.exists("requirements.txt") || await fsUtil.exists("pyproject.toml"))
+  if (await fsUtil.exists("requirements.txt") || await fsUtil.exists("pyproject.toml")) {
     return "python";
+  }
   return "deno"; // デフォルト
 }
 
@@ -48,12 +49,10 @@ export async function createSandbox(
       logger.warn(`Dockerfile for ${detectedLang} not found. Falling back to deno.Dockerfile.`);
     }
 
-    const finalDockerfile = (await fsUtil.exists(dockerfilePath))
-      ? dockerfilePath
-      : join(
-        Deno.cwd(),
-        ".agents/skills/bundles/development-bundle/develop-environment-setup/assets/dockerfiles/deno.Dockerfile",
-      );
+    const finalDockerfile = (await fsUtil.exists(dockerfilePath)) ? dockerfilePath : join(
+      Deno.cwd(),
+      ".agents/skills/bundles/development-bundle/develop-environment-setup/assets/dockerfiles/deno.Dockerfile",
+    );
 
     logger.info(`Building sandbox image using ${finalDockerfile}...`);
     await executeCommand({

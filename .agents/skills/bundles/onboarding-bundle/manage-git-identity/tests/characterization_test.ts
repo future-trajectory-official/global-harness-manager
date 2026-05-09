@@ -20,7 +20,10 @@ Deno.test("manage-git-identity characterization test", async () => {
   await Deno.writeTextFile(join(mockConfigDir, "identities.md"), identitiesContent);
 
   // 元のスクリプトの絶対パスを取得
-  const scriptPath = join(Deno.cwd(), ".agents/skills/bundles/onboarding-bundle/manage-git-identity/scripts/add-identity.ts");
+  const scriptPath = join(
+    Deno.cwd(),
+    ".agents/skills/bundles/onboarding-bundle/manage-git-identity/scripts/add-identity.ts",
+  );
 
   // 環境変数をモックしてスクリプトを実行
   const command = new Deno.Command(Deno.execPath(), {
