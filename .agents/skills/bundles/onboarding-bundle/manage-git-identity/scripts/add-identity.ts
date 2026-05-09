@@ -1,4 +1,4 @@
-import { executeCommand, fsUtil, logger, pathUtil } from "../../../core/harness-core.ts";
+import { executeCommand, fsUtil, logger, pathUtil } from "../../../../../core/harness-core.ts";
 
 export interface Identity {
   accountName: string;

@@ -1,6 +1,13 @@
 ---
 name: manage-git-identity
 description: "[認証管理] identities.txt に基づき SSH接続用の鍵ペアを生成・管理し、GitHubにアカウントを登録させる際に使用する"
+tags:
+  trigger:
+    - setup-ssh
+    - add-git-account
+    - identity-management
+  category: onboarding
+  constraints: requires-ssh-access
 ---
 
 # manage-git-identity
@@ -17,7 +24,7 @@ GitHub の複数アカウントを使い分けるための SSH 鍵ペア（Ed255
 ## 使用方法
 
 1. `config/identities.txt` を作成（`アカウント名,メールアドレス`）。
-2. `deno run -A .agents/skills/manage-git-identity/scripts/add-identity.ts` を実行。
+2. `deno run -A .agents/skills/bundles/onboarding-bundle/manage-git-identity/scripts/add-identity.ts` を実行。
 
 > [!TIP]
 > 接続エラーの解決方法は [troubleshooting.md](references/troubleshooting.md) を、SSH設定の詳細は
