@@ -1,5 +1,5 @@
-import { dirname, fromFileUrl, join } from "@std/path";
-import { executeCommand, fsUtil, logger, pathUtil } from "../../../../../core/harness-core.ts";
+import { join } from "@std/path";
+import { PROJECT_ROOT, executeCommand, fsUtil, logger, pathUtil } from "../../../../../../core/harness-core.ts";
 
 async function main() {
   logger.info("Starting Deno-first environment setup...");
@@ -7,8 +7,7 @@ async function main() {
   const os = Deno.build.os; // "windows", "darwin", "linux"
   const arch = Deno.build.arch; // "x86_64", "aarch64"
 
-  const scriptDir = dirname(fromFileUrl(import.meta.url));
-  const harnessRoot = pathUtil.resolvePath(scriptDir, "..", "..", "..", "..", "..", "..");
+  const harnessRoot = PROJECT_ROOT;
   const binDir = Deno.env.get("GLOBAL_HARNESS_BIN_DIR") || join(harnessRoot, "bin");
   const configPath = join(harnessRoot, "config", "global-skills-path.txt");
 

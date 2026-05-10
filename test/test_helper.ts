@@ -1,30 +1,16 @@
-import { join } from "@std/path";
+import { PATHS as CORE_PATHS, getSkillDirPath as getCoreSkillDirPath, getSkillScriptPath as getCoreSkillScriptPath } from "../core/harness-core.ts";
 
 /**
- * テスト共通のパス定数
+ * テスト共通のパス定数 (harness-core.ts から再エクスポート)
  */
-export const PATHS = {
-  SKILLS_ROOT: ".agents/skills/bundles",
-  BUNDLES: {
-    ONBOARDING: "onboarding-bundle",
-    GIT: "git-bundle",
-    META: "meta-bundle",
-    SYSTEM: "system-bundle",
-    DEVELOPMENT: "development-bundle",
-  },
-  SCRIPTS: "scripts",
-} as const;
+export const PATHS = CORE_PATHS;
 
 /**
  * スキル内のスクリプトパスを取得するヘルパー
  */
-export function getSkillScriptPath(bundle: string, skill: string, scriptName: string): string {
-  return join(PATHS.SKILLS_ROOT, bundle, skill, PATHS.SCRIPTS, scriptName);
-}
+export const getSkillScriptPath = getCoreSkillScriptPath;
 
 /**
  * スキルのディレクトリパスを取得するヘルパー
  */
-export function getSkillDirPath(bundle: string, skill: string): string {
-  return join(PATHS.SKILLS_ROOT, bundle, skill);
-}
+export const getSkillDirPath = getCoreSkillDirPath;

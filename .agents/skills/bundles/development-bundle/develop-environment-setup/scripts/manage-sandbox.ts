@@ -1,6 +1,6 @@
 import { parseArgs } from "@std/cli/parse-args";
 import { join } from "@std/path";
-import { executeCommand, fsUtil, logger } from "../../../../../core/harness-core.ts";
+import { executeCommand, fsUtil, getSkillAssetPath, logger } from "../../../../../../core/harness-core.ts";
 
 const DEFAULT_SANDBOX_BASE = "/tmp/harness-sandboxes";
 
@@ -40,18 +40,20 @@ export async function createSandbox(
     const detectedLang = lang || await detectLanguage();
     logger.info(`Detected language: ${detectedLang}`);
 
-    const dockerfilePath = join(
-      Deno.cwd(),
-      `.agents/skills/bundles/development-bundle/develop-environment-setup/assets/dockerfiles/${detectedLang}.Dockerfile`,
+    const dockerfilePath = getSkillAssetPath(
+      "DEVELOPMENT",
+      "develop-environment-setup",
+      `dockerfiles/${detectedLang}.Dockerfile`,
     );
 
     if (!(await fsUtil.exists(dockerfilePath))) {
       logger.warn(`Dockerfile for ${detectedLang} not found. Falling back to deno.Dockerfile.`);
     }
 
-    const finalDockerfile = (await fsUtil.exists(dockerfilePath)) ? dockerfilePath : join(
-      Deno.cwd(),
-      ".agents/skills/bundles/development-bundle/develop-environment-setup/assets/dockerfiles/deno.Dockerfile",
+    const finalDockerfile = (await fsUtil.exists(dockerfilePath)) ? dockerfilePath : getSkillAssetPath(
+      "DEVELOPMENT",
+      "develop-environment-setup",
+      "dockerfiles/deno.Dockerfile",
     );
 
     logger.info(`Building sandbox image using ${finalDockerfile}...`);
