@@ -25,19 +25,22 @@ export const PATHS = {
 
 /**
  * スキルのディレクトリパスを取得するヘルパー
+ * プロジェクトルートからの相対パスを返します
  */
 export function getSkillDirPath(
-  bundle: keyof typeof PATHS.BUNDLES,
+  bundle: keyof typeof PATHS.BUNDLES | string,
   skillName: string,
 ): string {
-  return join(PROJECT_ROOT, PATHS.SKILLS_ROOT, PATHS.BUNDLES[bundle], skillName);
+  // キーが渡された場合はその値を使い、そうでない場合は文字列をそのまま使う
+  const bundleDir = (PATHS.BUNDLES as Record<string, string>)[bundle] || bundle;
+  return join(PATHS.SKILLS_ROOT, bundleDir, skillName);
 }
 
 /**
  * スキル内のスクリプトの絶対パスを取得するヘルパー
  */
 export function getSkillScriptPath(
-  bundle: keyof typeof PATHS.BUNDLES,
+  bundle: keyof typeof PATHS.BUNDLES | string,
   skillName: string,
   scriptName: string,
 ): string {
@@ -48,7 +51,7 @@ export function getSkillScriptPath(
  * スキル内のアセットパスを取得するヘルパー
  */
 export function getSkillAssetPath(
-  bundle: keyof typeof PATHS.BUNDLES,
+  bundle: keyof typeof PATHS.BUNDLES | string,
   skillName: string,
   assetName?: string,
 ): string {
@@ -57,10 +60,10 @@ export function getSkillAssetPath(
 }
 
 /**
- * 管理用テンプレートディレクトリの絶対パスを取得する
+ * 管理用テンプレートディレクトリの相対パスを取得する
  */
 export function getManagementPath(fileName?: string): string {
-  const base = join(PROJECT_ROOT, PATHS.MANAGEMENT);
+  const base = PATHS.MANAGEMENT;
   return fileName ? join(base, fileName) : base;
 }
 
