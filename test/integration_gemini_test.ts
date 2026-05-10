@@ -1,6 +1,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { dirname as _dirname, join } from "@std/path";
 import { fsUtil } from "../.agents/core/fs.ts";
+import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 
 Deno.test("Integration: GEMINI.md sync - basic generation (Linux/WSL)", async () => {
   const tempDir = await Deno.makeTempDir();
@@ -11,7 +12,7 @@ Deno.test("Integration: GEMINI.md sync - basic generation (Linux/WSL)", async ()
 
     const scriptPath = join(
       managerDir,
-      ".agents/skills/publish-harness-rules/scripts/publish-rules.ts",
+      getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
     );
 
     const command = new Deno.Command(Deno.execPath(), {
@@ -62,7 +63,7 @@ Deno.test("Integration: GEMINI.md sync - not implemented (Windows)", async () =>
 
     const scriptPath = join(
       managerDir,
-      ".agents/skills/publish-harness-rules/scripts/publish-rules.ts",
+      getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
     );
 
     const command = new Deno.Command(Deno.execPath(), {
@@ -104,7 +105,7 @@ Deno.test("Integration: GEMINI.md sync - append mode", async () => {
 
     const scriptPath = join(
       managerDir,
-      ".agents/skills/publish-harness-rules/scripts/publish-rules.ts",
+      getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
     );
 
     const command = new Deno.Command(Deno.execPath(), {
@@ -143,7 +144,7 @@ Deno.test("Integration: GEMINI.md sync - basic generation (Standard Linux)", asy
 
     const scriptPath = join(
       managerDir,
-      ".agents/skills/publish-harness-rules/scripts/publish-rules.ts",
+      getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
     );
 
     const command = new Deno.Command(Deno.execPath(), {

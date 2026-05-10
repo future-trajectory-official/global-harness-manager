@@ -1,6 +1,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
 import { fsUtil } from "../.agents/core/fs.ts";
+import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 
 Deno.test("Integration: setup-harness-env", async () => {
   const tempHome = await Deno.makeTempDir();
@@ -12,20 +13,24 @@ Deno.test("Integration: setup-harness-env", async () => {
     const mockBashrc = join(tempHome, ".bashrc");
     await Deno.writeTextFile(mockBashrc, "# initial bashrc\n");
 
-    const scriptPath =
-      new URL("../.agents/skills/setup-harness-env/scripts/setup.ts", import.meta.url)
-        .pathname;
+    const scriptPath = new URL(
+      "../" + getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "setup-harness-env", "setup.ts"),
+      import.meta.url,
+    )
+      .pathname;
 
     const harnessRoot = fromFileUrl(new URL("..", import.meta.url));
 
-    // CI環境などで config ファイルが存在しない場合に備え、.example からコピーしてテスト環境を構築する
-    const configExamplePath = join(harnessRoot, "config", "global-skills-path.txt.example");
     configPath = join(harnessRoot, "config", "global-skills-path.txt");
     if (await fsUtil.exists(configPath)) {
       originalConfigExisted = true;
       originalConfigContent = await Deno.readTextFile(configPath);
     }
-    await Deno.copyFile(configExamplePath, configPath);
+    // テスト用のダミー設定を Bundles 構造で作成
+    await Deno.writeTextFile(
+      configPath,
+      join(PATHS.SKILLS_ROOT, PATHS.BUNDLES.ONBOARDING, "publish-harness-skills") + "\n",
+    );
 
     const tempBinDir = join(tempHome, "bin");
     await Deno.mkdir(tempBinDir, { recursive: true });
@@ -101,7 +106,7 @@ Deno.test("Integration: setup-harness-env", async () => {
     assertEquals(await fsUtil.exists(skillsFilePath), true, "skills.txt should be created");
 
     const skillsContent = await Deno.readTextFile(skillsFilePath);
-    assertStringIncludes(skillsContent, "global-skills");
+    assertStringIncludes(skillsContent, "publish-harness-skills");
 
     // Verify bin/ was NOT polluted in the real project root
     if (!realGhExistedInitially) {

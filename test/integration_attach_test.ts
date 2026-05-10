@@ -1,5 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
+import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 
 Deno.test("Integration: harness-attach dry-run", async () => {
   const tempDir = await Deno.makeTempDir();
@@ -20,10 +21,14 @@ Deno.test("Integration: harness-attach dry-run", async () => {
     );
 
     const scriptPath = new URL(
-      "../.agents/skills/attach-harness-to-project/scripts/harness-attach.ts",
+      "../" +
+        getSkillScriptPath(
+          PATHS.BUNDLES.ONBOARDING,
+          "attach-harness-to-project",
+          "harness-attach.ts",
+        ),
       import.meta.url,
-    )
-      .pathname;
+    ).pathname;
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
@@ -85,10 +90,14 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
     await remoteCmd.output();
 
     const scriptPath = new URL(
-      "../.agents/skills/attach-harness-to-project/scripts/harness-attach.ts",
+      "../" +
+        getSkillScriptPath(
+          PATHS.BUNDLES.ONBOARDING,
+          "attach-harness-to-project",
+          "harness-attach.ts",
+        ),
       import.meta.url,
-    )
-      .pathname;
+    ).pathname;
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [

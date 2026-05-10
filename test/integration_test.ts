@@ -1,6 +1,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { fsUtil } from "../.agents/core/fs.ts";
+import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 
 Deno.test("Integration: publish-skills dry-run", async () => {
   const tempDir = await Deno.makeTempDir();
@@ -8,25 +9,37 @@ Deno.test("Integration: publish-skills dry-run", async () => {
     const projectDir = join(tempDir, "project");
     const globalDir = join(tempDir, "global");
 
+    const testBundle = "test-bundle";
+    const testSkill = "test-skill";
+
     await Deno.mkdir(join(projectDir, "config"), { recursive: true });
-    await Deno.mkdir(join(projectDir, ".agents/skills/test-skill"), { recursive: true });
+    await Deno.mkdir(join(projectDir, PATHS.SKILLS_ROOT, testBundle, testSkill), {
+      recursive: true,
+    });
 
     await Deno.writeTextFile(
       join(projectDir, "config/publish-targets.md"),
-      "## test-skill\n",
+      `## ${testBundle}\n\n### ${testSkill}\n`,
     );
     await Deno.writeTextFile(
       join(projectDir, "config/global-skills-path.txt"),
       globalDir,
     );
     await Deno.writeTextFile(
-      join(projectDir, ".agents/skills/test-skill/SKILL.md"),
+      join(projectDir, PATHS.SKILLS_ROOT, testBundle, testSkill, "SKILL.md"),
       "test skill content",
     );
 
-    const scriptPath =
-      new URL("../.agents/skills/publish-harness-skills/scripts/publish-skills.ts", import.meta.url)
-        .pathname;
+    const scriptPath = new URL(
+      "../" +
+        getSkillScriptPath(
+          PATHS.BUNDLES.ONBOARDING,
+          "publish-harness-skills",
+          "publish-skills.ts",
+        ),
+      import.meta.url,
+    )
+      .pathname;
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
@@ -49,7 +62,7 @@ Deno.test("Integration: publish-skills dry-run", async () => {
     assertStringIncludes(output, "[DRY-RUN] Copy directory");
 
     // dry-run なのでファイルは作成されていないはず
-    const targetFile = join(globalDir, "test-skill/SKILL.md");
+    const targetFile = join(globalDir, "bundles", testBundle, testSkill, "SKILL.md");
     assertEquals(await fsUtil.exists(targetFile), false);
   } finally {
     await Deno.remove(tempDir, { recursive: true });
@@ -62,25 +75,37 @@ Deno.test("Integration: publish-skills actual sync", async () => {
     const projectDir = join(tempDir, "project");
     const globalDir = join(tempDir, "global");
 
+    const testBundle = "test-bundle";
+    const testSkill = "test-skill";
+
     await Deno.mkdir(join(projectDir, "config"), { recursive: true });
-    await Deno.mkdir(join(projectDir, ".agents/skills/test-skill"), { recursive: true });
+    await Deno.mkdir(join(projectDir, PATHS.SKILLS_ROOT, testBundle, testSkill), {
+      recursive: true,
+    });
 
     await Deno.writeTextFile(
       join(projectDir, "config/publish-targets.md"),
-      "## test-skill\n",
+      `## ${testBundle}\n\n### ${testSkill}\n`,
     );
     await Deno.writeTextFile(
       join(projectDir, "config/global-skills-path.txt"),
       globalDir,
     );
     await Deno.writeTextFile(
-      join(projectDir, ".agents/skills/test-skill/SKILL.md"),
+      join(projectDir, PATHS.SKILLS_ROOT, testBundle, testSkill, "SKILL.md"),
       "test skill content",
     );
 
-    const scriptPath =
-      new URL("../.agents/skills/publish-harness-skills/scripts/publish-skills.ts", import.meta.url)
-        .pathname;
+    const scriptPath = new URL(
+      "../" +
+        getSkillScriptPath(
+          PATHS.BUNDLES.ONBOARDING,
+          "publish-harness-skills",
+          "publish-skills.ts",
+        ),
+      import.meta.url,
+    )
+      .pathname;
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
@@ -99,7 +124,7 @@ Deno.test("Integration: publish-skills actual sync", async () => {
     assertEquals(code, 0, `Script failed with code ${code}\nStderr: ${errOutput}`);
 
     // ファイルが作成されていることを確認
-    const targetFile = join(globalDir, "test-skill/SKILL.md");
+    const targetFile = join(globalDir, "bundles", testBundle, testSkill, "SKILL.md");
     assertEquals(await fsUtil.exists(targetFile), true);
     assertEquals(await Deno.readTextFile(targetFile), "test skill content");
   } finally {

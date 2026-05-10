@@ -116,7 +116,7 @@ async function syncGlobalPrompt(
 ) {
   const geminiPath = pathUtil.expandHome("~/.gemini/GEMINI.md");
   const templatePath = pathUtil.resolvePath(
-    ".agents/skills/publish-harness-rules/references/GEMINI.md.template",
+    ".agents/skills/bundles/onboarding-bundle/publish-harness-rules/references/GEMINI.md.template",
   );
 
   if (osEnv && osEnv !== "wsl" && osEnv !== "linux") {

@@ -1,6 +1,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { fsUtil } from "../.agents/core/fs.ts";
+import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 
 Deno.test("Integration: publish-rules dry-run", async () => {
   const tempDir = await Deno.makeTempDir();
@@ -26,9 +27,12 @@ Deno.test("Integration: publish-rules dry-run", async () => {
     // Let's create .git to make it look like a project.
     await Deno.mkdir(join(targetProjectDir, ".git"), { recursive: true });
 
-    const scriptPath =
-      new URL("../.agents/skills/publish-harness-rules/scripts/publish-rules.ts", import.meta.url)
-        .pathname;
+    const scriptPath = new URL(
+      "../" +
+        getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
+      import.meta.url,
+    )
+      .pathname;
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
@@ -77,9 +81,12 @@ Deno.test("Integration: publish-rules actual sync", async () => {
 
     await Deno.mkdir(join(targetProjectDir, ".git"), { recursive: true });
 
-    const scriptPath =
-      new URL("../.agents/skills/publish-harness-rules/scripts/publish-rules.ts", import.meta.url)
-        .pathname;
+    const scriptPath = new URL(
+      "../" +
+        getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
+      import.meta.url,
+    )
+      .pathname;
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [

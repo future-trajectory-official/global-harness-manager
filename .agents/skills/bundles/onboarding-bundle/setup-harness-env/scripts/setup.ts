@@ -8,7 +8,7 @@ async function main() {
   const arch = Deno.build.arch; // "x86_64", "aarch64"
 
   const scriptDir = dirname(fromFileUrl(import.meta.url));
-  const harnessRoot = pathUtil.resolvePath(scriptDir, "..", "..", "..", "..");
+  const harnessRoot = pathUtil.resolvePath(scriptDir, "..", "..", "..", "..", "..", "..");
   const binDir = Deno.env.get("GLOBAL_HARNESS_BIN_DIR") || join(harnessRoot, "bin");
   const configPath = join(harnessRoot, "config", "global-skills-path.txt");
 
