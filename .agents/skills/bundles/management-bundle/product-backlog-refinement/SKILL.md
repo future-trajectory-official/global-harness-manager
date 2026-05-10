@@ -28,7 +28,7 @@ tags:
    - プロダクトバックログ（`.agents/management/product-backlog.md`
      等）を読み込み、これまでの完了済みタスクと現在の課題を把握する。
    - **運用ガイドライン**
-     ([backlog-guidelines.md](../../../../management/backlog-guidelines.md.example))
+     ([backlog-guidelines.md](../../../../management/backlog-guidelines.md))
      を読み込み、見積り基準（T シャツサイズ）やステータス管理ルールを確認する。
 
 2. **要件定義・壁打ち (Refine)**
