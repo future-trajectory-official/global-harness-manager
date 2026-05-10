@@ -12,13 +12,14 @@ export const PATHS = {
     SYSTEM: "system-bundle",
     DEVELOPMENT: "development-bundle",
   },
+  SCRIPTS: "scripts",
 } as const;
 
 /**
  * スキル内のスクリプトパスを取得するヘルパー
  */
 export function getSkillScriptPath(bundle: string, skill: string, scriptName: string): string {
-  return join(PATHS.SKILLS_ROOT, bundle, skill, "scripts", scriptName);
+  return join(PATHS.SKILLS_ROOT, bundle, skill, PATHS.SCRIPTS, scriptName);
 }
 
 /**
