@@ -21,8 +21,7 @@ tags:
 ### 1. 現状確認とガイドラインの参照
 
 - プロダクトバックログを読み込み、最優先のバックログアイテム（PBI）をピックアップします。
-- **運用ガイドライン**
-  ([backlog-guidelines.md](../../../../management/backlog-guidelines.md))
+- **運用ガイドライン** ([backlog-guidelines.md](../../../../management/backlog-guidelines.md))
   を読み込み、見積り基準やステータス管理の作法を確認します。
 
 ### 2. タスクの細分化
