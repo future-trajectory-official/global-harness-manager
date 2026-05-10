@@ -22,7 +22,7 @@ tags:
 
 ## 実行手順
 
-// turbo
+// turbo-all
 
 1. **環境判定とリファレンスのロード**
    - プロジェクト構成（`deno.json`, `requirements.txt`
