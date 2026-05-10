@@ -1,4 +1,8 @@
-import { PATHS as CORE_PATHS, getSkillDirPath as getCoreSkillDirPath, getSkillScriptPath as getCoreSkillScriptPath } from "../core/harness-core.ts";
+import {
+  getSkillDirPath as getCoreSkillDirPath,
+  getSkillScriptPath as getCoreSkillScriptPath,
+  PATHS as CORE_PATHS,
+} from "../core/harness-core.ts";
 
 /**
  * テスト共通のパス定数 (harness-core.ts から再エクスポート)

@@ -1,5 +1,11 @@
 import { join } from "@std/path";
-import { PROJECT_ROOT, executeCommand, fsUtil, logger, pathUtil } from "../../../../../../core/harness-core.ts";
+import {
+  executeCommand,
+  fsUtil,
+  logger,
+  pathUtil,
+  PROJECT_ROOT,
+} from "../../../../../../core/harness-core.ts";
 
 async function main() {
   logger.info("Starting Deno-first environment setup...");
