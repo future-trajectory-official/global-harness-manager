@@ -27,18 +27,29 @@ tags:
 
 ## 実行手順
 
-1. **サンドボックスの作成**
+// turbo-all
+
+1. **サンドボックスの作成とクリーンアップ**
+   不整合を防ぐため、新しい作業を開始する前には既存の同名サンドボックスを破棄（クリーンアップ）してから作成することを推奨します。
    ```bash
+   # 既存の破棄（任意）
+   deno run -A .agents/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts destroy --name [task-name]
+   
+   # 新規作成
    deno run -A .agents/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts create --name [task-name] --mode [directory|container]
    ```
-2. **サンドボックスへの進入**
-   - 出力されたパス、またはコンテナ名を確認し、作業を開始してください。
+
+2. **サンドボックスへの進入と動作確認**
+   出力されたパス、またはコンテナ名を確認して環境に進入し、必要なランタイム（python, deno 等）のバージョンを確認してください。
+
 3. **作業の完了と破棄**
+   作業が完了し、成果物をメインリポジトリへ反映（マージ/コミット）した後は、環境をクリーンに保つためにサンドボックスを破棄してください。
    ```bash
    deno run -A .agents/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts destroy --name [task-name]
    ```
 
-## 注意事項
+## 【重要】安全性と分離の原則
 
-- サンドボックス内での変更は、明示的にマージまたはコミットされるまでメインリポジトリには反映されません。
-- コンテナモードを使用する場合は、Docker が起動している必要があります。
+- **ホスト環境の保護**: システム設定の変更や新規ツールのインストールを伴う作業は、必ず **Container モード** を使用してください。
+- **使い捨て原則**: サンドボックスはタスクごとに使い捨て、常にクリーンな状態から作業を開始してください。
+- **データの永続化**: サンドボックス内での変更は、明示的にメインリポジトリへ反映させない限り、破棄時に消失します。
