@@ -22,7 +22,7 @@ tags:
 
 - プロダクトバックログを読み込み、最優先のバックログアイテム（PBI）をピックアップします。
 - **運用ガイドライン**
-  ([backlog-guidelines.md](../../../../management/backlog-guidelines.md.example))
+  ([backlog-guidelines.md](../../../../management/backlog-guidelines.md))
   を読み込み、見積り基準やステータス管理の作法を確認します。
 
 ### 2. タスクの細分化
@@ -34,9 +34,9 @@ tags:
 
 - 各 PBI とタスクに対し、初期ステータス `[TODO]` を付与します。
 - **ステータスの運用ルール**:
-  - 未着手: `- [ ]` (TODO)
-  - 作業中: `- [/]` (WIP) ※タスクが1つでも完了したら PBI は WIP
-  - 完了済: `- [x]` (DONE) ※全てのタスクが完了したら PBI は DONE
+  - 未着手: `- [ ]` (PBI ステータス: `[TODO]`)
+  - 作業中: `- [x]` (PBI ステータス: `[WIP]`) ※タスクが 1 つでも完了したら PBI は WIP
+  - 完了済: `- [x]` (PBI ステータス: `[DONE]`) ※全てのタスクが完了したら PBI は DONE
 
 ### 4. ユーザーへの報告と承認
 
