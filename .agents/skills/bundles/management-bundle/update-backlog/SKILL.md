@@ -11,43 +11,20 @@ tags:
 
 # update-backlog
 
-プロダクトバックログの記述を更新し、開発の進捗を正しく反映させます。PBI
-が完了した場合は、アーカイブ処理を行います。
+プロダクトバックログの記述を更新し、開発の進捗を正しく反映させます。PBI が完了した場合は、自動化スクリプトを用いてアーカイブ処理を行います。
 
-## 運用手順
+## 手順
 
 ### 1. 進捗の更新 (WIP)
-
-- タスクが完了（`[x]`）するたびに、バックログを更新します。
-- 1つでもタスクが完了したら、PBI のステータスを `[WIP]` に変更します。
+- タスクの完了（`[x]`）に伴い、バックログを更新します。
+- 1つでもタスクが着手されたら、ステータスを `[WIP]` に変更します。
 
 ### 2. 完了とアーカイブ (DONE)
+PBI の全タスクが完了した場合、自動アーカイブを実行します。
+- **実行詳細**: 実装中に得られた知見やメトリクスを整理し、[automated-archive-logic.md](references/automated-archive-logic.md) の仕様に従ってスクリプトを実行してください。
 
-PBI の全タスクが完了した場合、自動アーカイブスクリプトを使用して履歴を記録します。
+### 3. 反映のコミット
+- ドキュメント更新完了後、`docs: archive [PBI-ID]` としてコミットを提案します。
 
-1. **情報の集約**:
-   - その PBI の実装中に得られた「知見・教訓」を整理し、適切な **知見タグ**（`#Troubleshooting`, `#Decision`, `#Pivot` 等）を選定します。
-   - 実績メトリクス（かかったターン数、セッション数）を算出します。
-2. **スクリプトの実行**:
-   - 以下の JSON データを構成し、`.agents/skills/bundles/management-bundle/update-backlog/scripts/manage_backlog.ts` を実行します。
-
-```bash
-deno run -A .agents/skills/bundles/management-bundle/update-backlog/scripts/manage_backlog.ts --data '{
-  "id": "[Epic/Feature]/PBI-Name",
-  "insights": "得られた知見の本文...",
-  "tags": ["#Decision", "#Architecture"],
-  "metrics": { "turns": 15, "sessions": 1 },
-  "outcomes": ["- 成果物1", "- 成果物2"]
-}'
-```
-
-3. **反映の確認**:
-   - スクリプトが表示する diff を確認し、`product-backlog-archive.md` の「## 完了済みアイテム」セクションの直後に正しくカードが挿入されたことを検証します。
-
-### 3. コミットの提案
-
-- ドキュメントの更新が完了したら、単独のコミット（例: `docs: archive [EpicID/FeatureID]/PBI-Name`）をユーザーに提案します。
-
-## ⚠️ 注意事項
-
-- アーカイブは単なる「移動」ではなく、プロジェクトの **「知恵のインデックス化」** です。特に `#Decision` や `#Pivot` タグを活用し、将来の AI が判断の背景を再利用できるようにしてください。
+> [!IMPORTANT]
+> アーカイブは単なる「移動」ではなく、プロジェクトの **「知恵のインデックス化」** です。特に `#Decision` や `#Pivot` タグを活用し、将来の判断材料を蓄積してください。詳細な運用ルールは [backlog-guidelines.md](../../../../management/backlog-guidelines.md) を参照してください。
