@@ -1,3 +1,4 @@
 *.md
+*.jsonl
 !*.example
 !backlog-guidelines.md
