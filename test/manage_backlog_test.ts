@@ -1,9 +1,13 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { extractPbiBlock, transformToArchiveCard, updateContents } from "../.agents/skills/bundles/management-bundle/update-backlog/scripts/manage_backlog.ts";
+import {
+  extractPbiBlock,
+  transformToArchiveCard,
+  updateContents,
+} from "../.agents/skills/bundles/management-bundle/update-backlog/scripts/manage_backlog.ts";
 
 /**
  * manage_backlog.ts のテスト
- * 
+ *
  * 【検証の意図】
  * 1. 抽出ロジック: 複雑なマークダウン構造から、特定の PBI ブロック（### [DONE] ...）を
  *    過不足なく切り出せるかを確認する。
@@ -51,7 +55,7 @@ const mockArchive = `
 Deno.test("PBI 抽出ロジックの検証", () => {
   const pbiId = "[Epic/Feature]/Target-PBI";
   const { block } = extractPbiBlock(mockBacklog, pbiId);
-  
+
   assertStringIncludes(block, "AC1", "ACが含まれていること");
   assertStringIncludes(block, "Task1", "タスクリストが含まれていること");
 });
@@ -67,7 +71,7 @@ Deno.test("アーカイブ形式への変換ロジックの検証", () => {
 
   const pbiId = "[Epic/Feature]/Target-PBI";
   const { block } = extractPbiBlock(mockBacklog, pbiId);
-  
+
   const resultCard = transformToArchiveCard(inputJson, block);
 
   assertStringIncludes(resultCard, "#Decision #Architecture");
@@ -79,11 +83,11 @@ Deno.test("アーカイブファイルへの挿入位置の検証", () => {
   const newCard = "### [DONE] [New/PBI]";
   // pbiRegex はモックで適当に
   const dummyRegex = /dummy/;
-  
+
   const { newArchive } = updateContents(mockBacklog, mockArchive, dummyRegex, newCard);
 
   assertStringIncludes(newArchive, "## 完了済みアイテム");
   const lines = newArchive.split("\n");
-  const markerIndex = lines.findIndex(l => l.includes("## 完了済みアイテム"));
+  const markerIndex = lines.findIndex((l) => l.includes("## 完了済みアイテム"));
   assertEquals(lines[markerIndex + 1], newCard, "H2 の直後に新しいカードが挿入されること");
 });

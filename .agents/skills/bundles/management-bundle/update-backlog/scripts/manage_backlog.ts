@@ -2,7 +2,7 @@ import { parseArgs } from "@std/cli";
 
 /**
  * manage_backlog.ts
- * 
+ *
  * バックログアイテムのアーカイブ処理を自動化するスクリプト。
  * AI 間の JSON インターフェースを前提とし、正確な抽出と構造的なアーカイブを実現する。
  */
@@ -30,13 +30,13 @@ export function extractPbiBlock(content: string, pbiId: string): { block: string
 
 export function transformToArchiveCard(data: BacklogData, pbiBlock: string): string {
   const lines = pbiBlock.split("\n");
-  
+
   // 概要の抽出
-  const summaryLine = lines.find(l => l.includes("**概要**:"));
+  const summaryLine = lines.find((l) => l.includes("**概要**:"));
   const summary = data.summary || (summaryLine ? summaryLine.split("**概要**:")[1].trim() : "N/A");
-  
+
   // AC の抽出
-  const acHeaderIndex = lines.findIndex(l => l.includes("**受け入れ基準 (AC)**:"));
+  const acHeaderIndex = lines.findIndex((l) => l.includes("**受け入れ基準 (AC)**:"));
   let acStatus = "N/A";
   if (acHeaderIndex !== -1) {
     const acLines = [];
@@ -59,26 +59,30 @@ export function transformToArchiveCard(data: BacklogData, pbiBlock: string): str
 - **見積り → 実績**: TODO → ${metricsStr}
 - **当初の概要**: ${summary}
 - **実際の成果物**:
-${data.outcomes.map(o => `  ${o}`).join("\n")}
+${data.outcomes.map((o) => `  ${o}`).join("\n")}
 - **判明した知見・教訓**:
   ${tagsStr}
   ${data.insights}
 - **受け入れ基準の達成状況**:
-  ${acStatus.split("\n").map(line => line.trim()).join("\n  ")}
+  ${acStatus.split("\n").map((line) => line.trim()).join("\n  ")}
 `;
 }
 
-export function updateContents(backlogContent: string, archiveContent: string, pbiRegex: RegExp, archiveCard: string): { newBacklog: string; newArchive: string } {
+export function updateContents(
+  backlogContent: string,
+  archiveContent: string,
+  pbiRegex: RegExp,
+  archiveCard: string,
+): { newBacklog: string; newArchive: string } {
   const newBacklog = backlogContent.replace(pbiRegex, "").replace(/\n{3,}/g, "\n\n").trim() + "\n";
-  
+
   const anchor = "## 完了済みアイテム";
   const anchorIndex = archiveContent.indexOf(anchor);
   if (anchorIndex === -1) throw new Error("Anchor '## 完了済みアイテム' not found.");
 
   const insertPosition = anchorIndex + anchor.length;
-  const newArchive = 
-    archiveContent.slice(0, insertPosition) + 
-    "\n" + archiveCard + 
+  const newArchive = archiveContent.slice(0, insertPosition) +
+    "\n" + archiveCard +
     archiveContent.slice(insertPosition);
 
   return { newBacklog, newArchive };
@@ -94,14 +98,19 @@ async function main() {
   }
 
   const data: BacklogData = JSON.parse(dataRaw);
-  
+
   try {
     const backlogContent = await Deno.readTextFile(BACKLOG_PATH);
     const archiveContent = await Deno.readTextFile(ARCHIVE_PATH);
 
     const { block, regex } = extractPbiBlock(backlogContent, data.id);
     const archiveCard = transformToArchiveCard(data, block);
-    const { newBacklog, newArchive } = updateContents(backlogContent, archiveContent, regex, archiveCard);
+    const { newBacklog, newArchive } = updateContents(
+      backlogContent,
+      archiveContent,
+      regex,
+      archiveCard,
+    );
 
     console.log("--- PREVIEW: BACKLOG CHANGES ---");
     console.log(`PBI [${data.id}] will be removed.`);

@@ -1,12 +1,17 @@
 # Automated Archive Logic
 
-本ドキュメントは、`update-backlog` スキルにおけるアーカイブ自動化の技術詳細を定義します。エージェントは、PBI のアーカイブを実行する際に本情報を参照してください。
+本ドキュメントは、`update-backlog`
+スキルにおけるアーカイブ自動化の技術詳細を定義します。エージェントは、PBI
+のアーカイブを実行する際に本情報を参照してください。
 
 ## 1. スクリプト仕様
+
 アーカイブ処理は、以下の Deno スクリプトによって決定論的に実行されます。
+
 - **パス**: `scripts/manage_backlog.ts`
 
 ### 入力データ構造 (JSON)
+
 AI は以下の構造を持つ JSON を生成し、引数 `--data` として渡します。
 
 ```json
@@ -20,6 +25,7 @@ AI は以下の構造を持つ JSON を生成し、引数 `--data` として渡�
 ```
 
 ## 2. 実行手順
+
 エージェントは以下のコマンドを構成し、実行します。
 
 ```bash
@@ -27,6 +33,7 @@ deno run -A .agents/skills/bundles/management-bundle/update-backlog/scripts/mana
 ```
 
 ## 3. 知見タグの選定基準
+
 アーカイブガイドライン（`backlog-guidelines.md`）に基づき、以下の優先順位でタグを付与してください。
 
 1. **`#Decision`**: 設計や優先順位の変更があった場合。
