@@ -10,9 +10,10 @@ Deno.test("Integration: GEMINI.md sync - basic generation (Linux/WSL)", async ()
     const mockHome = join(tempDir, "mock_home");
     await Deno.mkdir(mockHome, { recursive: true });
 
-    const scriptPath = join(
-      managerDir,
-      getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "publish-harness-rules",
+      "publish-rules.ts",
     );
 
     const command = new Deno.Command(Deno.execPath(), {
@@ -61,9 +62,10 @@ Deno.test("Integration: GEMINI.md sync - not implemented (Windows)", async () =>
     const mockHome = join(tempDir, "mock_home");
     await Deno.mkdir(mockHome, { recursive: true });
 
-    const scriptPath = join(
-      managerDir,
-      getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "publish-harness-rules",
+      "publish-rules.ts",
     );
 
     const command = new Deno.Command(Deno.execPath(), {
@@ -103,9 +105,10 @@ Deno.test("Integration: GEMINI.md sync - append mode", async () => {
     await Deno.mkdir(join(mockHome, ".gemini"), { recursive: true });
     await Deno.writeTextFile(geminiPath, "# Existing Context\n\n## Custom Rule\nRule 1");
 
-    const scriptPath = join(
-      managerDir,
-      getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "publish-harness-rules",
+      "publish-rules.ts",
     );
 
     const command = new Deno.Command(Deno.execPath(), {
@@ -142,9 +145,10 @@ Deno.test("Integration: GEMINI.md sync - basic generation (Standard Linux)", asy
     const mockHome = join(tempDir, "mock_home");
     await Deno.mkdir(mockHome, { recursive: true });
 
-    const scriptPath = join(
-      managerDir,
-      getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "publish-harness-rules",
+      "publish-rules.ts",
     );
 
     const command = new Deno.Command(Deno.execPath(), {

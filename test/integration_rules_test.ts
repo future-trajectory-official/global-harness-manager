@@ -27,12 +27,11 @@ Deno.test("Integration: publish-rules dry-run", async () => {
     // Let's create .git to make it look like a project.
     await Deno.mkdir(join(targetProjectDir, ".git"), { recursive: true });
 
-    const scriptPath = new URL(
-      "../" +
-        getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
-      import.meta.url,
-    )
-      .pathname;
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "publish-harness-rules",
+      "publish-rules.ts",
+    );
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
@@ -81,12 +80,11 @@ Deno.test("Integration: publish-rules actual sync", async () => {
 
     await Deno.mkdir(join(targetProjectDir, ".git"), { recursive: true });
 
-    const scriptPath = new URL(
-      "../" +
-        getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
-      import.meta.url,
-    )
-      .pathname;
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "publish-harness-rules",
+      "publish-rules.ts",
+    );
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [

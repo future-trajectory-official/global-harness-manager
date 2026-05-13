@@ -20,15 +20,11 @@ Deno.test("Integration: harness-attach dry-run", async () => {
 `,
     );
 
-    const scriptPath = new URL(
-      "../" +
-        getSkillScriptPath(
-          PATHS.BUNDLES.ONBOARDING,
-          "attach-harness-to-project",
-          "harness-attach.ts",
-        ),
-      import.meta.url,
-    ).pathname;
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "attach-harness-to-project",
+      "harness-attach.ts",
+    );
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
@@ -89,15 +85,11 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
     });
     await remoteCmd.output();
 
-    const scriptPath = new URL(
-      "../" +
-        getSkillScriptPath(
-          PATHS.BUNDLES.ONBOARDING,
-          "attach-harness-to-project",
-          "harness-attach.ts",
-        ),
-      import.meta.url,
-    ).pathname;
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "attach-harness-to-project",
+      "harness-attach.ts",
+    );
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
