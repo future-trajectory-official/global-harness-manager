@@ -38,7 +38,8 @@ export async function showSummary(filePath: string = DEFAULT_METRICS_FILE): Prom
       const date = `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${
         d.getDate().toString().padStart(2, "0")
       }`;
-      summary += `| ${date} | ${entry.intent} | ${entry.constraint} | ${entry.context} | ${entry.stability} |\n`;
+      summary +=
+        `| ${date} | ${entry.intent} | ${entry.constraint} | ${entry.context} | ${entry.stability} |\n`;
     } catch (_e) {
       // skip invalid lines
     }

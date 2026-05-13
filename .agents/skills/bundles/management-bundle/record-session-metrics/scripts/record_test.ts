@@ -1,6 +1,6 @@
-import { assertEquals, assertStringIncludes } from "https://deno.land/std/testing/asserts.ts";
+import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { appendMetrics, showSummary } from "./record.ts";
-import { join } from "https://deno.land/std/path/mod.ts";
+import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
 Deno.test("record-session-metrics refactor tests", async (t) => {
   // Create a unique temporary directory for this test run
@@ -24,11 +24,11 @@ Deno.test("record-session-metrics refactor tests", async (t) => {
     // Already has one entry from previous step
     const summary = await showSummary(testFile);
     assertStringIncludes(summary, "| Date | Intent |");
-    
+
     const today = new Date();
-    const expectedDate = `${today.getFullYear()}/${(today.getMonth() + 1).toString().padStart(2, "0")}/${
-      today.getDate().toString().padStart(2, "0")
-    }`;
+    const expectedDate = `${today.getFullYear()}/${
+      (today.getMonth() + 1).toString().padStart(2, "0")
+    }/${today.getDate().toString().padStart(2, "0")}`;
     assertStringIncludes(summary, expectedDate);
     assertStringIncludes(summary, "| 5 | 5 | 5 | 5 |");
   });
