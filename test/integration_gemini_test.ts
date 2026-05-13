@@ -6,13 +6,13 @@ import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 Deno.test("Integration: GEMINI.md sync - basic generation (Linux/WSL)", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
-    const managerDir = Deno.cwd(); // Use current repo as manager dir
     const mockHome = join(tempDir, "mock_home");
     await Deno.mkdir(mockHome, { recursive: true });
 
-    const scriptPath = join(
-      managerDir,
-      getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "publish-harness-rules",
+      "publish-rules.ts",
     );
 
     const command = new Deno.Command(Deno.execPath(), {
@@ -57,13 +57,13 @@ Deno.test("Integration: GEMINI.md sync - basic generation (Linux/WSL)", async ()
 Deno.test("Integration: GEMINI.md sync - not implemented (Windows)", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
-    const managerDir = Deno.cwd();
     const mockHome = join(tempDir, "mock_home");
     await Deno.mkdir(mockHome, { recursive: true });
 
-    const scriptPath = join(
-      managerDir,
-      getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "publish-harness-rules",
+      "publish-rules.ts",
     );
 
     const command = new Deno.Command(Deno.execPath(), {
@@ -96,16 +96,16 @@ Deno.test("Integration: GEMINI.md sync - not implemented (Windows)", async () =>
 Deno.test("Integration: GEMINI.md sync - append mode", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
-    const managerDir = Deno.cwd();
     const mockHome = join(tempDir, "mock_home");
     const geminiPath = join(mockHome, ".gemini/GEMINI.md");
 
     await Deno.mkdir(join(mockHome, ".gemini"), { recursive: true });
     await Deno.writeTextFile(geminiPath, "# Existing Context\n\n## Custom Rule\nRule 1");
 
-    const scriptPath = join(
-      managerDir,
-      getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "publish-harness-rules",
+      "publish-rules.ts",
     );
 
     const command = new Deno.Command(Deno.execPath(), {
@@ -138,13 +138,13 @@ Deno.test("Integration: GEMINI.md sync - append mode", async () => {
 Deno.test("Integration: GEMINI.md sync - basic generation (Standard Linux)", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
-    const managerDir = Deno.cwd();
     const mockHome = join(tempDir, "mock_home");
     await Deno.mkdir(mockHome, { recursive: true });
 
-    const scriptPath = join(
-      managerDir,
-      getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "publish-harness-rules", "publish-rules.ts"),
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "publish-harness-rules",
+      "publish-rules.ts",
     );
 
     const command = new Deno.Command(Deno.execPath(), {

@@ -24,20 +24,26 @@ export const PATHS = {
 } as const;
 
 /**
+ * PATHS.BUNDLES の値（パス文字列）を表す型エイリアス
+ * 例: "onboarding-bundle" | "git-bundle" | "meta-bundle" | ...
+ */
+export type BundlePathValue = typeof PATHS.BUNDLES[keyof typeof PATHS.BUNDLES];
+
+/**
  * スキルのディレクトリパスを取得するヘルパー
  */
 export function getSkillDirPath(
-  bundle: keyof typeof PATHS.BUNDLES,
+  bundle: BundlePathValue,
   skillName: string,
 ): string {
-  return join(PROJECT_ROOT, PATHS.SKILLS_ROOT, PATHS.BUNDLES[bundle], skillName);
+  return join(PROJECT_ROOT, PATHS.SKILLS_ROOT, bundle, skillName);
 }
 
 /**
  * スキル内のスクリプトの絶対パスを取得するヘルパー
  */
 export function getSkillScriptPath(
-  bundle: keyof typeof PATHS.BUNDLES,
+  bundle: BundlePathValue,
   skillName: string,
   scriptName: string,
 ): string {
@@ -48,7 +54,7 @@ export function getSkillScriptPath(
  * スキル内のアセットパスを取得するヘルパー
  */
 export function getSkillAssetPath(
-  bundle: keyof typeof PATHS.BUNDLES,
+  bundle: BundlePathValue,
   skillName: string,
   assetName?: string,
 ): string {

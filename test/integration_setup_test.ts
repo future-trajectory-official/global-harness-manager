@@ -13,11 +13,11 @@ Deno.test("Integration: setup-harness-env", async () => {
     const mockBashrc = join(tempHome, ".bashrc");
     await Deno.writeTextFile(mockBashrc, "# initial bashrc\n");
 
-    const scriptPath = new URL(
-      "../" + getSkillScriptPath(PATHS.BUNDLES.ONBOARDING, "setup-harness-env", "setup.ts"),
-      import.meta.url,
-    )
-      .pathname;
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "setup-harness-env",
+      "setup.ts",
+    );
 
     const harnessRoot = fromFileUrl(new URL("..", import.meta.url));
 

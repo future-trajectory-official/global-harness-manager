@@ -30,16 +30,11 @@ Deno.test("Integration: publish-skills dry-run", async () => {
       "test skill content",
     );
 
-    const scriptPath = new URL(
-      "../" +
-        getSkillScriptPath(
-          PATHS.BUNDLES.ONBOARDING,
-          "publish-harness-skills",
-          "publish-skills.ts",
-        ),
-      import.meta.url,
-    )
-      .pathname;
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "publish-harness-skills",
+      "publish-skills.ts",
+    );
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [
@@ -96,16 +91,11 @@ Deno.test("Integration: publish-skills actual sync", async () => {
       "test skill content",
     );
 
-    const scriptPath = new URL(
-      "../" +
-        getSkillScriptPath(
-          PATHS.BUNDLES.ONBOARDING,
-          "publish-harness-skills",
-          "publish-skills.ts",
-        ),
-      import.meta.url,
-    )
-      .pathname;
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "publish-harness-skills",
+      "publish-skills.ts",
+    );
 
     const command = new Deno.Command(Deno.execPath(), {
       args: [

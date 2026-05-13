@@ -5,6 +5,7 @@ import {
   fsUtil,
   getSkillAssetPath,
   logger,
+  PATHS,
 } from "../../../../../../core/harness-core.ts";
 
 const DEFAULT_SANDBOX_BASE = "/tmp/harness-sandboxes";
@@ -46,7 +47,7 @@ export async function createSandbox(
     logger.info(`Detected language: ${detectedLang}`);
 
     const dockerfilePath = getSkillAssetPath(
-      "DEVELOPMENT",
+      PATHS.BUNDLES.DEVELOPMENT,
       "develop-environment-setup",
       `dockerfiles/${detectedLang}.Dockerfile`,
     );
@@ -58,7 +59,7 @@ export async function createSandbox(
     const finalDockerfile = (await fsUtil.exists(dockerfilePath))
       ? dockerfilePath
       : getSkillAssetPath(
-        "DEVELOPMENT",
+        PATHS.BUNDLES.DEVELOPMENT,
         "develop-environment-setup",
         "dockerfiles/deno.Dockerfile",
       );

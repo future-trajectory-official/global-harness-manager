@@ -35,7 +35,7 @@ PBI の全タスクが完了した場合、**運用ガイドライン** に従�
 ### 3. コミットの提案
 
 - ドキュメントの更新が完了したら、単独のコミット（例:
-  `docs: update progress for [PBI名]`）をユーザーに提案します。
+  `docs: update progress for [EpicID/FeatureID]/PBI-Name`）をユーザーに提案します。
 
 ## ⚠️ 注意事項
 
