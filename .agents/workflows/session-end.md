@@ -13,7 +13,7 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 
 ### 1-1. 実績の要約
 
-- **ロール**: `@[scrum-master]`
+- **ロール**: 進行役（例：`@[scrum-master]`）
 - **実行スキル**: `@[/summarize-session-outcomes]`
 - **成果物**: 「Session Outcome Summary」報告
 
@@ -23,7 +23,7 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 
 ### 2-1. 共進化 KPT
 
-- **ロール**: `@[scrum-master]`
+- **ロール**: 進行役（例：`@[scrum-master]`）
 - **実行スキル**: `@[/kpt-session-reflection]`
 - **成果物**: 「Session Reflection (KPT)」報告
 - **重要**: AI から人間への建設的なフィードバックを真摯に受け止め、次回の協働品質向上に繋げます。
@@ -34,7 +34,7 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 
 ### 3-1. 協働メトリクスの記録
 
-- **ロール**: `@[scrum-master]`
+- **ロール**: 進行役（例：`@[scrum-master]`）
 - **実行スキル**: `@[/record-session-metrics]`
 - **成果物**: `metrics.jsonl` へのデータ蓄積と傾向レポートの出力
 
@@ -44,7 +44,7 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 
 ### 4-1. バックログ更新
 
-- **ロール**: `@[scrum-master]`
+- **ロール**: 進行役（例：`@[scrum-master]`）
 - **実行スキル**: `@[/update-backlog]`
 - **内容**: セッションの成果に基づき、PBI のステータスを更新（Done
   への移動や、残タスクの整理）します。
