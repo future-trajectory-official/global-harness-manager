@@ -1,7 +1,7 @@
 import { fsUtil, logger, pathUtil } from "../../../../../core/harness-core.ts";
 
 export const DEFAULT_FILES = [
-  "config/identities.txt",
+  "config/identities.md",
   "config/global-skills-path.txt",
   "config/publish-rules-targets.md",
   "config/publish-targets.md",
