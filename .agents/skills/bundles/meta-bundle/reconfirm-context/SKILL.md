@@ -1,18 +1,21 @@
 ---
 name: reconfirm-context
-description: グローバルコンテキストの再確認。エージェントが自身の役割やスキルをYAMLメタデータのみから抽出し、自己認識を同期する。
+description: グローバルコンテキストの再確認。エージェントが自身の役割やスキルをYAMLメタデータのみから抽出し、自己認識を同期する。サーバーエラーやツールエラーからの復帰時にも必須。
 tags:
   trigger:
     - context-lost
     - role-confusion
     - session-recovery
+    - server-error
+    - tool-error
   category: meta
   constraints: none
 ---
 
 # reconfirm-context
 
-チャットの履歴が長くなった際や、自身の役割（Rules）や利用可能なツール（Skills）を正しく認識できなくなっている場合に、「現在の自己像」をリフレッシュします。
+チャットの履歴が長くなった際や、ツールのエラー・サーバーエラーから復帰した直後、自身の役割（Rules）や利用可能なツール（Skills）を正しく認識できなくなっている場合に、「現在の自己像」をリフレッシュし、[RECOVERY
+LOG] による文脈同期の基盤を作ります。
 
 ## 手順
 
