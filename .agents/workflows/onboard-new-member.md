@@ -50,8 +50,9 @@ description: "[オンボーディング] 新規参加メンバーが同一の開
      を実行してください。
 
 <!-- STOP -->
-   - スキル `.agents/skills/bundles/onboarding-bundle/publish-harness-skills/SKILL.md`
-     を実行してください。
+
+- スキル `.agents/skills/bundles/onboarding-bundle/publish-harness-skills/SKILL.md`
+  を実行してください。
 
 7. **疎通確認 (Validation)**: 構築した認証経路で正常に通信可能かテストし、結果を報告してください。
    - `ssh -o StrictHostKeyChecking=accept-new -T git@github.com` の正常動作を確認してください。
