@@ -17,6 +17,8 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 - **実行スキル**: `@[/summarize-session-outcomes]`
 - **成果物**: 「Session Outcome Summary」報告
 
+<!-- STOP -->
+
 ---
 
 ## 2. 内省（リフレクション）フェーズ
@@ -28,6 +30,8 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 - **成果物**: 「Session Reflection (KPT)」報告
 - **重要**: AI から人間への建設的なフィードバックを真摯に受け止め、次回の協働品質向上に繋げます。
 
+<!-- STOP -->
+
 ---
 
 ## 3. 計測と記録フェーズ
@@ -37,6 +41,8 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 - **ロール**: 進行役（例：`@[scrum-master]`）
 - **実行スキル**: `@[/record-session-metrics]`
 - **成果物**: `metrics.jsonl` へのデータ蓄積と傾向レポートの出力
+
+<!-- STOP -->
 
 ---
 
@@ -48,3 +54,5 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 - **実行スキル**: `@[/update-backlog]`
 - **内容**: セッションの成果に基づき、PBI のステータスを更新（Done
   への移動や、残タスクの整理）します。
+
+<!-- STOP -->

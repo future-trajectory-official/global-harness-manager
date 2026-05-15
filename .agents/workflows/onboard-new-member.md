@@ -17,30 +17,45 @@ description: "[オンボーディング] 新規参加メンバーが同一の開
      を実行してください。
    - スクリプトが失敗した場合はユーザーに警告を伝えて待機してください。
 
+<!-- STOP -->
+
 2. **実行計画の提示と承認**: どのような作業を行うかをユーザーに説明する
    - `README.md` の 「##
      オンボーディング・ワークフローについて」を参照し、ユーザーへ提示してください。
    - ユーザーから実行の承認を得てから、次のステップに進んでください。
 
+<!-- STOP -->
+
 3. **ホスト環境構築**: 必要なCLIツール等をホストシステムに導入します。
    - スキル `.agents/skills/bundles/onboarding-bundle/setup-harness-env/SKILL.md`
      を実行してください。
+
+<!-- STOP -->
 
 4. **Gitアイデンティティ設定**: SSH鍵の生成と登録を行います。
    - スキル `.agents/skills/bundles/onboarding-bundle/manage-git-identity/SKILL.md`
      を実行してください。
    - 本フローでは**例外として既存のSSH鍵を退避し、必ず新規で生成・登録**させてください。
 
+<!-- STOP -->
+
 5. **プロジェクト紐付設定**: リポジトリの通信経路を専用のエイリアスにバインドします。
    - スキル `.agents/skills/bundles/onboarding-bundle/attach-harness-to-project/SKILL.md`
      を実行してください。
 
+<!-- STOP -->
+
 6. **ルール・スキルの同期**: グローバル定義を各プロジェクトへ配信します。
    - スキル `.agents/skills/bundles/onboarding-bundle/publish-harness-rules/SKILL.md`
      を実行してください。
-   - スキル `.agents/skills/bundles/onboarding-bundle/publish-harness-skills/SKILL.md`
-     を実行してください。
+
+<!-- STOP -->
+
+- スキル `.agents/skills/bundles/onboarding-bundle/publish-harness-skills/SKILL.md`
+  を実行してください。
 
 7. **疎通確認 (Validation)**: 構築した認証経路で正常に通信可能かテストし、結果を報告してください。
    - `ssh -o StrictHostKeyChecking=accept-new -T git@github.com` の正常動作を確認してください。
    - `gh auth status` コマンドを実行し、正常に認証されているか確認してください。
+
+<!-- STOP -->
