@@ -3,6 +3,7 @@ import { PROJECT_ROOT } from "../../../../../core/constants.ts";
 import { fsUtil } from "../../../../../core/fs.ts";
 import { executeCommand } from "../../../../../core/command.ts";
 import { logger } from "../../../../../core/logger.ts";
+import { MESSAGES } from "../../../../../core/messages.ts";
 
 /**
  * Git Hooks をセットアップします
@@ -14,7 +15,7 @@ export async function setupGitHooks(options: { gitDir?: string } = {}) {
 
   // .git ディレクトリの存在確認
   if (!(await fsUtil.exists(gitDir))) {
-    throw new Error(`Git directory not found at ${gitDir}`);
+    throw new Error(MESSAGES.SETUP.GIT_DIR_NOT_FOUND(gitDir));
   }
 
   if (!(await fsUtil.exists(hooksDir))) {
@@ -62,10 +63,10 @@ exit 0
       });
     }
 
-    logger.success(`pre-push hook configured at ${prePushPath}`);
+    logger.success(MESSAGES.SETUP.HOOK_CONFIGURED(prePushPath));
   } catch (error) {
     throw new Error(
-      `Failed to configure git hook: ${error instanceof Error ? error.message : String(error)}`,
+      MESSAGES.SETUP.HOOK_FAILED(error instanceof Error ? error.message : String(error)),
     );
   }
 }
