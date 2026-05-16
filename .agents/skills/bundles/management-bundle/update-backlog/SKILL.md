@@ -27,7 +27,7 @@ PBI の全タスクが完了した場合、自動アーカイブを実行しま�
 
 - **実行詳細**:
   実装中に得られた知見やメトリクスを整理し、[automated-archive-logic.md](references/automated-archive-logic.md)
-  の仕様に従ってスクリプトを実行してください。
+  の仕様に従ってスクリプト（`scripts/manage_backlog.ts`）を実行してください。
 
 ### 3. 反映のコミット
 
