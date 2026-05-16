@@ -2,9 +2,18 @@
 
 各プロジェクトで使用する Git アイデンティティと接続設定を定義します。
 このファイルに基づいて、SSH 鍵の生成、クローン、および Git 設定の同期が行われます。
+セクション（`##`）ごとに 1 つのプロジェクトを定義します。
 
-## [Project Name]
+## プロジェクト名（例: マイリポジトリ）
+
 - **Repository**: `git@github.com:[Organization]/[Repository].git`
 - **Local Path**: `~/projects/[Repository]`
 - **Account Name**: `your-account-id`
 - **User Email**: `your-name@users.noreply.github.com`
+
+## 別プロジェクト（例: サブアカウント用）
+
+- **Repository**: `git@github.com:[OtherOrg]/[OtherRepo].git`
+- **Local Path**: `~/projects/[OtherRepo]`
+- **Account Name**: `other-account-id`
+- **User Email**: `other-name@users.noreply.github.com`

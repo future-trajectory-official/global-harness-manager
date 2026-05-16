@@ -1,67 +1,91 @@
-const DEFAULT_METRICS_FILE = ".agents/management/metrics.jsonl";
+import { parseArgs } from "@std/cli";
+import { getManagementPath } from "../../../../../core/constants.ts";
+import { MESSAGES } from "../../../../../core/messages.ts";
 
-interface Metrics {
+export interface SessionMetrics {
   intent: string;
   constraint: string;
   context: string;
   stability: string;
+  timestamp?: string;
 }
 
-export async function appendMetrics(data: Metrics, filePath: string = DEFAULT_METRICS_FILE) {
-  const line = JSON.stringify({
-    timestamp: new Date().toISOString(),
+/**
+ * メトリクスのバリデーション
+ */
+export function validateMetrics(data: SessionMetrics): boolean {
+  const fields = ["intent", "constraint", "context", "stability"] as const;
+  for (const field of fields) {
+    if (!data[field]) {
+      throw new Error(MESSAGES.METRICS.MISSING_FIELD(field));
+    }
+    const val = parseInt(data[field]);
+    if (isNaN(val) || val < 1 || val > 5) {
+      throw new Error(MESSAGES.METRICS.INVALID_RANGE(field, data[field]));
+    }
+  }
+  return true;
+}
+
+/**
+ * メトリクスを JSONL ファイルに追記
+ */
+export async function appendMetrics(data: SessionMetrics, filePath: string) {
+  validateMetrics(data);
+  const entry = {
     ...data,
-  }) + "\n";
+    timestamp: new Date().toISOString(),
+  };
+  const line = JSON.stringify(entry) + "\n";
   await Deno.writeTextFile(filePath, line, { append: true });
 }
 
-export async function showSummary(filePath: string = DEFAULT_METRICS_FILE): Promise<string> {
-  let content = "";
+/**
+ * 統計のサマリーをテーブル形式で取得
+ */
+export async function showSummary(filePath: string): Promise<string> {
   try {
-    content = await Deno.readTextFile(filePath);
-  } catch (e) {
-    if (e instanceof Deno.errors.NotFound) {
-      return "\n### [Session Metrics History]\nNo metrics recorded yet.\n";
-    }
-    throw e;
-  }
+    const content = await Deno.readTextFile(filePath);
+    const lines = content.trim().split("\n");
+    let output = "| Date | Intent | Constraint | Context | Stability |\n";
+    output += "| :--- | :--- | :--- | :--- | :--- |\n";
 
-  const lines = content.trim().split("\n").slice(-5);
-  let summary = "\n### [Session Metrics History (Last 5)]\n";
-  summary += "| Date | Intent | Constraint | Context | Stability |\n";
-  summary += "| --- | --- | --- | --- | --- |\n";
-
-  for (const line of lines) {
-    try {
-      const entry = JSON.parse(line);
-      const d = new Date(entry.timestamp);
-      const date = `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${
-        d.getDate().toString().padStart(2, "0")
-      }`;
-      summary +=
-        `| ${date} | ${entry.intent} | ${entry.constraint} | ${entry.context} | ${entry.stability} |\n`;
-    } catch (_e) {
-      // skip invalid lines
+    for (const line of lines) {
+      if (!line) continue;
+      const data: SessionMetrics = JSON.parse(line);
+      const date = data.timestamp
+        ? new Date(data.timestamp).toLocaleDateString("ja-JP")
+        : "Unknown";
+      output +=
+        `| ${date} | ${data.intent} | ${data.constraint} | ${data.context} | ${data.stability} |\n`;
     }
+    return output;
+  } catch (_e) {
+    return MESSAGES.METRICS.NO_DATA;
   }
-  return summary;
 }
 
 if (import.meta.main) {
-  const args = Deno.args;
-  if (args.length < 4) {
-    console.error("Usage: deno run -A record.ts <intent> <constraint> <context> <stability>");
-    Deno.exit(1);
-  }
-
-  const data = {
-    intent: args[0],
-    constraint: args[1],
-    context: args[2],
-    stability: args[3],
+  const args = parseArgs(Deno.args);
+  const data: SessionMetrics = {
+    intent: String(args.intent || ""),
+    constraint: String(args.constraint || ""),
+    context: String(args.context || ""),
+    stability: String(args.stability || ""),
   };
 
-  await appendMetrics(data);
-  const summary = await showSummary();
-  console.log(summary);
+  try {
+    const metricsPath = getManagementPath("metrics.jsonl");
+    if (args.summary) {
+      console.log(await showSummary(metricsPath));
+    } else {
+      await appendMetrics(data, metricsPath);
+      console.log(MESSAGES.METRICS.SUCCESS);
+    }
+  } catch (error) {
+    console.error(
+      `${MESSAGES.METRICS.ERROR_PREFIX}${error instanceof Error ? error.message : String(error)}`,
+    );
+    Deno.exit(1);
+  }
 }

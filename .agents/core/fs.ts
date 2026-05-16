@@ -108,9 +108,9 @@ export const fsUtil = {
   /**
    * ファイルまたはディレクトリを移動します（クロスデバイス対応）
    */
-  move: async (src: string, dest: string): Promise<void> => {
+  move: async (src: string, dest: string, _deps = { rename: Deno.rename }): Promise<void> => {
     try {
-      await Deno.rename(src, dest);
+      await _deps.rename(src, dest);
     } catch (err) {
       if (
         err instanceof Error &&
@@ -129,10 +129,30 @@ export const fsUtil = {
     dest: string,
     options?: { stripComponents?: number },
   ): Promise<void> => {
-    if (src.endsWith(".zip")) {
-      await extractZip(src, dest);
-    } else {
-      await extractTarGz(src, dest, options);
+    // 原子性を確保するため、一度一時ディレクトリに展開する
+    const tempDest = await Deno.makeTempDir({ prefix: "harness-extract-" });
+    try {
+      if (src.endsWith(".zip")) {
+        await extractZip(src, tempDest);
+      } else {
+        await extractTarGz(src, tempDest, options);
+      }
+
+      // 展開に成功したら、一時ディレクトリの内容をターゲットに移動する
+      await Deno.mkdir(dest, { recursive: true });
+      for await (const entry of Deno.readDir(tempDest)) {
+        await fsUtil.move(join(tempDest, entry.name), join(dest, entry.name));
+      }
+    } catch (error) {
+      logger.error(`Extraction failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    } finally {
+      // 成功・失敗に関わらず一時ディレクトリを削除
+      try {
+        await Deno.remove(tempDest, { recursive: true });
+      } catch {
+        // Ignore
+      }
     }
   },
   /**
@@ -156,6 +176,18 @@ export const fsUtil = {
         // Ignore
       }
     }
+  },
+  /**
+   * ディレクトリを作成します
+   */
+  mkdir: async (path: string, options?: Deno.MkdirOptions): Promise<void> => {
+    await Deno.mkdir(path, options);
+  },
+  /**
+   * ファイルまたはディレクトリを削除します
+   */
+  remove: async (path: string, options?: Deno.RemoveOptions): Promise<void> => {
+    await Deno.remove(path, options);
   },
 };
 

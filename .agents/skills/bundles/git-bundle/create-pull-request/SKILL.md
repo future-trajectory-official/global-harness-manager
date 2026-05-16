@@ -1,6 +1,6 @@
 ---
 name: create-pull-request
-description: 作業完了後、GitHub CLI (gh) を用いてPull Requestを作成し、ユーザーへエビデンス付きで解説を行います。
+description: GitHub の Pull Request を作成し、ユーザーへエビデンス付きで解説を行います。
 tags:
   - trigger: create-pr, make-pull-request, submit-pr, open-pr
   - category: git

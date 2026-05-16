@@ -6,7 +6,7 @@ import {
   getSkillAssetPath,
   logger,
   PATHS,
-} from "../../../../../../core/harness-core.ts";
+} from "../../../../../../.agents/core/harness-core.ts";
 
 const DEFAULT_SANDBOX_BASE = "/tmp/harness-sandboxes";
 
