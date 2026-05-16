@@ -1,8 +1,8 @@
 import { join } from "@std/path";
-import { PROJECT_ROOT } from "../../core/constants.ts";
-import { fsUtil } from "../../core/fs.ts";
-import { executeCommand } from "../../core/command.ts";
-import { logger } from "../../core/logger.ts";
+import { PROJECT_ROOT } from "../../../../../core/constants.ts";
+import { fsUtil } from "../../../../../core/fs.ts";
+import { executeCommand } from "../../../../../core/command.ts";
+import { logger } from "../../../../../core/logger.ts";
 
 /**
  * Git Hooks をセットアップします

@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { fsUtil } from "../../core/fs.ts";
+import { fsUtil } from "../../../../../core/fs.ts";
 import { setupGitHooks } from "./setup-hooks.ts";
 
 Deno.test("setup-hooks - should create pre-push hook in target directory", async () => {
