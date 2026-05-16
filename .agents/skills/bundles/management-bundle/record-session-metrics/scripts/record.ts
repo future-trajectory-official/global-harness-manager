@@ -52,8 +52,11 @@ export async function showSummary(filePath: string): Promise<string> {
     for (const line of lines) {
       if (!line) continue;
       const data: SessionMetrics = JSON.parse(line);
-      const date = data.timestamp ? new Date(data.timestamp).toLocaleDateString("ja-JP") : "Unknown";
-      output += `| ${date} | ${data.intent} | ${data.constraint} | ${data.context} | ${data.stability} |\n`;
+      const date = data.timestamp
+        ? new Date(data.timestamp).toLocaleDateString("ja-JP")
+        : "Unknown";
+      output +=
+        `| ${date} | ${data.intent} | ${data.constraint} | ${data.context} | ${data.stability} |\n`;
     }
     return output;
   } catch (_e) {

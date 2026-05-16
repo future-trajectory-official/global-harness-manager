@@ -25,7 +25,7 @@ tags:
    - 以下のスクリプトを実行し、エージェントの内部記憶フォルダ（`brain/`, `knowledge/`,
      `conversations/`）を退避させます。
    ```bash
-    deno run -A .agents/skills/bundles/meta-bundle/stateless-reset/scripts/reset.ts
+   deno run -A .agents/skills/bundles/meta-bundle/stateless-reset/scripts/reset.ts
    ```
 
 > [!TIP]

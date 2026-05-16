@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { appendMetrics, showSummary, validateMetrics, type SessionMetrics } from "./record.ts";
+import { appendMetrics, type SessionMetrics, showSummary, validateMetrics } from "./record.ts";
 import { join } from "@std/path";
 
 Deno.test("validateMetrics - should pass for valid data", () => {
