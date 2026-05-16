@@ -2,10 +2,10 @@ import {
   getSkillDirPath as getCoreSkillDirPath,
   getSkillScriptPath as getCoreSkillScriptPath,
   PATHS as CORE_PATHS,
-} from "../core/harness-core.ts";
+} from "../.agents/core/constants.ts";
 
 /**
- * テスト共通のパス定数 (harness-core.ts から再エクスポート)
+ * テスト共通のパス定数
  */
 export const PATHS = CORE_PATHS;
 
