@@ -1,5 +1,6 @@
-import { join } from "@std/path";
 import { parseArgs } from "@std/cli";
+import { getManagementPath } from "../../../../../core/constants.ts";
+import { MESSAGES } from "../../../../../core/messages.ts";
 
 export interface SessionMetrics {
   intent: string;
@@ -16,11 +17,11 @@ export function validateMetrics(data: SessionMetrics): boolean {
   const fields = ["intent", "constraint", "context", "stability"] as const;
   for (const field of fields) {
     if (!data[field]) {
-      throw new Error(`Missing required field: ${field}`);
+      throw new Error(MESSAGES.METRICS.MISSING_FIELD(field));
     }
     const val = parseInt(data[field]);
     if (isNaN(val) || val < 1 || val > 5) {
-      throw new Error(`Field ${field} must be a number between 1 and 5 (received: ${data[field]})`);
+      throw new Error(MESSAGES.METRICS.INVALID_RANGE(field, data[field]));
     }
   }
   return true;
@@ -60,7 +61,7 @@ export async function showSummary(filePath: string): Promise<string> {
     }
     return output;
   } catch (_e) {
-    return "No metrics recorded yet.";
+    return MESSAGES.METRICS.NO_DATA;
   }
 }
 
@@ -74,15 +75,17 @@ if (import.meta.main) {
   };
 
   try {
-    const metricsPath = join(Deno.cwd(), "metrics.jsonl");
+    const metricsPath = getManagementPath("metrics.jsonl");
     if (args.summary) {
       console.log(await showSummary(metricsPath));
     } else {
       await appendMetrics(data, metricsPath);
-      console.log("✅ Metrics recorded successfully.");
+      console.log(MESSAGES.METRICS.SUCCESS);
     }
   } catch (error) {
-    console.error(`❌ Error: ${error instanceof Error ? error.message : String(error)}`);
+    console.error(
+      `${MESSAGES.METRICS.ERROR_PREFIX}${error instanceof Error ? error.message : String(error)}`,
+    );
     Deno.exit(1);
   }
 }
