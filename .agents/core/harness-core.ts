@@ -4,3 +4,4 @@ export * from "./fs.ts";
 export * from "./markdown.ts";
 export * from "./error.ts";
 export * from "./verify-target.ts";
+export * from "./constants.ts";
