@@ -153,8 +153,12 @@ Deno.test("fsUtil.remove - should remove files and directories", async () => {
     assertEquals(await fsUtil.exists(tempDir), false);
   } finally {
     // ensure cleanup
-    try { await Deno.remove(tempFile); } catch { /* ignore */ }
-    try { await Deno.remove(tempDir); } catch { /* ignore */ }
+    try {
+      await Deno.remove(tempFile);
+    } catch { /* ignore */ }
+    try {
+      await Deno.remove(tempDir);
+    } catch { /* ignore */ }
   }
 });
 
@@ -164,7 +168,9 @@ Deno.test("fsUtil.writeTextFile - should not write when dryRun is true", async (
     await fsUtil.writeTextFile(tempFile, "secret", true);
     assertEquals(await fsUtil.exists(tempFile), false);
   } finally {
-    try { await Deno.remove(dirname(tempFile), { recursive: true }); } catch { /* ignore */ }
+    try {
+      await Deno.remove(dirname(tempFile), { recursive: true });
+    } catch { /* ignore */ }
   }
 });
 
@@ -200,7 +206,7 @@ Deno.test("fsUtil.extract - should extract tar.gz files with stripComponents", a
     const sourceDir = join(tempDir, "source", "nested");
     await Deno.mkdir(sourceDir, { recursive: true });
     await Deno.writeTextFile(join(sourceDir, "content.txt"), "tar content");
-    
+
     const command = new Deno.Command("tar", {
       args: ["-czf", tarFile, "-C", join(tempDir, "source"), "nested"],
     });
@@ -208,7 +214,7 @@ Deno.test("fsUtil.extract - should extract tar.gz files with stripComponents", a
 
     // 展開の実行 (stripComponents: 1 により 'nested/' を飛ばす)
     await fsUtil.extract(tarFile, extractDest, { stripComponents: 1 });
-    
+
     assertEquals(await Deno.readTextFile(join(extractDest, "content.txt")), "tar content");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
@@ -229,7 +235,7 @@ Deno.test("fsUtil.extract - should cleanup destination on failure", async () => 
       errorCaught = true;
     }
     assertEquals(errorCaught, true);
-    
+
     // 展開先ディレクトリが「存在しない」か「空である」ことを確認
     const destExists = await fsUtil.exists(extractDest);
     if (destExists) {

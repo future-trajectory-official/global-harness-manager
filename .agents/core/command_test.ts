@@ -7,7 +7,7 @@ Deno.test("command - executeCommand should run in PROJECT_ROOT by default", asyn
     cmd: "ls",
     args: ["deno.json"],
   });
-  
+
   assertEquals(result.code, 0);
   assertStringIncludes(result.stdout, "deno.json");
 });
@@ -16,9 +16,9 @@ Deno.test("command - executeCommand should respect custom cwd", async () => {
   const result = await executeCommand({
     cmd: "ls",
     args: ["constants.ts"],
-    cwd: "./.agents/core"
+    cwd: "./.agents/core",
   });
-  
+
   assertEquals(result.code, 0);
   assertStringIncludes(result.stdout, "constants.ts");
 });
@@ -29,7 +29,7 @@ Deno.test("command - executeCommand should support dryRun mode", async () => {
     args: ["hello"],
     dryRun: true,
   });
-  
+
   assertEquals(result.code, 0);
   assertEquals(result.stdout, "");
 });
@@ -40,7 +40,7 @@ Deno.test("command - executeCommand should support interactive mode", async () =
     cmd: "true",
     interactive: true,
   });
-  
+
   assertEquals(result.code, 0);
 });
 
@@ -49,7 +49,7 @@ Deno.test("command - executeCommand should handle command failure and return non
     cmd: "ls",
     args: ["non-existent-file-12345"],
   });
-  
+
   assertEquals(result.code, 2); // ls returns 2 for not found on many systems
   assertStringIncludes(result.stderr, "No such file or directory");
 });
@@ -60,7 +60,7 @@ Deno.test("command - executeCommand should support custom environment variables"
     args: ["-c", "echo $TEST_VAR"],
     env: { TEST_VAR: "harness-test" },
   });
-  
+
   assertEquals(result.code, 0);
   assertStringIncludes(result.stdout, "harness-test");
 });
@@ -71,7 +71,7 @@ Deno.test("command - executeCommand should handle failure without stderr", async
     cmd: "sh",
     args: ["-c", "exit 1"],
   });
-  
+
   assertEquals(result.code, 1);
   assertEquals(result.stderr, "");
 });
@@ -80,7 +80,7 @@ Deno.test("command - executeCommand should return non-zero code for invalid comm
   const result = await executeCommand({
     cmd: "non-existent-command-xyz",
   });
-  
+
   assertEquals(result.code, 1);
   assertStringIncludes(result.stderr, "entity not found");
 });

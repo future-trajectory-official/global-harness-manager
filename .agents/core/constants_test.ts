@@ -1,11 +1,11 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { 
-  PROJECT_ROOT, 
-  PATHS, 
-  getSkillDirPath, 
-  getSkillScriptPath, 
+import {
+  getManagementPath,
   getSkillAssetPath,
-  getManagementPath 
+  getSkillDirPath,
+  getSkillScriptPath,
+  PATHS,
+  PROJECT_ROOT,
 } from "./constants.ts";
 
 Deno.test("constants - PROJECT_ROOT should be defined", () => {
@@ -44,17 +44,20 @@ Deno.test("constants - getSkillAssetPath should return correct path (with and wi
   // 引数なし
   const dirPath = getSkillAssetPath("onboarding-bundle", "test-skill");
   assertStringIncludes(dirPath, ".agents/skills/bundles/onboarding-bundle/test-skill/assets");
-  
+
   // 引数あり
   const filePath = getSkillAssetPath("onboarding-bundle", "test-skill", "image.png");
-  assertStringIncludes(filePath, ".agents/skills/bundles/onboarding-bundle/test-skill/assets/image.png");
+  assertStringIncludes(
+    filePath,
+    ".agents/skills/bundles/onboarding-bundle/test-skill/assets/image.png",
+  );
 });
 
 Deno.test("constants - getManagementPath should return correct path (with and without file name)", () => {
   // 引数なし
   const dirPath = getManagementPath();
   assertStringIncludes(dirPath, ".agents/management");
-  
+
   // 引数あり
   const filePath = getManagementPath("product-backlog.md");
   assertStringIncludes(filePath, ".agents/management/product-backlog.md");
