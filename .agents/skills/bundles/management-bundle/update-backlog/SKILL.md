@@ -27,7 +27,13 @@ PBI の全タスクが完了した場合、自動アーカイブを実行しま�
 
 - **実行詳細**:
   実装中に得られた知見やメトリクスを整理し、[automated-archive-logic.md](references/automated-archive-logic.md)
-  の仕様に従ってスクリプト（`scripts/manage_backlog.ts`）を実行してください。
+  の仕様に従って以下の Quick-Start コマンドを実行してください。
+
+### Quick-Start (実行コマンド)
+
+```bash
+deno run -A .agents/skills/bundles/management-bundle/update-backlog/scripts/manage_backlog.ts --data 'JSON_STRING'
+```
 
 ### 3. 反映のコミット
 
