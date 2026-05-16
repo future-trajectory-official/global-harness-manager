@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
-import { appendMetrics, showSummary, validateMetrics } from "./record.ts";
+import { appendMetrics, showSummary, validateMetrics, type SessionMetrics } from "./record.ts";
 import { join } from "@std/path";
 
 Deno.test("validateMetrics - should pass for valid data", () => {
@@ -11,7 +11,7 @@ Deno.test("validateMetrics - should pass for valid data", () => {
 Deno.test("validateMetrics - should throw for missing fields", () => {
   const invalid = { intent: "5" };
   try {
-    validateMetrics(invalid as any);
+    validateMetrics(invalid as unknown as SessionMetrics);
     assertEquals(true, false, "Should have thrown");
   } catch (e) {
     assertStringIncludes((e as Error).message, "Missing required field");
@@ -21,7 +21,7 @@ Deno.test("validateMetrics - should throw for missing fields", () => {
 Deno.test("validateMetrics - should throw for out of range values", () => {
   const invalid = { intent: "6", constraint: "5", context: "5", stability: "5" };
   try {
-    validateMetrics(invalid as any);
+    validateMetrics(invalid as unknown as SessionMetrics);
     assertEquals(true, false, "Should have thrown");
   } catch (e) {
     assertStringIncludes((e as Error).message, "between 1 and 5");
