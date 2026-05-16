@@ -5,7 +5,7 @@ import {
   logger,
   pathUtil,
   PROJECT_ROOT,
-} from "../../../../../../core/harness-core.ts";
+} from "../../../../../../.agents/core/harness-core.ts";
 
 async function main() {
   logger.info("Starting Deno-first environment setup...");
