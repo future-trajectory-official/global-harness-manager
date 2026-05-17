@@ -15,6 +15,7 @@ export interface BacklogData {
   outcomes: string[];
   summary?: string;
   acStatus?: string;
+  sprint?: string;
 }
 
 const BACKLOG_PATH = ".agents/management/product-backlog.md";
@@ -51,11 +52,12 @@ export function transformToArchiveCard(data: BacklogData, pbiBlock: string): str
   const today = new Date().toISOString().split("T")[0];
   const tagsStr = data.tags.join(" ");
   const metricsStr = `${data.metrics.turns} ターン / ${data.metrics.sessions} セッション`;
+  const sprintLine = data.sprint ? `\n- **完了スプリント**: ${data.sprint}` : "";
 
   return `
 ### [DONE] ${data.id}
 
-- **完了日**: ${today}
+- **完了日**: ${today}${sprintLine}
 - **見積り → 実績**: TODO → ${metricsStr}
 - **当初の概要**: ${summary}
 - **実際の成果物**:
