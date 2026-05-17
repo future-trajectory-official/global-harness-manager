@@ -11,10 +11,13 @@ description: プロジェクトのビジョンと、現在行使可能な能力�
 ## インストラクション
 
 1. **ビジョンとゴールの読み込み**:
-   - `VISION.md` および `product-backlog.md` の「プロダクトゴール」を読み込みます。
+   - `[VISION.md](.agents/management/VISION.md)` および
+     `[product-backlog.md](.agents/management/product-backlog.md)`
+     の「プロダクトゴール」を読み込みます。
 2. **能力の棚卸し**:
-   - `.agents/rules/` 内の各ロールファイル、および `.agents/skills/` 内の各スキルパッケージの **YAML
-     フロントマター（name, description）のみ**
+   - プロジェクトローカルの `.agents/rules/` 内の各ロールファイルや `.agents/skills/`
+     内の各スキルパッケージ、および **グローバル環境で共有されているグローバルスキル** の
+     **YAMLフロントマター（name, description）のみ**
      を確認し、現在チームがどのような専門性とツールを保有しているかを把握します。
 3. **アライメント報告の出力**:
    - 以下のフォーマットで報告を出力してください。
@@ -24,11 +27,12 @@ description: プロジェクトのビジョンと、現在行使可能な能力�
 
 #### 1. ビジョンのエッセンス
 
-- [VISION.md から、今回のセッションに関連する重要な設計思想や価値観を3行以内で抽出]
+[VISION.md](.agents/management/VISION.md)から、今回のセッションに関連する重要な設計思想や価値観を3行以内で抽出
 
 #### 2. プロダクトゴールの再確認
 
-- [現在のプロダクトゴールを再掲]
+[product-backlog.md](.agents/management/product-backlog.md) の `## プロダクトゴール`
+に記載されている現在のゴールを再掲
 
 #### 3. 利用可能な能力（チーム構成）
 
