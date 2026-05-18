@@ -127,15 +127,26 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
         // デコード失敗時はそのまま
       }
 
-      // ファイルの存在確認
+      // ファイルの存在確認 (実ファイルまたは.exampleテンプレートが存在すれば有効とする)
+      let exists = false;
       try {
         const stats = await Deno.stat(absoluteTarget);
-        if (!stats.isFile && !stats.isDirectory) {
-          issues.push(
-            `[Dead Link] In ${relativePath}: Link target "${link}" is not a file or directory.`,
-          );
+        if (stats.isFile || stats.isDirectory) {
+          exists = true;
         }
       } catch {
+        // CI環境など実ファイルが除外されている場合は.exampleの存在を以て救済
+        try {
+          const exampleStats = await Deno.stat(absoluteTarget + ".example");
+          if (exampleStats.isFile) {
+            exists = true;
+          }
+        } catch {
+          // それでもなければ不合格
+        }
+      }
+
+      if (!exists) {
         issues.push(
           `[Dead Link] In ${relativePath}: Dead link found "${link}". Target file "${absoluteTarget}" does not exist.`,
         );
