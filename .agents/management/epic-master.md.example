@@ -2,7 +2,7 @@
 
 > [!NOTE]
 > このファイルはプロダクトの全体像（Epic/Feature）を俯瞰するためのマスターです。
-> 詳細なタスク（PBI）は `product-backlog.md` で管理します。
+> 詳細なタスク（PBI）は `[product-backlog.md](file://.agents/management/product-backlog.md)` で管理します。
 > H2 (Epic) および H3 (Feature) の見出しは、バックログでの識別 ID として使用します。
 
 ## [EpicID]

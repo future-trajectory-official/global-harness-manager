@@ -34,7 +34,7 @@ deno run -A .agents/skills/bundles/management-bundle/update-backlog/scripts/mana
 
 ## 3. 知見タグの選定基準
 
-アーカイブガイドライン（`backlog-guidelines.md`）に基づき、以下の優先順位でタグを付与してください。
+アーカイブガイドライン（`[backlog-guidelines.md](file://.agents/management/backlog-guidelines.md)`）に基づき、以下の優先順位でタグを付与してください。
 
 1. **`#Decision`**: 設計や優先順位の変更があった場合。
 2. **`#Pivot`**: 当初の AC や方針から転換した場合。

@@ -24,7 +24,7 @@ Criteria）と、考慮すべきエッジケースを網羅的に洗い出しま
 
 ### 1. タスクと目的の確認
 
-- **プロダクトバックログ** ([product-backlog.md](../../../../management/product-backlog.md))
+- **プロダクトバックログ** ([product-backlog.md](file://.agents/management/product-backlog.md))
   から、**スプリントバックログ** を確認し、今回のスプリント対象のタスクを確認します。
 - ユーザーストーリー（誰が・何を・なぜ）とスプリントゴールを再確認し、タスクの目的から逸脱しないようにします。
 

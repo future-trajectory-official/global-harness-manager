@@ -43,7 +43,7 @@ AIは `define-acceptance-criteria`
 
 ### Step 2: 実体記録ファイル（`sprint-review-n.md`）の新規作成
 
-共通アセット [sprint-review.md.example](../../../../../management/sprint-review.md.example)
+共通アセット [sprint-review.md.example](file://.agents/management/sprint-review.md.example)
 をコピーして、**`.agents/management/sprint-review-n.md`**（例:
 `sprint-review-1.md`）を新規作成します。
 

@@ -23,9 +23,9 @@ tags:
 
 ### 1. 現状確認とガイドラインの参照
 
-- **プロダクトバックログ** ([product-backlog.md](../../../../management/product-backlog.md))
+- **プロダクトバックログ** ([product-backlog.md](file://.agents/management/product-backlog.md))
   を読み込み、スプリントバックログのバックログアイテム（PBI）をピックアップします。
-- **運用ガイドライン** ([backlog-guidelines.md](../../../../management/backlog-guidelines.md))
+- **運用ガイドライン** ([backlog-guidelines.md](file://.agents/management/backlog-guidelines.md))
   を読み込み、見積り基準やステータス管理の作法を確認します。
 
 ### 2. タスクの細分化

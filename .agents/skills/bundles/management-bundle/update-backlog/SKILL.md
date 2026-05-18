@@ -42,4 +42,4 @@ deno run -A .agents/skills/bundles/management-bundle/update-backlog/scripts/mana
 > [!IMPORTANT]
 > アーカイブは単なる「移動」ではなく、プロジェクトの **「知恵のインデックス化」** です。特に
 > `#Decision` や `#Pivot` タグを活用し、将来の判断材料を蓄積してください。詳細な運用ルールは
-> [backlog-guidelines.md](../../../../management/backlog-guidelines.md) を参照してください。
+> [backlog-guidelines.md](file://.agents/management/backlog-guidelines.md) を参照してください。

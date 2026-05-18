@@ -65,7 +65,8 @@ AI はこれまでに作成された全成果物を読み込み、論理の矛�
 ユーザーが最終的な「Go（開始）」の意思決定を下した場合、プロジェクトのディレクトリ内にファイルは残さず、Antigravityのアーティファクト機能（`ArtifactType: walkthrough`）を使用して、以下の内容を含むキックオフ完了サマリーを提示します。
 
 - **キックオフサマリー**: プロジェクトの目的と最終決断の要約
-- **成果物リンク集**: これまでに作成・更新された全ドキュメント（`VISION.md`、`product-backlog.md`
+- **成果物リンク集**:
+  これまでに作成・更新された全ドキュメント（`[VISION.md](file://.agents/management/VISION.md)`、`[product-backlog.md](file://.agents/management/product-backlog.md)`
   等）への参照リスト
 - **整合性チェック結果**: 議論の中で確認されたリスクと、その対策や許容した理由
 

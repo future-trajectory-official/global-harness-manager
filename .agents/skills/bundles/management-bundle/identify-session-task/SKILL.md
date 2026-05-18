@@ -11,7 +11,8 @@ Scrum Master
 ## インストラクション
 
 1. **バックログの分析**:
-   - `product-backlog.md` の `[TODO]` または `[WIP]` セクションを読み込みます。
+   - `[product-backlog.md](file://.agents/management/product-backlog.md)` の `[TODO]` または `[WIP]`
+     セクションを読み込みます。
 2. **依存関係の考慮**:
    - 前回のセッションの成果（`RECOVERY LOG` 等）から、次に着手すべき論理的なステップを導き出します。
 3. **タスクの提示**:

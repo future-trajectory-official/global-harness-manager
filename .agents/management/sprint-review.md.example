@@ -1,12 +1,12 @@
 # 📋 スプリントレビュー記録 (テンプレート)
 
-> **使用方法**: このファイルをコピーして `.agents/management/sprint-review-n.md`（n = スプリント番号、例: `sprint-review-1.md`）として保存してください。
+> **使用方法**: このファイルをコピーして `[sprint-review-n.md](file://.agents/management/sprint-review.md.example)`（n = スプリント番号、例: `sprint-review-1.md`）として保存してください。
 
 本ファイルは、スプリント終了時のレビューにおいて、PO（プロダクトオーナー）と共に各PBIのACが達成されていることを**実機デモおよび客観的証拠によって証明**するための標準記録フォーマットです。
 
 > [!IMPORTANT]
 > アジャイルのスプリントレビューは**「動くプロダクト」の実機デモ**が原則です。
-> `develop-environment-setup` スキルでサンドボックス環境を準備し、`browser_subagent` を用いてPOと一緒に操作・確認を行ってください。
+> `[develop-environment-setup](file://.agents/skills/bundles/development-bundle/develop-environment-setup/SKILL.md)` スキルでサンドボックス環境を準備し、`browser_subagent` を用いてPOと一緒に操作・確認を行ってください。
 > ドキュメントやコードレビューはあくまで補助手段です。
 
 ---
@@ -16,7 +16,7 @@
 - **対象スプリント**: Sprint-N
 - **スプリントゴール**: [スプリントのNorth Starゴールを簡潔に記述]
 - **レビュー実施日**: YYYY-MM-DD
-- **デモ環境**: サンドボックス（`develop-environment-setup` スキルで構築）
+- **デモ環境**: サンドボックス（`[develop-environment-setup](file://.agents/skills/bundles/development-bundle/develop-environment-setup/SKILL.md)` スキルで構築）
 - **レビュー出席者**: PO（ユーザー）、AIエージェント
 
 ## 🎯 2. PBI達成状況一覧 (要約)
@@ -37,7 +37,7 @@
 - **デモ環境**: サンドボックス（コンテナID: `XXXX`）
 - **デモ手順概要**: [例: ブラウザで `localhost:3000` にアクセスし、ログインフローをPOと共に操作確認]
 - **browser_subagent による操作録画**:
-  ![デモ録画 - PBI-TITLE](/absolute/path/to/recording.webp)
+  ![デモ録画 - PBI-TITLE](https://example.com/recording.webp)
 
 #### 📋 AC 達成の客観的証明
 
@@ -48,12 +48,12 @@
 
 - **AC 2: [AC-2の記述]**
   - **証明方法**: テストスイートのパスログ
-  - **エビデンス**: [test-log.txt](file:///absolute/path/to/test-log.txt)
+  - **エビデンス**: [test-log.txt](https://example.com/test-log.txt)
   - **PO判定**: 🟢 合格 / 🔴 不合格
 
 - **【Refactor / Documentation 観点 AC】**
   - **証明方法**: diff（差分）または静的解析ツールの出力
-  - **エビデンス**: [diff.md](file:///absolute/path/to/diff.md)
+  - **エビデンス**: [diff.md](https://example.com/diff.md)
   - **PO判定**: 🟢 合格 / 🔴 不合格
 
 ---
