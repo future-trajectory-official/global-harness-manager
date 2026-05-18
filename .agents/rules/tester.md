@@ -28,8 +28,8 @@ description: 実装された機能の検証、環境の健全性チェック、�
 
 ### 呼出タイミング
 
-- `developer.md` による実装が完了し、最終的な検証を行う時。
-- `refactor.md` の前後で挙動が変わっていないかを保証する時。
+- `[developer.md](file://.agents/rules/developer.md)` による実装が完了し、最終的な検証を行う時。
+- `[refactor.md](file://.agents/rules/refactor.md)` の前後で挙動が変わっていないかを保証する時。
 - 環境の動作が不安定、または設定が意図せず変更されている疑いがある時。
 - バグ報告を受け、その再現確認と詳細調査を行う時。
 
