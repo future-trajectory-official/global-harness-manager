@@ -69,7 +69,7 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 ## 3. 実装フェーズ
 
-### 3-1. 安全な変更の適用
+### 3-1. 安全な変更の適用とWIP保存
 
 - **ロール**: `[refactor.md](file://.agents/rules/refactor.md)` (すべての制約を遵守)
 - **実行スキル**:
@@ -77,6 +77,8 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 - **セルフチェック**:
   - [ ] 外部から見た挙動（API、戻り値、副作用）が変化していないか、常に意識して変更を行っているか。
   - [ ] 静的解析や型チェック等の検証コマンドを随時実行し、破壊が発生していないことを確認したか。
+  - [ ] 各リファクタリングステップの検証が成功した時点で、`[hybrid-triage-commit](file://.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
+        スキル（`wip` モード）を実行し、セーブポイントを作成したか。
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
 
@@ -112,7 +114,21 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 ## 5. 完了フェーズ
 
-### 5-1. PR作成と報告
+### 5-1. コミット履歴のトリアージと再構築
+
+- **ロール**: `[version-control-specialist.md](file://.agents/rules/version-control-specialist.md)`
+  (すべての制約を遵守)
+- **実行スキル**:
+  `[hybrid-triage-commit](file://.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
+- **セルフチェック**:
+  - [ ] 開発および検証が完了した時点で、`hybrid-triage-commit` スキル（`triage`
+        モード）を実行し、WIP履歴を美しいアトミックコミットへと再構築したか。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+### 5-2. PR作成と報告
 
 - **ロール**: `[version-control-specialist.md](file://.agents/rules/version-control-specialist.md)`
   (すべての制約を遵守)
@@ -125,7 +141,7 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 <!-- STOP -->
 
-### 5-2. マージとクリーンアップ
+### 5-3. マージとクリーンアップ
 
 - **ロール**: `[version-control-specialist.md](file://.agents/rules/version-control-specialist.md)`
   (すべての制約を遵守)
