@@ -37,7 +37,7 @@
 - **デモ環境**: サンドボックス（コンテナID: `XXXX`）
 - **デモ手順概要**: [例: ブラウザで `localhost:3000` にアクセスし、ログインフローをPOと共に操作確認]
 - **browser_subagent による操作録画**:
-  ![デモ録画 - PBI-TITLE](/absolute/path/to/recording.webp)
+  ![デモ録画 - PBI-TITLE](https://example.com/recording.webp)
 
 #### 📋 AC 達成の客観的証明
 
@@ -48,12 +48,12 @@
 
 - **AC 2: [AC-2の記述]**
   - **証明方法**: テストスイートのパスログ
-  - **エビデンス**: [test-log.txt](file:///absolute/path/to/test-log.txt)
+  - **エビデンス**: [test-log.txt](https://example.com/test-log.txt)
   - **PO判定**: 🟢 合格 / 🔴 不合格
 
 - **【Refactor / Documentation 観点 AC】**
   - **証明方法**: diff（差分）または静的解析ツールの出力
-  - **エビデンス**: [diff.md](file:///absolute/path/to/diff.md)
+  - **エビデンス**: [diff.md](https://example.com/diff.md)
   - **PO判定**: 🟢 合格 / 🔴 不合格
 
 ---
