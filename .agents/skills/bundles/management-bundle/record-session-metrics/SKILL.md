@@ -1,6 +1,6 @@
 ---
 name: record-session-metrics
-description: セッションの協働指標を採点し、metrics.jsonl に記録する。
+description: セッションの協働指標を採点し、セッションメトリクスファイルに記録する。
 tags:
   trigger:
     - session-end
@@ -11,8 +11,8 @@ tags:
 
 # record-session-metrics
 
-セッションの協働品質を定量化し、`metrics.jsonl` に蓄積するためのスキルです。PO 指定の 4
-つのコアメトリクスを記録し、履歴サマリーを出力します。
+セッションの協働品質を定量化し、[metrics.jsonl](.agents/management/metrics.jsonl)
+に蓄積するためのスキルです。PO 指定の 4 つのコアメトリクスを記録し、履歴サマリーを出力します。
 
 ## 手順
 
