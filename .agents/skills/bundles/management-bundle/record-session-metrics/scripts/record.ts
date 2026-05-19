@@ -33,8 +33,8 @@ export function validateMetrics(data: SessionMetrics): boolean {
 export async function appendMetrics(data: SessionMetrics, filePath: string) {
   validateMetrics(data);
   const entry = {
-    ...data,
     timestamp: new Date().toISOString(),
+    ...data,
   };
   const line = JSON.stringify(entry) + "\n";
   await Deno.writeTextFile(filePath, line, { append: true });

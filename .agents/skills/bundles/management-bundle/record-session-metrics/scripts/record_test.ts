@@ -56,5 +56,28 @@ Deno.test("record-session-metrics refactor tests", async (t) => {
     assertStringIncludes(summary, "No metrics recorded yet");
   });
 
+  await t.step("showSummary - should skip empty lines in file", async () => {
+    const fileWithEmptyLine = join(tempDir, "metrics_empty_line.jsonl");
+    await Deno.writeTextFile(
+      fileWithEmptyLine,
+      '{"timestamp":"2026-01-01T00:00:00.000Z","intent":"3","constraint":"3","context":"3","stability":"3"}\n\n',
+    );
+    const summary = await showSummary(fileWithEmptyLine);
+    assertStringIncludes(summary, "| 3 | 3 | 3 | 3 |");
+  });
+
+  await t.step(
+    'showSummary - should show "Unknown" for entries without timestamp',
+    async () => {
+      const fileNoTs = join(tempDir, "metrics_no_ts.jsonl");
+      await Deno.writeTextFile(
+        fileNoTs,
+        '{"intent":"2","constraint":"2","context":"2","stability":"2"}\n',
+      );
+      const summary = await showSummary(fileNoTs);
+      assertStringIncludes(summary, "Unknown");
+    },
+  );
+
   await Deno.remove(tempDir, { recursive: true });
 });
