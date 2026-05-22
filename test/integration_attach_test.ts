@@ -191,8 +191,7 @@ exit 0
       stderr: "piped",
     });
 
-    const { code, stdout, stderr } = await command.output();
-    const output = new TextDecoder().decode(stdout);
+    const { code, stderr } = await command.output();
     const errOutput = new TextDecoder().decode(stderr);
 
     assertEquals(code, 0, `Script failed with code ${code}\nStderr: ${errOutput}`);
