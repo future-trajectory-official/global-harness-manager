@@ -15,5 +15,6 @@ if (-Not (Test-Path $DenoExe)) {
 }
 
 Write-Host "Starting Deno setup..."
-$SetupScript = Join-Path $HarnessRoot ".agents\skills\setup-harness-env\scripts\setup.ts"
+$SetupScript = Join-Path $HarnessRoot ".agents\skills\bundles\onboarding-bundle\setup-harness-env\scripts\setup.ts"
 & $DenoExe run -A $SetupScript
+
