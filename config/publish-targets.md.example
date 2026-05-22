@@ -37,11 +37,11 @@
 
 ---
 
+## management-bundle
+
 ### task-initialization
 
 **説明**: タスク開始時の「儀式」として、環境・ルール・目的を同期する。
-
-## management-bundle
 
 ### product-backlog-refinement
 
