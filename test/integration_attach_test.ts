@@ -135,3 +135,73 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
     await Deno.remove(tempDir, { recursive: true });
   }
 });
+
+Deno.test("Integration: harness-attach git clone passes GIT_SSH_COMMAND", async () => {
+  const tempDir = await Deno.makeTempDir();
+  try {
+    const managerDir = join(tempDir, "manager");
+    const targetProjectDir = join(tempDir, "target_project");
+    const mockBinDir = join(tempDir, "bin");
+
+    await Deno.mkdir(join(managerDir, "config"), { recursive: true });
+    await Deno.mkdir(mockBinDir, { recursive: true });
+
+    // Identitiesの設定ファイルを作成
+    await Deno.writeTextFile(
+      join(managerDir, "config/identities.md"),
+      `## Test Project
+- **Repository**: git@github.com:example/repo.git
+- **Local Path**: ${targetProjectDir}
+- **Account Name**: TestUser
+- **User Email**: test@example.com
+`,
+    );
+
+    // コールログ書き出し用の一時ファイルパス
+    const logFilePath = join(tempDir, "git_call.log");
+
+    // モック git スクリプトの作成（環境変数と引数をファイルにダンプする）
+    const mockGitContent = `#!/bin/sh
+echo "ARGS: $*" >> ${logFilePath}
+echo "GIT_SSH_COMMAND: \${GIT_SSH_COMMAND}" >> ${logFilePath}
+exit 0
+`;
+    const mockGitPath = join(mockBinDir, "git");
+    await Deno.writeTextFile(mockGitPath, mockGitContent);
+    await Deno.chmod(mockGitPath, 0o755); // 実行権限の付与
+
+    const scriptPath = getSkillScriptPath(
+      PATHS.BUNDLES.ONBOARDING,
+      "attach-harness-to-project",
+      "harness-attach.ts",
+    );
+
+    const command = new Deno.Command(Deno.execPath(), {
+      args: [
+        "run",
+        "-A",
+        scriptPath,
+      ],
+      cwd: managerDir,
+      env: {
+        // PATHの最優先にモックbinを指定し、システムgitではなくモックgitを呼ばせる
+        PATH: `${mockBinDir}:${Deno.env.get("PATH")}`,
+      },
+      stdout: "piped",
+      stderr: "piped",
+    });
+
+    const { code, stdout, stderr } = await command.output();
+    const output = new TextDecoder().decode(stdout);
+    const errOutput = new TextDecoder().decode(stderr);
+
+    assertEquals(code, 0, `Script failed with code ${code}\nStderr: ${errOutput}`);
+
+    // モック git の呼び出しログを検証
+    const logContent = await Deno.readTextFile(logFilePath);
+    assertStringIncludes(logContent, "ARGS: clone");
+    assertStringIncludes(logContent, "GIT_SSH_COMMAND: ssh -o StrictHostKeyChecking=accept-new");
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});

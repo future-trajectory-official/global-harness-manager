@@ -39,6 +39,11 @@ async function processProject(project: {
       const cloneResult = await executeCommand({
         cmd: "git",
         args: ["clone", aliasRepo, resolvedPath],
+        env: {
+          // SSH接続時にホストキー未登録によるフリーズ・エラーを防ぐ防御的設計
+          // accept-new: 初回接続時のみ自動登録し、以降は既知のホストキーを検証する
+          GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=accept-new",
+        },
         dryRun: isDryRun,
       });
 
