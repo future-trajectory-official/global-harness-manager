@@ -50,6 +50,33 @@ Deno.test("record-session-metrics refactor tests", async (t) => {
     assertStringIncludes(summary, "| 5 | 5 | 5 | 5 |");
   });
 
+  await t.step(
+    "appendMetrics - should append a valid JSON line with timestamp and reason",
+    async () => {
+      const data = {
+        intent: "5",
+        constraint: "5",
+        context: "5",
+        stability: "5",
+        reason: "Everything went smoothly.",
+      };
+      await appendMetrics(data, testFile);
+
+      const content = await Deno.readTextFile(testFile);
+      const lines = content.trim().split("\n");
+      const parsed = JSON.parse(lines[lines.length - 1]);
+
+      assertEquals(parsed.intent, "5");
+      assertEquals(parsed.reason, "Everything went smoothly.");
+    },
+  );
+
+  await t.step("showSummary - should include reasoning history in output", async () => {
+    const summary = await showSummary(testFile);
+    assertStringIncludes(summary, "🧠 Reasoning History");
+    assertStringIncludes(summary, "Everything went smoothly.");
+  });
+
   await t.step("showSummary - should handle missing file gracefully", async () => {
     const missingFile = join(tempDir, "not_found.jsonl");
     const summary = await showSummary(missingFile);
