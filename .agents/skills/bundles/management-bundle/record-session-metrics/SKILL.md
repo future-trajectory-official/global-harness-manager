@@ -22,9 +22,10 @@ tags:
    - ログに基づき採点を行い、以下のコマンドを実行します。
    ```bash
    deno run -A .agents/skills/bundles/management-bundle/record-session-metrics/scripts/record.ts \
-     --intent=<1-5> --constraint=<1-5> --context=<1-5> --stability=<1-5>
+     --intent=<1-5> --constraint=<1-5> --context=<1-5> --stability=<1-5> --reason="<思考プロセス>"
    ```
    - ※各フラグには 1〜5 の数値を指定してください（例: `--intent=4`）。
+   - ※`--reason` には、今回その採点を決定した理由・根拠（思考プロセス）を文章で指定します。
 
    **サマリーのみ表示する場合（記録なし）**:
    ```bash
