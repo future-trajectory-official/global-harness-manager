@@ -8,6 +8,7 @@ export interface SessionMetrics {
   context: string;
   stability: string;
   timestamp?: string;
+  reason?: string;
 }
 
 /**
@@ -49,6 +50,7 @@ export async function showSummary(filePath: string): Promise<string> {
     const lines = content.trim().split("\n");
     let output = "| Date | Intent | Constraint | Context | Stability |\n";
     output += "| :--- | :--- | :--- | :--- | :--- |\n";
+    const reasons: string[] = [];
 
     for (const line of lines) {
       if (!line) continue;
@@ -58,6 +60,13 @@ export async function showSummary(filePath: string): Promise<string> {
         : "Unknown";
       output +=
         `| ${date} | ${data.intent} | ${data.constraint} | ${data.context} | ${data.stability} |\n`;
+      if (data.reason) {
+        reasons.push(`- **[${date}]** ${data.reason}`);
+      }
+    }
+
+    if (reasons.length > 0) {
+      output += `\n🧠 Reasoning History:\n${reasons.join("\n")}\n`;
     }
     return output;
   } catch (_e) {
@@ -72,6 +81,7 @@ if (import.meta.main) {
     constraint: String(args.constraint || ""),
     context: String(args.context || ""),
     stability: String(args.stability || ""),
+    reason: args.reason ? String(args.reason) : undefined,
   };
 
   try {
@@ -81,6 +91,9 @@ if (import.meta.main) {
     } else {
       await appendMetrics(data, metricsPath);
       console.log(MESSAGES.METRICS.SUCCESS);
+      if (data.reason) {
+        console.log(`\n🧠 Thought Process (Reasoning):\n${data.reason}\n`);
+      }
     }
   } catch (error) {
     console.error(
