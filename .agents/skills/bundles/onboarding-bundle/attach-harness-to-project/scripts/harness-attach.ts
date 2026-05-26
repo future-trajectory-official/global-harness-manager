@@ -5,6 +5,7 @@ import {
   logger,
   mdUtil,
   pathUtil,
+  PROJECT_ROOT,
 } from "../../../../../core/harness-core.ts";
 import { parseArgs } from "@std/cli/parse-args";
 
@@ -109,7 +110,7 @@ async function main() {
     });
     const isDryRun = args["dry-run"] || false;
 
-    const harnessRoot = pathUtil.resolvePath(Deno.cwd());
+    const harnessRoot = PROJECT_ROOT;
     const identityConfig = pathUtil.joinPath(harnessRoot, "config", "identities.md");
 
     console.log("--- プロジェクト配備・ハーネス装着処理 (Deploy & Attach) ---");

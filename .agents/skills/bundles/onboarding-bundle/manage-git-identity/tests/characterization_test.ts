@@ -32,6 +32,7 @@ Deno.test("manage-git-identity characterization test", async () => {
     env: {
       HOME: mockHome,
       USERPROFILE: mockHome,
+      HARNESS_WORKSPACE_ROOT: tempDir, // findProjectRoot が tempDir をルートとして解決するよう指定
     },
     stdout: "piped",
     stderr: "piped",
