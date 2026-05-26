@@ -9,7 +9,7 @@ tags:
 # craft-vision
 
 プロジェクトの目的と価値を明確にし、開発中に迷ったときの立ち返り先となる
-`[VISION.md](file://.agents/management/VISION.md)` を作成します。
+`[VISION.md](/.agents/management/VISION.md)` を作成します。
 ユーザーの思考を深め、「誰に」「どんな価値を」提供するのかを、簡潔で力強い言葉へと精錬していきます。
 
 ## Quick Start（実行方法）
@@ -70,8 +70,8 @@ Star）の原案をいくつか提示します。
 ### Step 4: 成果物の生成
 
 ユーザーからビジョンステートメントへの合意が得られたら、対話内容から
-`[VISION.md](file://.agents/management/VISION.md)` を生成します。 フォーマットは
-`[VISION.md](file://.agents/management/VISION.md).example`
+`[VISION.md](/.agents/management/VISION.md)` を生成します。 フォーマットは
+`[VISION.md](/.agents/management/VISION.md).example`
 を強力なベースラインとしつつ、対話から導き出された内容（ビジョンステートメント、情熱の源泉、差別化要因、ターゲットアウトカム等）が漏れなく、かつ最も適切に表現されるように出力してください。
 
 <!-- STOP -->

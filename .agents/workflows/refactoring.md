@@ -16,7 +16,7 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 ### 1-1. 事前メトリクスの測定
 
-- **ロール**: `[refactor.md](file://.agents/rules/refactor.md)` (すべての制約を遵守)
+- **ロール**: `[refactor.md](/.agents/rules/refactor.md)` (すべての制約を遵守)
 - **セルフチェック**:
   - [ ] 改善前の循環的複雑度や保守性指数を記録し、ユーザーと共有したか。
 
@@ -26,7 +26,7 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 ### 1-2. テストの健全性確認（中止判断）
 
-- **ロール**: `[tester.md](file://.agents/rules/tester.md)` (すべての制約を遵守)
+- **ロール**: `[tester.md](/.agents/rules/tester.md)` (すべての制約を遵守)
 - **セルフチェック**:
   - [ ] **[必須]** リファクタリング対象をカバーするテストが存在するか。
   - [ ] **[必須]** 現状で全ての関連テストがパス（Green）しているか。
@@ -43,10 +43,9 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 ### 2-1. 実行環境のセットアップ
 
-- **ロール**: `[platform-engineer.md](file://.agents/rules/platform-engineer.md)`
-  (すべての制約を遵守)
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **実行スキル**:
-  `[develop-environment-setup](file://.agents/skills/bundles/development-bundle/develop-environment-setup/SKILL.md)`
+  `[develop-environment-setup](/.agents/skills/bundles/development-bundle/develop-environment-setup/SKILL.md)`
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
 
@@ -54,10 +53,10 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 ### 2-2. 作業ブランチの作成
 
-- **ロール**: `[version-control-specialist.md](file://.agents/rules/version-control-specialist.md)`
+- **ロール**: `[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
   (すべての制約を遵守)
 - **実行スキル**:
-  `[initialize-branch](file://.agents/skills/bundles/git-bundle/initialize-branch/SKILL.md)`
+  `[initialize-branch](/.agents/skills/bundles/git-bundle/initialize-branch/SKILL.md)`
 - **セルフチェック**:
   - [ ] **[制約遵守]** ブランチ作成の目的をユーザーに説明し、承認を得たか。
 
@@ -71,13 +70,13 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 ### 3-1. 安全な変更の適用とWIP保存
 
-- **ロール**: `[refactor.md](file://.agents/rules/refactor.md)` (すべての制約を遵守)
+- **ロール**: `[refactor.md](/.agents/rules/refactor.md)` (すべての制約を遵守)
 - **実行スキル**:
-  `[refactoring-loop](file://.agents/skills/bundles/development-bundle/refactoring-loop/SKILL.md)`
+  `[refactoring-loop](/.agents/skills/bundles/development-bundle/refactoring-loop/SKILL.md)`
 - **セルフチェック**:
   - [ ] 外部から見た挙動（API、戻り値、副作用）が変化していないか、常に意識して変更を行っているか。
   - [ ] 静的解析や型チェック等の検証コマンドを随時実行し、破壊が発生していないことを確認したか。
-  - [ ] 各リファクタリングステップの検証が成功した時点で、`[hybrid-triage-commit](file://.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
+  - [ ] 各リファクタリングステップの検証が成功した時点で、`[hybrid-triage-commit](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
         スキル（`wip` モード）を実行し、セーブポイントを作成したか。
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
@@ -90,7 +89,7 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 ### 4-1. 厳格な回帰テスト
 
-- **ロール**: `[tester.md](file://.agents/rules/tester.md)` (すべての制約を遵守)
+- **ロール**: `[tester.md](/.agents/rules/tester.md)` (すべての制約を遵守)
 - **セルフチェック**:
   - [ ] **[原則: Verification Integrity]**
         プロジェクト全体の全テストがグリーンであることを確認したか。
@@ -102,7 +101,7 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 ### 4-2. 事後メトリクスの測定と改善報告
 
-- **ロール**: `[refactor.md](file://.agents/rules/refactor.md)` (すべての制約を遵守)
+- **ロール**: `[refactor.md](/.agents/rules/refactor.md)` (すべての制約を遵守)
 - **セルフチェック**:
   - [ ] 改善前後のメトリクスを比較し、定量的・客観的な改善結果をエビデンスとして提示したか。
 
@@ -116,10 +115,10 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 ### 5-1. コミット履歴のトリアージと再構築
 
-- **ロール**: `[version-control-specialist.md](file://.agents/rules/version-control-specialist.md)`
+- **ロール**: `[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
   (すべての制約を遵守)
 - **実行スキル**:
-  `[hybrid-triage-commit](file://.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
+  `[hybrid-triage-commit](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
 - **セルフチェック**:
   - [ ] 開発および検証が完了した時点で、`hybrid-triage-commit` スキル（`triage`
         モード）を実行し、WIP履歴を美しいアトミックコミットへと再構築したか。
@@ -130,10 +129,10 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 ### 5-2. PR作成と報告
 
-- **ロール**: `[version-control-specialist.md](file://.agents/rules/version-control-specialist.md)`
+- **ロール**: `[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
   (すべての制約を遵守)
 - **実行スキル**:
-  `[create-pull-request](file://.agents/skills/bundles/git-bundle/create-pull-request/SKILL.md)`
+  `[create-pull-request](/.agents/skills/bundles/git-bundle/create-pull-request/SKILL.md)`
 - **セルフチェック**:
   - [ ] **[制約遵守]** メトリクスの改善結果を要約して報告し、規格に沿ったメッセージで記録したか。
 
@@ -143,9 +142,9 @@ description: メトリクスとテストに基づく安全な構造改善サイ�
 
 ### 5-3. マージとクリーンアップ
 
-- **ロール**: `[version-control-specialist.md](file://.agents/rules/version-control-specialist.md)`
+- **ロール**: `[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
   (すべての制約を遵守)
-- **実行スキル**: `[merge-branch](file://.agents/skills/bundles/git-bundle/merge-branch/SKILL.md)`
+- **実行スキル**: `[merge-branch](/.agents/skills/bundles/git-bundle/merge-branch/SKILL.md)`
 - **セルフチェック**:
   - [ ] ユーザーの承認を得た後にマージを実行し、環境を同期したか。
 

@@ -24,11 +24,11 @@ description: スプリントの開始プロセス（リファインメント、�
 
 スプリントの対象を選定し、今回のスプリントで提供する「価値（Outcome）」を定義します。
 
-- **読み込むペルソナ**: `[po-coach.md](file://.agents/rules/po-coach.md)` (POコーチ) および
-  `[scrum-master.md](file://.agents/rules/scrum-master.md)` (スクラムマスター)
+- **読み込むペルソナ**: `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ) および
+  `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**: `product-backlog-refinement`
-- **入力（前提条件）**: 最新の `[product-backlog.md](file://.agents/management/product-backlog.md)`
-  および `[epic-master.md](file://.agents/management/epic-master.md)`。
+- **入力（前提条件）**: 最新の `[product-backlog.md](/.agents/management/product-backlog.md)` および
+  `[epic-master.md](/.agents/management/epic-master.md)`。
 - **手続き**:
   POに対してヒアリングを行い、機能要件の壁打ちとスプリントゴールの定義をファシリテートする。
 - **期待される結果（終了条件）**:
@@ -47,7 +47,7 @@ description: スプリントの開始プロセス（リファインメント、�
 
 着手対象となった機能を、直ちに実装へ移れるように詳細なタスクへと分解・見積りします。
 
-- **読み込むペルソナ**: `[scrum-master.md](file://.agents/rules/scrum-master.md)` (スクラムマスター)
+- **読み込むペルソナ**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**: `sprint-planning`
 - **入力（前提条件）**: Phase 1 で絞り込まれた着手対象のバックログアイテム。
 - **手続き**: 具体的な技術タスクへの分解とTシャツサイズでの見積りを行い、バックログを更新する。
@@ -67,9 +67,9 @@ description: スプリントの開始プロセス（リファインメント、�
 開発完了の条件となる明確な受け入れ基準と、想定されるエッジケースを定義します。また、「動くだけのゴミ」を徹底排除し、保守性が極めて高いコード・ドキュメント資産を担保するための品質基準を設けます。
 
 - **読み込むペルソナ**:
-  - `[tester.md](file://.agents/rules/tester.md)` (テスト/品質保証)
-  - `[refactor.md](file://.agents/rules/refactor.md)` (可読性・保守性・技術負債削減)
-  - `[documentation-writer.md](file://.agents/rules/documentation-writer.md)`
+  - `[tester.md](/.agents/rules/tester.md)` (テスト/品質保証)
+  - `[refactor.md](/.agents/rules/refactor.md)` (可読性・保守性・技術負債削減)
+  - `[documentation-writer.md](/.agents/rules/documentation-writer.md)`
     (明確で資産となるドキュメント執筆)
 - **実行するスキル**: `define-acceptance-criteria`
 - **入力（前提条件）**: Phase 2 で細分化されたタスクリスト。

@@ -13,9 +13,9 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 
 ### 1-1. 実績の要約
 
-- **ロール**: 進行役（例：`[scrum-master.md](file://.agents/rules/scrum-master.md)`）
+- **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
 - **実行スキル**:
-  `[summarize-session-outcomes](file://.agents/skills/bundles/management-bundle/summarize-session-outcomes/SKILL.md)`
+  `[summarize-session-outcomes](/.agents/skills/bundles/management-bundle/summarize-session-outcomes/SKILL.md)`
 - **成果物**: 「Session Outcome Summary」報告
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
@@ -28,9 +28,9 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 
 ### 2-1. 共進化 KPT
 
-- **ロール**: 進行役（例：`[scrum-master.md](file://.agents/rules/scrum-master.md)`）
+- **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
 - **実行スキル**:
-  `[kpt-session-reflection](file://.agents/skills/bundles/management-bundle/kpt-session-reflection/SKILL.md)`
+  `[kpt-session-reflection](/.agents/skills/bundles/management-bundle/kpt-session-reflection/SKILL.md)`
 - **成果物**: 「Session Reflection (KPT)」報告
 - **重要**: AI から人間への建設的なフィードバックを真摯に受け止め、次回の協働品質向上に繋げます。
 
@@ -44,9 +44,9 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 
 ### 3-1. 協働メトリクスの記録
 
-- **ロール**: 進行役（例：`[scrum-master.md](file://.agents/rules/scrum-master.md)`）
+- **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
 - **実行スキル**:
-  `[record-session-metrics](file://.agents/skills/bundles/management-bundle/record-session-metrics/SKILL.md)`
+  `[record-session-metrics](/.agents/skills/bundles/management-bundle/record-session-metrics/SKILL.md)`
 - **成果物**: `metrics.jsonl` へのデータ蓄積と傾向レポートの出力
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
@@ -59,9 +59,9 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 
 ### 4-1. バックログ更新
 
-- **ロール**: 進行役（例：`[scrum-master.md](file://.agents/rules/scrum-master.md)`）
+- **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
 - **実行スキル**:
-  `[update-backlog](file://.agents/skills/bundles/management-bundle/update-backlog/SKILL.md)`
+  `[update-backlog](/.agents/skills/bundles/management-bundle/update-backlog/SKILL.md)`
 - **内容**: セッションの成果に基づき、PBI のステータスを更新（Done
   への移動や、残タスクの整理）します。
 
