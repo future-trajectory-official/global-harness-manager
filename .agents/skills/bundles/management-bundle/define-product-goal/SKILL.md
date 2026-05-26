@@ -9,8 +9,8 @@ tags:
 # define-product-goal
 
 `craft-vision`
-で合意したビジョンを、「いつまでに・何を達成するか」という具体的なプロダクトゴールに落とし込み、`[product-backlog.md](file://.agents/management/product-backlog.md)`
-のプロダクトゴールセクションと `[epic-master.md](file://.agents/management/epic-master.md)`
+で合意したビジョンを、「いつまでに・何を達成するか」という具体的なプロダクトゴールに落とし込み、`[product-backlog.md](/.agents/management/product-backlog.md)`
+のプロダクトゴールセクションと `[epic-master.md](/.agents/management/epic-master.md)`
 の初期構造を生成します。
 
 ## Quick Start（実行方法）
@@ -62,7 +62,7 @@ tags:
 ### Step 3: エピック（機能領域）の初期設計 (Epic Structure)
 
 ゴールを実現するために必要な「大きな機能のかたまり（エピック）」を列挙します。これが
-`[epic-master.md](file://.agents/management/epic-master.md)` の骨格となります。
+`[epic-master.md](/.agents/management/epic-master.md)` の骨格となります。
 
 - **問いかけ例**:
   「このゴールを達成するには、どんな大きな課題領域があると思いますか？技術・UX・運用など、自由に挙げてみてください。」
@@ -74,13 +74,13 @@ tags:
 
 ユーザーからゴールとエピック構造への合意が得られたら、以下の成果物を生成します。
 
-1. **`[product-backlog.md](file://.agents/management/product-backlog.md)`
-   のプロダクトゴールセクション**: 合意したゴール文と策定日を記入。
-2. **`[epic-master.md](file://.agents/management/epic-master.md)` の初期構造**:
+1. **`[product-backlog.md](/.agents/management/product-backlog.md)` のプロダクトゴールセクション**:
+   合意したゴール文と策定日を記入。
+2. **`[epic-master.md](/.agents/management/epic-master.md)` の初期構造**:
    エピックとフィーチャーの骨格（PBIはまだ空）。
 
-フォーマットは `[product-backlog.md](file://.agents/management/product-backlog.md.example)` および
-`[epic-master.md](file://.agents/management/epic-master.md.example)`
+フォーマットは `[product-backlog.md](/.agents/management/product-backlog.md.example)` および
+`[epic-master.md](/.agents/management/epic-master.md.example)`
 を強力なベースラインとして使用してください。
 
 <!-- STOP -->

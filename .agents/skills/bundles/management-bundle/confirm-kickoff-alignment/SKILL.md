@@ -66,7 +66,7 @@ AI はこれまでに作成された全成果物を読み込み、論理の矛�
 
 - **キックオフサマリー**: プロジェクトの目的と最終決断の要約
 - **成果物リンク集**:
-  これまでに作成・更新された全ドキュメント（`[VISION.md](file://.agents/management/VISION.md)`、`[product-backlog.md](file://.agents/management/product-backlog.md)`
+  これまでに作成・更新された全ドキュメント（`[VISION.md](/.agents/management/VISION.md)`、`[product-backlog.md](/.agents/management/product-backlog.md)`
   等）への参照リスト
 - **整合性チェック結果**: 議論の中で確認されたリスクと、その対策や許容した理由
 

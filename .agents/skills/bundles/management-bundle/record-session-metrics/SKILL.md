@@ -42,4 +42,4 @@ tags:
 > [!TIP]
 > 各品質メトリクスの採点基準およびスキーマ詳細は [metrics-guide.md](references/metrics-guide.md)
 > を参照してください。 Effort（介入回数）の厳密な定義や3点見積もりフローについては
-> [backlog-guidelines.md](file:///.agents/management/backlog-guidelines.md) を参照してください。
+> [backlog-guidelines.md](/.agents/management/backlog-guidelines.md) を参照してください。

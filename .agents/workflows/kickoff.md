@@ -21,7 +21,7 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 
 まずは、ビジネス的な価値だけでなく、ユーザー自身の「やりたい」という情熱と覚悟を検証します。
 
-- **読み込むペルソナ**: `[investor.md](file://.agents/rules/investor.md)` (エンジェル投資家)
+- **読み込むペルソナ**: `[investor.md](/.agents/rules/investor.md)` (エンジェル投資家)
 - **実行するスキル**: `gather-project-context`
 - **終了条件**: ユーザーが情熱と覚悟を示し、`project-context.md`
   を作成する（またはプロジェクト化の保留を決断する）こと。
@@ -32,9 +32,9 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 
 プロジェクトの「北極星」となる価値とターゲットを言語化します。
 
-- **読み込むペルソナ**: `[po-coach.md](file://.agents/rules/po-coach.md)` (POコーチ)
+- **読み込むペルソナ**: `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ)
 - **実行するスキル**: `craft-vision`
-- **終了条件**: ユーザーがステートメントに合意し、`[VISION.md](file://.agents/management/VISION.md)`
+- **終了条件**: ユーザーがステートメントに合意し、`[VISION.md](/.agents/management/VISION.md)`
   が生成されること。
 
 <!-- STOP -->
@@ -43,11 +43,10 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 
 ビジョンを、計測可能な具体的な最初のゴールへと落とし込みます。
 
-- **読み込むペルソナ**: `[po-coach.md](file://.agents/rules/po-coach.md)` (POコーチ)
+- **読み込むペルソナ**: `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ)
 - **実行するスキル**: `define-product-goal`
-- **終了条件**:
-  `[product-backlog.md](file://.agents/management/product-backlog.md)`（ゴールセクション）と
-  `[epic-master.md](file://.agents/management/epic-master.md)` の骨格が生成されること。
+- **終了条件**: `[product-backlog.md](/.agents/management/product-backlog.md)`（ゴールセクション）と
+  `[epic-master.md](/.agents/management/epic-master.md)` の骨格が生成されること。
 
 <!-- STOP -->
 
@@ -55,8 +54,7 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 
 ゴールを実現するための技術基盤を、トレードオフを比較しながら選定します。
 
-- **読み込むペルソナ**: `[technical-advisor.md](file://.agents/rules/technical-advisor.md)`
-  (技術顧問)
+- **読み込むペルソナ**: `[technical-advisor.md](/.agents/rules/technical-advisor.md)` (技術顧問)
 - **実行するスキル**: `select-tech-stack`
 - **終了条件**: ユーザーが技術的負債やコストを理解した上で選定を行い、`tech-stack-decision.md`
   が生成されること。
@@ -67,8 +65,7 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 
 全フェーズの成果物に矛盾がないか検証し、最終的な開始の決断を行います。
 
-- **読み込むペルソナ**: `[devils-advocate.md](file://.agents/rules/devils-advocate.md)`
-  (悪魔の代弁者)
+- **読み込むペルソナ**: `[devils-advocate.md](/.agents/rules/devils-advocate.md)` (悪魔の代弁者)
   ※ユーザーが「座談会モード」を希望した場合は、これまでの全ペルソナ（投資家、POコーチ、技術顧問）を総動員すること。
 - **実行するスキル**: `confirm-kickoff-alignment`
 - **終了条件**: ユーザーが最終的な「Go」を出し、Antigravity

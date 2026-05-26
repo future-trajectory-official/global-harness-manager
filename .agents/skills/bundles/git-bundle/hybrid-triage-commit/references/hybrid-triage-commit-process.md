@@ -56,8 +56,8 @@ graph TD
 ### 2. ポストトリアージによる「歴史の編纂」 (プッシュ直前)
 
 - 開発およびすべてのローカル検証（fmt / lint）が完了した完了フェーズ（Phase 4 または Phase
-  5）の冒頭で、`[version-control-specialist.md](file://.agents/rules/version-control-specialist.md)`
-  ロールを呼び出し、`[hybrid-triage-commit](file://.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
+  5）の冒頭で、`[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
+  ロールを呼び出し、`[hybrid-triage-commit](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
   スキル（`triage` モード）を実行します。
 - これまで積み重ねた WIP コミットを `git reset --soft origin/main`
   などで一旦ステージング状態に戻し、全変更の diff を俯瞰します。
