@@ -125,7 +125,12 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
         let absoluteTarget = "";
         if (targetPath.startsWith("/")) {
           // 絶対パスの場合
-          absoluteTarget = targetPath;
+          if (targetPath.startsWith("/home/")) {
+            absoluteTarget = targetPath;
+          } else {
+            // 先頭スラッシュ付きのワークスペースルート相対パスの場合
+            absoluteTarget = `${ROOT}${targetPath}`;
+          }
         } else {
           // 相対パスの場合
           if (isWorkspaceRelative || targetPath.startsWith(".agents/")) {
