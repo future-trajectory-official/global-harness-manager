@@ -62,3 +62,48 @@ Deno.test("constants - getManagementPath should return correct path (with and wi
   const filePath = getManagementPath("product-backlog.md");
   assertStringIncludes(filePath, ".agents/management/product-backlog.md");
 });
+
+// findProjectRoot のテストケース (POから求められた多角的な検証ケース)
+import { findProjectRoot } from "./constants.ts";
+
+Deno.test("constants - findProjectRoot: 1. 環境変数 HARNESS_WORKSPACE_ROOT が設定されている場合は最優先する", () => {
+  const root = findProjectRoot({
+    envGetter: (
+      key: string,
+    ) => (key === "HARNESS_WORKSPACE_ROOT" ? "/global/harness/workspace" : undefined),
+    cwdGetter: () => "/other/dir",
+    statSync: () => {
+      throw new Error("should not stat");
+    },
+    importMetaUrl: "file:///some/path/.agents/core/constants.ts",
+  });
+  assertEquals(root, "/global/harness/workspace");
+});
+
+Deno.test("constants - findProjectRoot: 2. カレントディレクトリ直下に .agents がある場合はそれを優先する", () => {
+  const root = findProjectRoot({
+    envGetter: () => undefined,
+    cwdGetter: () => "/my/current/project",
+    statSync: (path: string) => {
+      if (path === "/my/current/project/.agents") {
+        return { isDirectory: true };
+      }
+      throw new Error("not found");
+    },
+    importMetaUrl: "file:///some/other/path/.agents/core/constants.ts",
+  });
+  assertEquals(root, "/my/current/project");
+});
+
+Deno.test("constants - findProjectRoot: 3. カレントディレクトリ直下に .agents がない、環境変数もない場合は importMetaUrl からフォールバックする", () => {
+  const root = findProjectRoot({
+    envGetter: () => undefined,
+    cwdGetter: () => "/other/dir",
+    statSync: () => {
+      throw new Deno.errors.NotFound("not found");
+    },
+    importMetaUrl: "file:///absolute/path/to/harness/.agents/core/constants.ts",
+  });
+  // constants.ts は .agents/core/ 配下にあるため、2階層上は /absolute/path/to/harness となる
+  assertEquals(root, "/absolute/path/to/harness");
+});

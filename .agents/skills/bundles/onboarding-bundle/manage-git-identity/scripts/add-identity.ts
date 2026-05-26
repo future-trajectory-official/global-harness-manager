@@ -1,4 +1,10 @@
-import { executeCommand, fsUtil, logger, pathUtil } from "../../../../../core/harness-core.ts";
+import {
+  executeCommand,
+  fsUtil,
+  logger,
+  pathUtil,
+  PROJECT_ROOT,
+} from "../../../../../core/harness-core.ts";
 
 export interface Identity {
   accountName: string;
@@ -78,7 +84,7 @@ export async function updateSshConfig(
 
 async function main() {
   const homeDir = Deno.env.get("HOME") || Deno.env.get("USERPROFILE") || "";
-  const harnessRoot = pathUtil.resolvePath(Deno.cwd());
+  const harnessRoot = PROJECT_ROOT;
   const identityConfig = pathUtil.joinPath(harnessRoot, "config", "identities.md");
   const sshDir = pathUtil.joinPath(homeDir, ".ssh");
   const sshConfig = pathUtil.joinPath(sshDir, "config");

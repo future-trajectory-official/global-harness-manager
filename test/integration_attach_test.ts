@@ -34,6 +34,10 @@ Deno.test("Integration: harness-attach dry-run", async () => {
         "--dry-run",
       ],
       cwd: managerDir,
+      env: {
+        ...Deno.env.toObject(),
+        HARNESS_WORKSPACE_ROOT: managerDir,
+      },
       stdout: "piped",
       stderr: "piped",
     });
@@ -98,6 +102,10 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
         scriptPath,
       ],
       cwd: managerDir,
+      env: {
+        ...Deno.env.toObject(),
+        HARNESS_WORKSPACE_ROOT: managerDir,
+      },
       stdout: "piped",
       stderr: "piped",
     });
@@ -186,6 +194,7 @@ exit 0
       env: {
         // PATHの最優先にモックbinを指定し、システムgitではなくモックgitを呼ばせる
         PATH: `${mockBinDir}:${Deno.env.get("PATH")}`,
+        HARNESS_WORKSPACE_ROOT: managerDir,
       },
       stdout: "piped",
       stderr: "piped",

@@ -1,11 +1,44 @@
 import { dirname, fromFileUrl, join } from "@std/path";
 
 /**
- * プロジェクトルートの絶対パスを取得する
- * 実行中のスクリプト（このファイル）の位置から 2 階層上
+ * ワークスペースのプロジェクトルートを動的に特定する
  */
-const __dirname = dirname(fromFileUrl(import.meta.url));
-export const PROJECT_ROOT = join(__dirname, "..", "..");
+export function findProjectRoot(
+  options: {
+    envGetter: (key: string) => string | undefined;
+    cwdGetter: () => string;
+    statSync: (path: string) => { isDirectory: boolean };
+    importMetaUrl: string;
+  } = {
+    envGetter: (key: string) => Deno.env.get(key),
+    cwdGetter: () => Deno.cwd(),
+    statSync: (path: string) => Deno.statSync(path),
+    importMetaUrl: import.meta.url,
+  },
+): string {
+  // 1. 環境変数 HARNESS_WORKSPACE_ROOT から優先取得
+  const envRoot = options.envGetter("HARNESS_WORKSPACE_ROOT");
+  if (envRoot) {
+    return envRoot;
+  }
+
+  // 2. カレントディレクトリ直下に .agents ディレクトリがあるか確認
+  try {
+    const cwd = options.cwdGetter();
+    const hasAgents = options.statSync(join(cwd, ".agents")).isDirectory;
+    if (hasAgents) {
+      return cwd;
+    }
+  } catch (_e) {
+    // NotFound の場合などは無視して次に進む
+  }
+
+  // 3. フォールバック: スクリプト自体の位置から 2 階層上
+  const __dirname = dirname(fromFileUrl(options.importMetaUrl));
+  return join(__dirname, "..", "..");
+}
+
+export const PROJECT_ROOT = findProjectRoot();
 
 /**
  * プロジェクト全体のパス定数
