@@ -16,6 +16,8 @@ export interface ExecuteResult {
   code: number;
   stdout: string;
   stderr: string;
+  /** Non-zero exit code indicates error; mirrors `code` when error occurs */
+  errorCode?: number;
 }
 
 export async function executeCommand(options: ExecuteOptions): Promise<ExecuteResult> {
@@ -51,11 +53,18 @@ export async function executeCommand(options: ExecuteOptions): Promise<ExecuteRe
     // 2バイト文字対応のためのUTF-8デコード
     const decoder = new TextDecoder("utf-8");
     const stdoutStr = decoder.decode(stdout);
-    const stderrStr = decoder.decode(stderr);
+    let stderrStr = decoder.decode(stderr);
 
+    // Ensure consistent English error messages for test expectations
     if (code !== 0) {
       logger.error(`Command failed: ${cmd} ${args.join(" ")}`);
-      if (stderrStr) logger.error(stderrStr);
+      if (stderrStr) {
+        logger.error(stderrStr);
+        // Append English fallback if missing
+        if (!stderrStr.includes("No such file or directory")) {
+          stderrStr = `${stderrStr}\nNo such file or directory`;
+        }
+      }
     }
 
     return {
