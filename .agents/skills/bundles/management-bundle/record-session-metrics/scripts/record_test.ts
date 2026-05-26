@@ -28,6 +28,22 @@ Deno.test("validateMetrics - should throw for out of range values", () => {
   }
 });
 
+Deno.test("validateMetrics - should throw for invalid effort numbers", () => {
+  const invalid = {
+    intent: "5",
+    constraint: "5",
+    context: "5",
+    stability: "5",
+    initial_estimated_effort: -1, // 負の値は無効
+  };
+  try {
+    validateMetrics(invalid as unknown as SessionMetrics);
+    assertEquals(true, false, "Should have thrown");
+  } catch (e) {
+    assertStringIncludes((e as Error).message, "must be a non-negative number");
+  }
+});
+
 Deno.test("record-session-metrics refactor tests", async (t) => {
   const tempDir = await Deno.makeTempDir();
   const testFile = join(tempDir, "metrics.jsonl");
@@ -44,21 +60,28 @@ Deno.test("record-session-metrics refactor tests", async (t) => {
     assertEquals(isNaN(timestamp.getTime()), false);
   });
 
-  await t.step("showSummary - should return formatted table", async () => {
+  await t.step("showSummary - should return formatted table with extended columns", async () => {
     const summary = await showSummary(testFile);
-    assertStringIncludes(summary, "| Date | Intent |");
-    assertStringIncludes(summary, "| 5 | 5 | 5 | 5 |");
+    assertStringIncludes(summary, "| Date | Intent | Const |");
+    assertStringIncludes(summary, "| 5 | 5 |");
   });
 
   await t.step(
-    "appendMetrics - should append a valid JSON line with timestamp and reason",
+    "appendMetrics - should append a valid JSON line with metrics_reason and effort_variance_reason",
     async () => {
       const data = {
         intent: "5",
         constraint: "5",
         context: "5",
         stability: "5",
-        reason: "Everything went smoothly.",
+        metrics_reason: "Everything went smoothly.",
+        epic_id: "EP-01",
+        feature_id: "FE-02",
+        pbi_id: "PBI-03",
+        initial_estimated_effort: 3,
+        planned_estimated_effort: 2,
+        actual_effort: 1,
+        effort_variance_reason: "AC was very clear.",
       };
       await appendMetrics(data, testFile);
 
@@ -67,14 +90,19 @@ Deno.test("record-session-metrics refactor tests", async (t) => {
       const parsed = JSON.parse(lines[lines.length - 1]);
 
       assertEquals(parsed.intent, "5");
-      assertEquals(parsed.reason, "Everything went smoothly.");
+      assertEquals(parsed.metrics_reason, "Everything went smoothly.");
+      assertEquals(parsed.epic_id, "EP-01");
+      assertEquals(parsed.initial_estimated_effort, 3);
+      assertEquals(parsed.actual_effort, 1);
+      assertEquals(parsed.effort_variance_reason, "AC was very clear.");
     },
   );
 
   await t.step("showSummary - should include reasoning history in output", async () => {
     const summary = await showSummary(testFile);
-    assertStringIncludes(summary, "🧠 Reasoning History");
-    assertStringIncludes(summary, "Everything went smoothly.");
+    assertStringIncludes(summary, "🧠 Collaboration & Effort Reasoning History");
+    assertStringIncludes(summary, "Quality Reason**: Everything went smoothly.");
+    assertStringIncludes(summary, "Effort Variance/Success Reason**: AC was very clear.");
   });
 
   await t.step("showSummary - should handle missing file gracefully", async () => {

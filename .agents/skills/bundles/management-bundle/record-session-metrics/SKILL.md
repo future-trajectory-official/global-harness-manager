@@ -19,13 +19,17 @@ tags:
 // turbo-all
 
 1. **採点と記録の実行**
-   - ログに基づき採点を行い、以下のコマンドを実行します。
+   - ログに基づき採点および Effort（介入回数）の集計を行い、以下のコマンドを実行します。
    ```bash
    deno run -A .agents/skills/bundles/management-bundle/record-session-metrics/scripts/record.ts \
-     --intent=<1-5> --constraint=<1-5> --context=<1-5> --stability=<1-5> --reason="<思考プロセス>"
+     --intent=<1-5> --constraint=<1-5> --context=<1-5> --stability=<1-5> \
+     --metrics-reason="<採点の思考プロセス>" \
+     --epic="<Epic ID>" --feature="<Feature ID>" --pbi="<PBI ID>" \
+     --initial-effort=<初期見積数値> --planned-effort=<計画後見積数値> --actual-effort=<実績数値> \
+     --effort-variance-reason="<予実乖離の理由、またはスムーズに完了した成功要因>"
    ```
-   - ※各フラグには 1〜5 の数値を指定してください（例: `--intent=4`）。
-   - ※`--reason` には、今回その採点を決定した理由・根拠（思考プロセス）を文章で指定します。
+   - ※各評価フラグには 1〜5 の数値を指定してください。
+   - ※`--reason` も `--metrics-reason` のエイリアスとして後方互換性のために使用可能です。
 
    **サマリーのみ表示する場合（記録なし）**:
    ```bash
@@ -33,9 +37,9 @@ tags:
    ```
 
 2. **サマリーの確認**
-   - 実行後に表示される「直近 5 セッションの推移」を確認し、改善の兆候や課題を把握してください。
+   - 実行後に表示される「推移テーブル」および「履歴」を確認し、予実精度やプロセスの改善兆候を把握してください。
 
 > [!TIP]
-> 各メトリクスの詳細な採点基準は
-> [metrics-guide.md](.agents/skills/bundles/management-bundle/record-session-metrics/references/metrics-guide.md)
-> を参照してください。
+> 各品質メトリクスの採点基準およびスキーマ詳細は [metrics-guide.md](references/metrics-guide.md)
+> を参照してください。 Effort（介入回数）の厳密な定義や3点見積もりフローについては
+> [backlog-guidelines.md](file:///.agents/management/backlog-guidelines.md) を参照してください。
