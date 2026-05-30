@@ -27,8 +27,10 @@ tags:
 1. **環境判定とリファレンスのロード**
    - プロジェクト構成（`deno.json`, `requirements.txt`
      等）を確認し、適切な言語リファレンスを読み込んでください。
-     - Deno/TypeScript: [deno-ts.md](./references/deno-ts.md)
-     - Python: [python.md](./references/python.md)
+     - Deno/TypeScript:
+       [deno-ts.md](/.agents/skills/bundles/development-bundle/tdd-implementation/references/deno-ts.md)
+     - Python:
+       [python.md](/.agents/skills/bundles/development-bundle/tdd-implementation/references/python.md)
 
 2. **RED: 失敗するテストの作成**
    - 指定された仕様に基づき、**最初にテストコードだけ**を記述してください。

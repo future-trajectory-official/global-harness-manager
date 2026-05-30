@@ -24,8 +24,10 @@ Preservation）」を絶対条件として、コードの技術債を削減し�
 
 1. **環境判定とメトリクス計測ガイドのロード**
    - 言語に応じた計測・分析方法を確認してください。
-     - Deno/TypeScript: [deno-ts.md](./references/deno-ts.md)
-     - Python: [python.md](./references/python.md)
+     - Deno/TypeScript:
+       [deno-ts.md](/.agents/skills/bundles/development-bundle/refactoring-loop/references/deno-ts.md)
+     - Python:
+       [python.md](/.agents/skills/bundles/development-bundle/refactoring-loop/references/python.md)
 
 2. **ターゲットの選定 (Pre-analyze)**
    - 静的解析結果や「コードの臭い（重複、長すぎる関数等）」に基づき、修正対象を1箇所に絞り込んでください。
