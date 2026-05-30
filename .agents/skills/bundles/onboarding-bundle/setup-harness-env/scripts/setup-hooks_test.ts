@@ -18,7 +18,15 @@ Deno.test("setup-hooks - should create pre-push hook in target directory", async
 
     const content = await Deno.readTextFile(prePushPath);
     assertStringIncludes(content, "#!/bin/sh");
-    assertStringIncludes(content, "deno task test");
+    assertStringIncludes(content, "deno task qa:cov");
+
+    // pre-commit フックも生成されていることを確認
+    const preCommitPath = join(hooksDir, "pre-commit");
+    assertEquals(await fsUtil.exists(preCommitPath), true);
+    const preCommitContent = await Deno.readTextFile(preCommitPath);
+    assertStringIncludes(preCommitContent, "#!/bin/sh");
+    assertStringIncludes(preCommitContent, "deno fmt --check");
+    assertStringIncludes(preCommitContent, "deno lint");
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }
