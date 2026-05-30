@@ -28,8 +28,8 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
       // management ディレクトリが存在しないなどの例外は無視
     }
 
-    // 2. ターゲットの Markdown ファイル一覧を取得
-    for await (const entry of walk(`${ROOT}/.agents`, { exts: [".md"] })) {
+    // 2. ターゲットの Markdown ファイル一覧を取得（テンプレートファイル .example / .md.example も対象に含める）
+    for await (const entry of walk(`${ROOT}/.agents`, { exts: [".md", ".example"] })) {
       if (entry.isFile) {
         mdFiles.push(entry.path);
       }
@@ -102,6 +102,22 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
 
         // 外部URLや内部アンカー (#) は除外
         if (link.startsWith("http://") || link.startsWith("https://") || link.startsWith("#")) {
+          continue;
+        }
+
+        // 5. 禁止リンク記法のチェック
+        // file:// 記法は GitHub やマークダウンプレビューでリンクが壊れるため禁止
+        if (link.startsWith("file://")) {
+          issues.push(
+            `[Forbidden Link Format] In ${relativePath}: "file://" format is forbidden in document links: "${link}". Use workspace root relative path (e.g. "/.agents/rules/tester.md").`,
+          );
+          continue;
+        }
+        // カレント相対パス (./ や ../) は GitHub やマークダウンプレビューで壊れるため禁止
+        if (link.startsWith("./") || link.startsWith("../")) {
+          issues.push(
+            `[Forbidden Link Format] In ${relativePath}: Relative path "${link}" starting with "./" or "../" is forbidden in document links. Use workspace root relative path (e.g. "/.agents/rules/tester.md").`,
+          );
           continue;
         }
 
