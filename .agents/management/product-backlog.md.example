@@ -1,5 +1,11 @@
 # プロダクトバックログ
 
+## 推奨スプリントウェイト上限 (Recommended Sprint Weight Cap)
+
+| 推奨スプリントウェイト上限 (Sprint Weight Cap) | 基準スプリント | 策定日 |
+| :--- | :--- | :--- |
+| [N] | Sprint [N-1] | YYYY-MM-DD |
+
 <!-- このファイルはプロダクトの開発計画を管理します。
      `[product-backlog.md.example](file://.agents/management/product-backlog.md.example)` をコピーして使用してください。 -->
 
