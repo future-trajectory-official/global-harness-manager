@@ -1,15 +1,15 @@
 ---
-name: task-initialization
+name: initialize-work-package
 description: Work Package開始時の「儀式」として、環境・ルール・目的を同期する。
 tags:
   trigger:
-    - start-task
-    - task-initialization
+    - start-work-package
+    - initialize-work-package
     - session-start
   category: management
 ---
 
-# task-initialization
+# initialize-work-package
 
 Work
 Packageを開始する前に、開発環境の現状と利用可能なルール、そして目的をユーザーと同期するための必須ステップです。

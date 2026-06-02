@@ -33,7 +33,7 @@ description: 価値観同期・Work Package特定・戦略策定を段階的に�
 
 - **ロール**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (優先順位の調整)
 - **実行スキル**:
-  `[identify-session-task](/.agents/skills/bundles/management-bundle/identify-session-task/SKILL.md)`
+  `[identify-work-package](/.agents/skills/bundles/management-bundle/identify-work-package/SKILL.md)`
 - **成果物**: 「Session Task Identification」報告
 - **セルフチェック**:
   - [ ] **[1セッション1Work Package]** バックログから、迷走を防ぐための最小単位のWork

@@ -29,7 +29,7 @@
 - **PBI (Product Backlog Item)**:
   プロダクトバックログを構成する最小管理単位。実現すべき機能または技術的作業を表す。
 - **Work Package (WP)**:
-  PBIをさらに分割した作業パッケージ。1セッションで完了させる単位。`identify-session-task`
+  PBIをさらに分割した作業パッケージ。1セッションで完了させる単位。`identify-work-package`
   で特定され、`session-planning` で実現計画が作成される。
 - **タスク**: task.mdに記述されるチェック項目。Work
   Packageを具体化した最小の作業単位。各タスクは完了条件（チェックボックス）で進捗管理される。
@@ -93,7 +93,7 @@ Packageをこなすための人間の Effort は最小化されます。
 を記録します。
 
 1. **初期見積もり (Initial Estimated Effort)**:
-   - **タイミング**: Work Package選択時 (`identify-session-task`)
+   - **タイミング**: Work Package選択時 (`identify-work-package`)
    - **定義**: Work Package自体の記述や要件定義の明瞭さから、開始時点で想定される介入回数。
 2. **計画後見積もり (Planned Estimated Effort)**:
    - **タイミング**: 計画完了・PO合意時 (`session-planning`)

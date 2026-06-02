@@ -4,7 +4,7 @@ description: プロダクトオーナー（ユーザー）と対話しながら�
 tags:
   trigger:
     - backlog-refinement
-    - prioritize-tasks
+    - prioritize-pbi
     - scope-adjustment
   category: management
   constraints: no-development
