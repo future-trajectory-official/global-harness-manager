@@ -52,13 +52,15 @@ deno run -A .agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-t
 
 ### C. 【非対話環境での代替手順】手動トリアージ
 
-CIやCLI専用環境など、`git-triage.ts` の対話的プロンプトが動作しない場合は、以下の手動手順でアトミックコミットを再構築します。
+CIやCLI専用環境など、`git-triage.ts`
+の対話的プロンプトが動作しない場合は、以下の手動手順でアトミックコミットを再構築します。
 
 1. **WIP履歴のリセット**: `git reset --soft origin/main`（または適切なベースブランチ）
 2. **全変更の確認**: `git status --short` で未コミットの全変更ファイルを一覧表示
 3. **論理グループへの分割**:
    - 変更内容を確認し、`feat`（機能追加）、`fix`（修正）、`chore`（雑務）、`docs`（ドキュメント）、`refactor`（リファクタリング）、`test`（テスト）などの論理単位に分類
-   - 各グループごとに `git add <ファイル>` でステージングし、`git commit -m "type: メッセージ"` でコミット
+   - 各グループごとに `git add <ファイル>` でステージングし、`git commit -m "type: メッセージ"`
+     でコミット
 4. **Conventional Commits の遵守**: コミットメッセージは `type(scope): 説明` の形式に従う
 5. **最終確認**: `git log --oneline` で履歴の論理性を確認
 
