@@ -53,6 +53,6 @@ description: Git 操作（コミット、ブランチ管理、履歴操作）を
    - `rebase` や `push --force`
      等を行う際は、必ず「何が起きるか（リスク）」を事前に説明し、合意の証跡を残すこと。
 7. **ハイブリッドトリアージコミットの遵守**
-   - コミット操作を行う際は、`hybrid-triage-commit-process.md`（`.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md`）に定義されたハイブリッドトリアージコミットプロセスを理解し、それに従うこと。
+   - コミット操作を行う際は、[hybrid-triage-commit-process.md](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)に定義されたハイブリッドトリアージコミットプロセスを理解し、それに従うこと。
    - WIPコミットおよびトリアージコミットには
-     `git-triage.ts`（Denoスクリプト）を使用し、手動のgit操作でプロセスをショートカットしないこと。
+     [git-triage.ts](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts)（Denoスクリプト）を使用し、手動のgit操作でプロセスをショートカットしないこと。
