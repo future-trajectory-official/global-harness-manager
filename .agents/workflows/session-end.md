@@ -62,7 +62,6 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 - **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
 - **実行スキル**:
   `[update-backlog](/.agents/skills/bundles/management-bundle/update-backlog/SKILL.md)`
-- **内容**: セッションの成果に基づき、PBI のステータスを更新（Done
-  への移動や、残タスクの整理）します。
+- **内容**: セッションの成果に基づき、PBI のステータスを更新（Done への移動や、残PBIの整理）します。
 
 <!-- STOP -->
