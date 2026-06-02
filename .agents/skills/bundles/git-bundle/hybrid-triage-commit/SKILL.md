@@ -23,43 +23,32 @@ tags:
 
 マイルストーンの達成、テストの通過、またはファイル書き換えの成功時など、こまめに実行して作業のセーブポイントを作ります。
 
-1. 現在のワーキングツリーの状態を確認します。
-   ```bash
-   git status
-   ```
-2. 進行状況をWIPコミットとして安全にセーブします。
-   ```bash
-   git commit -am "[wip] savepoint"
-   ```
-   - ※新規追加ファイルがある場合は、先に `git add` を行ってからコミットしてください。
+`git-triage.ts` スクリプト（wipモード）を実行します。
+
+```bash
+deno run -A .agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts wip
+```
 
 ### B. 【triage モード】歴史の編纂（プッシュ・PR作成直前）
 
 すべての実装、検証、リファクタリングが完了したタイミングで実行し、雑多なWIP履歴を美しいアトミックコミットへと事後的に再構築します。
 
-1. **WIP履歴をステージングに戻す**: ベースブランチ（通常は
-   `origin/main`）を指定して、現在のWIP履歴を安全にリセットし、すべての変更をステージング状態に戻します。
-   ```bash
-   git reset --soft origin/main
-   ```
-2. **変更の全体像の俯瞰**: ステージングされている全ファイルの diff
-   を表示し、どのファイルがどの論理的役割（機能追加、リファクタリング、テスト等）を持っているかを論理的に分類・分析します。
-   ```bash
-   git diff --cached --stat
-   ```
-3. **アトミックコミットの順次構築**:
-   論理的にまとめるべきファイルのみをステージングに残し、残りを一時的にステージングから外して、アトミックコミット（Conventional
-   Commits 準拠）を作成します。
-   - 特定ファイルのみコミットする場合：
-     ```bash
-     # 一旦すべてアンステージ
-     git reset
-     # 関連するファイルのみステージング
-     git add path/to/file
-     # アトミックコミットの作成
-     git commit -m "feat: xxx"
-     ```
-   - これをすべての変更ファイルが美しく整理・コミットされるまで繰り返します。
+`git-triage.ts` スクリプト（triageモード）を実行します。
+
+```bash
+deno run -A .agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts triage
+```
+
+スクリプトは以下の処理を対話的にガイドします。
+
+1. ベースブランチ（`origin/main`）を自動検出し、WIP履歴をステージング状態にリセット
+2. 全変更ファイルを一覧表示
+3. コミット対象ファイルの選択を促す（番号入力/全選択/中断）
+4. Conventional Commits 形式でのコミットメッセージ入力を促す
+5. **論理的境界バリデーション**: 異なる論理役割（例: `feat` と
+   `docs`）のファイル混在を検出し、警告を表示
+6. 承認後、アトミックコミットを作成
+7. 未コミットのファイルが残っている場合は次のコミット作成に戻る
 
 ## 2. 詳細仕様 (Sidecar Reference)
 
