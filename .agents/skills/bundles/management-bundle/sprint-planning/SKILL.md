@@ -5,7 +5,7 @@ tags:
   trigger:
     - sprint-planning
     - plan-next-sprint
-    - task-breakdown
+    - breakdown-pbi
   category: management
   constraints: no-development
 ---
