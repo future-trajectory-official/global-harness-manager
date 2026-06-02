@@ -2,6 +2,31 @@
 
 [Task description or summary]
 
+<!--
+GUARD:REQUIRED_H2
+- 📊 セッションメトリクス & 予実管理
+- 📋 実行タスク一覧
+
+GUARD:REQUIRED_H3
+- Phase 1
+- Phase 2
+- Phase 3
+- Phase 4
+
+GUARD:REQUIRED_METRICS
+- 初期見積 (想定介入回数)
+- 計画後見積 (想定介入回数)
+- 実際の介入回数
+
+GUARD:NOTE
+この GUARD ブロックはテンプレートの不変契約を宣言します。
+以下のルールを遵守してください：
+- GUARD で宣言された H2/H3 の見出し文言は削除・リネームしないでください
+- GUARD で宣言されたメトリクスフィールド名は削除・リネームしないでください
+- 新しいセクションの追加や内容の拡張は自由です
+- GUARD ブロック自体を変更する場合は、検証ロジックとの整合をとってください
+-->
+
 ---
 
 ## 📊 セッションメトリクス & 予実管理
@@ -58,10 +83,18 @@
 
 ### Phase 4: 完了・クリーンアップ（/develop-work-package）
 
-- [ ] **[4-1. コミット履歴のトリアージと再構築]** (`version-control-specialist.md`)
-  - [ ] `hybrid-triage-commit` スキル（`triage`
-        モード）により、美しいアトミックコミットへと履歴を編纂（極めて慎重に実行）。
-- [ ] **[4-2. PR作成と報告]** (`version-control-specialist.md`)
-  - [ ] 変更内容を要約し、Conventional Commits 規格に沿った PR を作成・報告。
+#### 完了条件チェックリスト（AIはこのチェックリストをすべて満たさなければタスクを完了してはならない）
+
+- [ ] **[4-1. WIPコミットの解体とアトミックコミットへの再構築]** (`version-control-specialist.md`)
+  - [ ] `hybrid-triage-commit` スキルを `triage`
+        モードで実行し、WIPコミットを論理単位のアトミックコミットへ解体する。
+  - [ ] 解体後、`git log --oneline`
+        を実行し、再構築されたコミット履歴をチャットに貼付してPOに提示する。
+  - [ ] POが履歴を確認し、各コミットの単位とメッセージに承認を与えること。
+- [ ] **[4-2. PR作成とURL提示]** (`version-control-specialist.md`)
+  - [ ] Conventional Commits 規格に沿った PR を作成する。
+  - [ ] 作成したPRのURLをチャットに貼付し、POにレビューを依頼する。
+  - [ ] POがURLを確認し、承認または修正指示を与えるまで次へ進まない。
 - [ ] **[4-3. マージとクリーンアップ]** (`version-control-specialist.md`)
   - [ ] POの明示的承認を経てマージを実行。
+  - [ ] マージ後、ローカルブランチを削除し、環境をクリーンアップする。
