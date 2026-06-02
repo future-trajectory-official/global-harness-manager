@@ -1,19 +1,21 @@
 ---
 name: session-planning
-description: 特定されたタスクと文脈に最も適した専門ロールが、詳細な実装計画を作成する。特定のロール名（Architect等）に固執せず動的にアサインすること。
+description: 特定されたWork Packageと文脈に最も適した専門ロールが、詳細な実装計画を作成する。特定のロール名（Architect等）に固執せず動的にアサインすること。
 ---
 
 # Session Planning Skill
 
-特定されたタスクに対し、文脈から判断された最適な専門家が、具体的な解決策と手順を
+特定されたWork Packageに対し、文脈から判断された最適な専門家が、具体的な解決策と手順を
 `implementation_plan.md`（アーティファクト）としてまとめるためのスキルです。
 
 ## インストラクション
 
 1. **設計の立案**:
-   - ワークフローの例示に盲目的に従うのではなく、タスクの性質から「自身が今どの専門ロールとして振る舞うべきか」を動的に判断し、その知見を活かしてタスクを最小ステップの作業に分解します。
+   - ワークフローの例示に盲目的に従うのではなく、Work
+     Packageの性質から「自身が今どの専門ロールとして振る舞うべきか」を動的に判断し、その知見を活かしてWork
+     Packageを最小ステップの作業に分解します。
 2. **計画後見積もりの算出**:
-   - 計画詳細化に伴い、[backlog-guidelines.md](/.agents/management/backlog-guidelines.md#221-セッションタスクの見積り基準-effort--人間の介入回数)
+   - 計画詳細化に伴い、[backlog-guidelines.md](/.agents/management/backlog-guidelines.md#221-Work-Packageの見積り基準-effort--人間の介入回数)
      に基づいて「計画後見積もり（想定介入回数）」および「見積もり理由・懸念点」を検討・決定します。
 3. **実装計画の作成**:
    - 以下の内容を含む `implementation_plan.md` を **アーティファクト** として作成してください。

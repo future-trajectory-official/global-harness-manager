@@ -83,7 +83,7 @@ GUARD:NOTE
 
 ### Phase 4: 完了・クリーンアップ（/develop-work-package）
 
-#### 完了条件チェックリスト（AIはこのチェックリストをすべて満たさなければタスクを完了してはならない）
+#### 完了条件チェックリスト（AIはこのチェックリストをすべて満たさなければWork Packageを完了してはならない）
 
 - [ ] **[4-1. WIPコミットの解体とアトミックコミットへの再構築]** (`version-control-specialist.md`)
   - [ ] `hybrid-triage-commit` スキルを `triage`

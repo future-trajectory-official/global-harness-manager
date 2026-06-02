@@ -1,6 +1,6 @@
 ---
 name: initialize-branch
-description: 新機能開発やバグ修正等のタスク着手時に、作業用のGitブランチを準備します。
+description: 新機能開発やバグ修正等のWork Package着手時に、作業用のGitブランチを準備します。
 tags:
   - trigger: create-branch, start-task, start-development, switch-branch
   - category: git
