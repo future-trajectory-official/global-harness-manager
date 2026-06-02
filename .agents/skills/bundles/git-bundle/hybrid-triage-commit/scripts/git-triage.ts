@@ -1,14 +1,37 @@
+/**
+ * git-triage.ts — ハイブリッドトリアージコミットを制御するDenoスクリプト
+ *
+ * wipモード: 全変更をWIPコミット（セーブポイント）として保存する。
+ * triageモード: 変更ファイルを対話的に仕分けし、Conventional Commits形式の
+ *   アトミックコミットを順次作成する。異なる論理役割（feat/docs 等）の
+ *   ファイル混在を検出して警告する論理的境界バリデーションを備える。
+ */
+
 import { parseArgs } from "@std/cli";
 
+/**
+ * ステージングされた変更ファイルの情報。
+ * @property path - リポジトリルートからの相対パス
+ * @property status - gitのステータス（M: 修正, A: 追加, D: 削除 等）
+ */
 interface StagedFile {
   path: string;
   status: string;
 }
 
+/**
+ * セクション見出しを標準出力に表示する。
+ * @param title - 見出し文字列
+ */
 function printHeader(title: string) {
   console.log(`\n=== ${title} ===\n`);
 }
 
+/**
+ * gitコマンドを同期的に実行する。
+ * @param args - git に渡す引数リスト
+ * @returns 終了コード、標準出力、標準エラー出力
+ */
 function runGit(args: string[]): { code: number; stdout: string; stderr: string } {
   const cmd = new Deno.Command("git", { args });
   const { code, stdout, stderr } = cmd.outputSync();
@@ -20,6 +43,11 @@ function runGit(args: string[]): { code: number; stdout: string; stderr: string 
   };
 }
 
+/**
+ * 現在ステージングされている全変更ファイルを取得する。
+ * git diff --cached --name-status の結果をパースする。
+ * @returns ステージングされたファイルの一覧
+ */
 function getChangedFiles(): StagedFile[] {
   const result = runGit(["diff", "--cached", "--name-status"]);
   if (!result.stdout) return [];
@@ -31,11 +59,19 @@ function getChangedFiles(): StagedFile[] {
     });
 }
 
+/**
+ * コミットされていない変更（追跡/未追跡問わず）が存在するか確認する。
+ * @returns 変更が1つでもあれば true
+ */
 function hasUncommittedChanges(): boolean {
   const result = runGit(["status", "--porcelain"]);
   return result.stdout.length > 0;
 }
 
+/**
+ * 全変更をWIPコミットとして保存する。
+ * git add -A で全変更をステージングし、"[wip] savepoint" メッセージでコミットする。
+ */
 function commitAllAsWip(): void {
   runGit(["add", "-A"]);
   const result = runGit(["commit", "-m", "[wip] savepoint"]);
@@ -46,6 +82,11 @@ function commitAllAsWip(): void {
   }
 }
 
+/**
+ * リモート origin のデフォルトブランチ名（HEADが指すブランチ）を取得する。
+ * 取得できない場合は "main" を返す。
+ * @returns デフォルトブランチ名
+ */
 function getDefaultBranch(): string {
   const remoteResult = runGit(["remote", "get-url", "origin"]);
   if (remoteResult.code === 0) {
@@ -57,6 +98,12 @@ function getDefaultBranch(): string {
   return "main";
 }
 
+/**
+ * 現在のブランチのWIPコミット履歴を解除し、ベースブランチの状態まで
+ * ソフトリセットする（全変更がステージング状態になる）。
+ * @param baseBranch - リセット先のベースブランチ名
+ * @returns 成功時 true
+ */
 function softResetToBase(baseBranch: string): boolean {
   const result = runGit(["reset", "--soft", baseBranch]);
   if (result.code !== 0) {
@@ -66,6 +113,11 @@ function softResetToBase(baseBranch: string): boolean {
   return true;
 }
 
+/**
+ * ファイルパスから論理的な役割（カテゴリ）を分類する。
+ * @param filePath - リポジトリルートからの相対パス
+ * @returns 分類名: "test" / "source" / "docs" / "config" / "other"
+ */
 export function classifyFileType(filePath: string): string {
   if (filePath.endsWith("_test.ts")) return "test";
   if (filePath.endsWith(".ts")) return "source";
@@ -74,6 +126,11 @@ export function classifyFileType(filePath: string): string {
   return "other";
 }
 
+/**
+ * 選択されたファイル群から、最適と思われるConventional Commitsタイプを推奨する。
+ * @param files - コミット対象のファイル一覧
+ * @returns 推奨タイプ名、または推奨できない場合は null
+ */
 export function suggestTypeFromFiles(files: StagedFile[]): string | null {
   const categories = new Set(files.map((f) => classifyFileType(f.path)));
   const allTest = files.every((f) => classifyFileType(f.path) === "test");
@@ -89,7 +146,17 @@ export function suggestTypeFromFiles(files: StagedFile[]): string | null {
   return null;
 }
 
-export function validateTypeConsistency(commitType: string, files: StagedFile[]): string | null {
+/**
+ * コミットタイプとファイル群の論理的な一貫性を検証する。
+ * 異なる論理役割（例: docsタイプなのにソースコードを含む）の混在を検出する。
+ * @param commitType - ユーザーが指定したConventional Commitsタイプ
+ * @param files - コミット対象のファイル一覧
+ * @returns 問題がある場合は警告メッセージ、問題なければ null
+ */
+export function validateTypeConsistency(
+  commitType: string,
+  files: StagedFile[],
+): string | null {
   const validTypes = ["feat", "fix", "docs", "style", "refactor", "test", "chore"];
   if (!validTypes.includes(commitType)) {
     return `invalid conventional commit type: "${commitType}". Valid types: ${
