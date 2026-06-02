@@ -1,12 +1,12 @@
 ---
-description: ローカル環境に最適化された安全な機能・タスクPR開発サイクル
+description: ローカル環境に最適化された安全な機能・Work Package開発サイクル
 ---
 
-# 汎用タスク開発ワークフロー (/develop-work-package)
+# 汎用Work Package開発ワークフロー (/develop-work-package)
 
 本ワークフローは機能追加やバグ修正などのPR開発時の**「実装・遂行ステップ」**を定義します。
-**前提条件**: 本ワークフローは、必ず `/session-start`
-にてタスクの特定と実装計画（`implementation_plan.md`）の承認が完了した後に呼び出してください。
+**前提条件**: 本ワークフローは、必ず `/session-start` にてWork
+Packageの特定と実装計画（`implementation_plan.md`）の承認が完了した後に呼び出してください。
 
 常に各ステップで呼び出す役割（Role）に定義された制約を厳格に守ってください。
 
