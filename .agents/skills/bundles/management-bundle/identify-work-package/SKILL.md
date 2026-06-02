@@ -1,5 +1,5 @@
 ---
-name: identify-session-task
+name: identify-work-package
 description: バックログを読み解き、本セッションで取り組むべき唯一のWork Packageを特定する。
 ---
 

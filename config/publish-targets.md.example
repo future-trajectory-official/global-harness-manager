@@ -39,9 +39,9 @@
 
 ## management-bundle
 
-### task-initialization
+### initialize-work-package
 
-**説明**: タスク開始時の「儀式」として、環境・ルール・目的を同期する。
+**説明**: Work Package開始時の「儀式」として、環境・ルール・目的を同期する。
 
 ### product-backlog-refinement
 
@@ -55,9 +55,9 @@
 
 **説明**: プロジェクトのビジョンと、現在行使可能な能力（ロール・スキル）を確認し、セッションの価値判断基準を整える。
 
-### identify-session-task
+### identify-work-package
 
-**説明**: バックログを読み解き、本セッションで取り組むべき唯一のタスクを特定する。
+**説明**: バックログを読み解き、本セッションで取り組むべき唯一のWork Packageを特定する。
 
 ### session-planning
 
