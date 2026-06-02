@@ -197,16 +197,16 @@ async function runTriage(): Promise<void> {
   const baseBranch = getDefaultBranch();
   printHeader(`Triage Mode: Soft-resetting to ${baseBranch}`);
 
+  const hasWipCommits = runGit(["log", "--oneline", `${baseBranch}..HEAD`]);
   const allChanged = hasUncommittedChanges();
-  if (!allChanged) {
+  if (!allChanged && !hasWipCommits.stdout) {
     console.log("No changes detected. Nothing to triage.");
     return;
   }
 
-  const hasCommits = runGit(["log", "--oneline", `${baseBranch}..HEAD`]);
-  if (hasCommits.stdout) {
+  if (hasWipCommits.stdout) {
     console.log("WIP commits found:\n");
-    console.log(hasCommits.stdout);
+    console.log(hasWipCommits.stdout);
     console.log("");
 
     if (!softResetToBase(baseBranch)) {
@@ -252,7 +252,14 @@ async function runTriage(): Promise<void> {
     await Deno.stdout.write(encoder.encode("Select files: "));
     const inputBuf = new Uint8Array(4096);
     const nRead = await Deno.stdin.read(inputBuf);
-    const selectionInput = nRead ? decoder.decode(inputBuf.subarray(0, nRead)).trim() : "";
+    if (nRead === null) {
+      console.log("\nEOF detected. Triage cancelled.");
+      if (remainingFiles.length > 0) {
+        runGit(["restore", "--staged", ...remainingFiles.map((f) => f.path)]);
+      }
+      return;
+    }
+    const selectionInput = decoder.decode(inputBuf.subarray(0, nRead)).trim();
     if (!selectionInput) continue;
 
     if (selectionInput.toLowerCase() === "q") {
@@ -293,7 +300,11 @@ async function runTriage(): Promise<void> {
     );
     const msgBuf = new Uint8Array(4096);
     const nMsg = await Deno.stdin.read(msgBuf);
-    const commitMsg = nMsg ? decoder.decode(msgBuf.subarray(0, nMsg)).trim() : "";
+    if (nMsg === null) {
+      console.log("\nEOF detected. Commit cancelled.");
+      continue;
+    }
+    const commitMsg = decoder.decode(msgBuf.subarray(0, nMsg)).trim();
     if (!commitMsg) {
       console.log("Commit message cannot be empty. Try again.");
       continue;
@@ -315,9 +326,11 @@ async function runTriage(): Promise<void> {
       await Deno.stdout.write(encoder.encode("Proceed anyway? (y/N): "));
       const confirmBuf = new Uint8Array(4096);
       const nConfirm = await Deno.stdin.read(confirmBuf);
-      const confirm = nConfirm
-        ? decoder.decode(confirmBuf.subarray(0, nConfirm)).trim().toLowerCase()
-        : "";
+      if (nConfirm === null) {
+        console.log("\nEOF detected. Commit cancelled.");
+        continue;
+      }
+      const confirm = decoder.decode(confirmBuf.subarray(0, nConfirm)).trim().toLowerCase();
       if (confirm !== "y") {
         console.log("Commit cancelled, please re-select files.");
         continue;
