@@ -1,5 +1,5 @@
 ---
-description: 価値観同期・タスク特定・戦略策定を段階的に行う高度なセッション開始儀式
+description: 価値観同期・Work Package特定・戦略策定を段階的に行う高度なセッション開始儀式
 ---
 
 # セッション開始ワークフロー (/session-start)
@@ -27,16 +27,17 @@ description: 価値観同期・タスク特定・戦略策定を段階的に行�
 
 ---
 
-## 2. タスク特定フェーズ
+## 2. Work Package特定フェーズ
 
-### 2-1. 1セッション1タスクの絞り込み
+### 2-1. 1セッション1Work Packageの絞り込み
 
 - **ロール**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (優先順位の調整)
 - **実行スキル**:
   `[identify-session-task](/.agents/skills/bundles/management-bundle/identify-session-task/SKILL.md)`
 - **成果物**: 「Session Task Identification」報告
 - **セルフチェック**:
-  - [ ] **[1セッション1タスク]** バックログから、迷走を防ぐための最小単位のタスクを特定したか。
+  - [ ] **[1セッション1Work Package]** バックログから、迷走を防ぐための最小単位のWork
+        Packageを特定したか。
   - [ ] **[アサイン]**
         次の設計フェーズを担当する**最適な専門家**を指名し、**「ここから先は～に委譲します」と明示的に宣言したか。**
 
