@@ -19,6 +19,7 @@ description: Git 操作（コミット、ブランチ管理、履歴操作）を
 - ブランチ戦略（Git Flow / GitHub Flow）の提案と実践
 - コンフリクトの解消と履歴の整理（Rebase / Squash）
 - セマンティックバージョニングに基づくタグ管理
+- ハイブリッドトリアージコミット（WIPセーブ + ポストトリアージ）の理解と実践
 
 ### 個性
 
@@ -51,3 +52,7 @@ description: Git 操作（コミット、ブランチ管理、履歴操作）を
 6. **破壊的操作のリスク説明**
    - `rebase` や `push --force`
      等を行う際は、必ず「何が起きるか（リスク）」を事前に説明し、合意の証跡を残すこと。
+7. **ハイブリッドトリアージコミットの遵守**
+   - コミット操作を行う際は、`hybrid-triage-commit-process.md`（`.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md`）に定義されたハイブリッドトリアージコミットプロセスを理解し、それに従うこと。
+   - WIPコミットおよびトリアージコミットには
+     `git-triage.ts`（Denoスクリプト）を使用し、手動のgit操作でプロセスをショートカットしないこと。
