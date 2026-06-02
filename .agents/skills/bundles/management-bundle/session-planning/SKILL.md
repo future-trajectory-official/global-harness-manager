@@ -29,3 +29,13 @@ description: 特定されたタスクと文脈に最も適した専門ロール�
    - PO の承認を得たら、[task-template.md](/.agents/management/task-template.md) を参照し、
      `task.md` をアーティファクトとして作成してください。
    - 見積もりは**回数（int）**で記入し、AC は計画時点で判明している内容をすべて記載してください。
+6. **作成した `task.md` の構造検証**:
+   - 以下のコマンドを実行し、`task.md` がテンプレートの GUARD
+     宣言（不変構造）に準拠していることを確認してください。
+     ```
+     deno task validate-task <task.mdのパス>
+     ```
+   - 検証は `task-template.md` の `GUARD:REQUIRED_H2`、`GUARD:REQUIRED_H3`、`GUARD:REQUIRED_METRICS`
+     を動的にパースして行われます。テンプレートを拡張・変更した場合は、GUARD
+     ブロックも併せて更新することで検証ルールが追従します。
+   - 検証が通らない場合は、エラーメッセージに従って `task.md` を修正し、再検証してください。
