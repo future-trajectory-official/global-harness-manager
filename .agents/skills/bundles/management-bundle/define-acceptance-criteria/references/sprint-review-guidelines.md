@@ -24,11 +24,11 @@ AIは `define-acceptance-criteria`
 ```markdown
 ### [TODO] [SprintReview]/Sprint-N-Review-Verification
 
-- **概要**: スプリント N の全PBIの受け入れ基準 (AC) が達成されていることを、
+- **概要**: スプリント N の全PBIの受入基準 (AC) が達成されていることを、
   サンドボックス環境上での実機デモおよびエビデンスに基づいて PO と共に客観的に検証・承認する。
 - **見積り**: M（半日〜1日規模の重要イベント）
 - **関連実装計画**: なし (検証プロセスのみ)
-- **受け入れ基準 (AC)**:
+- **受入基準 (AC)**:
   - [ ] `develop-environment-setup` スキルにより、デモ用のサンドボックス環境が準備されていること。
   - [ ] `sprint-review-n.md` に定義された全 PBI に対する実機デモが、PO
         立ち合いのもとで完了していること。
