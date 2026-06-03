@@ -37,6 +37,7 @@ AI は以下の構造を持つ JSON を生成し、引数 `--data` として渡�
   "tags": ["#Decision", "#Architecture", "#Troubleshooting", "#Pivot"],
   "metrics": { "turns": 15, "sessions": 1 },
   "outcomes": ["- 成果物1のリンク/パス", "- 成果物2の名称"],
+  "size_estimated": "M",
   "size_actual": "S",
   "effort_preplan": 3,
   "effort_postplan": 4,
@@ -58,6 +59,7 @@ AI は以下の構造を持つ JSON を生成し、引数 `--data` として渡�
 | `metrics.turns`       | ✅   | 総ターン数                     |
 | `metrics.sessions`    | ✅   | 総セッション数                 |
 | `outcomes`            | ✅   | 実際の成果物リスト             |
+| `size_estimated`      | ✅   | 見積サイズ（S/M/L/XL）         |
 | `size_actual`         | ✅   | 実感サイズ（S/M/L/XL）         |
 | `effort_preplan`      | ❌   | 計画前見積合計（介入回数）     |
 | `effort_postplan`     | ❌   | 計画後見積合計（介入回数）     |
