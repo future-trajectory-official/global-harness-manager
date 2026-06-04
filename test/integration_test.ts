@@ -3,6 +3,10 @@ import { join } from "@std/path";
 import { fsUtil } from "../.agents/core/fs.ts";
 import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 
+/**
+ * Integration: publish-skills dry-run — dry-run モードでスキル公開が正しくシミュレーションされることを検証する。
+ * 実際のコピーなしに、出力が期待通りであることを確認する。
+ */
 Deno.test("Integration: publish-skills dry-run", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
@@ -64,6 +68,10 @@ Deno.test("Integration: publish-skills dry-run", async () => {
   }
 });
 
+/**
+ * Integration: publish-skills actual sync — 実際のスキル同期が正しく実行されることを検証する。
+ * グローバルディレクトリにスキルがコピーされ、内容が正しいことを確認する。
+ */
 Deno.test("Integration: publish-skills actual sync", async () => {
   const tempDir = await Deno.makeTempDir();
   try {

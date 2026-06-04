@@ -3,6 +3,10 @@ import { dirname as _dirname, join } from "@std/path";
 import { fsUtil } from "../.agents/core/fs.ts";
 import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 
+/**
+ * Integration: GEMINI.md sync - Linux/WSL 環境での基本的なGEMINI.md生成を検証する。
+ * モック環境下でスクリプトを実行し、GEMINI.md が正しく生成されることを確認する。
+ */
 Deno.test("Integration: GEMINI.md sync - basic generation (Linux/WSL)", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
@@ -54,6 +58,10 @@ Deno.test("Integration: GEMINI.md sync - basic generation (Linux/WSL)", async ()
   }
 });
 
+/**
+ * Integration: GEMINI.md sync - Windows環境では未実装の動作を検証する。
+ * Windowsプラットフォームの場合に適切なメッセージが出力されることを確認する。
+ */
 Deno.test("Integration: GEMINI.md sync - not implemented (Windows)", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
@@ -93,6 +101,10 @@ Deno.test("Integration: GEMINI.md sync - not implemented (Windows)", async () =>
   }
 });
 
+/**
+ * Integration: GEMINI.md sync - append モードで既存ファイルに追記されることを検証する。
+ * 既存の GEMINI.md が存在する場合に追記が正しく行われることを確認する。
+ */
 Deno.test("Integration: GEMINI.md sync - append mode", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
@@ -135,6 +147,10 @@ Deno.test("Integration: GEMINI.md sync - append mode", async () => {
   }
 });
 
+/**
+ * Integration: GEMINI.md sync - 標準Linux環境でのGEMINI.md生成を検証する。
+ * HARNESS_WORKSPACE_ROOT を使用したパス解決と生成結果の完全性を確認する。
+ */
 Deno.test("Integration: GEMINI.md sync - basic generation (Standard Linux)", async () => {
   const tempDir = await Deno.makeTempDir();
   try {

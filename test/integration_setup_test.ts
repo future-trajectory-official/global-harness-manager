@@ -3,6 +3,10 @@ import { fromFileUrl, join } from "@std/path";
 import { fsUtil } from "../.agents/core/fs.ts";
 import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 
+/**
+ * Integration: setup-harness-env — 環境セットアップスクリプトが正しく動作することを検証する。
+ * モックHOME環境下で Deno/gh のダウンロード判定やシェル設定が期待通り行われることを確認する。
+ */
 Deno.test("Integration: setup-harness-env", async () => {
   const tempHome = await Deno.makeTempDir();
   let originalConfigExisted = false;
