@@ -37,6 +37,30 @@ Deno.test("setup-hooks - should create pre-push hook in target directory", async
 });
 
 /**
+ * setup-hooks - commit-msg フックが正しく生成されることを検証する。
+ * フックファイルの存在、シェバン行、および validate-commit-message.ts への参照を確認する。
+ */
+Deno.test("setup-hooks - should create commit-msg hook in target directory", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const gitDir = join(tempDir, ".git");
+  const hooksDir = join(gitDir, "hooks");
+  await Deno.mkdir(hooksDir, { recursive: true });
+
+  try {
+    await setupGitHooks({ gitDir });
+
+    const commitMsgPath = join(hooksDir, "commit-msg");
+    assertEquals(await fsUtil.exists(commitMsgPath), true);
+
+    const content = await Deno.readTextFile(commitMsgPath);
+    assertStringIncludes(content, "#!/bin/sh");
+    assertStringIncludes(content, "validate-commit-message.ts");
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+/**
  * setup-hooks - .git ディレクトリが存在しない場合にエラーが発生することを検証する。
  * 異常系として、無効なパス指定時のエラーハンドリングを確認する。
  */
