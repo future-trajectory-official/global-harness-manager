@@ -9,13 +9,22 @@ import { parseArgs } from "@std/cli";
 
 export interface BacklogData {
   id: string;
+  sprint: string;
   insights: string;
   tags: string[];
   metrics: { turns: number; sessions: number };
   outcomes: string[];
+  sizeEstimated: string;
+  sizeActual: string;
+  effortPreplan: number;
+  effortPostplan: number;
+  effortActual: number;
+  wpPlannedAchieved: string[];
+  wpPlannedMissed: string[];
+  wpAddedAchieved: string[];
+  wpAddedMissed: string[];
   summary?: string;
   acStatus?: string;
-  sprint?: string;
 }
 
 const BACKLOG_PATH = ".agents/management/product-backlog.md";
@@ -29,44 +38,50 @@ export function extractPbiBlock(content: string, pbiId: string): { block: string
   return { block: match[0], regex };
 }
 
-export function transformToArchiveCard(data: BacklogData, pbiBlock: string): string {
-  const lines = pbiBlock.split("\n");
-
-  // 概要の抽出
-  const summaryLine = lines.find((l) => l.includes("**概要**:"));
-  const summary = data.summary || (summaryLine ? summaryLine.split("**概要**:")[1].trim() : "N/A");
-
-  // AC の抽出
-  const acHeaderIndex = lines.findIndex((l) => l.includes("**受け入れ基準 (AC)**:"));
-  let acStatus = "N/A";
-  if (acHeaderIndex !== -1) {
-    const acLines = [];
-    for (let i = acHeaderIndex + 1; i < lines.length; i++) {
-      if (lines[i].includes("- **") || lines[i].startsWith("###")) break;
-      if (lines[i].trim()) acLines.push(lines[i]);
-    }
-    acStatus = acLines.length > 0 ? acLines.join("\n").trim() : "N/A";
-  }
-  if (data.acStatus) acStatus = data.acStatus;
-
+export function transformToArchiveCard(data: BacklogData, _pbiBlock: string): string {
   const today = new Date().toISOString().split("T")[0];
-  const tagsStr = data.tags.join(" ");
-  const metricsStr = `${data.metrics.turns} ターン / ${data.metrics.sessions} セッション`;
-  const sprintLine = data.sprint ? `\n- **完了スプリント**: ${data.sprint}` : "";
+  const tagsStr = data.tags.map((t) => `\`${t}\``).join(" ");
+
+  const outcomesStr = data.outcomes.length > 0
+    ? data.outcomes.map((o) => `  ${o}`).join("\n")
+    : "  - N/A";
+
+  const effortStr = `  - 計画前見積合計: ${data.effortPreplan}回\n` +
+    `  - 計画後見積合計: ${data.effortPostplan}回\n` +
+    `  - 完了時実績合計: ${data.effortActual}回`;
+
+  const plannedAchieved = data.wpPlannedAchieved.map((ac) => `- [x] ${ac}`).join("\n");
+  const plannedMissed = data.wpPlannedMissed.map((ac) => `- [ ] ${ac}`).join("\n");
+  const addedAchieved = data.wpAddedAchieved.map((ac) => `- [x] ${ac}`).join("\n");
+  const addedMissed = data.wpAddedMissed.map((ac) => `- [ ] ${ac}`).join("\n");
+
+  let plannedSection = "";
+  if (plannedAchieved || plannedMissed) {
+    plannedSection = `\n#### 計画時WPのAC達成状況\n\n${plannedAchieved}`;
+    if (plannedMissed) plannedSection += "\n" + plannedMissed;
+  }
+
+  let addedSection = "";
+  if (addedAchieved || addedMissed) {
+    addedSection = `\n#### スプリント中追加WPのAC達成状況\n\n${addedAchieved}`;
+    if (addedMissed) addedSection += "\n" + addedMissed;
+  }
 
   return `
 ### [DONE] ${data.id}
 
-- **完了日**: ${today}${sprintLine}
-- **見積り → 実績**: TODO → ${metricsStr}
-- **当初の概要**: ${summary}
-- **実際の成果物**:
-${data.outcomes.map((o) => `  ${o}`).join("\n")}
-- **判明した知見・教訓**:
-  ${tagsStr}
+- **完了日**: ${today}
+- **スプリント**: ${data.sprint}
+- **見積サイズ**: ${data.sizeEstimated}
+- **実感サイズ**: ${data.sizeActual}
+- **成果物**:
+${outcomesStr}
+- **Effort実績 (介入回数)**:
+${effortStr}
+- **予実差分析**:
   ${data.insights}
-- **受け入れ基準の達成状況**:
-  ${acStatus.split("\n").map((line) => line.trim()).join("\n  ")}
+- **カテゴリ**: ${tagsStr}
+${plannedSection}${addedSection}
 `;
 }
 
