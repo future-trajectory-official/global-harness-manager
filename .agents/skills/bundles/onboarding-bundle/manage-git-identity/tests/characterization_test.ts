@@ -1,6 +1,11 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { join } from "https://deno.land/std@0.224.0/path/mod.ts";
 
+/**
+ * manage-git-identity - 実際の add-identity スクリプトをサブプロセスとして実行し、
+ * SSH鍵の生成とSSH設定の更新が正しく行われることを検証する。
+ * モック環境下での結合テストとして、ファイル生成と設定内容を確認する。
+ */
 Deno.test("manage-git-identity characterization test", async () => {
   const tempDir = await Deno.makeTempDir();
   const mockHome = join(tempDir, "home");
