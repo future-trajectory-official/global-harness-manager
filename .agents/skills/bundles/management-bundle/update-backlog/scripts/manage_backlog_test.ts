@@ -9,47 +9,40 @@ import {
 // --- Tests for transformToArchiveCard ---
 
 /**
- * transformToArchiveCard - スプリントメタデータが提供された場合に
- * アーカイブカードに「完了スプリント」行が含まれることを検証する。
- * メタデータの正しい反映を確認する。
+ * transformToArchiveCard - 正規フォーマットに準拠したカードが生成されることを検証する。
+ * 全フィールドが正しく埋め込まれていることを確認する。
  */
-Deno.test("transformToArchiveCard - should include sprint metadata when provided", () => {
+Deno.test("transformToArchiveCard - should generate canonical format card", () => {
   const data: BacklogData = {
-    id: "Test-PBI-1",
+    id: "[Epic/Feature]/Test-PBI-1",
+    sprint: "Sprint 1",
     insights: "Learned something new",
     tags: ["#Lesson"],
     metrics: { turns: 5, sessions: 1 },
-    outcomes: ["Test output"],
-    summary: "A test PBI",
-    sprint: "Sprint 1",
+    outcomes: ["- scripts/test.ts の作成"],
+    sizeEstimated: "S",
+    sizeActual: "S",
+    effortPreplan: 2,
+    effortPostplan: 2,
+    effortActual: 1,
+    wpPlannedAchieved: ["WP_1: AC1"],
+    wpPlannedMissed: [],
+    wpAddedAchieved: [],
+    wpAddedMissed: [],
   };
-  const dummyBlock = `### [DONE] Test-PBI-1\n**概要**: A test PBI`;
-
-  const result = transformToArchiveCard(data, dummyBlock);
-  assertMatch(result, /- \*\*完了スプリント\*\*: Sprint 1/);
-  assertMatch(result, /- \*\*当初の概要\*\*: A test PBI/);
-});
-
-/**
- * transformToArchiveCard - スプリント情報が未提供の場合に「完了スプリント」行が
- * 省略されることを検証する。任意フィールドの省略時の動作を確認する。
- */
-Deno.test("transformToArchiveCard - should omit sprint line when sprint is not provided", () => {
-  const data: BacklogData = {
-    id: "Test-PBI-2",
-    insights: "No sprint metadata",
-    tags: ["#Troubleshooting"],
-    metrics: { turns: 2, sessions: 1 },
-    outcomes: [],
-  };
-  const dummyBlock = `### [DONE] Test-PBI-2`;
+  const dummyBlock = `### [DONE] [Epic/Feature]/Test-PBI-1`;
 
   const result = transformToArchiveCard(data, dummyBlock);
 
-  assertFalse(
-    result.includes("**完了スプリント**"),
-    "Should not include sprint line if sprint is undefined",
-  );
+  assertMatch(result, /\*\*スプリント\*\*: Sprint 1/);
+  assertMatch(result, /\*\*見積サイズ\*\*: S/);
+  assertMatch(result, /\*\*実感サイズ\*\*: S/);
+  assertMatch(result, /計画前見積合計: 2回/);
+  assertMatch(result, /計画後見積合計: 2回/);
+  assertMatch(result, /完了時実績合計: 1回/);
+  assertMatch(result, /`#Lesson`/);
+  assertMatch(result, /計画時WPのAC達成状況/);
+  assertMatch(result, /\[x\] WP_1: AC1/);
 });
 
 // --- Tests for extractPbiBlock ---

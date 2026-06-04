@@ -33,6 +33,7 @@ AI は以下の構造を持つ JSON を生成し、引数 `--data` として渡�
 ```json
 {
   "id": "[Epic/Feature]/PBI-Name",
+  "sprint": "Sprint N",
   "insights": "予実差分析の本文。乖離原因を具体的に記述する。",
   "tags": ["#Decision", "#Architecture", "#Troubleshooting", "#Pivot"],
   "metrics": { "turns": 15, "sessions": 1 },
@@ -51,23 +52,24 @@ AI は以下の構造を持つ JSON を生成し、引数 `--data` として渡�
 
 #### フィールド説明
 
-| フィールド            | 必須 | 内容                           |
-| --------------------- | ---- | ------------------------------ |
-| `id`                  | ✅   | PBI識別子（そのまま保持）      |
-| `insights`            | ✅   | 予実差分析（AIが解釈して記述） |
-| `tags`                | ✅   | カテゴリタグ（知見の分類）     |
-| `metrics.turns`       | ✅   | 総ターン数                     |
-| `metrics.sessions`    | ✅   | 総セッション数                 |
-| `outcomes`            | ✅   | 実際の成果物リスト             |
-| `size_estimated`      | ✅   | 見積サイズ（S/M/L/XL）         |
-| `size_actual`         | ✅   | 実感サイズ（S/M/L/XL）         |
-| `effort_preplan`      | ❌   | 計画前見積合計（介入回数）     |
-| `effort_postplan`     | ❌   | 計画後見積合計（介入回数）     |
-| `effort_actual`       | ❌   | 完了時実績合計（介入回数）     |
-| `wp_planned_achieved` | ❌   | 計画時WPの達成済みAC一覧       |
-| `wp_planned_missed`   | ❌   | 計画時WPの未達成AC一覧         |
-| `wp_added_achieved`   | ❌   | 追加WPの達成済みAC一覧         |
-| `wp_added_missed`     | ❌   | 追加WPの未達成AC一覧           |
+| フィールド            | 必須 | 内容                             |
+| --------------------- | ---- | -------------------------------- |
+| `id`                  | ✅   | PBI識別子（そのまま保持）        |
+| `sprint`              | ✅   | 完了スプリント（例: "Sprint N"） |
+| `insights`            | ✅   | 予実差分析（AIが解釈して記述）   |
+| `tags`                | ✅   | カテゴリタグ（知見の分類）       |
+| `metrics.turns`       | ✅   | 総ターン数                       |
+| `metrics.sessions`    | ✅   | 総セッション数                   |
+| `outcomes`            | ✅   | 実際の成果物リスト               |
+| `size_estimated`      | ✅   | 見積サイズ（S/M/L/XL）           |
+| `size_actual`         | ✅   | 実感サイズ（S/M/L/XL）           |
+| `effort_preplan`      | ❌   | 計画前見積合計（介入回数）       |
+| `effort_postplan`     | ❌   | 計画後見積合計（介入回数）       |
+| `effort_actual`       | ❌   | 完了時実績合計（介入回数）       |
+| `wp_planned_achieved` | ❌   | 計画時WPの達成済みAC一覧         |
+| `wp_planned_missed`   | ❌   | 計画時WPの未達成AC一覧           |
+| `wp_added_achieved`   | ❌   | 追加WPの達成済みAC一覧           |
+| `wp_added_missed`     | ❌   | 追加WPの未達成AC一覧             |
 
 ## 2. 実行手順
 

@@ -66,15 +66,25 @@ Deno.test("PBI 抽出ロジックの検証", () => {
 
 /**
  * manage_backlog_test — PBIブロックからアーカイブカードへの変換ロジックを検証する。
- * スプリントメタデータの有無による出力の差異を確認する。
+ * 正規フォーマットに準拠したカードが生成されることを確認する。
  */
 Deno.test("アーカイブ形式への変換ロジックの検証", () => {
   const inputJson = {
     id: "[Epic/Feature]/Target-PBI",
+    sprint: "Sprint 1",
     insights: "これはテストでの知見です。",
     tags: ["#Decision", "#Architecture"],
     metrics: { turns: 15, sessions: 1 },
     outcomes: ["- scripts/test.ts の作成"],
+    sizeEstimated: "S",
+    sizeActual: "S",
+    effortPreplan: 2,
+    effortPostplan: 2,
+    effortActual: 1,
+    wpPlannedAchieved: ["WP_1: AC1", "WP_1: AC2"],
+    wpPlannedMissed: [],
+    wpAddedAchieved: [],
+    wpAddedMissed: [],
   };
 
   const pbiId = "[Epic/Feature]/Target-PBI";
@@ -82,9 +92,15 @@ Deno.test("アーカイブ形式への変換ロジックの検証", () => {
 
   const resultCard = transformToArchiveCard(inputJson, block);
 
-  assertStringIncludes(resultCard, "#Decision #Architecture");
-  assertStringIncludes(resultCard, "15 ターン / 1 セッション");
-  assertStringIncludes(resultCard, "AC2");
+  assertStringIncludes(resultCard, "`#Decision` `#Architecture`");
+  assertStringIncludes(resultCard, "**スプリント**: Sprint 1");
+  assertStringIncludes(resultCard, "**見積サイズ**: S");
+  assertStringIncludes(resultCard, "**実感サイズ**: S");
+  assertStringIncludes(resultCard, "計画前見積合計: 2回");
+  assertStringIncludes(resultCard, "計画後見積合計: 2回");
+  assertStringIncludes(resultCard, "完了時実績合計: 1回");
+  assertStringIncludes(resultCard, "計画時WPのAC達成状況");
+  assertStringIncludes(resultCard, "[x] WP_1: AC2");
 });
 
 /**
