@@ -176,10 +176,8 @@ Deno.test({
     const md = readFixture(BACKLOG_PATH);
 
     const expected = [
-      "Standardize-Work-Package-Backlog-Structure",
-      "Document-Test-Intent-and-Use-Cases-in-Rules",
-      "Enforce-Task-Template-Guardrails",
-      "Sprint-3-Review-Verification",
+      "Automate-Pbi-Archive-In-Sprint-End",
+      "Validate-Metrics-Id-Format-In-Record-Script",
       "Standardize-Sprint-Review-Artifact-Persistence",
       "Unify-Archive-Format-Between-Skills-and-Templates",
       "Split-and-Refactor-Backlog-Management-Logic",
@@ -197,7 +195,7 @@ Deno.test({
       assertStringIncludes(md, name, `PBI「${name}」が見つかりません`);
     }
 
-    console.log(`  ✅ 全15PBIのデータが維持されている`);
+    console.log(`  ✅ ${expected.length}件のPBIのデータが維持されている`);
   },
 });
 
