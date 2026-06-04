@@ -3,6 +3,10 @@ import { join } from "@std/path";
 import { fsUtil } from "../../../../../core/fs.ts";
 import { setupGitHooks } from "./setup-hooks.ts";
 
+/**
+ * setup-hooks - 対象ディレクトリに pre-push / pre-commit フックが正しく作成されることを検証する。
+ * フックファイルの存在、シェバン行、および deno fmt/qa:cov の記述を確認する。
+ */
 Deno.test("setup-hooks - should create pre-push hook in target directory", async () => {
   const tempDir = await Deno.makeTempDir();
   const gitDir = join(tempDir, ".git");
@@ -32,6 +36,10 @@ Deno.test("setup-hooks - should create pre-push hook in target directory", async
   }
 });
 
+/**
+ * setup-hooks - .git ディレクトリが存在しない場合にエラーが発生することを検証する。
+ * 異常系として、無効なパス指定時のエラーハンドリングを確認する。
+ */
 Deno.test("setup-hooks - should fail if .git directory does not exist", async () => {
   const tempDir = await Deno.makeTempDir();
   try {

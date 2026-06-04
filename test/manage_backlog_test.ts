@@ -52,6 +52,10 @@ const mockArchive = `
 ...
 `;
 
+/**
+ * manage_backlog_test — PBI IDを指定したブロック抽出ロジックを検証する。
+ * 正常系（存在するID）と異常系（存在しないID）の両方を確認する。
+ */
 Deno.test("PBI 抽出ロジックの検証", () => {
   const pbiId = "[Epic/Feature]/Target-PBI";
   const { block } = extractPbiBlock(mockBacklog, pbiId);
@@ -60,6 +64,10 @@ Deno.test("PBI 抽出ロジックの検証", () => {
   assertStringIncludes(block, "Task1", "タスクリストが含まれていること");
 });
 
+/**
+ * manage_backlog_test — PBIブロックからアーカイブカードへの変換ロジックを検証する。
+ * スプリントメタデータの有無による出力の差異を確認する。
+ */
 Deno.test("アーカイブ形式への変換ロジックの検証", () => {
   const inputJson = {
     id: "[Epic/Feature]/Target-PBI",
@@ -79,6 +87,10 @@ Deno.test("アーカイブ形式への変換ロジックの検証", () => {
   assertStringIncludes(resultCard, "AC2");
 });
 
+/**
+ * manage_backlog_test — アーカイブファイルへのPBIカード挿入位置ロジックを検証する。
+ * 正常な挿入とアンカー不在時のエラー発生を確認する。
+ */
 Deno.test("アーカイブファイルへの挿入位置の検証", () => {
   const newCard = "### [DONE] [New/PBI]";
   // pbiRegex はモックで適当に

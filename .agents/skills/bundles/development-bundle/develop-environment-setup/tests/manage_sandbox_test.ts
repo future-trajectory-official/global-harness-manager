@@ -6,6 +6,11 @@ const SCRIPT_PATH = join(
   ".agents/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts",
 );
 
+/**
+ * manage-sandbox create --mode directory - サンドボックスがディレクトリモードで
+ * 正しく作成されることを検証する。指定したベース配下にタスク名のディレクトリが
+ * 作成され、isDirectory が true となることを確認する。
+ */
 Deno.test("manage-sandbox create --mode directory", async () => {
   const taskName = `test-task-${Date.now()}`;
   const sandboxBase = await Deno.makeTempDir();
@@ -44,6 +49,11 @@ Deno.test("manage-sandbox create --mode directory", async () => {
   await Deno.remove(sandboxBase, { recursive: true });
 });
 
+/**
+ * manage-sandbox create --mode container - サンドボックスがコンテナモードで
+ * 正しく作成されることを検証する。Docker コンテナが起動し、docker ps で
+ * コンテナ名が確認できることをチェックする。
+ */
 Deno.test("manage-sandbox create --mode container", async () => {
   const taskName = `test-container-${Date.now()}`;
   const containerName = `harness-sandbox-${taskName}`;

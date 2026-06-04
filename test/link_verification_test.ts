@@ -3,6 +3,10 @@ import { walk } from "https://deno.land/std@0.224.0/fs/walk.ts";
 
 const ROOT = Deno.cwd();
 
+/**
+ * link_verification_test — プロジェクト内の全Markdownファイルのリンクとパス解決を検証する。
+ * 内部リンクのデッドリンク検出、絶対パスの問題、および外部URLの形式を確認する。
+ */
 Deno.test("Markdown Link and Path Resolution Verification", async () => {
   const issues: string[] = [];
   const mdFiles: string[] = [];

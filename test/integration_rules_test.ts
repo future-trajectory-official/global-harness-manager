@@ -3,6 +3,10 @@ import { join } from "@std/path";
 import { fsUtil } from "../.agents/core/fs.ts";
 import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 
+/**
+ * Integration: publish-rules dry-run — dry-run モードでルール公開が正しくシミュレーションされることを検証する。
+ * 実際のファイル書き込みなしに、出力パスや内容が期待通りであることを確認する。
+ */
 Deno.test("Integration: publish-rules dry-run", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
@@ -60,6 +64,10 @@ Deno.test("Integration: publish-rules dry-run", async () => {
   }
 });
 
+/**
+ * Integration: publish-rules actual sync — 実際のルール同期が正しく実行されることを検証する。
+ * ターゲットプロジェクトにルールファイルが正しくコピーされ、追加ファイルが作成されることを確認する。
+ */
 Deno.test("Integration: publish-rules actual sync", async () => {
   const tempDir = await Deno.makeTempDir();
   try {

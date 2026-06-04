@@ -2,6 +2,10 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 
+/**
+ * Integration: harness-attach dry-run — dry-run モードでharness-attachが正しくシミュレーションされることを検証する。
+ * ターゲットプロジェクトへのバインディング設定が出力されることを確認する。
+ */
 Deno.test("Integration: harness-attach dry-run", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
@@ -56,6 +60,10 @@ Deno.test("Integration: harness-attach dry-run", async () => {
   }
 });
 
+/**
+ * Integration: harness-attach actual execution — 実際のバインディングが正しく実行されることを検証する。
+ * 既存リポジトリに対して GIT_SSH_COMMAND 設定が正しく行われることを確認する。
+ */
 Deno.test("Integration: harness-attach actual execution on existing repo", async () => {
   const tempDir = await Deno.makeTempDir();
   try {
@@ -144,6 +152,10 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
   }
 });
 
+/**
+ * Integration: harness-attach git clone — クローン時に GIT_SSH_COMMAND が正しく渡されることを検証する。
+ * サブプロセスとして clone を実行した際に環境変数が伝播することを確認する。
+ */
 Deno.test("Integration: harness-attach git clone passes GIT_SSH_COMMAND", async () => {
   const tempDir = await Deno.makeTempDir();
   try {

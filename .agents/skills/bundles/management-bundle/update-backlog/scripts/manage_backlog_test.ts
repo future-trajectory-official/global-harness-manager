@@ -8,6 +8,11 @@ import {
 
 // --- Tests for transformToArchiveCard ---
 
+/**
+ * transformToArchiveCard - スプリントメタデータが提供された場合に
+ * アーカイブカードに「完了スプリント」行が含まれることを検証する。
+ * メタデータの正しい反映を確認する。
+ */
 Deno.test("transformToArchiveCard - should include sprint metadata when provided", () => {
   const data: BacklogData = {
     id: "Test-PBI-1",
@@ -25,6 +30,10 @@ Deno.test("transformToArchiveCard - should include sprint metadata when provided
   assertMatch(result, /- \*\*当初の概要\*\*: A test PBI/);
 });
 
+/**
+ * transformToArchiveCard - スプリント情報が未提供の場合に「完了スプリント」行が
+ * 省略されることを検証する。任意フィールドの省略時の動作を確認する。
+ */
 Deno.test("transformToArchiveCard - should omit sprint line when sprint is not provided", () => {
   const data: BacklogData = {
     id: "Test-PBI-2",
@@ -45,6 +54,10 @@ Deno.test("transformToArchiveCard - should omit sprint line when sprint is not p
 
 // --- Tests for extractPbiBlock ---
 
+/**
+ * extractPbiBlock - 指定した PBI ID のブロックを正しく抽出できることを検証する。
+ * マークダウン中の該当ブロックと正規表現が返されることを確認する。
+ */
 Deno.test("extractPbiBlock - should successfully extract a PBI block and return regex", () => {
   const content = `## Sprint 1\n### [DONE] Test-1\nSome details.\n### [TODO] Test-2`;
   const result = extractPbiBlock(content, "Test-1");
@@ -52,6 +65,10 @@ Deno.test("extractPbiBlock - should successfully extract a PBI block and return 
   assertMatch(result.block, /Some details\./);
 });
 
+/**
+ * extractPbiBlock - 存在しない PBI ID を指定した場合にエラーがスローされることを検証する。
+ * 異常系として該当PBI不在時の動作を確認する。
+ */
 Deno.test("extractPbiBlock - should throw error if PBI not found", () => {
   const content = `## Sprint 1\n### [TODO] Test-2`;
   assertThrows(
@@ -65,6 +82,10 @@ Deno.test("extractPbiBlock - should throw error if PBI not found", () => {
 
 // --- Tests for updateContents ---
 
+/**
+ * updateContents - PBI をバックログから削除し、アーカイブに追記できることを検証する。
+ * バックログから対象 PBI が除去され、アーカイブの所定位置に追記されることを確認する。
+ */
 Deno.test("updateContents - should remove PBI from backlog and append to archive", () => {
   // Using a simplified regex that matches what extractPbiBlock would produce
   const pbiRegex = /### \[DONE\] Test-1[\s\S]*?(?=\n###|$)/;
@@ -79,6 +100,10 @@ Deno.test("updateContents - should remove PBI from backlog and append to archive
   assertMatch(result.newArchive, /## 完了済みアイテム\n### \[DONE\] Test-1\nArchive Details/);
 });
 
+/**
+ * updateContents - アーカイブに対象アンカーが存在しない場合にエラーがスローされることを検証する。
+ * 異常系としてアンカー不在時のエラーハンドリングを確認する。
+ */
 Deno.test("updateContents - should throw error if anchor not found in archive", () => {
   const backlog = ``;
   const archive = `# Archive\n\nNo anchor here.`;

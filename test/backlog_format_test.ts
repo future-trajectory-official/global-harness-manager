@@ -236,6 +236,11 @@ Deno.test({
   },
 });
 
+/**
+ * backlog_format_test — backlog-guidelines.md のPBIフォーマット記述が
+ * product-backlog.md.example（正規テンプレート）と整合していることを検証する。
+ * ドキュメント間のフォーマット乖離を防止する。
+ */
 Deno.test("backlog-guidelines.md: PBIフォーマット記述が .example と整合している", () => {
   const guidelines = readFixture(GUIDELINES_PATH);
 

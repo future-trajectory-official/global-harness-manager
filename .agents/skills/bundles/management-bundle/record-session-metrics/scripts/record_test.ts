@@ -2,12 +2,20 @@ import { assertEquals, assertStringIncludes } from "@std/assert";
 import { appendMetrics, type SessionMetrics, showSummary, validateMetrics } from "./record.ts";
 import { join } from "@std/path";
 
+/**
+ * validateMetrics - 有効なメトリクスデータがバリデーションをパスすることを検証する。
+ * 各スコアが 1〜5 の範囲内の場合に true が返される正常系を確認する。
+ */
 Deno.test("validateMetrics - should pass for valid data", () => {
   const valid = { intent: "5", constraint: "4", context: "3", stability: "5" };
   const result = validateMetrics(valid);
   assertEquals(result, true);
 });
 
+/**
+ * validateMetrics - 必須フィールドが欠落している場合にエラーがスローされることを検証する。
+ * 不完全なデータに対する異常系を確認する。
+ */
 Deno.test("validateMetrics - should throw for missing fields", () => {
   const invalid = { intent: "5" };
   try {
@@ -18,6 +26,10 @@ Deno.test("validateMetrics - should throw for missing fields", () => {
   }
 });
 
+/**
+ * validateMetrics - スコアが範囲外（1〜5以外）の場合にエラーがスローされることを検証する。
+ * 境界値異常として6を指定した場合の動作を確認する。
+ */
 Deno.test("validateMetrics - should throw for out of range values", () => {
   const invalid = { intent: "6", constraint: "5", context: "5", stability: "5" };
   try {
@@ -28,6 +40,10 @@ Deno.test("validateMetrics - should throw for out of range values", () => {
   }
 });
 
+/**
+ * validateMetrics - 負の Effort 値が無効として検出されることを検証する。
+ * initial_estimated_effort に負の値を指定した場合の異常系を確認する。
+ */
 Deno.test("validateMetrics - should throw for invalid effort numbers", () => {
   const invalid = {
     intent: "5",
@@ -44,6 +60,11 @@ Deno.test("validateMetrics - should throw for invalid effort numbers", () => {
   }
 });
 
+/**
+ * record-session-metrics - appendMetrics / showSummary の統合的な動作を検証する。
+ * 一時ファイルを使用して、メトリクスの追記・集計・表示の一連のフローが
+ * 正しく機能することを確認する。
+ */
 Deno.test("record-session-metrics refactor tests", async (t) => {
   const tempDir = await Deno.makeTempDir();
   const testFile = join(tempDir, "metrics.jsonl");
