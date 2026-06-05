@@ -1,5 +1,5 @@
 import { assertEquals } from "jsr:@std/assert@^1.0.7";
-import { type GuardRules, parseGuardBlock, validateTaskMd } from "./validate-task.ts";
+import { countACs, type GuardRules, parseGuardBlock, validateTaskMd } from "./validate-task.ts";
 
 const SAMPLE_TEMPLATE = `# Task Tracking: [Task Name]
 
@@ -119,7 +119,12 @@ GUARD:REQUIRED_H2
 - Only One H2
 -->`;
   const rules = parseGuardBlock(partial);
-  assertEquals(rules, { requiredH2s: ["Only One H2"], requiredH3s: [], requiredMetrics: [] });
+  assertEquals(rules, {
+    requiredH2s: ["Only One H2"],
+    requiredH3s: [],
+    requiredMetrics: [],
+    requiredTasks: [],
+  });
 });
 
 // --- validateTaskMd with dynamic rules ---
@@ -176,7 +181,12 @@ Deno.test("validateTaskMd reports missing required metrics field", () => {
  * GuardRules の全フィールドが空配列の場合に常に valid となる正常系を確認する。
  */
 Deno.test("validateTaskMd with empty rule set passes everything", () => {
-  const emptyRules: GuardRules = { requiredH2s: [], requiredH3s: [], requiredMetrics: [] };
+  const emptyRules: GuardRules = {
+    requiredH2s: [],
+    requiredH3s: [],
+    requiredMetrics: [],
+    requiredTasks: [],
+  };
   const result = validateTaskMd("# just a title", emptyRules);
   assertEquals(result.valid, true);
 });
@@ -202,4 +212,171 @@ Deno.test("validateTaskMd without rules uses hardcoded defaults", () => {
   const result = validateTaskMd(VALID_TASK);
   assertEquals(result.valid, true);
   assertEquals(result.errors.length, 0);
+});
+
+// --- REQUIRED_TASKS ---
+
+const SAMPLE_TEMPLATE_WITH_TASKS = `# Task Tracking: [Task Name]
+
+[Task description or summary]
+
+<!--
+GUARD:REQUIRED_H2
+- 📊 セッションメトリクス & 予実管理
+- 📋 実行タスク一覧
+
+GUARD:REQUIRED_H3
+- Phase 1
+- Phase 2
+- Phase 3
+- Phase 4
+
+GUARD:REQUIRED_METRICS
+- 初期見積 (想定介入回数)
+- 計画後見積 (想定介入回数)
+- 実際の介入回数
+
+GUARD:REQUIRED_TASKS
+- Phase 1: 準備
+  - develop-environment-setup
+  - initialize-branch
+- Phase 2: Foreach (AC[].count) ACベースの開発
+  - ac-checkpoint-implementation
+  - hybrid-triage-commit
+- Phase 3: リファクタリングと品質検証
+  - refactoring-loop
+  - quality-verification
+  - hybrid-triage-commit
+- Phase 4: 公開
+  - git push
+  - create-pull-request
+  - merge-branch
+-->
+
+## 📊 セッションメトリクス & 予実管理
+...
+
+## 📋 実行タスク一覧
+...
+`;
+
+const VALID_TASK_WITH_KEYWORDS = `# Task Tracking: Some Feature
+
+## 📊 セッションメトリクス & 予実管理
+
+### ⏳ 見積もりと実績
+
+- **初期見積 (想定介入回数)**: 2 回
+- **計画後見積 (想定介入回数)**: 3 回
+- **実際の介入回数**: 0
+
+## 📋 実行タスク一覧
+
+### Phase 1: 準備
+
+- [ ] develop-environment-setup
+- [ ] initialize-branch
+
+### Phase 2: ACベースの開発
+
+- [ ] ac-checkpoint-implementation (AC-1)
+- [ ] hybrid-triage-commit (wip)
+- [ ] ac-checkpoint-implementation (AC-2)
+- [ ] hybrid-triage-commit (wip)
+
+### Phase 3: リファクタリングと品質検証
+
+- [ ] refactoring-loop
+- [ ] quality-verification
+- [ ] hybrid-triage-commit (triage)
+
+### Phase 4: 公開
+
+- [ ] git push
+- [ ] create-pull-request
+- [ ] merge-branch
+`;
+
+/**
+ * parseGuardBlock - REQUIRED_TASKS セクションを正しく抽出できることを検証する。
+ */
+Deno.test("parseGuardBlock extracts REQUIRED_TASKS from template", () => {
+  const rules = parseGuardBlock(SAMPLE_TEMPLATE_WITH_TASKS);
+  assertEquals(rules !== null, true);
+  assertEquals(rules!.requiredTasks.length, 4);
+  assertEquals(rules!.requiredTasks[0].phaseName, "Phase 1");
+  assertEquals(rules!.requiredTasks[0].keywords, [
+    "develop-environment-setup",
+    "initialize-branch",
+  ]);
+});
+
+/**
+ * parseGuardBlock - Foreach (AC[].count) 構文を正しく検出することを検証する。
+ */
+Deno.test("parseGuardBlock detects Foreach syntax", () => {
+  const rules = parseGuardBlock(SAMPLE_TEMPLATE_WITH_TASKS);
+  assertEquals(rules!.requiredTasks[1].phaseName, "Phase 2");
+  assertEquals(rules!.requiredTasks[1].foreach, "AC[].count");
+  assertEquals(rules!.requiredTasks[1].keywords, [
+    "ac-checkpoint-implementation",
+    "hybrid-triage-commit",
+  ]);
+});
+
+/**
+ * validateTaskMd - 必須タスクキーワードが全て存在する場合にパスすることを検証する。
+ */
+Deno.test("validateTaskMd passes when all required task keywords exist", () => {
+  const rules = parseGuardBlock(SAMPLE_TEMPLATE_WITH_TASKS);
+  const result = validateTaskMd(VALID_TASK_WITH_KEYWORDS, rules!, 2);
+  assertEquals(result.valid, true);
+  assertEquals(result.errors.length, 0);
+});
+
+/**
+ * validateTaskMd - 必須タスクキーワードが欠落している場合にエラーが報告されることを検証する。
+ */
+Deno.test("validateTaskMd reports missing required task keyword", () => {
+  const rules = parseGuardBlock(SAMPLE_TEMPLATE_WITH_TASKS);
+  const missing = VALID_TASK_WITH_KEYWORDS.replace("develop-environment-setup", "removed");
+  const result = validateTaskMd(missing, rules!, 2);
+  assertEquals(result.valid, false);
+  assertEquals(result.errors.some((e) => e.includes("develop-environment-setup")), true);
+});
+
+/**
+ * countACs - 計画ファイルから AC 件数を正しくカウントすることを検証する。
+ */
+Deno.test("countACs counts AC entries correctly", () => {
+  const plan = `## AC
+- [ ] **[AC-1]**: First criterion
+- [ ] **[AC-2]**: Second criterion
+- [ ] **[AC-3]**: Third criterion
+`;
+  assertEquals(countACs(plan), 3);
+});
+
+/**
+ * countACs - AC が存在しない計画ファイルでは 0 を返すことを検証する。
+ */
+Deno.test("countACs returns 0 when no AC entries exist", () => {
+  const plan = `## No AC here
+- just a normal task
+`;
+  assertEquals(countACs(plan), 0);
+});
+
+/**
+ * validateTaskMd - Foreach 指定時に AC 数より少ないキーワード出現でエラーになることを検証する。
+ */
+Deno.test("validateTaskMd fails when keyword count is less than Foreach required count", () => {
+  const rules = parseGuardBlock(SAMPLE_TEMPLATE_WITH_TASKS);
+  // Phase 2 has 2 ACs required (planACCount=2) but only 1 keyword occurrence
+  const insufficient = VALID_TASK_WITH_KEYWORDS.replace(
+    "### Phase 2: ACベースの開発\n\n- [ ] ac-checkpoint-implementation (AC-1)\n- [ ] hybrid-triage-commit (wip)\n- [ ] ac-checkpoint-implementation (AC-2)\n- [ ] hybrid-triage-commit (wip)",
+    "### Phase 2: ACベースの開発\n\n- [ ] ac-checkpoint-implementation (only one)\n- [ ] hybrid-triage-commit (wip)",
+  );
+  const result = validateTaskMd(insufficient, rules!, 2);
+  assertEquals(result.valid, false);
 });

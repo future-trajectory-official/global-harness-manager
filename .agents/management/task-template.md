@@ -19,33 +19,30 @@ GUARD:REQUIRED_METRICS
 - 実際の介入回数
 
 GUARD:REQUIRED_TASKS
-<!--
-各 Phase の「目的（親）」と、そこで完了すべき「必須タスク（子）」を2階層リストで宣言します。
-子タスクは自然言語で記述し、未実装スキル名への依存は持たせないでください。
-インデントはスペース2で統一します。
--->
-
-- Phase 1: 環境の隔離（実装失敗時にリポジトリ/OSを汚染しない）
-  - サンドボックス環境の構築
-- Phase 2: ブランチ準備
-  - 作業ブランチの作成
-- Phase 3: ACベースの開発（計画で生まれたACリストをチェックポイントとして実装）
-  <!-- ACチェックポイント消化 → タスクステータス更新（task.mdの該当チェックボックスを [x] に更新） → WIPコミット のサイクルで進める -->
-  - ACチェックポイントの消化とタスクステータス更新
-  - WIPコミット
-- Phase 4: 品質検証と完了
-  - リファクタリング
-  - 品質検証の実行
-  - トリアージコミット
-  - PR作成
-  - マージ
+- Phase 1: 準備（環境隔離・ブランチ準備）
+  - develop-environment-setup
+  - initialize-branch
+- Phase 2: Foreach (AC[].count) ACベースの開発
+  - ac-checkpoint-implementation
+  - hybrid-triage-commit
+- Phase 3: リファクタリングと品質検証
+  - refactoring-loop
+  - quality-verification
+  - hybrid-triage-commit
+- Phase 4: 公開（push・PR作成・マージ）
+  - git push
+  - create-pull-request
+  - merge-branch
 
 GUARD:NOTE この GUARD ブロックはテンプレートの不変契約を宣言します。
 以下のルールを遵守してください：
 
 - GUARD で宣言された H2/H3 の見出し文言は削除・リネームしないでください
 - GUARD で宣言されたメトリクスフィールド名は削除・リネームしないでください
+- GUARD:REQUIRED_TASKS で宣言された Phase 名は変更しないでください
+- GUARD:REQUIRED_TASKS で宣言された必須タスクキーワードは削除しないでください
 - 新しいセクションの追加や内容の拡張は自由です
+- Foreach (AC[].count) が付いた Phase は、計画ファイルの AC 数だけ各キーワードを展開してください
 - GUARD ブロック自体を変更する場合は、検証ロジックとの整合をとってください -->
 
 ---
@@ -72,50 +69,28 @@ GUARD:NOTE この GUARD ブロックはテンプレートの不変契約を宣�
 
 ## 📋 実行タスク一覧
 
-### Phase 1: 開発環境・ブランチ準備（/develop-work-package）
+### Phase 1: 準備（環境隔離・ブランチ準備）
 
-- [ ] **[1-1. 開発環境のセットアップ]** (`platform-engineer.md`)
+- [ ] **develop-environment-setup**（サンドボックス構築）
   - [ ] 必要なツールチェーンや実行環境が正しく構成されているか確認。
-- [ ] **[2-1. 作業ブランチの作成]** (`version-control-specialist.md`)
+- [ ] **initialize-branch**（作業ブランチ作成）
   - [ ] 作業ブランチの作成と、ブランチ作成目的をPOに説明。
 
-### Phase 2: 設計・実装フェーズ（/develop-work-package）
+### Phase 2: Foreach (AC[].count) ACベースの開発
 
-- [ ] **[2-2. インフラ・基盤実装とWIP保存]** (`developer.md`)
-  - [ ] 依存パッケージ、ディレクトリ構成、型定義などの土台となるインフラを実装。
-  - [ ] 基盤が構築できた時点で、`hybrid-triage-commit` スキル（`wip`
-        モード）を実行し、セーブポイントを作成。
-- [ ] **[2-3. TDDによる機能実装とWIP保存]** (`developer.md`)
-  - [ ] 失敗するテストを先に書き、テストがパスする最小限の実装を行う TDD サイクルを回す。
-  - [ ] **[計画時AC追加エリア]**
-        <!-- 設計フェーズで合意した具体的な受入基準（AC）を以下に展開し、TDDサイクルでクリアしていきます -->
-    - [ ] **[AC-1]**: [具体的な受入基準 1]
-    - [ ] **[AC-2]**: [具体的な受入基準 2]
-  - [ ] 改修やテスト成功ごとに WIP コミットを実行。
+- [ ] **ac-checkpoint-implementation (AC-1)**: [AC-1の内容]
+- [ ] **ac-checkpoint-implementation (AC-2)**: [AC-2の内容]
+- [ ] ...（AC数に応じて展開）
+- [ ] **hybrid-triage-commit (wip)**: 各AC完了後にWIP保存
 
-### Phase 3: 仕上げ・検証フェーズ（/develop-work-package）
+### Phase 3: リファクタリングと品質検証
 
-- [ ] **[3-1. 網羅的な品質検証]** (`tester.md`)
-  - [ ] 修正箇所だけでなく、プロジェクト全体の全テスト（ユニット/統合）がグリーンであることを確認。
-  - [ ] コミット前にカバレッジ測定を行い、水準が維持されていることを確認（低下時は理由報告）。
-- [ ] **[3-2. 軽度のリファクタリング]** (`refactor.md`)
-  - [ ] 実装コードやドキュメントに冗長な箇所がないか見直し。
-  - [ ] リファクタリング後も全テストがグリーンであることを再確認。
+- [ ] **refactoring-loop**: コードの内部構造を改善
+- [ ] **quality-verification**: `deno task qa` 完全版品質検証
+- [ ] **hybrid-triage-commit (triage)**: WIPコミットの解体とアトミックコミット再構築
 
-### Phase 4: 完了・クリーンアップ（/develop-work-package）
+### Phase 4: 公開（push・PR作成・マージ）
 
-#### 完了条件チェックリスト（AIはこのチェックリストをすべて満たさなければWork Packageを完了してはならない）
-
-- [ ] **[4-1. WIPコミットの解体とアトミックコミットへの再構築]** (`version-control-specialist.md`)
-  - [ ] `hybrid-triage-commit` スキルを `triage`
-        モードで実行し、WIPコミットを論理単位のアトミックコミットへ解体する。
-  - [ ] 解体後、`git log --oneline`
-        を実行し、再構築されたコミット履歴をチャットに貼付してPOに提示する。
-  - [ ] POが履歴を確認し、各コミットの単位とメッセージに承認を与えること。
-- [ ] **[4-2. PR作成とURL提示]** (`version-control-specialist.md`)
-  - [ ] Conventional Commits 規格に沿った PR を作成する。
-  - [ ] 作成したPRのURLをチャットに貼付し、POにレビューを依頼する。
-  - [ ] POがURLを確認し、承認または修正指示を与えるまで次へ進まない。
-- [ ] **[4-3. マージとクリーンアップ]** (`version-control-specialist.md`)
-  - [ ] POの明示的承認を経てマージを実行。
-  - [ ] マージ後、ローカルブランチを削除し、環境をクリーンアップする。
+- [ ] **git push**: アトミックコミットをリモートへ反映
+- [ ] **create-pull-request**: Conventional Commits形式のPR作成
+- [ ] **merge-branch**: PO承認後のマージとクリーンアップ
