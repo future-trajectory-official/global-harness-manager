@@ -14,7 +14,7 @@ async function main() {
   const dataRaw = args.data;
 
   if (!dataRaw) {
-    console.error("Usage: deno run -A manage_backlog.ts --data 'JSON_STRING'");
+    console.error("Usage: deno run -A archive_backlog.ts --data 'JSON_STRING'");
     Deno.exit(1);
   }
 
