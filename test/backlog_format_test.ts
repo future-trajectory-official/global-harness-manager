@@ -69,7 +69,7 @@ function extractField(block: string, fieldName: string): string | null {
 }
 
 function hasH4WpSection(block: string): boolean {
-  return /^####\s+WP_\d+:.*$/m.test(block);
+  return /^####\s+WP_[a-zA-Z0-9]+:.*$/m.test(block);
 }
 
 function hasEffortEstimate(block: string): boolean {
