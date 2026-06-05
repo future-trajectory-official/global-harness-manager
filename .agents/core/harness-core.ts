@@ -24,6 +24,9 @@ export * from "./markdown.ts";
 // エラーハンドリング (errorUtil)
 export * from "./error.ts";
 
+// バックログスキーマ解決 (loadBacklogSchema, extractPbiBlock, buildArchiveCard, updateContents)
+export * from "./backlog-schema.ts";
+
 // ターゲット検証 (verifyTarget)
 export * from "./verify-target.ts";
 

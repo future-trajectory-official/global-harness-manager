@@ -1,19 +1,20 @@
 import { assertFalse, assertMatch, assertThrows } from "@std/assert";
 import {
-  BacklogData,
+  buildArchiveCard,
   extractPbiBlock,
-  transformToArchiveCard,
+  loadBacklogSchema,
   updateContents,
-} from "./manage_backlog.ts";
+} from "../../../../../core/backlog-schema.ts";
 
 // --- Tests for transformToArchiveCard ---
 
 /**
- * transformToArchiveCard - 正規フォーマットに準拠したカードが生成されることを検証する。
+ * buildArchiveCard - 正規フォーマットに準拠したカードが生成されることを検証する。
  * 全フィールドが正しく埋め込まれていることを確認する。
  */
-Deno.test("transformToArchiveCard - should generate canonical format card", () => {
-  const data: BacklogData = {
+Deno.test("buildArchiveCard - should generate canonical format card", () => {
+  const schema = loadBacklogSchema();
+  const data: Record<string, unknown> = {
     id: "[Epic/Feature]/Test-PBI-1",
     sprint: "Sprint 1",
     insights: "Learned something new",
@@ -32,7 +33,7 @@ Deno.test("transformToArchiveCard - should generate canonical format card", () =
   };
   const dummyBlock = `### [DONE] [Epic/Feature]/Test-PBI-1`;
 
-  const result = transformToArchiveCard(data, dummyBlock);
+  const result = buildArchiveCard(data, dummyBlock, schema);
 
   assertMatch(result, /\*\*スプリント\*\*: Sprint 1/);
   assertMatch(result, /\*\*見積サイズ\*\*: S/);

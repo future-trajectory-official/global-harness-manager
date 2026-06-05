@@ -1,9 +1,10 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import {
+  buildArchiveCard,
   extractPbiBlock,
-  transformToArchiveCard,
+  loadBacklogSchema,
   updateContents,
-} from "../.agents/skills/bundles/management-bundle/update-backlog/scripts/manage_backlog.ts";
+} from "../.agents/core/backlog-schema.ts";
 
 /**
  * manage_backlog.ts のテスト
@@ -90,7 +91,8 @@ Deno.test("アーカイブ形式への変換ロジックの検証", () => {
   const pbiId = "[Epic/Feature]/Target-PBI";
   const { block } = extractPbiBlock(mockBacklog, pbiId);
 
-  const resultCard = transformToArchiveCard(inputJson, block);
+  const schema = loadBacklogSchema();
+  const resultCard = buildArchiveCard(inputJson, block, schema);
 
   assertStringIncludes(resultCard, "`#Decision` `#Architecture`");
   assertStringIncludes(resultCard, "**スプリント**: Sprint 1");
