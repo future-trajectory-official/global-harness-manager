@@ -24,7 +24,7 @@
 
 アーカイブ処理は、以下の Deno スクリプトによって実行されます。
 
-- **パス**: `scripts/manage_backlog.ts`
+- **パス**: `scripts/archive_backlog.ts`
 
 ### 入力データ構造 (JSON)
 
@@ -76,7 +76,7 @@ AI は以下の構造を持つ JSON を生成し、引数 `--data` として渡�
 エージェントは以下の手順でアーカイブを実行します。
 
 1. バックログPBIの情報とセッション履歴から、上記JSONを構成する
-2. `deno run -A .agents/skills/bundles/management-bundle/update-backlog/scripts/manage_backlog.ts --data '[構成したJSON]'`
+2. `deno run -A .agents/skills/bundles/management-bundle/archive-backlog/scripts/archive_backlog.ts --data '[構成したJSON]'`
    を実行する
 3. `product-backlog-archive.md.example`
    のフォーマットに従い、アーカイブカードが正しく生成されていることを確認する
