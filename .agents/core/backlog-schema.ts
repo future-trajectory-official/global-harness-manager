@@ -178,6 +178,46 @@ export function buildArchiveCard(
   return card;
 }
 
+export function validateWpCompleteness(content: string, pbiId: string): void {
+  const { block } = extractPbiBlock(content, pbiId);
+  const wpRegex = /^#### WP_[\w]+:/gm;
+  const wpMatches = Array.from(block.matchAll(wpRegex));
+  if (wpMatches.length === 0) return;
+
+  for (const match of wpMatches) {
+    const wpHeader = match[0];
+    const wpStart = match.index!;
+    const remaining = block.slice(wpStart + wpHeader.length);
+
+    const nextWpMatch = remaining.match(/^#### WP_[\w]+:/m);
+    const nextSectionMatch = remaining.match(/^#{2,3}\s/m);
+    let wpBody: string;
+    if (nextWpMatch && nextSectionMatch) {
+      const endPos = Math.min(nextWpMatch.index!, nextSectionMatch.index!);
+      wpBody = remaining.slice(0, endPos);
+    } else if (nextWpMatch) {
+      wpBody = remaining.slice(0, nextWpMatch.index!);
+    } else if (nextSectionMatch) {
+      wpBody = remaining.slice(0, nextSectionMatch.index!);
+    } else {
+      wpBody = remaining;
+    }
+
+    const incompleteLines = wpBody
+      .split("\n")
+      .filter((line) => /^\s*- \[ \]/.test(line));
+    if (incompleteLines.length > 0) {
+      const details = incompleteLines
+        .map((l) => l.trim().replace(/^- \[ \]\s*/, ""))
+        .join(", ");
+      const wpName = wpHeader.replace("#### ", "").replace(":", "").trim();
+      throw new Error(
+        `PBI "${pbiId}" has incomplete WP: ${wpName} (${details})`,
+      );
+    }
+  }
+}
+
 export function updateContents(
   backlogContent: string,
   archiveContent: string,
