@@ -4,6 +4,7 @@ import {
   extractPbiBlock,
   loadBacklogSchema,
   updateContents,
+  validateWpCompleteness,
 } from "../../../../../core/backlog-schema.ts";
 
 const BACKLOG_PATH = ".agents/management/product-backlog.md";
@@ -24,6 +25,8 @@ async function main() {
   try {
     const backlogContent = await Deno.readTextFile(BACKLOG_PATH);
     const archiveContent = await Deno.readTextFile(ARCHIVE_PATH);
+
+    validateWpCompleteness(backlogContent, data.id as string);
 
     const { block, regex } = extractPbiBlock(backlogContent, data.id as string, schema);
     const archiveCard = buildArchiveCard(data, block, schema);

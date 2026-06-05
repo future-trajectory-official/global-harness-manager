@@ -4,6 +4,7 @@ import {
   extractPbiBlock,
   loadBacklogSchema,
   updateContents,
+  validateWpCompleteness,
 } from "../../../../../core/backlog-schema.ts";
 
 // --- Tests for transformToArchiveCard ---
@@ -110,4 +111,81 @@ Deno.test("updateContents - should throw error if anchor not found in archive", 
     Error,
     "Anchor '## 完了済みアイテム' not found.",
   );
+});
+
+// --- Tests for validateWpCompleteness ---
+
+const pbiWithIncompleteWp = `
+### [WIP] [Epic/Feature]/Test-PBI
+
+- **概要**: Test PBI
+
+#### WP_1: Setup infrastructure
+
+- **Effort見積（介入回数）**: 1回
+- [x] AC1: Setup done
+- [ ] AC2: Verification pending
+
+#### WP_2: Implement feature
+
+- **Effort見積（介入回数）**: 1回
+- [x] AC1: Feature implemented
+`;
+
+const pbiWithCompleteWp = `
+### [WIP] [Epic/Feature]/Test-PBI
+
+- **概要**: Test PBI
+
+#### WP_1: Setup infrastructure
+
+- **Effort見積（介入回数）**: 1回
+- [x] AC1: Setup done
+- [x] AC2: Verification done
+
+#### WP_a: Additional work
+
+- **Effort見積（介入回数）**: 1回
+- [x] AC1: Extra task done
+`;
+
+const pbiWithNoWp = `
+### [TODO] [Epic/Feature]/Test-PBI
+
+- **概要**: Test PBI with no work packages
+`;
+
+const pbiWithAlphaWpIncomplete = `
+### [WIP] [Epic/Feature]/Test-PBI
+
+- **概要**: Test PBI
+
+#### WP_a: Additional work
+
+- **Effort見積（介入回数）**: 1回
+- [ ] AC1: Extra task pending
+`;
+
+Deno.test("validateWpCompleteness - should throw if any WP has incomplete checkbox", () => {
+  assertThrows(
+    () => validateWpCompleteness(pbiWithIncompleteWp, "[Epic/Feature]/Test-PBI"),
+    Error,
+    "has incomplete WP: WP_1",
+  );
+});
+
+Deno.test("validateWpCompleteness - should throw if alphabet-suffixed WP has incomplete checkbox", () => {
+  assertThrows(
+    () => validateWpCompleteness(pbiWithAlphaWpIncomplete, "[Epic/Feature]/Test-PBI"),
+    Error,
+    "has incomplete WP: WP_a",
+  );
+});
+
+Deno.test("validateWpCompleteness - should pass if all WP checkboxes are complete", () => {
+  validateWpCompleteness(pbiWithCompleteWp, "[Epic/Feature]/Test-PBI");
+});
+
+Deno.test("validateWpCompleteness - should pass if PBI has no WP sections", () => {
+  validateWpCompleteness(pbiWithNoWp, "[Epic/Feature]/Test-PBI");
 });
