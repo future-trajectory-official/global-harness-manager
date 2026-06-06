@@ -41,6 +41,8 @@ export async function createSandbox(
       args: ["clone", currentRepo, sandboxPath],
     });
 
+    await inheritGitIdentity(sandboxPath);
+
     logger.info(`✅ Sandbox created at ${sandboxPath}`);
   } else if (mode === "container") {
     const detectedLang = lang || await detectLanguage();
@@ -93,7 +95,60 @@ export async function createSandbox(
       args: ["cp", ".", `${containerName}:/app`],
     });
 
+    const hostName = await getGitConfig("user.name", "local") ??
+      await getGitConfig("user.name", "global");
+    const hostEmail = await getGitConfig("user.email", "local") ??
+      await getGitConfig("user.email", "global");
+
+    if (hostName) {
+      await executeCommand({
+        cmd: "docker",
+        args: ["exec", containerName, "git", "config", "--local", "user.name", hostName],
+      });
+    }
+    if (hostEmail) {
+      await executeCommand({
+        cmd: "docker",
+        args: ["exec", containerName, "git", "config", "--local", "user.email", hostEmail],
+      });
+    }
+
     logger.info(`✅ Sandbox container "${containerName}" is ready.`);
+  }
+}
+
+async function getGitConfig(key: string, scope: "local" | "global"): Promise<string | null> {
+  try {
+    const res = await executeCommand({
+      cmd: "git",
+      args: ["config", `--${scope}`, key],
+    });
+    const value = res.stdout.trim();
+    return value || null;
+  } catch {
+    return null;
+  }
+}
+
+async function inheritGitIdentity(sandboxPath: string): Promise<void> {
+  const name = await getGitConfig("user.name", "local") ??
+    await getGitConfig("user.name", "global");
+  const email = await getGitConfig("user.email", "local") ??
+    await getGitConfig("user.email", "global");
+
+  if (name) {
+    await executeCommand({
+      cmd: "git",
+      args: ["config", "--local", "user.name", name],
+      cwd: sandboxPath,
+    });
+  }
+  if (email) {
+    await executeCommand({
+      cmd: "git",
+      args: ["config", "--local", "user.email", email],
+      cwd: sandboxPath,
+    });
   }
 }
 
