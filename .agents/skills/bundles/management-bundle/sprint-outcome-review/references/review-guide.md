@@ -12,6 +12,14 @@
 3. **バックログの更新提案**:
    - レビューでのPOからのフィードバックに基づき、未完了項目の次スプリントへの繰り越しや、新規タスクの追加方針を決定します。
 
+## 保存先と更新ルール
+
+- **保存先**: `.agents/management/sprint-review-{N}.md`（N は現在のスプリント番号）
+- **ルール**: 上書き保存とし、常に最新のレビュー報告書を参照可能な状態に保つ。
+- **注意**: 本ガイドラインの保存先ルールは
+  [`sprint-outcome-review` スキル](/.agents/skills/bundles/management-bundle/sprint-outcome-review/SKILL.md)
+  の Step 4（レビュー報告書の永続化）と整合している。
+
 ## 出力形式
 
 ```markdown
