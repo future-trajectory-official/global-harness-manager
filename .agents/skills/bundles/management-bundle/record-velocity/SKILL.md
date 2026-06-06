@@ -1,24 +1,21 @@
 ---
 name: record-velocity
-description: スプリント終了時にアーカイブから実績データを集計し、ベロシティ情報をバックログの実績推移テーブルに追記する。
+description: スプリント終了時に実績データを集計し、ベロシティ情報をバックログの実績推移テーブルに追記する。
 tags:
   trigger:
     - sprint-end
     - record-velocity
   category: management
-  constraints: after-archive
 ---
 
 # record-velocity
 
-本スキルは `/sprint-end` の Phase 2（アーカイブ完了後）〜 Phase
-3（メトリクス評価前）の間で実行し、アーカイブされたPBIの実績データから合計ウェイト・実感サイズ一致率・乖離要約を自動集計して
-`product-backlog.md` の「スプリント実績推移」テーブルに追記します。
+アーカイブされたPBIの実績データから合計ウェイト・実感サイズ一致率・乖離要約を自動集計し、`product-backlog.md`
+の「スプリント実績推移」テーブルに追記します。
 
 ## 前提条件
 
-- Phase 2（アーカイブ）が完了し、対象スプリントの全PBIが `product-backlog-archive.md`
-  に移動済みであること
+- 対象スプリントの全PBIが `product-backlog-archive.md` にアーカイブ済みであること
 - `product-backlog.md` に「スプリント実績推移」テーブルが存在すること
 
 ## Quick-Start
