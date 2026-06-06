@@ -38,7 +38,7 @@ export async function readConfig(
   } catch (err) {
     if (err instanceof Deno.errors.NotFound) {
       throw new Error(
-        `設定ファイルが見つかりません: ${configPath}`,
+        `設定ファイルが見つかりません: ${configPath}\n不足ファイル: commit-msg.config.json\n復旧手順: config/commit-msg.config.json.example をコピーして作成してください`,
       );
     }
     throw err;
