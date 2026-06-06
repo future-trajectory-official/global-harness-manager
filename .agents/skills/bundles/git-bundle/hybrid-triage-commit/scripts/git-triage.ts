@@ -74,7 +74,7 @@ function hasUncommittedChanges(): boolean {
  */
 function commitAllAsWip(): void {
   runGit(["add", "-A"]);
-  const result = runGit(["commit", "-m", "[wip] savepoint"]);
+  const result = runGit(["commit", "-m", "wip: セーブポイント"]);
   if (result.code === 0) {
     console.log(result.stdout);
   } else {
@@ -371,7 +371,9 @@ async function main() {
 
   if (!mode) {
     console.log("Usage:");
-    console.log("  deno run -A git-triage.ts wip      - Create a WIP savepoint");
+    console.log(
+      '  deno run -A git-triage.ts wip      - Create a WIP savepoint ("wip: セーブポイント")',
+    );
     console.log("  deno run -A git-triage.ts triage   - Interactive atomic commit triage");
     Deno.exit(1);
   }
