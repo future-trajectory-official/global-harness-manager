@@ -1,5 +1,11 @@
 import { assertEquals } from "jsr:@std/assert@^1.0.7";
-import { countACs, type GuardRules, parseGuardBlock, validateTaskMd } from "./validate-task.ts";
+import {
+  countACs,
+  type GuardRules,
+  hasGuardBlock,
+  parseGuardBlock,
+  validateTaskMd,
+} from "./validate-task.ts";
 
 const SAMPLE_TEMPLATE = `# Task Tracking: [Task Name]
 
@@ -379,4 +385,80 @@ Deno.test("validateTaskMd fails when keyword count is less than Foreach required
   );
   const result = validateTaskMd(insufficient, rules!, 2);
   assertEquals(result.valid, false);
+});
+
+// --- hasGuardBlock ---
+
+/**
+ * hasGuardBlock - GUARD ブロックが存在する場合に true を返すことを検証する。
+ */
+Deno.test("hasGuardBlock detects GUARD block", () => {
+  const content = `# Test
+<!--
+GUARD:REQUIRED_H2
+- Some header
+-->
+Some content`;
+  assertEquals(hasGuardBlock(content), true);
+});
+
+/**
+ * hasGuardBlock - GUARD ブロックが存在しない場合に false を返すことを検証する。
+ */
+Deno.test("hasGuardBlock returns false when no GUARD block", () => {
+  const content = `# Test
+No guard block here`;
+  assertEquals(hasGuardBlock(content), false);
+});
+
+/**
+ * hasGuardBlock - 通常の HTML コメント（GUARD: を含まない）では false を返すことを検証する。
+ */
+Deno.test("hasGuardBlock ignores non-GUARD HTML comments", () => {
+  const content = `# Test
+<!-- This is a normal comment -->
+Some content`;
+  assertEquals(hasGuardBlock(content), false);
+});
+
+// --- validateTaskMd GUARD block detection ---
+
+const GUARD_BLOCK_TASK = `# Task Tracking: Bad Task
+
+<!--
+GUARD:REQUIRED_H2
+- 📊 セッションメトリクス & 予実管理
+-->
+
+## 📊 セッションメトリクス & 予実管理
+
+### ⏳ 見積もりと実績
+
+- **計画前見積 (想定介入回数)**: 1 回
+- **計画後見積 (想定介入回数)**: 1 回
+- **完了時実績**: 0
+
+## 📋 実行タスク一覧
+
+### Phase 1: 準備
+
+- [ ] task item
+`;
+
+/**
+ * validateTaskMd - GUARD ブロックを含む task.md がエラーとなることを検証する。
+ */
+Deno.test("validateTaskMd fails when GUARD block exists in task.md", () => {
+  const result = validateTaskMd(GUARD_BLOCK_TASK);
+  assertEquals(result.valid, false);
+  assertEquals(result.errors.some((e) => e.includes("GUARD block")), true);
+});
+
+/**
+ * validateTaskMd - GUARD ブロックを含まない正常な task.md が引き続きパスすることを検証する（回帰）。
+ */
+Deno.test("validateTaskMd passes for clean task.md (regression)", () => {
+  const result = validateTaskMd(VALID_TASK);
+  assertEquals(result.valid, true);
+  assertEquals(result.errors.length, 0);
 });

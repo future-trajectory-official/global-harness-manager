@@ -60,6 +60,10 @@ description: 特定されたWork Packageと文脈に最も適した専門ロー�
 7. **承認後の `task.md` 作成**:
    - PO の承認を得たら、[task-template.md](/.agents/management/task-template.md) を参照し、
      `task.md` をアーティファクトとして作成してください。
+   - **GUARD ブロックの除去**: `task-template.md` には `<!-- ... -->` で囲まれた GUARD ブロック
+     （`GUARD:REQUIRED_H2` 等を含む）が定義されています。このブロックはテンプレート定義専用です。
+     `task.md` を作成する際は、GUARD ブロック全体を必ず削除してください。削除せずに `task.md`
+     に残すと、 後続の構造検証でエラーとなります。
    - 見積もりは**回数（int）**で記入し、AC は計画時点で判明している内容をすべて記載してください。
 8. **作成した `task.md` の構造検証**:
    - 以下のコマンドを実行し、`task.md` がテンプレートの GUARD
