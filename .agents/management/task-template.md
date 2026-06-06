@@ -3,22 +3,28 @@
 [Task description or summary]
 
 <!--
+注意: このブロックはテンプレート定義専用です。task.md を作成する際は、この HTML コメントブロック（"<!--" から "-->" まで）全体を必ず削除してください。
+
 GUARD:REQUIRED_H2
+
 - 📊 セッションメトリクス & 予実管理
 - 📋 実行タスク一覧
 
 GUARD:REQUIRED_H3
+
 - Phase 1
 - Phase 2
 - Phase 3
 - Phase 4
 
 GUARD:REQUIRED_METRICS
+
 - 計画前見積 (想定介入回数)
 - 計画後見積 (想定介入回数)
 - 完了時実績
 
 GUARD:REQUIRED_TASKS
+
 - Phase 1: 準備（環境隔離・ブランチ準備）
   - develop-environment-setup
   - initialize-branch

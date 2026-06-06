@@ -35,6 +35,10 @@ function stripHtmlComments(text: string): string {
   return text.replace(/<!--[\s\S]*?-->/g, "");
 }
 
+export function hasGuardBlock(content: string): boolean {
+  return /<!--[\s\S]*?GUARD:[\s\S]*?-->/.test(content);
+}
+
 function extractRequiredTasks(section: string): PhaseTaskRequirement[] {
   const cleaned = stripHtmlComments(section);
   const lines = cleaned.split("\n");
@@ -154,6 +158,12 @@ export function validateTaskMd(
   if (!content || content.trim() === "") {
     errors.push("Content is empty");
     return { valid: false, errors };
+  }
+
+  if (hasGuardBlock(content)) {
+    errors.push(
+      "GUARD block found in task.md. The GUARD block (<!-- ... -->) must be removed when creating a task.md from the template.",
+    );
   }
 
   for (const h2 of resolvedRules.requiredH2s) {
