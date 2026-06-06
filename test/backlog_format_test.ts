@@ -210,6 +210,37 @@ Deno.test({
 });
 
 /**
+ * PBIブロック内に自由記述形式のAC（WP配下のチェックボックス形式に違反するパターン）が
+ * 存在するか検出する。
+ *
+ * 【検証の意図】
+ * backlog-guidelines.md の AC記述形式強制ルールに従い、以下の違反パターンを検出する：
+ * - `**【Role】** AC:**` 形式（例: `**【Tester】AC**:`）
+ * - `- **[Role]** AC:` 形式（例: `- **[Tester]** AC: ...`）
+ *
+ * ただし、インラインコード（` で囲まれた部分）内に出現するものは検出対象外とする。
+ */
+function detectFreeFormAc(pbiBlock: string): string[] {
+  const violations: string[] = [];
+
+  for (const line of pbiBlock.split("\n")) {
+    const trimmed = line.trim();
+
+    // インラインコード内のパターンは除外
+    const stripped = trimmed.replace(/`[^`]+`/g, "");
+
+    if (/^\*\*【.*】AC\*\*:/.test(stripped)) {
+      violations.push(trimmed);
+    }
+    if (/^-\s+\*\*\[.*\]\*\*\s*AC:/.test(stripped)) {
+      violations.push(trimmed);
+    }
+  }
+
+  return violations;
+}
+
+/**
  * backlog_format_test — backlog-guidelines.md のPBIフォーマット記述が
  * product-backlog.md.example（正規テンプレート）と整合していることを検証する。
  * ドキュメント間のフォーマット乖離を防止する。
@@ -231,4 +262,31 @@ Deno.test("backlog-guidelines.md: PBIフォーマット記述が .example と整
   );
 
   console.log(`  ✅ backlog-guidelines.md のフォーマット記述は .example と整合`);
+});
+
+Deno.test({
+  name: "product-backlog.md: WIP/TODOのPBIに自由記述形式のACが存在しない",
+  ignore: skipNoBacklog,
+  fn: () => {
+    const md = readFixture(BACKLOG_PATH);
+    const pbis = extractH3PbiBlocks(md);
+    let totalViolations = 0;
+
+    for (const pbi of pbis) {
+      const titleLine = pbi.split("\n")[0].trim();
+      // DONEのPBIはアーカイブ前の過渡状態のため検査対象外
+      if (titleLine.includes("[DONE]")) continue;
+      const violations = detectFreeFormAc(pbi);
+      if (violations.length > 0) {
+        console.error(`  ❌ ${titleLine}: WP外に自由記述ACを検出`);
+        for (const v of violations) {
+          console.error(`      → ${v}`);
+        }
+        totalViolations += violations.length;
+      }
+    }
+
+    assert(totalViolations === 0, `自由記述形式のACが ${totalViolations} 件見つかりました`);
+    console.log(`  ✅ 全PBIのAC記述形式がWP配下のチェックボックス形式に準拠`);
+  },
 });
