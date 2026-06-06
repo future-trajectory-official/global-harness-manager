@@ -1,4 +1,4 @@
-import { assertEquals, assertRejects } from "@std/assert";
+import { assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
 import { readConfig, validate, ValidationConfig } from "./validate-commit-message.ts";
 
@@ -25,14 +25,25 @@ Deno.test("readConfig - 正常な設定ファイルを読み込める", async ()
 });
 
 /**
- * ユースケース: 設定ファイルが存在しない場合にデフォルト設定が使われること
- * 検証意図: 設定ファイル不在時のフォールバック動作を確認する
+ * ユースケース: 設定ファイルが存在しない場合にエラーになること
+ * 検証意図: 設定ファイル不在時のエラーメッセージにファイル名と復旧手順が含まれること
  */
 Deno.test("readConfig - 設定ファイルが存在しない場合はエラー", async () => {
   await assertRejects(
     () => readConfig("/nonexistent/path/config.json"),
     Error,
+    "commit-msg.config.json",
   );
+});
+
+Deno.test("readConfig - 設定ファイル不在時のエラーメッセージに復旧手順が含まれる", async () => {
+  let thrown: Error | undefined;
+  try {
+    await readConfig("/nonexistent/path/config.json");
+  } catch (e) {
+    thrown = e as Error;
+  }
+  assertStringIncludes(thrown!.message, "config/commit-msg.config.json.example");
 });
 
 /**
