@@ -149,7 +149,7 @@ export function updateBacklogFile(
 ): string {
   if (dryRun) return backlogContent;
 
-  const tableHeaderRegex = /^(\|.*実感サイズ一致率.*\|.*備考.*\|)\n([\s\S]*?)(?=\n## |\n$)/m;
+  const tableHeaderRegex = /^(\|.*実感サイズ一致.*\|.*備考.*\|)\n([\s\S]*?)(?=\n## |\n$)/m;
   const tableMatch = backlogContent.match(tableHeaderRegex);
 
   if (!tableMatch) return backlogContent + `\n${newRow}\n`;
