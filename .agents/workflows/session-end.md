@@ -64,4 +64,18 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
   `[update-backlog](/.agents/skills/bundles/management-bundle/update-backlog/SKILL.md)`
 - **内容**: セッションの成果に基づき、PBI のステータスを更新（Done への移動や、残PBIの整理）します。
 
+### 4-2. セッションアーティファクトのクリーンアップ
+
+- **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
+- **実行内容**:
+  - `.session/` ディレクトリが存在するか確認する（例: `ls .session/` または `test -d .session/`）。
+  - 存在する場合:
+    1. `deno eval "Deno.removeSync('.session', {recursive: true})"` で `.session/`
+       を完全削除（クロスプラットフォーム）。
+    2. `mkdir -p .session/` で空のディレクトリを再作成。
+    3. `git checkout .session/.gitkeep` で追跡ファイルを復元。
+  - 存在しない場合: 何もせずスキップ（エラーにはしない）。
+- **注意**: このステップは Opencode 環境でのみ意味を持つ。Antigravity 環境では `.session/`
+  が存在しないため常にスキップされる。
+
 <!-- STOP -->
