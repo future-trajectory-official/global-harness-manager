@@ -7,6 +7,7 @@ import {
   logger,
   PATHS,
 } from "../../../../../../.agents/core/harness-core.ts";
+import { setupGitHooks } from "../../../../../../.agents/skills/bundles/onboarding-bundle/setup-harness-env/scripts/setup-hooks.ts";
 
 const DEFAULT_SANDBOX_BASE = "/tmp/harness-sandboxes";
 
@@ -42,6 +43,8 @@ export async function createSandbox(
     });
 
     await inheritGitIdentity(sandboxPath);
+
+    await setupGitHooks({ gitDir: join(sandboxPath, ".git") });
 
     logger.info(`✅ Sandbox created at ${sandboxPath}`);
   } else if (mode === "container") {
@@ -88,8 +91,11 @@ export async function createSandbox(
       ],
     });
 
-    // コードのコピー
-    logger.info(`Copying code to container...`);
+    // Set safe.directory for the copied repository and configure git identity
+    await executeCommand({
+      cmd: "docker",
+      args: ["exec", containerName, "git", "config", "--global", "--add", "safe.directory", "/app"],
+    });
     await executeCommand({
       cmd: "docker",
       args: ["cp", ".", `${containerName}:/app`],
@@ -112,6 +118,45 @@ export async function createSandbox(
         args: ["exec", containerName, "git", "config", "--local", "user.email", hostEmail],
       });
     }
+
+    // Ensure Deno is available and run setup-hooks
+    const denoCheck = await executeCommand({
+      cmd: "docker",
+      args: ["exec", containerName, "deno", "--version"],
+    });
+    if (denoCheck.code !== 0) {
+      logger.info("Deno not found in container. Installing...");
+      const archResult = await executeCommand({
+        cmd: "docker",
+        args: ["exec", containerName, "uname", "-m"],
+      });
+      const arch = archResult.stdout.trim();
+      const denoTarget = arch === "x86_64"
+        ? "x86_64-unknown-linux-gnu"
+        : "aarch64-unknown-linux-gnu";
+
+      await executeCommand({
+        cmd: "docker",
+        args: [
+          "exec",
+          containerName,
+          "sh",
+          "-c",
+          [
+            "apk add --no-cache curl unzip",
+            `curl -sL "https://github.com/denoland/deno/releases/download/v2.0.2/deno-${denoTarget}.zip" -o /tmp/deno.zip`,
+            "unzip -q /tmp/deno.zip -d /usr/local/bin",
+            "rm /tmp/deno.zip",
+            "chmod +x /usr/local/bin/deno",
+          ].join(" && "),
+        ],
+      });
+    }
+
+    await executeCommand({
+      cmd: "docker",
+      args: ["exec", "-w", "/app", containerName, "deno", "task", "setup-hooks"],
+    });
 
     logger.info(`✅ Sandbox container "${containerName}" is ready.`);
   }

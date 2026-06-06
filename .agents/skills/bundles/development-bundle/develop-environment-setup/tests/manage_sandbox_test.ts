@@ -50,6 +50,43 @@ Deno.test("manage-sandbox create --mode directory", async () => {
 });
 
 /**
+ * manage-sandbox create --mode directory - 作成後に commit-msg フックが
+ * サンドボックスの .git/hooks/ に存在することを検証する。
+ */
+Deno.test("manage-sandbox create --mode directory should setup git hooks", async () => {
+  const taskName = `test-hooks-${Date.now()}`;
+  const sandboxBase = await Deno.makeTempDir();
+
+  const command = new Deno.Command(Deno.execPath(), {
+    args: [
+      "run",
+      "-A",
+      SCRIPT_PATH,
+      "create",
+      "--name",
+      taskName,
+      "--mode",
+      "directory",
+      "--base",
+      sandboxBase,
+    ],
+    stdout: "piped",
+    stderr: "piped",
+  });
+
+  const { code } = await command.output();
+  assertEquals(code, 0, "Command should succeed");
+
+  const sandboxPath = join(sandboxBase, taskName);
+  const commitMsgHook = join(sandboxPath, ".git", "hooks", "commit-msg");
+  const hookStat = await Deno.stat(commitMsgHook);
+  assertEquals(hookStat.isFile, true, "commit-msg hook should exist");
+
+  // クリーンアップ
+  await Deno.remove(sandboxBase, { recursive: true });
+});
+
+/**
  * manage-sandbox create --mode container - サンドボックスがコンテナモードで
  * 正しく作成されることを検証する。Docker コンテナが起動し、docker ps で
  * コンテナ名が確認できることをチェックする。
