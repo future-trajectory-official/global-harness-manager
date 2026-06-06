@@ -90,6 +90,24 @@ gh api -X PATCH repos/{owner}/{repo} \
 
 main ブランチへの直接pushを禁止し、すべての変更を Pull Request 経由にするよう強制します。
 
+### 一人開発の場合（自己承認でマージ可能）
+
+```bash
+gh api -X PUT repos/{owner}/{repo}/branches/main/protection \
+  --input - <<'JSON'
+{
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 0
+  },
+  "enforce_admins": true,
+  "required_status_checks": null,
+  "restrictions": null
+}
+JSON
+```
+
+### 複数人開発の場合（他者のレビュー承認が必要）
+
 ```bash
 gh api -X PUT repos/{owner}/{repo}/branches/main/protection \
   --input - <<'JSON'
@@ -107,20 +125,20 @@ JSON
 
 ### 各パラメータの意味
 
-| パラメータ                                                      | 値     | 説明                                                                                                                                                                                                     |
-| --------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `required_pull_request_reviews.required_approving_review_count` | `1`    | マージに最低1件の承認レビューを必須にします。これにより、main への直接pushが物理的に禁止され、すべての変更がPR経由になります。                                                                           |
-| `required_pull_request_reviews.dismiss_stale_reviews`           | `true` | 新しいコミットがpushされた場合、既存の承認レビューを却下します。古い承認が残ったままの状態でのマージを防ぎます。                                                                                         |
-| `enforce_admins`                                                | `true` | リポジトリ管理者も上記ルールの適用対象とします。`false` にすると管理者だけ直接push可能になり、ガードレールの意味が薄れます。ただし緊急時の回避手段が失われるため、チームの運用に応じて判断してください。 |
-| `required_status_checks`                                        | `null` | CIステータスチェックの必須化は行いません（現時点では任意）。必要に応じて後日追加できます。                                                                                                               |
-| `restrictions`                                                  | `null` | push可能ユーザー/チームの制限は行いません（全コラボレーターがPRを作成可能）。                                                                                                                            |
+| パラメータ                                                      | 一人開発 | 複数人開発 | 説明                                                                                                                                                           |
+| --------------------------------------------------------------- | -------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `required_pull_request_reviews.required_approving_review_count` | `0`      | `1`        | マージに必要な承認レビュー数。`0` にするとPR作成者が自己マージ可能。`1` 以上にすると他者の承認が必要。どちらの場合も直接pushは禁止され、全変更がPR経由になる。 |
+| `required_pull_request_reviews.dismiss_stale_reviews`           | 不要     | `true`     | 新しいコミットがpushされた場合、既存の承認レビューを却下する。複数人開発での古い承認残り防止用。一人開発では不要。                                             |
+| `enforce_admins`                                                | `true`   | `true`     | 管理者も含めて全員がルールの適用対象。`false` にすると管理者だけ直接push可能になる。                                                                           |
+| `required_status_checks`                                        | `null`   | `null`     | CIステータスチェックの必須化は行わない場合（現時点では任意）。必要に応じて後日追加可能。                                                                       |
+| `restrictions`                                                  | `null`   | `null`     | push可能ユーザー/チームの制限は行わない場合（全コラボレーターがPRを作成可能）。                                                                                |
 
-### `enforce_admins` のトレードオフ
+### チーム構成に応じた選択
 
-- **`true`（推奨）**: 管理者も含めて全員がPR必須となり、ガバナンスが徹底されます。
-- **`false`**:
-  管理者は直接push可能なため、緊急時のホットフィックスを高速に行えますが、ガードレールをバイパスできてしまいます。
-- **推奨**: CIとレビュープロセスが確立している本プロジェクトでは `true` を推奨します。
+| 構成           | `required_approving_review_count` | 理由                                                                                                                              |
+| -------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **一人開発**   | `0`                               | PR作成者＝レビューアのため、自己承認でマージ可能にする必要がある。スカッシュ/リベース禁止はリポジトリ設定側で担保される。         |
+| **複数人開発** | `1`以上                           | 第三者のレビューを必須とし、コード品質を担保する。同一アカウントでは承認できない制約があるため、最低1人の他メンバーの承認が必要。 |
 
 ---
 
@@ -150,7 +168,16 @@ gh api repos/{owner}/{repo}/branches/main/protection \
   --jq '{required_pull_request_reviews: .required_pull_request_reviews.required_approving_review_count, enforce_admins: .enforce_admins.enabled}'
 ```
 
-**期待される出力**:
+**期待される出力（一人開発の場合）**:
+
+```json
+{
+  "required_pull_request_reviews": 0,
+  "enforce_admins": true
+}
+```
+
+**期待される出力（複数人開発の場合）**:
 
 ```json
 {
