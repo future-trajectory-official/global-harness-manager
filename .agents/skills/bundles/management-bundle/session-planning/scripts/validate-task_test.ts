@@ -17,9 +17,9 @@ GUARD:REQUIRED_H3
 - Phase 4
 
 GUARD:REQUIRED_METRICS
-- 初期見積 (想定介入回数)
+- 計画前見積 (想定介入回数)
 - 計画後見積 (想定介入回数)
-- 実際の介入回数
+- 完了時実績
 -->
 
 ## 📊 セッションメトリクス & 予実管理
@@ -35,9 +35,9 @@ const VALID_TASK = `# Task Tracking: Some Feature
 
 ### ⏳ 見積もりと実績
 
-- **初期見積 (想定介入回数)**: 2 回
+- **計画前見積 (想定介入回数)**: 2 回
 - **計画後見積 (想定介入回数)**: 3 回
-- **実際の介入回数**: 0
+- **完了時実績**: 0
 
 ## 📋 実行タスク一覧
 
@@ -94,9 +94,9 @@ Deno.test("parseGuardBlock extracts all required H3s from template", () => {
 Deno.test("parseGuardBlock extracts all required metrics from template", () => {
   const rules = assertRules(SAMPLE_TEMPLATE);
   assertEquals(rules.requiredMetrics, [
-    "初期見積 (想定介入回数)",
+    "計画前見積 (想定介入回数)",
     "計画後見積 (想定介入回数)",
-    "実際の介入回数",
+    "完了時実績",
   ]);
 });
 
@@ -167,13 +167,13 @@ Deno.test("validateTaskMd reports missing required H3", () => {
 
 /**
  * validateTaskMd - 必須メトリクスフィールドが欠落している場合にエラーが報告されることを検証する。
- * 「初期見積」を削除した際にバリデーションで検出されることを確認する。
+ * 「計画前見積」を削除した際にバリデーションで検出されることを確認する。
  */
 Deno.test("validateTaskMd reports missing required metrics field", () => {
   const rules = assertRules(SAMPLE_TEMPLATE);
-  const result = validateTaskMd(VALID_TASK.replace("初期見積", "削除された"), rules);
+  const result = validateTaskMd(VALID_TASK.replace("計画前見積", "削除された"), rules);
   assertEquals(result.valid, false);
-  assertEquals(result.errors.some((e) => e.includes("初期見積")), true);
+  assertEquals(result.errors.some((e) => e.includes("計画前見積")), true);
 });
 
 /**
@@ -232,9 +232,9 @@ GUARD:REQUIRED_H3
 - Phase 4
 
 GUARD:REQUIRED_METRICS
-- 初期見積 (想定介入回数)
+- 計画前見積 (想定介入回数)
 - 計画後見積 (想定介入回数)
-- 実際の介入回数
+- 完了時実績
 
 GUARD:REQUIRED_TASKS
 - Phase 1: 準備
@@ -266,9 +266,9 @@ const VALID_TASK_WITH_KEYWORDS = `# Task Tracking: Some Feature
 
 ### ⏳ 見積もりと実績
 
-- **初期見積 (想定介入回数)**: 2 回
+- **計画前見積 (想定介入回数)**: 2 回
 - **計画後見積 (想定介入回数)**: 3 回
-- **実際の介入回数**: 0
+- **完了時実績**: 0
 
 ## 📋 実行タスク一覧
 
