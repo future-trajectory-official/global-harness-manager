@@ -19,7 +19,7 @@ export interface ValidationResult {
 const DEFAULT_RULES: GuardRules = {
   requiredH2s: ["📊 セッションメトリクス & 予実管理", "📋 実行タスク一覧"],
   requiredH3s: ["Phase 1", "Phase 2", "Phase 3", "Phase 4"],
-  requiredMetrics: ["初期見積 (想定介入回数)", "計画後見積 (想定介入回数)", "実際の介入回数"],
+  requiredMetrics: ["計画前見積 (想定介入回数)", "計画後見積 (想定介入回数)", "完了時実績"],
   requiredTasks: [],
 };
 
