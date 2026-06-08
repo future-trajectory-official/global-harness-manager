@@ -99,10 +99,35 @@ async function main() {
       }
     }
 
+    // config/AGENTS.md.example → ./AGENTS.md のコピー（未存在の場合のみ）
+    await syncAgentsMd(isDryRun);
+
     logger.info("Publish rules completed.");
   } catch (e) {
     errorUtil.fatal(e, "Publish Rules Main");
   }
+}
+
+/**
+ * config/AGENTS.md.example をワークスペースルートへ AGENTS.md としてコピーします
+ */
+async function syncAgentsMd(isDryRun: boolean) {
+  const source = pathUtil.resolvePath("config/AGENTS.md.example");
+  const dest = pathUtil.resolvePath("AGENTS.md");
+
+  if (!(await fsUtil.exists(source))) {
+    logger.warn(`AGENTS.md.example not found at ${source}. Skipping.`);
+    return;
+  }
+
+  if (await fsUtil.exists(dest)) {
+    logger.info("AGENTS.md already exists. Skipping copy.");
+    return;
+  }
+
+  logger.info(`Copying ${source} → ${dest}`);
+  const content = await fsUtil.readTextFile(source);
+  await fsUtil.writeTextFile(dest, content, isDryRun);
 }
 
 /**

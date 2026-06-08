@@ -30,6 +30,11 @@ tags:
 deno run -A .agents/skills/bundles/onboarding-bundle/publish-harness-rules/scripts/publish-rules.ts --lang ja --os wsl
 ```
 
+3. （初回セットアップ時のみ）`config/AGENTS.md.example` がワークスペースルートへ `AGENTS.md`
+   として自動コピーされます（スクリプト内で未存在の場合のみ実行）。 既存の `AGENTS.md`
+   がある場合は上書きされません。明示的に更新したい場合は、
+   ファイルを削除してから再実行してください。
+
 > [!TIP]
 > 設定ファイルの書き方は [target-config-format.md](references/target-config-format.md)
 > を、Git保護の仕組みは [gitignore-protection.md](references/gitignore-protection.md)
