@@ -142,7 +142,7 @@ export function checkInterventionHistory(content: string): string | null {
   }
 
   const cleaned = historyMatch[1].replace(/<!--[\s\S]*?-->/g, "").trim();
-  const entryCount = (cleaned.match(/- \*\*発生日時\*\*/g) || []).length;
+  const entryCount = (cleaned.match(/- \*\*介入内容\*\*/g) || []).length;
 
   if (entryCount === 0) {
     return "WARNING: 完了時実績が 0 より大きいですが、介入履歴エントリが 1 件も記録されていません。介入の定義に該当する事象が発生した場合は、介入履歴に記録してください。";
