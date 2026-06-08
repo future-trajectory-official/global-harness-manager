@@ -16,6 +16,7 @@
 !/.local/.gitkeep
 /.session/*
 !/.session/.gitkeep
+/AGENTS.md
 /cov_profile/
 /coverage/
 
