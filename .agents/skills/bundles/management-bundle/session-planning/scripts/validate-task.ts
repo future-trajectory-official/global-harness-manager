@@ -123,6 +123,34 @@ function getPhaseSection(content: string, phaseName: string): string {
   return nextSection === -1 ? afterHeader : afterHeader.slice(0, nextSection);
 }
 
+/**
+ * 介入履歴セクションをチェックし、完了時実績 > 0 にも関わらず
+ * 介入履歴エントリが 1 件も記録されていない場合に警告メッセージを返す。
+ *
+ * @param content - task.md の全文
+ * @returns 警告メッセージ（問題がない場合は null）
+ */
+export function checkInterventionHistory(content: string): string | null {
+  const actualMatch = content.match(/\*\*完了時実績\*\*:\s*(\d+)/);
+  if (!actualMatch) return null;
+  const actual = parseInt(actualMatch[1], 10);
+  if (actual <= 0) return null;
+
+  const historyMatch = content.match(/### 💬 介入履歴と理由([\s\S]*?)(?=\n#{2,3} |\n## |$)/);
+  if (!historyMatch) {
+    return "WARNING: 完了時実績が 0 より大きいですが、介入履歴セクションが見つかりません。";
+  }
+
+  const cleaned = historyMatch[1].replace(/<!--[\s\S]*?-->/g, "").trim();
+  const entryCount = (cleaned.match(/- \*\*発生日時\*\*/g) || []).length;
+
+  if (entryCount === 0) {
+    return "WARNING: 完了時実績が 0 より大きいですが、介入履歴エントリが 1 件も記録されていません。介入の定義に該当する事象が発生した場合は、介入履歴に記録してください。";
+  }
+
+  return null;
+}
+
 export function countACs(planContent: string): number {
   const lines = planContent.split("\n");
   let count = 0;
@@ -310,5 +338,10 @@ if (import.meta.main) {
       console.error(`  - ${err}`);
     }
     Deno.exit(1);
+  }
+
+  const warning = checkInterventionHistory(content);
+  if (warning) {
+    console.error(`\n${warning}`);
   }
 }

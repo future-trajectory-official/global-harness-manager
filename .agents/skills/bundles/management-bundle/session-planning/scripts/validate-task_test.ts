@@ -1,5 +1,6 @@
 import { assertEquals } from "jsr:@std/assert@^1.0.7";
 import {
+  checkInterventionHistory,
   countACs,
   type GuardRules,
   hasGuardBlock,
@@ -461,4 +462,118 @@ Deno.test("validateTaskMd passes for clean task.md (regression)", () => {
   const result = validateTaskMd(VALID_TASK);
   assertEquals(result.valid, true);
   assertEquals(result.errors.length, 0);
+});
+
+// --- checkInterventionHistory ---
+
+const TASK_WITH_INTERVENTIONS = `# Task
+
+## 📊 セッションメトリクス & 予実管理
+
+### ⏳ 見積もりと実績
+
+- **計画前見積 (想定介入回数)**: 1 回
+- **計画後見積 (想定介入回数)**: 1 回
+- **完了時実績**: 2
+
+### 💬 介入履歴と理由
+
+- **発生日時**: 2026-06-08 10:00
+- **介入内容**: 方針修正指示
+- **トリガーとなった状況**: 設計判断の誤認
+- **影響範囲**: 対象ファイル追加
+`;
+
+const TASK_WITH_ZERO_ACTUAL = `# Task
+
+## 📊 セッションメトリクス & 予実管理
+
+### ⏳ 見積もりと実績
+
+- **計画前見積 (想定介入回数)**: 1 回
+- **計画後見積 (想定介入回数)**: 1 回
+- **完了時実績**: 0
+
+### 💬 介入履歴と理由
+
+<!-- 介入なし -->
+`;
+
+const TASK_NO_INTERVENTIONS_WITH_ACTUAL = `# Task
+
+## 📊 セッションメトリクス & 予実管理
+
+### ⏳ 見積もりと実績
+
+- **計画前見積 (想定介入回数)**: 1 回
+- **計画後見積 (想定介入回数)**: 1 回
+- **完了時実績**: 1
+
+### 💬 介入履歴と理由
+
+<!-- POからの明示的な方針変更・軌道修正指示があった場合のみ追記 -->
+`;
+
+const TASK_NO_HISTORY_SECTION = `# Task
+
+## 📊 セッションメトリクス & 予実管理
+
+### ⏳ 見積もりと実績
+
+- **計画前見積 (想定介入回数)**: 1 回
+- **計画後見積 (想定介入回数)**: 1 回
+- **完了時実績**: 2
+`;
+
+const TASK_NON_NUMERIC_ACTUAL = `# Task
+
+## 📊 セッションメトリクス & 予実管理
+
+### ⏳ 見積もりと実績
+
+- **計画前見積 (想定介入回数)**: 1 回
+- **計画後見積 (想定介入回数)**: 1 回
+- **完了時実績**: N/A
+`;
+
+/**
+ * checkInterventionHistory - 完了時実績=0 の場合に警告を出さないことを検証する。
+ */
+Deno.test("checkInterventionHistory returns null when actual is 0", () => {
+  const result = checkInterventionHistory(TASK_WITH_ZERO_ACTUAL);
+  assertEquals(result, null);
+});
+
+/**
+ * checkInterventionHistory - 完了時実績>0 かつ介入履歴ありの場合に警告を出さないことを検証する。
+ */
+Deno.test("checkInterventionHistory returns null when interventions exist", () => {
+  const result = checkInterventionHistory(TASK_WITH_INTERVENTIONS);
+  assertEquals(result, null);
+});
+
+/**
+ * checkInterventionHistory - 完了時実績>0 かつ介入履歴なしの場合に警告メッセージを返すことを検証する。
+ */
+Deno.test("checkInterventionHistory returns warning when actual > 0 but no entries", () => {
+  const result = checkInterventionHistory(TASK_NO_INTERVENTIONS_WITH_ACTUAL);
+  assertEquals(typeof result, "string");
+  assertEquals(result!.includes("WARNING"), true);
+});
+
+/**
+ * checkInterventionHistory - 介入履歴セクションが存在しない場合も警告を返すことを検証する。
+ */
+Deno.test("checkInterventionHistory returns warning when history section missing", () => {
+  const result = checkInterventionHistory(TASK_NO_HISTORY_SECTION);
+  assertEquals(typeof result, "string");
+  assertEquals(result!.includes("WARNING"), true);
+});
+
+/**
+ * checkInterventionHistory - 完了時実績が非数値の場合に警告を出さないことを検証する（安全側）。
+ */
+Deno.test("checkInterventionHistory returns null for non-numeric actual value", () => {
+  const result = checkInterventionHistory(TASK_NON_NUMERIC_ACTUAL);
+  assertEquals(result, null);
 });
