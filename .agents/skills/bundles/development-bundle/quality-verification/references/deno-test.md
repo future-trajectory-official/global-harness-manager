@@ -34,7 +34,7 @@ deno task qa:cov  # カバレッジ付き
 deno test -A --filter="skill_structure"
 
 # 特定のテストファイルを直接指定
-deno test -A .agents/skills/bundles/development-bundle/quality-verification/tests/skill_structure_test.ts
+deno test -A .agents/skills/bundles/development-bundle/quality-verification/scripts/skill_structure_test.ts
 ```
 
 ## 結果の解釈
