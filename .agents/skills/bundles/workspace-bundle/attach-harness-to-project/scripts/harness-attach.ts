@@ -9,6 +9,28 @@ import {
 } from "../../../../../core/harness-core.ts";
 import { parseArgs } from "@std/cli/parse-args";
 
+/**
+ * SSH鍵未登録や接続エラーをチェックし、修復手順を表示する。
+ *
+ * @param stderr - 標準エラー出力の内容
+ * @returns SSH関連のエラーを検出した場合は true、それ以外は false
+ */
+export function checkSshKeyError(stderr: string): boolean {
+  if (
+    stderr.includes("Permission denied (publickey)") ||
+    stderr.includes("Host key verification failed")
+  ) {
+    console.log("\n========================================================");
+    console.log("⚠️  SSH認証エラーを検出しました (SSH Connection/Key Error)");
+    console.log("GitHubへのSSH公開鍵登録、またはSSHエージェントの設定が必要です。");
+    console.log("以下のコマンドを実行してSSH公開鍵を登録してください：");
+    console.log("  gh ssh-key add <path-to-public-key>");
+    console.log("========================================================\n");
+    return true;
+  }
+  return false;
+}
+
 async function processProject(project: {
   name: string;
   repo: string;
@@ -50,6 +72,9 @@ async function processProject(project: {
       });
 
       if (!isDryRun && cloneResult.code !== 0) {
+        if (cloneResult.stderr) {
+          checkSshKeyError(cloneResult.stderr);
+        }
         throw new Error(`クローンに失敗しました: ${project.name}`);
       }
     }
