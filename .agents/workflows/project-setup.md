@@ -1,0 +1,196 @@
+---
+description: 新規プロジェクト発足と既存プロジェクト参加の両方を統合し、リポジトリ準備からプロセス統一までの一貫したセットアップを行うワークフロー。
+---
+
+# プロジェクトセットアップワークフロー (/project-setup)
+
+本ワークフローは、新規プロジェクト発足と既存プロジェクト参加の両方を統合する。
+2つのフェーズ（リポジトリ準備・プロセス統一）に分割し、GitHub認証の確立、 `gh ssh-key add`
+によるSSH公開鍵登録、および `harness-init` による新規リポジトリ作成を自動化する。
+
+---
+
+## 1. フェーズA: リポジトリ準備 (Repository Preparation)
+
+**責務**: 仕事の情報を管理するリポジトリを確保し、GitHubとの通信経路を確立する。
+
+### 1-1. ホスト環境構築
+
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **実行スキル**:
+  `[setup-harness-env](/.agents/skills/bundles/onboarding-bundle/setup-harness-env/SKILL.md)`
+- **スキップロジック**: `deno --version` および `gh --version` が正常終了する場合はスキップ可能。
+- **セルフチェック**:
+  - [ ] deno および gh が利用可能であることを確認したか。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+### 1-2. 認証設定
+
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **手順**:
+  1. `gh auth status` を実行し、既存認証を確認する。認証済みの場合は本ステップをスキップ。
+  2. 未認証の場合、以下のガイドに従い PO 自身が認証操作を行った後、ワークフローを再開する。
+     ```
+     GitHub認証が未設定です。以下の手順で認証を行ってください：
+
+     gh auth login
+
+     表示される指示に従い、OAuth または HTTPS トークンによる認証を完了させてください。
+     認証完了後、「次へ」と指示することでワークフローを再開します。
+     ```
+- **セルフチェック**:
+  - [ ] `gh auth status` が正常終了することを確認したか。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+### 1-3. 前提要件チェック
+
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **実行スキル**:
+  `[check-harness-configs](/.agents/skills/bundles/onboarding-bundle/check-harness-configs/SKILL.md)`
+- **説明**: 設定ファイル（`config/identities.md` 等）の有無と状態を検証する。 チェック対象には
+  Visibility フィールドを含む。
+- **セルフチェック**:
+  - [ ] 必要な設定ファイルが存在し、記入内容が正しいか。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+### 1-4. SSH鍵の生成と登録
+
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **実行スキル**:
+  `[manage-git-identity](/.agents/skills/bundles/onboarding-bundle/manage-git-identity/SKILL.md)`
+- **後続手順**: SSH鍵生成後、`gh ssh-key add` により公開鍵をGitHubに自動登録する。
+- **セルフチェック**:
+  - [ ] SSH公開鍵がGitHubに登録されていることを確認したか。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+### 1-5. リポジトリの確保
+
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **手順**: 以下のコマンドでリポジトリの存在を確認する。
+
+```bash
+gh repo view <owner>/<repo> --json name > /dev/null 2>&1
+```
+
+- exit code 0 → リポジトリが既存 → **1-5-a** へ
+- exit code 1 → リポジトリが存在しない → **1-5-b** へ
+- exit code その他 → 権限エラー等 → PO に状況を説明し、指示を仰ぐ
+
+#### 1-5-a: 既存リポジトリのクローン
+
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **実行スキル**:
+  `[harness-clone](/.agents/skills/bundles/onboarding-bundle/harness-clone/SKILL.md)`
+- **セルフチェック**:
+  - [ ] クローンが正常に完了し、ローカルにリポジトリが存在するか。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+#### 1-5-b: 新規リポジトリの作成
+
+- **確認プロトコル**: リポジトリ `<owner>/<repo>` は存在しません。以下の確認を行ってください。
+  ```
+  リポジトリ '<owner>/<repo>' は存在しません。新規に作成しますか？ [y/N]
+
+  - リポジトリ名のスペルミスが無いかご確認ください。
+  - N を選択した場合、ワークフローを中断します。
+  ```
+- PO の承認を得た後に以下を実行する。
+
+**実行**（PO 承認後）:
+
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **実行スキル**: `[harness-init](/.agents/skills/bundles/onboarding-bundle/harness-init/SKILL.md)`
+- **セルフチェック**:
+  - [ ] 新規リポジトリが作成され、`README.md` が存在するか。
+  - [ ] リモートとの通信経路が確立されているか。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+### 1-6. プロジェクト紐付設定（合流点）
+
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **実行スキル**:
+  `[attach-harness-to-project](/.agents/skills/bundles/onboarding-bundle/attach-harness-to-project/SKILL.md)`
+- **説明**: リポジトリの通信経路を正しいアカウントに強制バインドする。
+  このステップをもってフェーズAが完了し、フェーズBの全操作が実行可能となる。
+- **セルフチェック**:
+  - [ ] git config (user.name/email) が正しく設定されているか。
+  - [ ] SSHエイリアス経由でリモートと通信可能か。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+---
+
+## 2. フェーズB: プロセス統一 (Process Standardization)
+
+**責務**: AI開発のルール・スキルをプロジェクトに適用し、一貫性のある開発プロセスを確立する。
+
+### 2-1. ルールの同期
+
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **実行スキル**:
+  `[publish-harness-rules](/.agents/skills/bundles/onboarding-bundle/publish-harness-rules/SKILL.md)`
+- **セルフチェック**:
+  - [ ] `.agents/rules/` がプロジェクトに配信されているか。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+### 2-2. スキルの同期
+
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **実行スキル**:
+  `[publish-harness-skills](/.agents/skills/bundles/onboarding-bundle/publish-harness-skills/SKILL.md)`
+- **セルフチェック**:
+  - [ ] `.agents/skills/` がプロジェクトに配信されているか。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+---
+
+## 3. 検証フェーズ
+
+### 3-1. 通信経路の疎通確認
+
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **手順**:
+  1. `ssh -o StrictHostKeyChecking=accept-new -T git@github.com` を実行し、SSH通信を確認する。
+  2. `gh auth status` を実行し、認証状態を確認する。
+- **セルフチェック**:
+  - [ ] SSH通信が正常に確立されているか。
+  - [ ] GitHub認証が有効であるか。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+### 3-2. セットアップ完了確認
+
+- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **セルフチェック**:
+  - [ ] プロジェクトルートに `README.md` が存在するか。
+  - [ ] `/kickoff` ワークフローが開始可能な状態であるか。
+
+<!-- STOP -->
