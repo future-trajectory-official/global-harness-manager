@@ -6,7 +6,7 @@
  */
 import { assertEquals } from "@std/assert";
 import { parseArgs } from "@std/cli/parse-args";
-import { extractRepoOwner, parseIdentities } from "./harness-init.ts";
+import { checkSshKeyError, extractRepoOwner, parseIdentities } from "./harness-init.ts";
 
 Deno.test({
   name: "extractRepoOwner: SSH形式のURLからowner/repoを抽出する",
@@ -102,5 +102,19 @@ Deno.test({
       alias: { d: "dry-run" },
     });
     assertEquals(args["dry-run"], false);
+  },
+});
+
+Deno.test({
+  name: "checkSshKeyError: SSH関連のエラーメッセージに対してtrueを返す",
+  fn() {
+    assertEquals(checkSshKeyError("Permission denied (publickey)."), true);
+    assertEquals(
+      checkSshKeyError(
+        "fatal: Could not read from remote repository.\nHost key verification failed.",
+      ),
+      true,
+    );
+    assertEquals(checkSshKeyError("Some other error"), false);
   },
 });
