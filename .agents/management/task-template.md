@@ -40,6 +40,12 @@ GUARD:REQUIRED_TASKS
   - create-pull-request
   - merge-branch
 
+GUARD:PHASE_HOOKS
+
+- Phase 1: after=validate-task
+- Phase 2: before-step=phase-gate
+- Phase 3: before-step=phase-gate
+
 GUARD:NOTE この GUARD ブロックはテンプレートの不変契約を宣言します。
 以下のルールを遵守してください：
 
