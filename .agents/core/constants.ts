@@ -46,7 +46,7 @@ export const PROJECT_ROOT = findProjectRoot();
 export const PATHS = {
   SKILLS_ROOT: ".agents/skills/bundles",
   BUNDLES: {
-    ONBOARDING: "onboarding-bundle",
+    ONBOARDING: "workspace-bundle",
     GIT: "git-bundle",
     META: "meta-bundle",
     SYSTEM: "system-bundle",

@@ -85,7 +85,7 @@ flowchart TD
 
 - `.agents/`: ハーネスの中核となるエージェント資源。
   - `skills/bundles/`: 機能ごとにカプセル化されたスキル群。
-    - `onboarding-bundle`: 環境構築や検証に関わるスキル。
+    - `workspace-bundle`: 環境構築や検証に関わるスキル。
     - `management-bundle`: 計画策定やバックログ管理に関わるスキル。
     - `development-bundle`: TDD実装やサンドボックス構築に関わるスキル。
     - `meta-bundle`: エージェント自身の最適化や文脈同期に関わるスキル。
