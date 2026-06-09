@@ -26,7 +26,7 @@ SSH エイリアスに強制書き換えします。
 2. 以下のコマンドを実行。
 
 ```bash
-deno run -A .agents/skills/bundles/onboarding-bundle/attach-harness-to-project/scripts/harness-attach.ts
+deno run -A .agents/skills/bundles/workspace-bundle/attach-harness-to-project/scripts/harness-attach.ts
 ```
 
 > [!TIP]

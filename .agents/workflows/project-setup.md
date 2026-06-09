@@ -18,7 +18,7 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 ### 1-1. ホスト環境構築
 
 - **実行スキル**:
-  `[setup-harness-env](/.agents/skills/bundles/onboarding-bundle/setup-harness-env/SKILL.md)`
+  `[setup-harness-env](/.agents/skills/bundles/workspace-bundle/setup-harness-env/SKILL.md)`
 - **スキップロジック**: `deno --version` および `gh --version` が正常終了する場合はスキップ可能。
 - **セルフチェック**:
   - [ ] deno および gh が利用可能であることを確認したか。
@@ -30,7 +30,7 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 ### 1-2. 前提要件チェック
 
 - **実行スキル**:
-  `[check-harness-configs](/.agents/skills/bundles/onboarding-bundle/check-harness-configs/SKILL.md)`
+  `[check-harness-configs](/.agents/skills/bundles/workspace-bundle/check-harness-configs/SKILL.md)`
 - **セルフチェック**:
   - [ ] 必要な設定ファイルが存在し、記入内容が正しいか。
   - [ ] `config/identities.md` から対象アカウントが特定できたか。
@@ -63,7 +63,7 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 ### 1-4. SSH鍵の生成と登録
 
 - **実行スキル**:
-  `[manage-git-identity](/.agents/skills/bundles/onboarding-bundle/manage-git-identity/SKILL.md)`
+  `[manage-git-identity](/.agents/skills/bundles/workspace-bundle/manage-git-identity/SKILL.md)`
 - **後続手順**: SSH鍵生成後、`gh ssh-key add` により公開鍵をGitHubに自動登録する。
 - **セルフチェック**:
   - [ ] SSH公開鍵がGitHubに登録されていることを確認したか。
@@ -85,13 +85,13 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
        - リポジトリ名のスペルミスが無いかご確認ください。
        - N を選択した場合、ワークフローを中断します。
        ```
-       PO の承認後:
-       `[harness-init](/.agents/skills/bundles/onboarding-bundle/harness-init/SKILL.md)` を実行
+       PO の承認後: `[harness-init](/.agents/skills/bundles/workspace-bundle/harness-init/SKILL.md)`
+       を実行
      - 権限エラー等 → PO に状況を説明し、指示を仰ぐ
 
   2. リポジトリをローカルにクローンする。
      - **実行スキル**:
-       `[harness-clone](/.agents/skills/bundles/onboarding-bundle/harness-clone/SKILL.md)`
+       `[harness-clone](/.agents/skills/bundles/workspace-bundle/harness-clone/SKILL.md)`
      - **備考**: `harness-clone` はクローン後に `harness-attach` を内部実行する。
      - **セルフチェック**:
        - [ ] クローンが正常に完了し、git config が設定されているか。
@@ -111,7 +111,7 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 ### 2-1. ルールの同期
 
 - **実行スキル**:
-  `[publish-harness-rules](/.agents/skills/bundles/onboarding-bundle/publish-harness-rules/SKILL.md)`
+  `[publish-harness-rules](/.agents/skills/bundles/workspace-bundle/publish-harness-rules/SKILL.md)`
 - **セルフチェック**:
   - [ ] `.agents/rules/` がプロジェクトに配信されているか。
 
@@ -122,7 +122,7 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 ### 2-2. スキルの同期
 
 - **実行スキル**:
-  `[publish-harness-skills](/.agents/skills/bundles/onboarding-bundle/publish-harness-skills/SKILL.md)`
+  `[publish-harness-skills](/.agents/skills/bundles/workspace-bundle/publish-harness-skills/SKILL.md)`
 - **セルフチェック**:
   - [ ] `.agents/skills/` がプロジェクトに配信されているか。
 

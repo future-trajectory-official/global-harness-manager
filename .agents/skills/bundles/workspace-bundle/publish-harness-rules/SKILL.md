@@ -27,7 +27,7 @@ tags:
 
 ```bash
 # 全ルールの同期と GEMINI.md のセットアップ
-deno run -A .agents/skills/bundles/onboarding-bundle/publish-harness-rules/scripts/publish-rules.ts --lang ja --os wsl
+deno run -A .agents/skills/bundles/workspace-bundle/publish-harness-rules/scripts/publish-rules.ts --lang ja --os wsl
 ```
 
 3. （初回セットアップ時のみ）`config/AGENTS.md.example` がワークスペースルートへ `AGENTS.md`

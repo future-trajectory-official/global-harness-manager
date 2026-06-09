@@ -7,7 +7,7 @@ import {
   logger,
   PATHS,
 } from "../../../../../../.agents/core/harness-core.ts";
-import { setupGitHooks } from "../../../../../../.agents/skills/bundles/onboarding-bundle/setup-harness-env/scripts/setup-hooks.ts";
+import { setupGitHooks } from "../../../../../../.agents/skills/bundles/workspace-bundle/setup-harness-env/scripts/setup-hooks.ts";
 
 const DEFAULT_SANDBOX_BASE = "/tmp/harness-sandboxes";
 

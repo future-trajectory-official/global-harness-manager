@@ -28,7 +28,7 @@ tags:
 2. スクリプトを実行。
 
 ```bash
-deno run -A .agents/skills/bundles/onboarding-bundle/publish-harness-skills/scripts/publish-skills.ts
+deno run -A .agents/skills/bundles/workspace-bundle/publish-harness-skills/scripts/publish-skills.ts
 ```
 
 > [!TIP]

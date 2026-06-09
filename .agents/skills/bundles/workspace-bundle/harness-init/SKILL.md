@@ -36,7 +36,7 @@ tags:
 ## 使用方法
 
 ```bash
-deno run -A .agents/skills/bundles/onboarding-bundle/harness-init/scripts/harness-init.ts [--dry-run]
+deno run -A .agents/skills/bundles/workspace-bundle/harness-init/scripts/harness-init.ts [--dry-run]
 ```
 
 ### オプション

@@ -18,5 +18,5 @@ if [ ! -f "$BIN_DIR/deno" ]; then
 fi
 
 echo "Starting Deno setup..."
-"$BIN_DIR/deno" run -A "$HARNESS_ROOT/.agents/skills/bundles/onboarding-bundle/setup-harness-env/scripts/setup.ts"
+"$BIN_DIR/deno" run -A "$HARNESS_ROOT/.agents/skills/bundles/workspace-bundle/setup-harness-env/scripts/setup.ts"
 

@@ -22,7 +22,7 @@ Deno.test("constants - PROJECT_ROOT should be defined", () => {
  */
 Deno.test("constants - PATHS should have complete bundle definitions", () => {
   const bundles = PATHS.BUNDLES;
-  assertEquals(bundles.ONBOARDING, "onboarding-bundle");
+  assertEquals(bundles.ONBOARDING, "workspace-bundle");
   assertEquals(bundles.GIT, "git-bundle");
   assertEquals(bundles.META, "meta-bundle");
   assertEquals(bundles.SYSTEM, "system-bundle");
@@ -56,8 +56,8 @@ Deno.test("constants - getSkillDirPath should return correct path for all bundle
  * バンドル・スキル・スクリプト名を連結したパスが生成されることを確認する。
  */
 Deno.test("constants - getSkillScriptPath should return correct path", () => {
-  const path = getSkillScriptPath("onboarding-bundle", "test-skill", "run.ts");
-  assertStringIncludes(path, ".agents/skills/bundles/onboarding-bundle/test-skill/scripts/run.ts");
+  const path = getSkillScriptPath("workspace-bundle", "test-skill", "run.ts");
+  assertStringIncludes(path, ".agents/skills/bundles/workspace-bundle/test-skill/scripts/run.ts");
 });
 
 /**
@@ -66,14 +66,14 @@ Deno.test("constants - getSkillScriptPath should return correct path", () => {
  */
 Deno.test("constants - getSkillAssetPath should return correct path (with and without asset name)", () => {
   // 引数なし
-  const dirPath = getSkillAssetPath("onboarding-bundle", "test-skill");
-  assertStringIncludes(dirPath, ".agents/skills/bundles/onboarding-bundle/test-skill/assets");
+  const dirPath = getSkillAssetPath("workspace-bundle", "test-skill");
+  assertStringIncludes(dirPath, ".agents/skills/bundles/workspace-bundle/test-skill/assets");
 
   // 引数あり
-  const filePath = getSkillAssetPath("onboarding-bundle", "test-skill", "image.png");
+  const filePath = getSkillAssetPath("workspace-bundle", "test-skill", "image.png");
   assertStringIncludes(
     filePath,
-    ".agents/skills/bundles/onboarding-bundle/test-skill/assets/image.png",
+    ".agents/skills/bundles/workspace-bundle/test-skill/assets/image.png",
   );
 });
 
