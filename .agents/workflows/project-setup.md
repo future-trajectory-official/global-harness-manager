@@ -79,56 +79,30 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 ### 1-5. リポジトリの確保
 
 - **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
-- **手順**: 以下のコマンドでリポジトリの存在を確認する。
+- **手順**:
 
-```bash
-gh repo view <owner>/<repo> --json name > /dev/null 2>&1
-```
+  1. リポジトリの存在を確認する。
+     ```bash
+     gh repo view <owner>/<repo> --json name > /dev/null 2>&1
+     ```
+     - exit code 0 → リポジトリが既存 → 2 へ
+     - exit code 1 → リポジトリが存在しない → 以下の確認後、`harness-init` を実行する。
+       ```
+       リポジトリ '<owner>/<repo>' は存在しません。新規に作成しますか？ [y/N]
 
-- exit code 0 → リポジトリが既存 → **1-5-a** へ
-- exit code 1 → リポジトリが存在しない → **1-5-b** へ
-- exit code その他 → 権限エラー等 → PO に状況を説明し、指示を仰ぐ
+       - リポジトリ名のスペルミスが無いかご確認ください。
+       - N を選択した場合、ワークフローを中断します。
+       ```
+       PO の承認後:
+       `[harness-init](/.agents/skills/bundles/onboarding-bundle/harness-init/SKILL.md)` を実行
+     - exit code その他 → 権限エラー等 → PO に状況を説明し、指示を仰ぐ
 
-#### 1-5-a: 既存リポジトリのクローン
-
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
-- **実行スキル**:
-  `[harness-clone](/.agents/skills/bundles/onboarding-bundle/harness-clone/SKILL.md)`
-- **備考**: `harness-clone` はクローン後に `harness-attach` を内部実行するため、1-6 はスキップする。
-- **セルフチェック**:
-  - [ ] クローンが正常に完了し、ローカルにリポジトリが存在するか。
-
-**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
-
-<!-- STOP -->
-
-#### 1-5-b: 新規リポジトリの作成
-
-- **確認プロトコル**: リポジトリ `<owner>/<repo>` は存在しません。以下の確認を行ってください。
-  ```
-  リポジトリ '<owner>/<repo>' は存在しません。新規に作成しますか？ [y/N]
-
-  - リポジトリ名のスペルミスが無いかご確認ください。
-  - N を選択した場合、ワークフローを中断します。
-  ```
-- PO の承認を得た後に以下を実行する。
-
-**実行**（PO 承認後）:
-
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
-- **実行スキル**: `[harness-init](/.agents/skills/bundles/onboarding-bundle/harness-init/SKILL.md)`
-- **セルフチェック**:
-  - [ ] 新規リポジトリが作成され、`README.md` が存在するか。
-
-**後続手順**（harness-init 完了後）:
-
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
-- **実行スキル**:
-  `[harness-clone](/.agents/skills/bundles/onboarding-bundle/harness-clone/SKILL.md)`
-- **説明**: 作成したリポジトリをローカルにクローンする。 `harness-clone` はクローン後に
-  `harness-attach` を内部実行する。
-- **セルフチェック**:
-  - [ ] クローンが正常に完了し、git config が設定されているか。
+  2. リポジトリをローカルにクローンする。
+     - **実行スキル**:
+       `[harness-clone](/.agents/skills/bundles/onboarding-bundle/harness-clone/SKILL.md)`
+     - **備考**: `harness-clone` はクローン後に `harness-attach` を内部実行する。
+     - **セルフチェック**:
+       - [ ] クローンが正常に完了し、git config が設定されているか。
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
 
