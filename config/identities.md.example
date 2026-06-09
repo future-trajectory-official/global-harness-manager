@@ -4,12 +4,23 @@
 このファイルに基づいて、SSH 鍵の生成、クローン、および Git 設定の同期が行われます。
 セクション（`##`）ごとに 1 つのプロジェクトを定義します。
 
+### フィールド定義
+
+各プロジェクトセクションでは以下のキーを使用します。
+
+- **Repository**: GitHub リモートリポジトリの URL。`git@github.com:[Organization]/[Repository].git` 形式。
+- **Local Path**: リポジトリをクローンするローカルディレクトリの絶対パス。
+- **Account Name**: GitHub アカウント識別子。SSH エイリアスや Git ユーザー名として使用。
+- **User Email**: Git コミットに使用するメールアドレス。GitHub の noreply アドレス推奨。
+- **Visibility**: 新規リポジトリ作成時の公開設定（`harness-init` 使用時）。`public` / `private` / `internal` のいずれか。省略時は `private`。`internal` は Organization 所有かつ GitHub Enterprise 契約が必要なため、個人アカウントでは使用不可。
+
 ## プロジェクト名（例: マイリポジトリ）
 
 - **Repository**: `git@github.com:[Organization]/[Repository].git`
 - **Local Path**: `~/projects/[Repository]`
 - **Account Name**: `your-account-id`
 - **User Email**: `your-name@users.noreply.github.com`
+- **Visibility**: `private`
 
 ## 別プロジェクト（例: サブアカウント用）
 
