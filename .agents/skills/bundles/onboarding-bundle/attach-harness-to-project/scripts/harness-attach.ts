@@ -15,6 +15,7 @@ async function processProject(project: {
   path: string;
   account: string;
   email: string;
+  visibility?: string;
 }, options: { dryRun?: boolean } = {}) {
   try {
     const isDryRun = options.dryRun || false;
@@ -133,6 +134,7 @@ async function main() {
           path: kv["Local Path"],
           account: kv["Account Name"],
           email: kv["User Email"],
+          visibility: kv["Visibility"] || "private",
         }, { dryRun: isDryRun });
       } else {
         logger.warn(`セクション "${title}" の設定が不完全なためスキップします。`);
