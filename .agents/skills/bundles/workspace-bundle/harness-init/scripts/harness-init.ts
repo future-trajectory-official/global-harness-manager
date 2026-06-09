@@ -79,6 +79,86 @@ export async function parseIdentities(configPath: string): Promise<ProjectConfig
   return projects;
 }
 
+/**
+ * SSH鍵未登録や接続エラーをチェックし、修復手順を表示する。
+ *
+ * @param stderr - 標準エラー出力の内容
+ * @returns SSH関連のエラーを検出した場合は true、それ以外は false
+ */
+export function checkSshKeyError(stderr: string): boolean {
+  if (
+    stderr.includes("Permission denied (publickey)") ||
+    stderr.includes("Host key verification failed")
+  ) {
+    console.log("\n========================================================");
+    console.log("⚠️  SSH認証エラーを検出しました (SSH Connection/Key Error)");
+    console.log("GitHubへのSSH公開鍵登録、またはSSHエージェントの設定が必要です。");
+    console.log("以下のコマンドを実行してSSH公開鍵を登録してください：");
+    console.log("  gh ssh-key add <path-to-public-key>");
+    console.log("========================================================\n");
+    return true;
+  }
+  return false;
+}
+
+export async function processProjectInit(
+  project: ProjectConfig,
+  options: { dryRun?: boolean } = {},
+): Promise<void> {
+  const isDryRun = options.dryRun || false;
+  const ownerRepo = extractRepoOwner(project.repo);
+  if (!ownerRepo) {
+    throw new Error(
+      `Repository URL形式が不正です: ${project.repo}`,
+    );
+  }
+
+  console.log(`\n--- [${project.name}] (${ownerRepo}) ---`);
+
+  // 同名リポジトリの存在確認
+  const viewResult = await executeCommand({
+    cmd: "gh",
+    args: ["repo", "view", ownerRepo, "--json", "name"],
+    dryRun: isDryRun,
+  });
+
+  if (!isDryRun && viewResult.code === 0) {
+    throw new Error(
+      `リポジトリ '${ownerRepo}' は既にGitHub上に存在します。上書きは行いません。`,
+    );
+  } else if (!isDryRun && viewResult.code !== 0) {
+    if (viewResult.stderr && checkSshKeyError(viewResult.stderr)) {
+      throw new Error(
+        "GitHubへの疎通に失敗しました (SSHキー未登録の可能性があります)",
+      );
+    }
+  }
+
+  const visibility = project.visibility || "private";
+
+  console.log(
+    `リポジトリを作成中: ${ownerRepo} (${visibility})`,
+  );
+
+  const createResult = await executeCommand({
+    cmd: "gh",
+    args: ["repo", "create", ownerRepo, `--${visibility}`, "--add-readme"],
+    dryRun: isDryRun,
+  });
+
+  if (!isDryRun && createResult.code !== 0) {
+    if (createResult.stderr) {
+      console.log(createResult.stderr);
+      checkSshKeyError(createResult.stderr);
+    }
+    throw new Error(`リポジトリ '${ownerRepo}' の作成に失敗しました。`);
+  } else if (isDryRun) {
+    console.log(`[DRY RUN] リポジトリ '${ownerRepo}' を作成します`);
+  } else {
+    console.log(`Success: リポジトリ '${ownerRepo}' を作成しました。`);
+  }
+}
+
 async function main() {
   try {
     const args = parseArgs(Deno.args, {
@@ -99,58 +179,7 @@ async function main() {
     const projects = await parseIdentities(identityConfig);
 
     for (const project of projects) {
-      try {
-        const ownerRepo = extractRepoOwner(project.repo);
-        if (!ownerRepo) {
-          logger.warn(
-            `セクション "${project.name}" のRepository URL形式が不正なためスキップします。`,
-          );
-          continue;
-        }
-
-        console.log(`\n--- [${project.name}] (${ownerRepo}) ---`);
-
-        // 同名リポジトリの存在確認
-        const viewResult = await executeCommand({
-          cmd: "gh",
-          args: ["repo", "view", ownerRepo, "--json", "name"],
-          dryRun: isDryRun,
-        });
-
-        if (!isDryRun && viewResult.code === 0) {
-          console.log(
-            `Error: リポジトリ '${ownerRepo}' は既にGitHub上に存在します。上書きは行いません。`,
-          );
-          continue;
-        }
-
-        const visibility = project.visibility || "private";
-
-        console.log(
-          `リポジトリを作成中: ${ownerRepo} (${visibility})`,
-        );
-
-        const createResult = await executeCommand({
-          cmd: "gh",
-          args: ["repo", "create", ownerRepo, `--${visibility}`, "--add-readme"],
-          dryRun: isDryRun,
-        });
-
-        if (!isDryRun && createResult.code !== 0) {
-          console.log(
-            `Error: リポジトリ '${ownerRepo}' の作成に失敗しました。`,
-          );
-          if (createResult.stderr) {
-            console.log(createResult.stderr);
-          }
-        } else if (isDryRun) {
-          console.log(`[DRY RUN] リポジトリ '${ownerRepo}' を作成します`);
-        } else {
-          console.log(`Success: リポジトリ '${ownerRepo}' を作成しました。`);
-        }
-      } catch (e) {
-        errorUtil.log(e, project.name);
-      }
+      await processProjectInit(project, { dryRun: isDryRun });
     }
 
     console.log("\n--------------------------------------------------------");
