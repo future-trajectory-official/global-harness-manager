@@ -24,7 +24,7 @@ tags:
 // turbo
 
 ```bash
-deno run -A .agents/skills/bundles/onboarding-bundle/check-harness-configs/scripts/check_configs.ts
+deno run -A .agents/skills/bundles/workspace-bundle/check-harness-configs/scripts/check_configs.ts
 ```
 
 > [!TIP]
