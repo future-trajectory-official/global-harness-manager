@@ -27,6 +27,9 @@ export * from "./error.ts";
 // バックログスキーマ解決 (loadBacklogSchema, extractPbiBlock, buildArchiveCard, updateContents)
 export * from "./backlog-schema.ts";
 
+// フェーズゲート (phaseGate, extractLinksFromSkillMd, resolveReferencePath, checkReadStatus)
+export * from "./phase-gate.ts";
+
 // ターゲット検証 (verifyTarget)
 export * from "./verify-target.ts";
 
