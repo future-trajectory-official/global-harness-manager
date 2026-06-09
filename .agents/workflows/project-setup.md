@@ -94,6 +94,7 @@ gh repo view <owner>/<repo> --json name > /dev/null 2>&1
 - **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **実行スキル**:
   `[harness-clone](/.agents/skills/bundles/onboarding-bundle/harness-clone/SKILL.md)`
+- **備考**: `harness-clone` はクローン後に `harness-attach` を内部実行するため、1-6 はスキップする。
 - **セルフチェック**:
   - [ ] クローンが正常に完了し、ローカルにリポジトリが存在するか。
 
@@ -118,22 +119,16 @@ gh repo view <owner>/<repo> --json name > /dev/null 2>&1
 - **実行スキル**: `[harness-init](/.agents/skills/bundles/onboarding-bundle/harness-init/SKILL.md)`
 - **セルフチェック**:
   - [ ] 新規リポジトリが作成され、`README.md` が存在するか。
-  - [ ] リモートとの通信経路が確立されているか。
 
-**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
-
-<!-- STOP -->
-
-### 1-6. プロジェクト紐付設定（合流点）
+**後続手順**（harness-init 完了後）:
 
 - **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **実行スキル**:
-  `[attach-harness-to-project](/.agents/skills/bundles/onboarding-bundle/attach-harness-to-project/SKILL.md)`
-- **説明**: リポジトリの通信経路を正しいアカウントに強制バインドする。
-  このステップをもってフェーズAが完了し、フェーズBの全操作が実行可能となる。
+  `[harness-clone](/.agents/skills/bundles/onboarding-bundle/harness-clone/SKILL.md)`
+- **説明**: 作成したリポジトリをローカルにクローンする。 `harness-clone` はクローン後に
+  `harness-attach` を内部実行する。
 - **セルフチェック**:
-  - [ ] git config (user.name/email) が正しく設定されているか。
-  - [ ] SSHエイリアス経由でリモートと通信可能か。
+  - [ ] クローンが正常に完了し、git config が設定されているか。
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
 
@@ -177,7 +172,7 @@ gh repo view <owner>/<repo> --json name > /dev/null 2>&1
 
 - **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **手順**:
-  1. `ssh -o StrictHostKeyChecking=accept-new -T git@github.com` を実行し、SSH通信を確認する。
+  1. `ssh -T <1-4で設定したSSHエイリアス>` を実行し、SSH通信を確認する。
   2. `gh auth status` を実行し、認証状態を確認する。
 - **セルフチェック**:
   - [ ] SSH通信が正常に確立されているか。
@@ -191,7 +186,6 @@ gh repo view <owner>/<repo> --json name > /dev/null 2>&1
 
 - **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **セルフチェック**:
-  - [ ] プロジェクトルートに `README.md` が存在するか。
   - [ ] `/kickoff` ワークフローが開始可能な状態であるか。
 
 <!-- STOP -->
