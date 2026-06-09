@@ -11,11 +11,12 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 
 ## 1. フェーズA: リポジトリ準備 (Repository Preparation)
 
-**責務**: 仕事の情報を管理するリポジトリを確保し、GitHubとの通信経路を確立する。
+**責務**: 仕事の情報を管理するリポジトリを確保し、GitHubとの通信経路を確立する。 **ロール**:
+本フェーズの全ステップは `[platform-engineer.md](/.agents/rules/platform-engineer.md)`
+(すべての制約を遵守) で実行すること。
 
 ### 1-1. ホスト環境構築
 
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **実行スキル**:
   `[setup-harness-env](/.agents/skills/bundles/onboarding-bundle/setup-harness-env/SKILL.md)`
 - **スキップロジック**: `deno --version` および `gh --version` が正常終了する場合はスキップ可能。
@@ -28,11 +29,8 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 
 ### 1-2. 前提要件チェック
 
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **実行スキル**:
   `[check-harness-configs](/.agents/skills/bundles/onboarding-bundle/check-harness-configs/SKILL.md)`
-- **説明**: 設定ファイル（`config/identities.md` 等）の有無と状態を検証する。 チェック対象には
-  Visibility フィールドを含む。
 - **セルフチェック**:
   - [ ] 必要な設定ファイルが存在し、記入内容が正しいか。
   - [ ] `config/identities.md` から対象アカウントが特定できたか。
@@ -43,7 +41,6 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 
 ### 1-3. 認証設定
 
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **手順**:
   1. `gh auth status` を実行し、`identities.md` で特定したアカウントで既に認証済みか確認する。
      認証済みの場合は本ステップをスキップ。
@@ -65,7 +62,6 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 
 ### 1-4. SSH鍵の生成と登録
 
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **実行スキル**:
   `[manage-git-identity](/.agents/skills/bundles/onboarding-bundle/manage-git-identity/SKILL.md)`
 - **後続手順**: SSH鍵生成後、`gh ssh-key add` により公開鍵をGitHubに自動登録する。
@@ -78,15 +74,11 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 
 ### 1-5. リポジトリの確保
 
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **手順**:
 
-  1. リポジトリの存在を確認する。
-     ```bash
-     gh repo view <owner>/<repo> --json name > /dev/null 2>&1
-     ```
-     - exit code 0 → リポジトリが既存 → 2 へ
-     - exit code 1 → リポジトリが存在しない → 以下の確認後、`harness-init` を実行する。
+  1. `gh repo view <owner>/<repo> --json name` を実行し、終了コードでリポジトリの存在を判定する。
+     - 成功（リポジトリ既存）→ 手順 2 へ
+     - 失敗（リポジトリ不在）→ PO に以下の確認を行う：
        ```
        リポジトリ '<owner>/<repo>' は存在しません。新規に作成しますか？ [y/N]
 
@@ -95,7 +87,7 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
        ```
        PO の承認後:
        `[harness-init](/.agents/skills/bundles/onboarding-bundle/harness-init/SKILL.md)` を実行
-     - exit code その他 → 権限エラー等 → PO に状況を説明し、指示を仰ぐ
+     - 権限エラー等 → PO に状況を説明し、指示を仰ぐ
 
   2. リポジトリをローカルにクローンする。
      - **実行スキル**:
@@ -113,10 +105,11 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 ## 2. フェーズB: プロセス統一 (Process Standardization)
 
 **責務**: AI開発のルール・スキルをプロジェクトに適用し、一貫性のある開発プロセスを確立する。
+**ロール**: 本フェーズの全ステップは `[platform-engineer.md](/.agents/rules/platform-engineer.md)`
+(すべての制約を遵守) で実行すること。
 
 ### 2-1. ルールの同期
 
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **実行スキル**:
   `[publish-harness-rules](/.agents/skills/bundles/onboarding-bundle/publish-harness-rules/SKILL.md)`
 - **セルフチェック**:
@@ -128,7 +121,6 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 
 ### 2-2. スキルの同期
 
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **実行スキル**:
   `[publish-harness-skills](/.agents/skills/bundles/onboarding-bundle/publish-harness-skills/SKILL.md)`
 - **セルフチェック**:
@@ -142,24 +134,17 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 
 ## 3. 検証フェーズ
 
+**ロール**: 本フェーズの全ステップは `[platform-engineer.md](/.agents/rules/platform-engineer.md)`
+(すべての制約を遵守) で実行すること。
+
 ### 3-1. 通信経路の疎通確認
 
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
 - **手順**:
-  1. `ssh -T <1-4で設定したSSHエイリアス>` を実行し、SSH通信を確認する。
+  1. 1-4 で設定したSSHエイリアスを用いてSSH通信を確認する。
   2. `gh auth status` を実行し、認証状態を確認する。
 - **セルフチェック**:
   - [ ] SSH通信が正常に確立されているか。
   - [ ] GitHub認証が有効であるか。
-
-**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
-
-<!-- STOP -->
-
-### 3-2. セットアップ完了確認
-
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
-- **セルフチェック**:
   - [ ] `/kickoff` ワークフローが開始可能な状態であるか。
 
 <!-- STOP -->
