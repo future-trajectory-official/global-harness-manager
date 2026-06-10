@@ -5,14 +5,23 @@ import { dirname, fromFileUrl, join } from "@std/path";
 const SCRIPT_DIR = dirname(fromFileUrl(import.meta.url));
 const YAML_PATH = join(SCRIPT_DIR, "..", "references", "label-definitions.yaml");
 
-interface LabelDef {
+export interface LabelDef {
   name: string;
   color: string;
   description: string;
 }
 
-interface LabelDefs {
+export interface LabelDefs {
   labels: LabelDef[];
+}
+
+export async function loadLabelDefs(yamlPath: string): Promise<LabelDefs> {
+  const content = await Deno.readTextFile(yamlPath);
+  const defs = parse(content) as LabelDefs;
+  if (!defs?.labels?.length) {
+    throw new Error("ラベル定義が空です");
+  }
+  return defs;
 }
 
 function printUsage(): void {
@@ -158,24 +167,11 @@ async function main(): Promise<void> {
     Deno.exit(1);
   }
 
-  let yamlContent: string;
-  try {
-    yamlContent = await Deno.readTextFile(YAML_PATH);
-  } catch {
-    console.error(`エラー: ラベル定義ファイルが見つかりません。\n  期待パス: ${YAML_PATH}`);
-    Deno.exit(1);
-  }
-
   let defs: LabelDefs;
   try {
-    defs = parse(yamlContent) as LabelDefs;
+    defs = await loadLabelDefs(YAML_PATH);
   } catch (e) {
-    console.error(`エラー: YAML パースに失敗しました。\n  ${e}`);
-    Deno.exit(1);
-  }
-
-  if (!defs?.labels?.length) {
-    console.error("エラー: ラベル定義が空です。YAML の labels セクションを確認してください。");
+    console.error(`エラー: ラベル定義の読み込みに失敗しました。\n  ${e}`);
     Deno.exit(1);
   }
 
