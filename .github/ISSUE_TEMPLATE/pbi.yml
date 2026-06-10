@@ -1,0 +1,59 @@
+name: PBI作成
+description: プロダクトバックログアイテム（PBI）を新規作成
+labels:
+  - type:PBI
+  - status:IDEA
+body:
+  - type: input
+    id: epic_feature_id
+    attributes:
+      label: Epic/Feature ID
+      description: "このPBIが所属するEpicまたはFeatureのID。例: [ManagementFoundation/ProjectGovernance]"
+      placeholder: "[ManagementFoundation/ProjectGovernance]"
+    validations:
+      required: true
+  - type: input
+    id: pbi_name
+    attributes:
+      label: PBI名
+      description: "PBIの簡潔な名前。Epic/Feature IDと合わせてIssueタイトルになります。"
+      placeholder: "GitHub-Infrastructure-Setup"
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: "このPBIが解決する課題や提供する価値を簡潔に記述してください。"
+      placeholder: "GitHub Issues/Projects 移行の基盤構築。Issue Template、Labels定義、Projects V2ボード設計を行う。"
+    validations:
+      required: true
+  - type: dropdown
+    id: size
+    attributes:
+      label: 見積サイズ
+      description: "Tシャツサイズで見積もりを選択してください。AI開発では人間の介入回数を基準にします。"
+      options:
+        - XS
+        - S
+        - M
+        - L
+        - XL
+    validations:
+      required: true
+  - type: textarea
+    id: proof_method
+    attributes:
+      label: 証明方法
+      description: "このPBIが完了したことを証明する方法を記述してください。テストコマンド、ファイルの存在確認など。"
+      placeholder: ".github/ISSUE_TEMPLATE/ にpbi.yml/wp.ymlが存在すること。Labelsがgh CLIで一覧取得可能であること。"
+    validations:
+      required: true
+  - type: textarea
+    id: sprint_placement
+    attributes:
+      label: スプリント配置
+      description: "このPBIを配置するスプリントを指定してください。将来のバックログに入れる場合は '未設定' と記載してください。"
+      placeholder: "Sprint 9"
+    validations:
+      required: false
