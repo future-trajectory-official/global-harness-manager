@@ -5,13 +5,21 @@ labels:
   - status:IDEA
 body:
   - type: input
-    id: epic_feature_id
+    id: epic_id
     attributes:
-      label: Epic/Feature ID
-      description: "このPBIが所属するEpicまたはFeatureのID。例: [ManagementFoundation/ProjectGovernance]"
-      placeholder: "[ManagementFoundation/ProjectGovernance]"
+      label: Epic ID（任意）
+      description: "このPBIが所属するEpicのID。Epicが存在しない場合は空欄のままにしてください。"
+      placeholder: "ManagementFoundation"
     validations:
-      required: true
+      required: false
+  - type: input
+    id: feature_id
+    attributes:
+      label: Feature ID（任意）
+      description: "このPBIが所属するFeatureのID。Featureが存在しない場合は空欄のままにしてください。"
+      placeholder: "ProjectGovernance"
+    validations:
+      required: false
   - type: input
     id: pbi_name
     attributes:

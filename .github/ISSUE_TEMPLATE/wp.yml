@@ -9,7 +9,7 @@ body:
     attributes:
       label: 親PBIリンク
       description: "このWPが属する親PBIのGitHub IssueリンクまたはIDを記載してください。"
-      placeholder: "https://github.com/future-trajectory-official/global-harness-manager/issues/123"
+      placeholder: "#99 または https://github.com/future-trajectory-official/global-harness-manager/issues/99"
     validations:
       required: true
   - type: input
