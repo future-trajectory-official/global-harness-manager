@@ -1,0 +1,44 @@
+labels:
+  - name: "type:PBI"
+    color: "0366d6"
+    description: "Product Backlog Item"
+
+  - name: "type:WP"
+    color: "28a745"
+    description: "Work Package"
+
+  - name: "status:IDEA"
+    color: "c5def5"
+    description: "未精査のバックログ候補"
+
+  - name: "status:TODO"
+    color: "f9c513"
+    description: "実装予定"
+
+  - name: "status:WIP"
+    color: "f66a0a"
+    description: "作業中"
+
+  - name: "status:DONE"
+    color: "6f42c1"
+    description: "完了（子WPが全てDONEになるとPBIもDONE）"
+
+  - name: "size:XS"
+    color: "e6e6e6"
+    description: "Extra Small (Weight 1)"
+
+  - name: "size:S"
+    color: "b4e8b4"
+    description: "Small (Weight 2)"
+
+  - name: "size:M"
+    color: "f9d866"
+    description: "Medium (Weight 3)"
+
+  - name: "size:L"
+    color: "f9a866"
+    description: "Large (Weight 5)"
+
+  - name: "size:XL"
+    color: "ff6666"
+    description: "Extra Large (Weight 8)"
