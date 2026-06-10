@@ -21,7 +21,7 @@ labels:
 
   - name: "status:DONE"
     color: "6f42c1"
-    description: "完了"
+    description: "完了（子WPが全てDONEになるとPBIもDONE）"
 
   - name: "size:XS"
     color: "e6e6e6"
