@@ -14,6 +14,7 @@
     "jsr:@std/path@^1.0.8": "1.1.4",
     "jsr:@std/streams@^1.0.17": "1.1.0",
     "jsr:@std/tar@~0.1.3": "0.1.10",
+    "jsr:@std/yaml@^1.0.4": "1.1.1",
     "npm:fflate@~0.8.2": "0.8.2"
   },
   "jsr": {
@@ -58,6 +59,9 @@
       "dependencies": [
         "jsr:@std/streams"
       ]
+    },
+    "@std/yaml@1.1.1": {
+      "integrity": "a57665ecf3d17b926380593a56625d8a10cc7281802f1e993b5ebc94a48e71f8"
     }
   },
   "npm": {
@@ -222,6 +226,7 @@
       "jsr:@std/path@^1.0.8",
       "jsr:@std/tar@~0.1.3",
       "jsr:@std/testing@^1.0.9",
+      "jsr:@std/yaml@^1.0.4",
       "npm:fflate@~0.8.2"
     ]
   }
