@@ -22,9 +22,14 @@ description: 特定されたWork Packageと文脈に最も適した専門ロー�
    - ワークフローの例示に盲目的に従うのではなく、Work
      Packageの性質から「自身が今どの専門ロールとして振る舞うべきか」を動的に判断し、その知見を活かしてWork
      Packageを最小ステップの作業に分解します。
-   - 設計の立案にあたっては、Work
-     PackageにスパイクWP関連の要素（参照リンク・技術的不確実性）が認められる場合、[references/spike-application.md](/.agents/skills/bundles/management-bundle/session-planning/references/spike-application.md)
-     を参照し、適切な対応を行うこと。
+   - WPの種別に応じて以下のように異なる計画アプローチをとること：
+     - **`WP_0`**（スパイクWP）の場合 →
+       [references/spike-application.md](/.agents/skills/bundles/management-bundle/session-planning/references/spike-application.md)
+       のケースAを参照し、調査計画を策定する。
+     - **`WP_M'`**（スパイク後本実装WP）の場合 → `references/spike-application.md`
+       のケースBを参照し、スパイク結果を計画に反映する。
+     - **上記以外**で技術的不確実性が認められる場合 → `references/spike-application.md`
+       のケースBを参照し、POにスパイクWP（`WP_0`）の分離を提案する。
 3. **計画後見積もりの算出**:
    - 計画詳細化に伴い、[backlog-guidelines.md](/.agents/management/backlog-guidelines.md#221-Work-Packageの見積り基準-effort--人間の介入回数)
      に基づいて「計画後見積もり（想定介入回数）」および「見積もり理由・懸念点」を検討・決定します。
