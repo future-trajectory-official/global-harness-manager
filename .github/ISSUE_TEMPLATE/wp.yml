@@ -5,14 +5,6 @@ labels:
   - status:TODO
 body:
   - type: input
-    id: parent_pbi_link
-    attributes:
-      label: 親PBIリンク
-      description: "このWPが属する親PBIのGitHub IssueリンクまたはIDを記載してください。"
-      placeholder: "#99 または https://github.com/future-trajectory-official/global-harness-manager/issues/99"
-    validations:
-      required: true
-  - type: input
     id: wp_name
     attributes:
       label: WP名
