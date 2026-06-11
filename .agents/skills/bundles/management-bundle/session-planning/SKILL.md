@@ -26,9 +26,11 @@ description: 特定されたWork Packageと文脈に最も適した専門ロー�
      - **`WP_0`**（スパイクWP）の場合 →
        [references/spike-application.md](/.agents/skills/bundles/management-bundle/session-planning/references/spike-application.md)
        のケースAを参照し、調査計画を策定する。
-     - **`WP_M'`**（スパイク後本実装WP）の場合 → `references/spike-application.md`
+     - **`WP_M'`**（スパイク後本実装WP）の場合 →
+       [references/spike-application.md](/.agents/skills/bundles/management-bundle/session-planning/references/spike-application.md)
        のケースBを参照し、スパイク結果を計画に反映する。
-     - **上記以外**で技術的不確実性が認められる場合 → `references/spike-application.md`
+     - **上記以外**で技術的不確実性が認められる場合 →
+       [references/spike-application.md](/.agents/skills/bundles/management-bundle/session-planning/references/spike-application.md)
        のケースBを参照し、POにスパイクWP（`WP_0`）の分離を提案する。
 3. **計画後見積もりの算出**:
    - 計画詳細化に伴い、[backlog-guidelines.md](/.agents/management/backlog-guidelines.md#221-Work-Packageの見積り基準-effort--人間の介入回数)
