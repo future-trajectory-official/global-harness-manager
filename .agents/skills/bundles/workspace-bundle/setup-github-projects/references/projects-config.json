@@ -1,0 +1,54 @@
+{
+  "productBacklog": {
+    "number": 8,
+    "url": "https://github.com/orgs/future-trajectory-official/projects/8",
+    "fields": [
+      {
+        "name": "harness-status",
+        "dataType": "SINGLE_SELECT",
+        "options": [
+          "IDEA",
+          "TODO",
+          "WIP",
+          "DONE"
+        ]
+      },
+      {
+        "name": "harness-size",
+        "dataType": "SINGLE_SELECT",
+        "options": [
+          "XS",
+          "S",
+          "M",
+          "L",
+          "XL"
+        ]
+      },
+      {
+        "name": "harness-priority",
+        "dataType": "NUMBER"
+      }
+    ]
+  },
+  "sprintBoard": {
+    "number": 9,
+    "url": "https://github.com/orgs/future-trajectory-official/projects/9",
+    "fields": [
+      {
+        "name": "harness-status",
+        "dataType": "SINGLE_SELECT",
+        "options": [
+          "TODO",
+          "WIP",
+          "DONE"
+        ]
+      },
+      {
+        "name": "harness-parent",
+        "dataType": "TEXT"
+      }
+    ]
+  },
+  "repo": "future-trajectory-official/global-harness-manager",
+  "createdAt": "2026-06-11T07:13:35.341Z"
+}
