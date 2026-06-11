@@ -187,9 +187,6 @@ Packageについては、本実装の前に「スパイクWP」として独立�
 
 - スパイクWP（`WP_N`）の調査レポートは、後続の本実装WP（`WP_M'`）のバックログ内に
   `- **参照**: [link-to-spike-report]` 形式で明記する。
-- `session-planning` における具体的な適用方法は
-  [session-planning/references/spike-application.md](/.agents/skills/bundles/management-bundle/session-planning/references/spike-application.md)
-  を参照すること。
 
 #### 4. 乖離シグナル分析指標
 
