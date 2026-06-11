@@ -28,7 +28,7 @@ description: 特定されたWork Packageと文脈に最も適した専門ロー�
      該当リンク先の資料（スパイクWPの調査レポート等）を**必ず読込み**、その内容を計画に反映すること。この参照リンクはスパイクWPの成果物であり、本実装WPの前提条件である。
 
      **分岐B: Work Packageに技術的不確実性が認められ、かつスパイクWPが未定義の場合** →
-     `references/spike-work-package.md`
+     [backlog-guidelines.md 2.2.3 スパイクWP](/.agents/management/backlog-guidelines.md#223-スパイクwp-spike-work-package)
      を参照し、POに対して「本WPは技術的不確実性が高いため、スパイクWP（`WP_N`）として分離することを提案しますか？」と**明示的に提案**すること。スパイクWPのEffort見積は原則1回（1セッション）とする。
 3. **計画後見積もりの算出**:
    - 計画詳細化に伴い、[backlog-guidelines.md](/.agents/management/backlog-guidelines.md#221-Work-Packageの見積り基準-effort--人間の介入回数)
