@@ -4,7 +4,7 @@ import { dirname, fromFileUrl, join } from "@std/path";
 const SCRIPT_DIR = dirname(fromFileUrl(import.meta.url));
 const PROJECT_ROOT = join(SCRIPT_DIR, "..", "..", "..", "..", "..", "..");
 const CONFIG_PATH = join(PROJECT_ROOT, "config", "identities.md");
-const EXPORT_PATH = join(PROJECT_ROOT, ".agents", "core", "projects-config.json");
+const EXPORT_PATH = join(SCRIPT_DIR, "..", "references", "projects-config.json");
 
 interface FieldDef {
   name: string;
