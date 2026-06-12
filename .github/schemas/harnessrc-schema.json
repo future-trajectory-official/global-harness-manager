@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/future-trajectory-official/global-harness-manager/.github/schemas/harnessrc-schema.json",
+  "title": "Harness Configuration",
+  "description": "Schema for .harnessrc configuration file - GitHub integration settings for Harness",
+  "type": "object",
+  "required": [
+    "version",
+    "projects",
+    "customFields",
+    "harness-type"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version. Currently only '1' is supported.",
+      "enum": ["1"]
+    },
+    "issueTemplate": {
+      "type": "object",
+      "description": "Path to the GitHub Issue template file.",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Relative path to the issue template file.",
+          "examples": [".github/ISSUE_TEMPLATE/pbi.md"]
+        }
+      },
+      "required": ["path"],
+      "additionalProperties": false
+    },
+    "projects": {
+      "type": "object",
+      "description": "GitHub Projects V2 board numbers.",
+      "properties": {
+        "productBacklog": {
+          "type": "number",
+          "description": "Project number for the Product Backlog board.",
+          "examples": [8]
+        },
+        "sprintBoard": {
+          "type": "number",
+          "description": "Project number for the Sprint Board.",
+          "examples": [9]
+        }
+      },
+      "required": ["productBacklog", "sprintBoard"],
+      "additionalProperties": false
+    },
+    "milestone": {
+      "type": "object",
+      "description": "Milestone naming convention.",
+      "properties": {
+        "template": {
+          "type": "string",
+          "description": "Template for milestone names. '{number}' is replaced with the sprint number.",
+          "examples": ["Sprint {number}"]
+        }
+      },
+      "required": ["template"],
+      "additionalProperties": false
+    },
+    "customFields": {
+      "type": "object",
+      "description": "Mapping of semantic field names to GitHub custom field names.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Custom field name for PBI type.",
+          "examples": ["harness-type"]
+        },
+        "size": {
+          "type": "string",
+          "description": "Custom field name for PBI size.",
+          "examples": ["harness-size"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Custom field name for PBI status.",
+          "examples": ["harness-status"]
+        },
+        "sequence": {
+          "type": "string",
+          "description": "Custom field name for PBI sequence number.",
+          "examples": ["harness-sequence"]
+        },
+        "effort": {
+          "type": "string",
+          "description": "Custom field name for WP effort (intervention count).",
+          "examples": ["harness-effort"]
+        }
+      },
+      "required": ["type", "size", "status", "sequence", "effort"],
+      "additionalProperties": false
+    },
+    "harness-type": {
+      "type": "object",
+      "description": "Configuration for the PBI type custom field.",
+      "properties": {
+        "options": {
+          "type": "array",
+          "description": "Available PBI type options.",
+          "items": {
+            "type": "string",
+            "enum": ["Epic", "Feature", "PBI", "WP", "Review", "Reflection"]
+          },
+          "minItems": 6,
+          "uniqueItems": true
+        }
+      },
+      "required": ["options"],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
