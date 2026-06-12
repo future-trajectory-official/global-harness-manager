@@ -33,6 +33,9 @@ export * from "./phase-gate.ts";
 // ターゲット検証 (verifyTarget)
 export * from "./verify-target.ts";
 
+// .harnessrc 設定バリデーション (validateHarnessConfig, ValidationResult, ValidationError)
+export * from "./validate-harnessrc.ts";
+
 /**
  * 共通型定義の再エクスポート (必要に応じて追加)
  */
