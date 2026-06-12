@@ -42,3 +42,10 @@ tags:
 
 3. **サマリーの出力**
    - スプリント全体の評価スコアと、次スプリントの品質向上に向けた改善提言を提示し、POと同期してください。
+
+4. **スパイク後WPの乖離パターン集計**
+   - スプリント内の全WPから
+     `WP_M'`（[スパイク後本実装WP](/.agents/management/backlog-guidelines.md#223-スパイクwp-spike-work-package)）を識別する
+   - [backlog-guidelines.md 2.2.1](/.agents/management/backlog-guidelines.md#221-work-packageの見積り基準-effort--人間の介入回数)
+     の乖離分析基準に基づき、WP_M' の計画前見積・計画後見積・完了時実績の乖離パターンを集計する
+   - 乖離がスパイク後WPに集中している場合、スプリント評価コメントに「スパイクプロセス全体の質的課題」を記載する
