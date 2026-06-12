@@ -28,5 +28,8 @@ deno run -A .agents/skills/bundles/workspace-bundle/check-harness-configs/script
 ```
 
 > [!TIP]
-> どのファイルが必要かは [config-list.md](references/config-list.md) を、エラー時の修復方法は
-> [remediation-guide.md](references/remediation-guide.md) を参照してください。
+> どのファイルが必要かは
+> [config-list.md](/.agents/skills/bundles/workspace-bundle/check-harness-configs/references/config-list.md)
+> を、エラー時の修復方法は
+> [remediation-guide.md](/.agents/skills/bundles/workspace-bundle/check-harness-configs/references/remediation-guide.md)
+> を参照してください。

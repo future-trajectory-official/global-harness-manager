@@ -18,9 +18,9 @@ tags:
 本スキルを実行するAI（および人間）は、以下の手順を最短経路で実行してください。
 
 1. **インプット情報の読み込み**
-   - [product-backlog.md](.agents/management/product-backlog.md)
+   - [product-backlog.md](/.agents/management/product-backlog.md)
      から対象スプリントのPBIステータスを読み込みます。
-   - [review-guide.md](.agents/skills/bundles/management-bundle/sprint-outcome-review/references/review-guide.md)
+   - [review-guide.md](/.agents/skills/bundles/management-bundle/sprint-outcome-review/references/review-guide.md)
      を読み込み、報告テンプレートを把握します。
 
 2. **エビデンスの収集と評価**

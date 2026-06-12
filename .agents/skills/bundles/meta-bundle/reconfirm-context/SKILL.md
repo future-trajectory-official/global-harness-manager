@@ -31,6 +31,8 @@ LOG] による文脈同期の基盤を作ります。
    - 出力された Role（役割）と Capability（スキル）を読み込み、現在の振る舞いを再宣言してください。
 
 > [!TIP]
-> スキル探索の詳細な仕組みは [indexing-logic.md](references/indexing-logic.md) を参照してください。
+> スキル探索の詳細な仕組みは
+> [indexing-logic.md](/.agents/skills/bundles/meta-bundle/reconfirm-context/references/indexing-logic.md)
+> を参照してください。
 
 ※ 注意: このスキルは情報の「発見」ではなく「再定義・再認識」を目的としています。

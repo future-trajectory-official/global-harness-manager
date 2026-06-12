@@ -22,7 +22,8 @@ tags:
 ### 2. AIによる予実差分析
 
 - 各PBIについて、セッション履歴から以下の情報をJSON形式に構成します。
-- 詳細なJSONスキーマは [automated-archive-logic.md](references/automated-archive-logic.md)
+- 詳細なJSONスキーマは
+  [automated-archive-logic.md](/.agents/skills/bundles/management-bundle/archive-backlog/references/automated-archive-logic.md)
   を参照してください。
 
 ### 3. アーカイブの実行

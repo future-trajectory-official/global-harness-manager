@@ -36,8 +36,10 @@ deno run -A .agents/skills/bundles/workspace-bundle/publish-harness-rules/script
    ファイルを削除してから再実行してください。
 
 > [!TIP]
-> 設定ファイルの書き方は [target-config-format.md](references/target-config-format.md)
-> を、Git保護の仕組みは [gitignore-protection.md](references/gitignore-protection.md)
+> 設定ファイルの書き方は
+> [target-config-format.md](/.agents/skills/bundles/workspace-bundle/publish-harness-rules/references/target-config-format.md)
+> を、Git保護の仕組みは
+> [gitignore-protection.md](/.agents/skills/bundles/workspace-bundle/publish-harness-rules/references/gitignore-protection.md)
 > を参照してください。
 
 ## 前提要件

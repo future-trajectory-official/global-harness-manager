@@ -28,8 +28,11 @@ GitHub の複数アカウントを使い分けるための SSH 鍵ペア（Ed255
    を実行。
 
 > [!TIP]
-> 接続エラーの解決方法は [troubleshooting.md](references/troubleshooting.md) を、SSH設定の詳細は
-> [ssh-config-spec.md](references/ssh-config-spec.md) を参照してください。
+> 接続エラーの解決方法は
+> [troubleshooting.md](/.agents/skills/bundles/workspace-bundle/manage-git-identity/references/troubleshooting.md)
+> を、SSH設定の詳細は
+> [ssh-config-spec.md](/.agents/skills/bundles/workspace-bundle/manage-git-identity/references/ssh-config-spec.md)
+> を参照してください。
 
 ## 安全性への配慮
 

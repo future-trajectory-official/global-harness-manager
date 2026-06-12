@@ -23,7 +23,8 @@ tags:
 ## 使用方法
 
 1. `config/publish-targets.md` を編集する。（形式は
-   [target-config-format.md](references/target-config-format.md) 参照）
+   [target-config-format.md](/.agents/skills/bundles/workspace-bundle/publish-harness-skills/references/target-config-format.md)
+   参照）
    - ⚠️ このファイルはソース管理対象**外**（`.gitignore`）のローカル設定。
 2. スクリプトを実行。
 
@@ -32,8 +33,11 @@ deno run -A .agents/skills/bundles/workspace-bundle/publish-harness-skills/scrip
 ```
 
 > [!TIP]
-> 設定ファイルの書き方は [target-config-format.md](references/target-config-format.md)
-> を、同期ロジックの詳細は [sync-logic.md](references/sync-logic.md) を参照してください。
+> 設定ファイルの書き方は
+> [target-config-format.md](/.agents/skills/bundles/workspace-bundle/publish-harness-skills/references/target-config-format.md)
+> を、同期ロジックの詳細は
+> [sync-logic.md](/.agents/skills/bundles/workspace-bundle/publish-harness-skills/references/sync-logic.md)
+> を参照してください。
 
 ## 前提条件
 

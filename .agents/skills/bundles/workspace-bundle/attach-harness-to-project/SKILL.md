@@ -30,8 +30,10 @@ deno run -A .agents/skills/bundles/workspace-bundle/attach-harness-to-project/sc
 ```
 
 > [!TIP]
-> SSHエイリアスの詳細な仕組みは [ssh-alias-spec.md](references/ssh-alias-spec.md)
-> を、Git設定の反映仕様については [local-git-config.md](references/local-git-config.md)
+> SSHエイリアスの詳細な仕組みは
+> [ssh-alias-spec.md](/.agents/skills/bundles/workspace-bundle/attach-harness-to-project/references/ssh-alias-spec.md)
+> を、Git設定の反映仕様については
+> [local-git-config.md](/.agents/skills/bundles/workspace-bundle/attach-harness-to-project/references/local-git-config.md)
 > を参照してください。
 
 ## 安全性への配慮

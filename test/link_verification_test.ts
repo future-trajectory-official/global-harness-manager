@@ -5,7 +5,7 @@ const ROOT = Deno.cwd();
 
 /**
  * link_verification_test — プロジェクト内の全Markdownファイルのリンクとパス解決を検証する。
- * 内部リンクのデッドリンク検出、絶対パスの問題、および外部URLの形式を確認する。
+ * 内部リンクのデッドリンク検出、絶対パスの問題、外部URLの形式、および裸の相対パス（/ 始まり以外のリンク）を確認する。
  */
 Deno.test("Markdown Link and Path Resolution Verification", async () => {
   const issues: string[] = [];
@@ -121,6 +121,14 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
         if (link.startsWith("./") || link.startsWith("../")) {
           issues.push(
             `[Forbidden Link Format] In ${relativePath}: Relative path "${link}" starting with "./" or "../" is forbidden in document links. Use workspace root relative path (e.g. "/.agents/rules/tester.md").`,
+          );
+          continue;
+        }
+        // 裸の相対パス（/ で始まらないリンク）を検出して警告
+        // ワークスペースルートからの絶対パス（/ 始まり）を必須とする
+        if (!link.startsWith("/")) {
+          issues.push(
+            `[Bare Relative Path] In ${relativePath}: Bare relative path "${link}" is forbidden. Use workspace root relative path starting with "/" (e.g. "/.agents/rules/tester.md").`,
           );
           continue;
         }
