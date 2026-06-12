@@ -49,9 +49,10 @@ description: Git 操作（コミット、ブランチ管理、履歴操作）を
    - **タイプ例**: `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`
 5. **プッシュの指示待ち**
    - ローカルでのコミットが完了しても、プッシュの許可を得るまではリモートリポジトリへの同期を控えること。
-6. **破壊的操作のリスク説明**
-   - `rebase` や `push --force`
-     等を行う際は、必ず「何が起きるか（リスク）」を事前に説明し、合意の証跡を残すこと。
+6. **破壊的操作の禁止とリスク説明**
+   - `git push --force`（force-push）は、既存のリモート履歴を書き換える不可逆操作のため**原則禁止**とする。
+   - `rebase`
+     等のローカル履歴操作は、事前に「何が起きるか（リスク）」を説明し、POの明示的な合意を得た場合にのみ実行可能とする。
 7. **ハイブリッドトリアージコミットの遵守**
    - コミット操作を行う際は、[hybrid-triage-commit-process.md](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)に定義されたハイブリッドトリアージコミットプロセスを理解し、それに従うこと。
    - WIPコミットおよびトリアージコミットには
