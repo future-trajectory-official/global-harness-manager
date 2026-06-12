@@ -15,7 +15,7 @@
 ### 2. Velocity & Estimation Accuracy (規模消化力と見積もり精度)
 
 - **定義**: 完了したPBIの「見積時Tシャツサイズ」のウェイト（具体的なポイント換算基準は
-  [backlog-guidelines.md の「2.2. PBI の見積り基準 (T-Shirt Size)」](.agents/management/backlog-guidelines.md)
+  [backlog-guidelines.md の「2.2. PBI の見積り基準 (T-Shirt Size)」](/.agents/management/backlog-guidelines.md)
   を参照）の集計値による独自ベロシティと、それに要した実際のセッション数（労力）のバランス。
 - **採点基準**:
   - 1:
@@ -36,7 +36,7 @@
 
 ### 4. Collaboration & Process Discipline (協働品質とプロセス規律)
 
-- **定義**: [metrics.jsonl](.agents/management/metrics.jsonl)
+- **定義**: [metrics.jsonl](/.agents/management/metrics.jsonl)
   に記録されたセッションメトリクス（Intent,
   Constraint等のスコア推移）の健全性と、スプリントを通じた運用規律（セレモニーの確実な遂行、アトミックコミットの徹底）の総合評価。
 - **採点基準**:

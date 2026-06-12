@@ -5,7 +5,7 @@
 ## 要約のステップ
 
 1. **ゴール達成度評価**:
-   - [product-backlog.md](.agents/management/product-backlog.md)
+   - [product-backlog.md](/.agents/management/product-backlog.md)
      のスプリントゴールと対象PBIを照合し、完了・未完了を明確に分類します。
 2. **インクリメントの検証**:
    - デモ可能な成果物（動作するコード、UI、自動化機能）が、定められた品質基準を満たしているか、テスト結果（エビデンス）を基に客観的に検証します。

@@ -29,5 +29,7 @@ deno run -A .agents/skills/bundles/workspace-bundle/setup-github-labels/scripts/
 
 ## リファレンス
 
-- [ラベル定義YAML](references/label-definitions.yaml) — 機械可読なラベル定義
-- [ラベル定義解説](references/label-definitions.md) — 各ラベルの意味・使用タイミング
+- [ラベル定義YAML](/.agents/skills/bundles/workspace-bundle/setup-github-labels/references/label-definitions.yaml)
+  — 機械可読なラベル定義
+- [ラベル定義解説](/.agents/skills/bundles/workspace-bundle/setup-github-labels/references/label-definitions.md)
+  — 各ラベルの意味・使用タイミング

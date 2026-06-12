@@ -35,8 +35,11 @@ OS ごとの分岐コマンドを組み立ててはいけません。以下の�
    を再読込してください」と伝えてください。
 
 > [!TIP]
-> PATHが通らない等の問題は [troubleshooting.md](references/troubleshooting.md) を、詳細な技術仕様は
-> [environment-specs.md](references/environment-specs.md) を参照してください。
+> PATHが通らない等の問題は
+> [troubleshooting.md](/.agents/skills/bundles/workspace-bundle/setup-harness-env/references/troubleshooting.md)
+> を、詳細な技術仕様は
+> [environment-specs.md](/.agents/skills/bundles/workspace-bundle/setup-harness-env/references/environment-specs.md)
+> を参照してください。
 
 ## 安全性への配慮
 

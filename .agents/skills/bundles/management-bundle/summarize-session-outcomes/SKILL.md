@@ -16,7 +16,7 @@ tags:
 ## 手順
 
 1. **成果の要約実行**
-   - ログとファイルシステムを確認し、[summary-guide.md](references/summary-guide.md)
+   - ログとファイルシステムを確認し、[summary-guide.md](/.agents/skills/bundles/management-bundle/summarize-session-outcomes/references/summary-guide.md)
      に基づいて成果要約を出力してください。
 
 2. **PO への報告**

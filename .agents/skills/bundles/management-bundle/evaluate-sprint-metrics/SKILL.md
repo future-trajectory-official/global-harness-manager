@@ -17,11 +17,11 @@ tags:
 本スキルを実行するAI（および人間）は、以下の手順を最短経路で実行してください。
 
 1. **インプット情報の読み込み**
-   - [metrics-guide.md](.agents/skills/bundles/management-bundle/evaluate-sprint-metrics/references/metrics-guide.md)
+   - [metrics-guide.md](/.agents/skills/bundles/management-bundle/evaluate-sprint-metrics/references/metrics-guide.md)
      を読み込み、評価指標と採点基準を把握します。
-   - セッション履歴が記録されている [metrics.jsonl](.agents/management/metrics.jsonl)
+   - セッション履歴が記録されている [metrics.jsonl](/.agents/management/metrics.jsonl)
      を読み込み、4大指標（Intent, Constraint 等）のスコアを抽出します。
-   - [product-backlog.md](.agents/management/product-backlog.md)
+   - [product-backlog.md](/.agents/management/product-backlog.md)
      のスプリント内のPBI完了実績とTシャツサイズの見積もりデータを把握します。
 
 2. **メトリクスの評価と採点**

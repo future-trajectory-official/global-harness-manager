@@ -11,7 +11,7 @@ tags:
 
 # record-session-metrics
 
-セッションの協働品質を定量化し、[metrics.jsonl](.agents/management/metrics.jsonl)
+セッションの協働品質を定量化し、[metrics.jsonl](/.agents/management/metrics.jsonl)
 に蓄積するためのスキルです。PO 指定の 4 つのコアメトリクスを記録し、履歴サマリーを出力します。
 
 ## 手順
@@ -40,6 +40,7 @@ tags:
    - 実行後に表示される「推移テーブル」および「履歴」を確認し、予実精度やプロセスの改善兆候を把握してください。
 
 > [!TIP]
-> 各品質メトリクスの採点基準およびスキーマ詳細は [metrics-guide.md](references/metrics-guide.md)
+> 各品質メトリクスの採点基準およびスキーマ詳細は
+> [metrics-guide.md](/.agents/skills/bundles/management-bundle/record-session-metrics/references/metrics-guide.md)
 > を参照してください。 Effort（介入回数）の厳密な定義や3点見積もりフローについては
 > [backlog-guidelines.md](/.agents/management/backlog-guidelines.md) を参照してください。

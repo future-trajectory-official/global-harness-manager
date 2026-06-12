@@ -29,8 +29,10 @@ tags:
    ```
 
 > [!TIP]
-> 退避対象のデータの詳細は [data-types-spec.md](references/data-types-spec.md) を、Windows
-> 等の他環境向けコマンドは [cross-platform-commands.md](references/cross-platform-commands.md)
+> 退避対象のデータの詳細は
+> [data-types-spec.md](/.agents/skills/bundles/meta-bundle/stateless-reset/references/data-types-spec.md)
+> を、Windows 等の他環境向けコマンドは
+> [cross-platform-commands.md](/.agents/skills/bundles/meta-bundle/stateless-reset/references/cross-platform-commands.md)
 > を参照してください。
 
 ※ 注意: 物理的な削除ではなく移動を行うため、OS による自動クリーンアップまではデータが保持されます。

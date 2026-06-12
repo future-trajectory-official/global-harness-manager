@@ -17,7 +17,7 @@ tags:
 本スキルを実行するAI（および人間）は、以下の手順を最短経路で実行してください。
 
 1. **インプット情報の読み込み**
-   - [retrospective-guide.md](.agents/skills/bundles/management-bundle/sprint-retrospective-kpt/references/retrospective-guide.md)
+   - [retrospective-guide.md](/.agents/skills/bundles/management-bundle/sprint-retrospective-kpt/references/retrospective-guide.md)
      を読み込み、振り返りの視点とテンプレートを把握します。
    - スプリント期間中のセッション履歴、システムアーティファクトである `task.md`
      の履歴、および完了したPBIの見積時Tシャツサイズと完了時の労力（体感）のギャップ（予実差）を整理します。

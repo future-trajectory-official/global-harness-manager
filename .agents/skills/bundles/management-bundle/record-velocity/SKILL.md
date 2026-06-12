@@ -53,4 +53,6 @@ deno run -A .agents/skills/bundles/management-bundle/record-velocity/scripts/rec
 
 ## 詳細リファレンス
 
-- 集計ロジックの詳細は [velocity-algorithm.md](references/velocity-algorithm.md) を参照
+- 集計ロジックの詳細は
+  [velocity-algorithm.md](/.agents/skills/bundles/management-bundle/record-velocity/references/velocity-algorithm.md)
+  を参照

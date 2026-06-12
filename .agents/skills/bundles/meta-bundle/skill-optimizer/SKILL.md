@@ -20,5 +20,5 @@ Antigravity の「履歴管理・分析能力」を活用し、スキルの説�
 直近のセッションログ（レトロスペクティブ）から反省点を抽出し、それに基づきスキルの記述を改善します。
 
 - **実行詳細**: 詳細な分析プロセスや判断基準、使用例については
-  [optimization-process.md](references/optimization-process.md)
+  [optimization-process.md](/.agents/skills/bundles/meta-bundle/skill-optimizer/references/optimization-process.md)
   を参照し、その手順に従って改善を実施してください。

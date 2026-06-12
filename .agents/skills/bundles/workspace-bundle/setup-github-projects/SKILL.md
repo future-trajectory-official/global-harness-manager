@@ -24,5 +24,7 @@ deno run -A .agents/skills/bundles/workspace-bundle/setup-github-projects/script
 
 ## リファレンス
 
-- [フィールド定義](references/field-definitions.md) — 各ボードのカスタムフィールドの型・選択肢
-- [運用ルール](references/operation-rules.md) — Priority の小数運用、Parent の記入ルール、Stage 遷移
+- [フィールド定義](/.agents/skills/bundles/workspace-bundle/setup-github-projects/references/field-definitions.md)
+  — 各ボードのカスタムフィールドの型・選択肢
+- [運用ルール](/.agents/skills/bundles/workspace-bundle/setup-github-projects/references/operation-rules.md)
+  — Priority の小数運用、Parent の記入ルール、Stage 遷移

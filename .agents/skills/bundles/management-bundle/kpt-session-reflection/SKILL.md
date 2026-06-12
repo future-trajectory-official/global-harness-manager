@@ -15,7 +15,7 @@ tags:
 ## 手順
 
 1. **セッションログの解析**
-   - 本セッションの全ログを読み込み、[reflection-guide.md](references/reflection-guide.md)
+   - 本セッションの全ログを読み込み、[reflection-guide.md](/.agents/skills/bundles/management-bundle/kpt-session-reflection/references/reflection-guide.md)
      に基づいて KPT と AI フィードバックを生成してください。
 
 2. **内省の出力**

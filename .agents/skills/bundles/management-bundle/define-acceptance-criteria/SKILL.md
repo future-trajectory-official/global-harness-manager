@@ -60,7 +60,7 @@ Criteria）と、考慮すべきエッジケースを網羅的に洗い出しま
   各ACをスプリントレビュー時にどう客観的に証明するか（実行ログの提示、テストのパス証明、browser_subagent等によるUI証跡の提示など）の「証明方法」を併せて定義します。
 - **外部参照リンクを用いたスプリントレビュー検証PBIの追加**:
   バックログの肥大化とコンテキスト圧迫を避けるため、詳細なデモ手順や証明方法の突き合わせチェックリストは外部ファイルに記述します。スプリントバックログの最下部へのPBI追加、および実体ファイルの準備プロセスは、サイドカー・リソースである
-  [sprint-review-guidelines.md](references/sprint-review-guidelines.md)
+  [sprint-review-guidelines.md](/.agents/skills/bundles/management-bundle/define-acceptance-criteria/references/sprint-review-guidelines.md)
   の手順およびチェックリストに従って実行します。
 
 ### 5. ドキュメントの更新と承認
