@@ -2,6 +2,10 @@ import { executeCommand } from "./command.ts";
 
 let ghCmd = "gh";
 
+/**
+ * テスト用に gh コマンドのパスを差し替える。
+ * モックスクリプトを指定することで、実際の GitHub CLI を呼ばずにテスト可能。
+ */
 export function setGhCommand(cmd: string): void {
   ghCmd = cmd;
 }
@@ -22,6 +26,7 @@ function parseJsonOutput<T>(stdout: string): T | null {
   }
 }
 
+/** GitHub Issue を表現する型 */
 export interface Issue {
   number: number;
   url: string;
@@ -32,6 +37,7 @@ export interface Issue {
   milestone?: { title: string; number: number };
 }
 
+/** createIssue の引数 */
 export interface CreateIssueOptions {
   title: string;
   body?: string;
@@ -40,6 +46,15 @@ export interface CreateIssueOptions {
   assignee?: string;
 }
 
+/**
+ * GitHub Issue を作成する。
+ * @param opts.title - タイトル（必須）
+ * @param opts.body - 本文
+ * @param opts.labels - ラベル一覧
+ * @param opts.milestone - マイルストーン名
+ * @param opts.assignee - アサイン先
+ * @returns Issue番号とURL、失敗時はnull
+ */
 export async function createIssue(
   opts: CreateIssueOptions,
   options?: { dryRun?: boolean },
@@ -54,6 +69,7 @@ export async function createIssue(
   return parseJsonOutput<{ number: number; url: string }>(result.stdout);
 }
 
+/** searchIssues のフィルタ条件 */
 export interface SearchIssuesOptions {
   state?: "open" | "closed" | "all";
   labels?: string[];
@@ -62,6 +78,15 @@ export interface SearchIssuesOptions {
   limit?: number;
 }
 
+/**
+ * GitHub Issue を検索する。
+ * @param opts.state - 状態フィルタ（open/closed/all）
+ * @param opts.labels - ラベルフィルタ
+ * @param opts.milestone - マイルストーンフィルタ
+ * @param opts.assignee - アサイン先フィルタ
+ * @param opts.limit - 取得上限
+ * @returns Issue の配列
+ */
 export async function searchIssues(
   opts: SearchIssuesOptions = {},
   options?: { dryRun?: boolean },
@@ -82,6 +107,17 @@ export async function searchIssues(
   return parseJsonOutput<Issue[]>(result.stdout) ?? [];
 }
 
+/**
+ * GitHub Issue の内容を更新する。
+ * @param number - Issue番号
+ * @param opts.title - 新しいタイトル
+ * @param opts.body - 新しい本文
+ * @param opts.addLabels - 追加するラベル
+ * @param opts.removeLabels - 削除するラベル
+ * @param opts.milestone - マイルストーン
+ * @param opts.state - 状態（open/closed）
+ * @returns 更新後のIssue、失敗時はnull
+ */
 export async function updateIssue(
   number: number,
   opts: {
@@ -116,6 +152,11 @@ export async function updateIssue(
   return parseJsonOutput<Issue>(result.stdout);
 }
 
+/**
+ * GitHub Issue をクローズする。
+ * @param number - Issue番号
+ * @returns 成功時true
+ */
 export async function closeIssue(number: number, options?: { dryRun?: boolean }): Promise<boolean> {
   const result = await runGh(["issue", "close", String(number)], options);
   return result.code === 0;

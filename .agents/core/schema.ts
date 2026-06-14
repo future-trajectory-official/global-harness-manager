@@ -1,13 +1,16 @@
+/** バリデーションエラー1件を表す */
 export interface SchemaValidationError {
   path: string;
   message: string;
 }
 
+/** バリデーション結果 */
 export interface SchemaValidationResult {
   valid: boolean;
   errors: SchemaValidationError[];
 }
 
+/** バリデーションルール定義 */
 export interface ValidationRule {
   field: string;
   type: "string" | "number" | "boolean" | "array" | "object";
@@ -18,6 +21,7 @@ export interface ValidationRule {
   enum?: string[];
 }
 
+/** ルール定義に従って入力を検証する。 */
 export function validateInput(
   input: Record<string, unknown>,
   rules: ValidationRule[],
