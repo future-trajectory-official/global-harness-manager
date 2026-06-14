@@ -36,6 +36,15 @@ export * from "./verify-target.ts";
 // .harnessrc 設定バリデーション (validateHarnessConfig, ValidationResult, ValidationError)
 export * from "./validate-harnessrc.ts";
 
+// GitHub CLI 操作 (createIssue, searchIssues, updateIssue, closeIssue, addLabels, addToProject, getProjectFields, setProjectField, createMilestone, listMilestones, uploadAsset, setGhCommand)
+export * from "./github.ts";
+
+// ラベルプレフィックス変換 (label-prefix)
+export * from "./label-prefix.ts";
+
+// スキーマバリデーション (validateInput)
+export * from "./schema.ts";
+
 /**
  * 共通型定義の再エクスポート (必要に応じて追加)
  */
