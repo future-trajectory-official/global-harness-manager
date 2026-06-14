@@ -1,12 +1,5 @@
 import { assertEquals } from "@std/assert";
-import {
-  addLabels,
-  closeIssue,
-  createIssue,
-  searchIssues,
-  setGhCommand,
-  updateIssue,
-} from "./github.ts";
+import { closeIssue, createIssue, searchIssues, setGhCommand, updateIssue } from "./github.ts";
 
 const MOCK_SCRIPT = `#!/usr/bin/env bash
 # Mock gh CLI for testing
@@ -78,13 +71,6 @@ Deno.test("github - updateIssue should return updated issue", async () => {
 Deno.test("github - closeIssue should return true", async () => {
   await withMockGh(async () => {
     const result = await closeIssue(1);
-    assertEquals(result, true);
-  });
-});
-
-Deno.test("github - addLabels should return true", async () => {
-  await withMockGh(async () => {
-    const result = await addLabels(1, ["bug", "urgent"]);
     assertEquals(result, true);
   });
 });
