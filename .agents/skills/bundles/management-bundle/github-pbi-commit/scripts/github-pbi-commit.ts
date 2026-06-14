@@ -1,39 +1,45 @@
 import { parseArgs } from "@std/cli";
 import { updateIssue } from "../../../../../core/github.ts";
+import { applyLabelPrefix } from "../../../../../core/label-prefix.ts";
 
-interface Args {
+interface CliArgs {
   repo?: string;
   "label-prefix"?: string;
   "dry-run"?: boolean;
-  number?: string;
+}
+
+interface StdinInput {
+  number: number;
   milestone?: string;
-  "project-id"?: string;
 }
 
 async function main() {
   const args = parseArgs(Deno.args, {
-    string: ["repo", "label-prefix", "number", "milestone", "project-id"],
+    string: ["repo", "label-prefix"],
     boolean: ["dry-run"],
-  }) as Args;
+  }) as CliArgs;
 
-  if (!args.number) {
-    console.error("--number is required");
-    Deno.exit(1);
-  }
-
-  const issueNumber = Number(args.number);
+  const input: StdinInput = await readStdin();
   const prefix = args["label-prefix"] ?? "";
+  const [ideaLabel, todoLabel] = applyLabelPrefix(["status:idea", "status:todo"], prefix);
 
-  await updateIssue(issueNumber, {
+  const result = await updateIssue(input.number, {
     state: "open",
-    milestone: args.milestone,
-    addLabels: [`${prefix}todo`],
-    removeLabels: [`${prefix}idea`],
+    milestone: input.milestone,
+    addLabels: [todoLabel],
+    removeLabels: [ideaLabel],
   }, { dryRun: args["dry-run"] });
 
   console.log(
-    JSON.stringify({ success: true, data: { number: issueNumber, status: "committed" } }),
+    JSON.stringify({ success: !!result, data: { number: input.number, status: "committed" } }),
   );
+}
+
+async function readStdin(): Promise<StdinInput> {
+  const buffer = new Uint8Array(1024 * 16);
+  const n = await Deno.stdin.read(buffer);
+  if (n === null) throw new Error("No input provided");
+  return JSON.parse(new TextDecoder().decode(buffer.subarray(0, n)));
 }
 
 if (import.meta.main) main();
