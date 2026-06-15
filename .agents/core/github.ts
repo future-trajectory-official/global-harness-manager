@@ -1,5 +1,11 @@
 import { executeCommand } from "./command.ts";
 
+/** GitHub 操作の対象リポジトリを表現する */
+export interface IGitHubContext {
+  owner: string;
+  repository: string;
+}
+
 let ghCmd = "gh";
 
 /**
@@ -44,6 +50,50 @@ export interface CreateIssueOptions {
   labels?: string[];
   milestone?: string;
   assignee?: string;
+}
+
+/** gh コマンド実行時のオプション */
+export interface RunOptions {
+  dryRun?: boolean;
+}
+
+/** updateIssue の引数 */
+export interface UpdateIssueOptions {
+  title?: string;
+  body?: string;
+  addLabels?: string[];
+  removeLabels?: string[];
+  milestone?: string;
+  state?: "open" | "closed";
+}
+
+/** createChildIssue の引数 */
+export interface CreateChildIssueOptions {
+  title: string;
+  body?: string;
+  labels?: string[];
+  parentNumber: number;
+}
+
+/** Projects V2 のフィールド定義 */
+export interface ProjectField {
+  id: string;
+  name: string;
+  options?: { id: string; name: string }[];
+}
+
+/** setProjectField の引数 */
+export interface SetProjectFieldOptions {
+  itemId: string;
+  fieldId: string;
+  value: string;
+}
+
+/** createMilestone の引数 */
+export interface CreateMilestoneOptions {
+  title: string;
+  description?: string;
+  dueOn?: string;
 }
 
 /**
@@ -160,4 +210,104 @@ export async function updateIssue(
 export async function closeIssue(number: number, options?: { dryRun?: boolean }): Promise<boolean> {
   const result = await runGh(["issue", "close", String(number)], options);
   return result.code === 0;
+}
+
+/** GitHub 操作の統一インターフェース */
+export interface IGitHubOperations {
+  // === Issue 操作 ===
+  createIssue(
+    context: IGitHubContext,
+    opts: CreateIssueOptions,
+    options?: RunOptions,
+  ): Promise<{ number: number; url: string } | null>;
+  searchIssues(
+    context: IGitHubContext,
+    opts?: SearchIssuesOptions,
+    options?: RunOptions,
+  ): Promise<Issue[]>;
+  updateIssue(
+    context: IGitHubContext,
+    number: number,
+    opts: UpdateIssueOptions,
+    options?: RunOptions,
+  ): Promise<Issue | null>;
+  closeIssue(context: IGitHubContext, number: number, options?: RunOptions): Promise<boolean>;
+  createChildIssue(
+    context: IGitHubContext,
+    opts: CreateChildIssueOptions,
+    options?: RunOptions,
+  ): Promise<{ number: number; url: string; parentLinked: boolean } | null>;
+  addLabels(
+    context: IGitHubContext,
+    number: number,
+    labels: string[],
+    options?: RunOptions,
+  ): Promise<boolean>;
+
+  // === Projects V2 操作 ===
+  addToProject(
+    context: IGitHubContext,
+    issueNumber: number,
+    projectId: string,
+    options?: RunOptions,
+  ): Promise<boolean>;
+  getProjectFields(
+    context: IGitHubContext,
+    projectId: string,
+    options?: RunOptions,
+  ): Promise<ProjectField[]>;
+  setProjectField(
+    context: IGitHubContext,
+    opts: SetProjectFieldOptions,
+    options?: RunOptions,
+  ): Promise<boolean>;
+
+  // === Milestone 操作 ===
+  createMilestone(
+    context: IGitHubContext,
+    opts: CreateMilestoneOptions,
+    options?: RunOptions,
+  ): Promise<{ number: number; url: string } | null>;
+  listMilestones(
+    context: IGitHubContext,
+    options?: RunOptions,
+  ): Promise<{ number: number; title: string }[]>;
+}
+
+// === Domain Model Interfaces ===
+
+/** Issue エンティティの Domain Model インターフェース（Active Record 風） */
+export interface DomainIssue {
+  readonly context: IGitHubContext;
+  readonly number: number;
+  title: string;
+  body: string;
+  labels: string[];
+  state: "open" | "closed";
+  milestone?: string;
+
+  addLabel(label: string): this;
+  removeLabel(label: string): this;
+  save(): Promise<this>;
+  close(): Promise<this>;
+  createChild(params: CreateChildIssueOptions): Promise<DomainIssue>;
+}
+
+/** Project エンティティの Domain Model インターフェース */
+export interface DomainProject {
+  readonly context: IGitHubContext;
+  readonly id: string;
+
+  addItem(issue: DomainIssue): Promise<void>;
+  getFields(): Promise<ProjectField[]>;
+  setField(itemId: string, field: ProjectField, value: string): Promise<void>;
+}
+
+/** Milestone エンティティの Domain Model インターフェース */
+export interface DomainMilestone {
+  readonly context: IGitHubContext;
+  readonly number: number;
+  title: string;
+  description?: string;
+  dueOn?: string;
 }
