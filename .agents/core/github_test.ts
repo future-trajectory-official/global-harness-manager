@@ -29,14 +29,25 @@ class GitHubOperationsStub implements IGitHubOperations {
     opts: CreateIssueOptions,
     options?: RunOptions,
   ): Promise<{ number: number; url: string } | null> {
-    throw new Error("Not implemented: createIssue");
+    return Promise.resolve({
+      number: 42,
+      url: `https://github.com/${context.owner}/${context.repository}/issues/42`,
+    });
   }
   searchIssues(
     context: IGitHubContext,
     opts?: SearchIssuesOptions,
     options?: RunOptions,
   ): Promise<Issue[]> {
-    throw new Error("Not implemented: searchIssues");
+    return Promise.resolve([{
+      number: 1,
+      url: "https://github.com/owner/repo/issues/1",
+      title: "Test Issue",
+      state: "open",
+      labels: [{ name: "bug" }],
+      body: "test body",
+      milestone: { title: "v1", number: 1 },
+    }]);
   }
   updateIssue(
     context: IGitHubContext,
@@ -44,17 +55,28 @@ class GitHubOperationsStub implements IGitHubOperations {
     opts: UpdateIssueOptions,
     options?: RunOptions,
   ): Promise<Issue | null> {
-    throw new Error("Not implemented: updateIssue");
+    return Promise.resolve({
+      number: number,
+      url: `https://github.com/${context.owner}/${context.repository}/issues/${number}`,
+      title: opts.title,
+      state: "open",
+      labels: [{ name: "bug" }],
+      body: "",
+    });
   }
   closeIssue(context: IGitHubContext, number: number, options?: RunOptions): Promise<boolean> {
-    throw new Error("Not implemented: closeIssue");
+    return Promise.resolve(true);
   }
   createChildIssue(
     context: IGitHubContext,
     opts: CreateChildIssueOptions,
     options?: RunOptions,
   ): Promise<{ number: number; url: string; parentLinked: boolean } | null> {
-    throw new Error("Not implemented: createChildIssue");
+    return Promise.resolve({
+      number: 2,
+      url: `https://github.com/${context.owner}/${context.repository}/issues/2`,
+      parentLinked: true,
+    });
   }
   addLabels(
     context: IGitHubContext,
@@ -62,7 +84,7 @@ class GitHubOperationsStub implements IGitHubOperations {
     labels: string[],
     options?: RunOptions,
   ): Promise<boolean> {
-    throw new Error("Not implemented: addLabels");
+    return Promise.resolve(true);
   }
   addToProject(
     context: IGitHubContext,
@@ -70,34 +92,41 @@ class GitHubOperationsStub implements IGitHubOperations {
     projectId: string,
     options?: RunOptions,
   ): Promise<boolean> {
-    throw new Error("Not implemented: addToProject");
+    return Promise.resolve(true);
   }
   getProjectFields(
     context: IGitHubContext,
     projectId: string,
     options?: RunOptions,
   ): Promise<ProjectField[]> {
-    throw new Error("Not implemented: getProjectFields");
+    return Promise.resolve([
+      { id: "field_1", name: "Status", type: "SINGLE_SELECT" },
+      { id: "field_2", name: "Priority", type: "SINGLE_SELECT" },
+      { id: "field_3", name: "Size", type: "NUMBER" },
+    ]);
   }
   setProjectField(
     context: IGitHubContext,
     opts: SetProjectFieldOptions,
     options?: RunOptions,
   ): Promise<boolean> {
-    throw new Error("Not implemented: setProjectField");
+    return Promise.resolve(true);
   }
   createMilestone(
     context: IGitHubContext,
     opts: CreateMilestoneOptions,
     options?: RunOptions,
   ): Promise<{ number: number; url: string } | null> {
-    throw new Error("Not implemented: createMilestone");
+    return Promise.resolve({
+      number: 1,
+      url: `https://github.com/${context.owner}/${context.repository}/milestone/1`,
+    });
   }
   listMilestones(
     context: IGitHubContext,
     options?: RunOptions,
   ): Promise<{ number: number; title: string }[]> {
-    throw new Error("Not implemented: listMilestones");
+    return Promise.resolve([{ number: 1, title: "Sprint 1" }]);
   }
 }
 
@@ -130,29 +159,41 @@ class DomainIssueStub implements DomainIssue {
   }
 
   addLabel(label: string): this {
-    throw new Error("Not implemented: addLabel");
+    this.labels.push(label);
+    return this;
   }
   removeLabel(label: string): this {
-    throw new Error("Not implemented: removeLabel");
+    this.labels = this.labels.filter((l) => l !== label);
+    return this;
   }
   save(): Promise<this> {
-    throw new Error("Not implemented: save");
+    return Promise.resolve(this);
   }
   close(): Promise<this> {
-    throw new Error("Not implemented: close");
+    this.state = "closed";
+    return Promise.resolve(this);
   }
   createChild(params: CreateChildIssueOptions): Promise<DomainIssue> {
-    throw new Error("Not implemented: createChild");
+    return Promise.resolve(
+      new DomainIssueStub(
+        this.context,
+        2,
+        params.title,
+        params.body || "",
+        [],
+        "open",
+      ),
+    );
   }
 
   static async create(context: IGitHubContext, params: CreateIssueOptions): Promise<DomainIssue> {
-    throw new Error("Not implemented: DomainIssue.create");
+    return new DomainIssueStub(context, 42, params.title, params.body || "", [], "open");
   }
   static async find(context: IGitHubContext, number: number): Promise<DomainIssue | null> {
-    throw new Error("Not implemented: DomainIssue.find");
+    return new DomainIssueStub(context, number, "Found Issue", "", [], "open");
   }
   static async list(context: IGitHubContext, filter?: SearchIssuesOptions): Promise<DomainIssue[]> {
-    throw new Error("Not implemented: DomainIssue.list");
+    return [new DomainIssueStub(context, 1, "Found Issue", "", [], "open")];
   }
 }
 
@@ -166,17 +207,21 @@ class DomainProjectStub implements DomainProject {
   }
 
   addItem(issue: DomainIssue): Promise<void> {
-    throw new Error("Not implemented: addItem");
+    return Promise.resolve();
   }
   getFields(): Promise<ProjectField[]> {
-    throw new Error("Not implemented: getFields");
+    return Promise.resolve([
+      { id: "field_1", name: "Status", type: "SINGLE_SELECT" },
+      { id: "field_2", name: "Priority", type: "SINGLE_SELECT" },
+      { id: "field_3", name: "Size", type: "NUMBER" },
+    ]);
   }
   setField(itemId: string, field: ProjectField, value: string): Promise<void> {
-    throw new Error("Not implemented: setField");
+    return Promise.resolve();
   }
 
   static async find(context: IGitHubContext, id: string): Promise<DomainProject> {
-    throw new Error("Not implemented: DomainProject.find");
+    return new DomainProjectStub(context, id);
   }
 }
 
@@ -205,10 +250,10 @@ class DomainMilestoneStub implements DomainMilestone {
     context: IGitHubContext,
     params: CreateMilestoneOptions,
   ): Promise<DomainMilestone> {
-    throw new Error("Not implemented: DomainMilestone.create");
+    return new DomainMilestoneStub(context, 1, params.title, params.description, params.dueOn);
   }
   static async list(context: IGitHubContext): Promise<DomainMilestone[]> {
-    throw new Error("Not implemented: DomainMilestone.list");
+    return [new DomainMilestoneStub(context, 1, "Sprint 1")];
   }
 }
 

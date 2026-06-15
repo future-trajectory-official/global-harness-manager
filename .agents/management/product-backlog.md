@@ -132,10 +132,10 @@
 - [ ] AC5: 各Core関数の単体テストがパスすること
 - **証明方法**: スキルファイル実在確認 + `deno task test` パスログ
 
-#### WP_2: Interface 定義 + テストスタブ（RED）
+#### WP_2: Interface 定義 + テストスタブ（GREEN）
 
 - **目的**: 後続 WP（WP_3, WP_4）の実装に先立ち、Interface/抽象クラス契約と
-  失敗するテストスタブを確定させる。実装ロジックは含まない。
+  最小限のテストスタブを確定させる。実装ロジックは含まない（fake it パターン）。
 - **参照**: [github-operations-design.md](/.agents/management/design/github-operations-design.md) §
   2, 3, 4
 - **Effort見積（介入回数）**: 1回
@@ -144,10 +144,10 @@
       されている
 - [ ] AC2: `.agents/core/` に `Issue`, `Project`, `Milestone` の抽象クラス （または interface）が
       export されている
-- [ ] AC3: `IGitHubOperations` の 11 メソッドに対する**失敗するテストスタブ**
-      （`github_test.ts`）が追加されている（RED 状態）
+- [ ] AC3: `IGitHubOperations` の 11 メソッドに対する**テストスタブ**
+      （`github_test.ts`）が追加され、**すべて GREEN でパス**する
 - [ ] AC4: `Issue`, `Project`, `Milestone` の公開メソッド（`create`, `find`, `save`, `close`,
-      `addItem` 等）に対する**失敗するテストスタブ**が追加されている
+      `addItem` 等）に対する**テストスタブ**が追加され、**すべて GREEN でパス**する
 - [ ] AC5: 設計原則遵守の検証用 grep ターゲット（`parent:` 文字列、`replace(/"/g, ...)`、 `--repo`
       フラグ等）が `_test_helpers.ts` 等に定数として定義されている
 - [ ] AC6: **既存 JSON Schema 資産との整合性確認**: - [ ]
@@ -156,8 +156,8 @@
       `.harnessrc` のフィールド名 （`customFields.type` → `"harness-type"` 等）と整合することを確認
       - [ ] per-skill JSON Schema（future PBI で実装）の**配置場所と命名規則**を 設計契約 § 3.1
       に従い決定
-- **証明方法**: `deno test -A --parallel` で追加したテストが **すべて RED で失敗する**こと （=
-  契約は確定したが実装はまだ）+ 既存 `.github/schemas/` との整合性確認ログ
+- **証明方法**: `deno test -A --parallel` で追加したテストが **すべて GREEN でパス**すること + 既存
+  `.github/schemas/` との整合性確認ログ
 
 #### WP_3: Gateway 層修正
 
