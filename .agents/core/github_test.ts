@@ -1,22 +1,30 @@
 // deno-lint-ignore-file no-unused-vars require-await
 import { assertEquals } from "@std/assert";
 import {
+  addLabels,
+  addToProject,
   closeIssue,
+  createChildIssue,
   CreateChildIssueOptions,
   createIssue,
   CreateIssueOptions,
+  createMilestone,
   CreateMilestoneOptions,
   DomainIssue,
   DomainMilestone,
   DomainProject,
+  getProjectFields,
+  GitHubOperations,
   IGitHubContext,
   IGitHubOperations,
   Issue,
+  listMilestones,
   ProjectField,
   RunOptions,
   searchIssues,
   SearchIssuesOptions,
   setGhCommand,
+  setProjectField,
   SetProjectFieldOptions,
   updateIssue,
   UpdateIssueOptions,
@@ -26,8 +34,8 @@ import {
 class GitHubOperationsStub implements IGitHubOperations {
   createIssue(
     context: IGitHubContext,
-    opts: CreateIssueOptions,
-    options?: RunOptions,
+    payload: CreateIssueOptions,
+    execOptions?: RunOptions,
   ): Promise<{ number: number; url: string } | null> {
     return Promise.resolve({
       number: 42,
@@ -36,8 +44,8 @@ class GitHubOperationsStub implements IGitHubOperations {
   }
   searchIssues(
     context: IGitHubContext,
-    opts?: SearchIssuesOptions,
-    options?: RunOptions,
+    filter?: SearchIssuesOptions,
+    execOptions?: RunOptions,
   ): Promise<Issue[]> {
     return Promise.resolve([{
       number: 1,
@@ -52,25 +60,25 @@ class GitHubOperationsStub implements IGitHubOperations {
   updateIssue(
     context: IGitHubContext,
     number: number,
-    opts: UpdateIssueOptions,
-    options?: RunOptions,
+    changes: UpdateIssueOptions,
+    execOptions?: RunOptions,
   ): Promise<Issue | null> {
     return Promise.resolve({
       number: number,
       url: `https://github.com/${context.owner}/${context.repository}/issues/${number}`,
-      title: opts.title,
+      title: changes.title,
       state: "open",
       labels: [{ name: "bug" }],
       body: "",
     });
   }
-  closeIssue(context: IGitHubContext, number: number, options?: RunOptions): Promise<boolean> {
+  closeIssue(context: IGitHubContext, number: number, execOptions?: RunOptions): Promise<boolean> {
     return Promise.resolve(true);
   }
   createChildIssue(
     context: IGitHubContext,
-    opts: CreateChildIssueOptions,
-    options?: RunOptions,
+    childPayload: CreateChildIssueOptions,
+    execOptions?: RunOptions,
   ): Promise<{ number: number; url: string; parentLinked: boolean } | null> {
     return Promise.resolve({
       number: 2,
@@ -82,7 +90,7 @@ class GitHubOperationsStub implements IGitHubOperations {
     context: IGitHubContext,
     number: number,
     labels: string[],
-    options?: RunOptions,
+    execOptions?: RunOptions,
   ): Promise<boolean> {
     return Promise.resolve(true);
   }
@@ -90,14 +98,14 @@ class GitHubOperationsStub implements IGitHubOperations {
     context: IGitHubContext,
     issueNumber: number,
     projectId: string,
-    options?: RunOptions,
+    execOptions?: RunOptions,
   ): Promise<boolean> {
     return Promise.resolve(true);
   }
   getProjectFields(
     context: IGitHubContext,
     projectId: string,
-    options?: RunOptions,
+    execOptions?: RunOptions,
   ): Promise<ProjectField[]> {
     return Promise.resolve([
       { id: "field_1", name: "Status", type: "SINGLE_SELECT" },
@@ -107,15 +115,15 @@ class GitHubOperationsStub implements IGitHubOperations {
   }
   setProjectField(
     context: IGitHubContext,
-    opts: SetProjectFieldOptions,
-    options?: RunOptions,
+    fieldUpdate: SetProjectFieldOptions,
+    execOptions?: RunOptions,
   ): Promise<boolean> {
     return Promise.resolve(true);
   }
   createMilestone(
     context: IGitHubContext,
-    opts: CreateMilestoneOptions,
-    options?: RunOptions,
+    milestoneData: CreateMilestoneOptions,
+    execOptions?: RunOptions,
   ): Promise<{ number: number; url: string } | null> {
     return Promise.resolve({
       number: 1,
@@ -124,7 +132,7 @@ class GitHubOperationsStub implements IGitHubOperations {
   }
   listMilestones(
     context: IGitHubContext,
-    options?: RunOptions,
+    execOptions?: RunOptions,
   ): Promise<{ number: number; title: string }[]> {
     return Promise.resolve([{ number: 1, title: "Sprint 1" }]);
   }
@@ -259,19 +267,35 @@ class DomainMilestoneStub implements DomainMilestone {
 
 const MOCK_SCRIPT = `#!/usr/bin/env bash
 # Mock gh CLI for testing
-RESPONSE_FILE="$(dirname "$0")/mock-response.json"
-case "$1 $2" in
-  "issue create")
+RESPONSE_FILE=$(dirname "$0")/mock-response.json
+# Concatenate args and detect command pattern
+ALL="$*"
+case "$ALL" in
+  *"issue create"*)
     cat "$RESPONSE_FILE"
     ;;
-  "issue list")
+  *"issue list"*)
     echo '[{"number":1,"url":"https://github.com/owner/repo/issues/1","title":"Test Issue","state":"open","labels":[{"name":"bug"}],"body":"test body","milestone":{"title":"v1","number":1}}]'
     ;;
-  "issue edit")
-    echo '{"number":'"$3"',"url":"https://github.com/owner/repo/issues/1","title":"Updated","state":"open","labels":[{"name":"bug"}],"body":"","milestone":null}'
+  *"issue edit"*)
+    # Extract issue number (last numeric arg before --json)
+    NUM=""
+    for arg in "$@"; do
+      case "$arg" in
+        --json) break ;;
+        *) NUM="$arg" ;;
+      esac
+    done
+    echo '{"number":'"$NUM"',"url":"https://github.com/owner/repo/issues/1","title":"Updated","state":"open","labels":[{"name":"bug"}],"body":"","milestone":null}'
     ;;
-  "issue close")
+  *"issue close"*)
     exit 0
+    ;;
+  *"project item-add"*|*"project field-list"*|*"project item-edit"*)
+    exit 0
+    ;;
+  *"api graphql"*)
+    echo '{}'
     ;;
   *)
     echo "Unknown command: $*" >&2
@@ -299,9 +323,11 @@ async function withMockGh(fn: () => Promise<void>) {
   }
 }
 
+const TEST_CONTEXT: IGitHubContext = { owner: "test", repository: "repo" };
+
 Deno.test("github - createIssue should return issue number and url", async () => {
   await withMockGh(async () => {
-    const result = await createIssue({ title: "Test" });
+    const result = await createIssue(TEST_CONTEXT, { title: "Test" });
     assertEquals(result?.number, 42);
     assertEquals(result?.url, "https://github.com/owner/repo/issues/42");
   });
@@ -309,7 +335,7 @@ Deno.test("github - createIssue should return issue number and url", async () =>
 
 Deno.test("github - searchIssues should return issue list", async () => {
   await withMockGh(async () => {
-    const issues = await searchIssues({ state: "open" });
+    const issues = await searchIssues(TEST_CONTEXT, { state: "open" });
     assertEquals(issues.length, 1);
     assertEquals(issues[0].number, 1);
     assertEquals(issues[0].title, "Test Issue");
@@ -318,7 +344,7 @@ Deno.test("github - searchIssues should return issue list", async () => {
 
 Deno.test("github - updateIssue should return updated issue", async () => {
   await withMockGh(async () => {
-    const result = await updateIssue(1, { title: "Updated" });
+    const result = await updateIssue(TEST_CONTEXT, 1, { title: "Updated" });
     assertEquals(result?.number, 1);
     assertEquals(result?.title, "Updated");
   });
@@ -326,14 +352,12 @@ Deno.test("github - updateIssue should return updated issue", async () => {
 
 Deno.test("github - closeIssue should return true", async () => {
   await withMockGh(async () => {
-    const result = await closeIssue(1);
+    const result = await closeIssue(TEST_CONTEXT, 1);
     assertEquals(result, true);
   });
 });
 
 // === RED Tests for IGitHubOperations (AC-3) ===
-
-const TEST_CONTEXT: IGitHubContext = { owner: "test", repository: "repo" };
 
 Deno.test("github - IGitHubOperations createIssue should return issue number and url", async () => {
   const operations = new GitHubOperationsStub();

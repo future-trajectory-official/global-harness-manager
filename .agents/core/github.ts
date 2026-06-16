@@ -18,9 +18,13 @@ export function setGhCommand(cmd: string): void {
 
 function runGh(
   args: string[],
-  options?: { dryRun?: boolean },
+  execOptions?: { dryRun?: boolean },
 ): Promise<{ code: number; stdout: string; stderr: string }> {
-  return executeCommand({ cmd: ghCmd, args, dryRun: options?.dryRun });
+  return executeCommand({ cmd: ghCmd, args, dryRun: execOptions?.dryRun });
+}
+
+function buildGhArgs(context: IGitHubContext, args: string[]): string[] {
+  return [`--repo ${context.owner}/${context.repository}`, ...args];
 }
 
 function parseJsonOutput<T>(stdout: string): T | null {
@@ -98,23 +102,22 @@ export interface CreateMilestoneOptions {
 
 /**
  * GitHub Issue を作成する。
- * @param opts.title - タイトル（必須）
- * @param opts.body - 本文
- * @param opts.labels - ラベル一覧
- * @param opts.milestone - マイルストーン名
- * @param opts.assignee - アサイン先
+ * @param context - 操作対象リポジトリ
+ * @param payload - 作成するIssueのデータ
+ * @param execOptions - 実行時オプション
  * @returns Issue番号とURL、失敗時はnull
  */
 export async function createIssue(
-  opts: CreateIssueOptions,
-  options?: { dryRun?: boolean },
+  context: IGitHubContext,
+  payload: CreateIssueOptions,
+  execOptions?: RunOptions,
 ): Promise<{ number: number; url: string } | null> {
-  const args: string[] = ["issue", "create", "--title", opts.title, "--json", "number,url"];
-  if (opts.body) args.push("--body", opts.body);
-  if (opts.labels && opts.labels.length > 0) args.push("--label", opts.labels.join(","));
-  if (opts.milestone) args.push("--milestone", opts.milestone);
-  if (opts.assignee) args.push("--assignee", opts.assignee);
-  const result = await runGh(args, options);
+  const args: string[] = ["issue", "create", "--title", payload.title, "--json", "number,url"];
+  if (payload.body) args.push("--body", payload.body);
+  if (payload.labels && payload.labels.length > 0) args.push("--label", payload.labels.join(","));
+  if (payload.milestone) args.push("--milestone", payload.milestone);
+  if (payload.assignee) args.push("--assignee", payload.assignee);
+  const result = await runGh(buildGhArgs(context, args), execOptions);
   if (result.code !== 0) return null;
   return parseJsonOutput<{ number: number; url: string }>(result.stdout);
 }
@@ -130,16 +133,15 @@ export interface SearchIssuesOptions {
 
 /**
  * GitHub Issue を検索する。
- * @param opts.state - 状態フィルタ（open/closed/all）
- * @param opts.labels - ラベルフィルタ
- * @param opts.milestone - マイルストーンフィルタ
- * @param opts.assignee - アサイン先フィルタ
- * @param opts.limit - 取得上限
+ * @param context - 操作対象リポジトリ
+ * @param filter - 検索条件
+ * @param execOptions - 実行時オプション
  * @returns Issue の配列
  */
 export async function searchIssues(
-  opts: SearchIssuesOptions = {},
-  options?: { dryRun?: boolean },
+  context: IGitHubContext,
+  filter: SearchIssuesOptions = {},
+  execOptions?: RunOptions,
 ): Promise<Issue[]> {
   const args: string[] = [
     "issue",
@@ -147,38 +149,29 @@ export async function searchIssues(
     "--json",
     "number,url,title,state,labels,body,milestone",
   ];
-  if (opts.state && opts.state !== "all") args.push("--state", opts.state);
-  if (opts.labels && opts.labels.length > 0) args.push("--label", opts.labels.join(","));
-  if (opts.milestone) args.push("--milestone", opts.milestone);
-  if (opts.assignee) args.push("--assignee", opts.assignee);
-  if (opts.limit) args.push("--limit", String(opts.limit));
-  const result = await runGh(args, options);
+  if (filter.state && filter.state !== "all") args.push("--state", filter.state);
+  if (filter.labels && filter.labels.length > 0) args.push("--label", filter.labels.join(","));
+  if (filter.milestone) args.push("--milestone", filter.milestone);
+  if (filter.assignee) args.push("--assignee", filter.assignee);
+  if (filter.limit) args.push("--limit", String(filter.limit));
+  const result = await runGh(buildGhArgs(context, args), execOptions);
   if (result.code !== 0) return [];
   return parseJsonOutput<Issue[]>(result.stdout) ?? [];
 }
 
 /**
  * GitHub Issue の内容を更新する。
+ * @param context - 操作対象リポジトリ
  * @param number - Issue番号
- * @param opts.title - 新しいタイトル
- * @param opts.body - 新しい本文
- * @param opts.addLabels - 追加するラベル
- * @param opts.removeLabels - 削除するラベル
- * @param opts.milestone - マイルストーン
- * @param opts.state - 状態（open/closed）
+ * @param changes - 更新内容
+ * @param execOptions - 実行時オプション
  * @returns 更新後のIssue、失敗時はnull
  */
 export async function updateIssue(
+  context: IGitHubContext,
   number: number,
-  opts: {
-    title?: string;
-    body?: string;
-    addLabels?: string[];
-    removeLabels?: string[];
-    milestone?: string;
-    state?: "open" | "closed";
-  },
-  options?: { dryRun?: boolean },
+  changes: UpdateIssueOptions,
+  execOptions?: RunOptions,
 ): Promise<Issue | null> {
   const args: string[] = [
     "issue",
@@ -187,29 +180,250 @@ export async function updateIssue(
     "--json",
     "number,url,title,state,labels,body,milestone",
   ];
-  if (opts.title) args.push("--title", opts.title);
-  if (opts.body) args.push("--body", opts.body);
-  if (opts.addLabels && opts.addLabels.length > 0) {
-    args.push("--add-label", opts.addLabels.join(","));
+  if (changes.title) args.push("--title", changes.title);
+  if (changes.body) args.push("--body", changes.body);
+  if (changes.addLabels && changes.addLabels.length > 0) {
+    args.push("--add-label", changes.addLabels.join(","));
   }
-  if (opts.removeLabels && opts.removeLabels.length > 0) {
-    args.push("--remove-label", opts.removeLabels.join(","));
+  if (changes.removeLabels && changes.removeLabels.length > 0) {
+    args.push("--remove-label", changes.removeLabels.join(","));
   }
-  if (opts.milestone) args.push("--milestone", opts.milestone);
-  if (opts.state) args.push("--state", opts.state);
-  const result = await runGh(args, options);
+  if (changes.milestone) args.push("--milestone", changes.milestone);
+  if (changes.state) args.push("--state", changes.state);
+  const result = await runGh(buildGhArgs(context, args), execOptions);
   if (result.code !== 0) return null;
   return parseJsonOutput<Issue>(result.stdout);
 }
 
 /**
  * GitHub Issue をクローズする。
+ * @param context - 操作対象リポジトリ
  * @param number - Issue番号
+ * @param execOptions - 実行時オプション
  * @returns 成功時true
  */
-export async function closeIssue(number: number, options?: { dryRun?: boolean }): Promise<boolean> {
-  const result = await runGh(["issue", "close", String(number)], options);
+export async function closeIssue(
+  context: IGitHubContext,
+  number: number,
+  execOptions?: RunOptions,
+): Promise<boolean> {
+  const result = await runGh(buildGhArgs(context, ["issue", "close", String(number)]), execOptions);
   return result.code === 0;
+}
+
+/**
+ * 指定されたIssueに子Issueを作成する（GraphQL addSubIssue mutation）。
+ * @param context - 操作対象リポジトリ
+ * @param childPayload - 子Issue作成データ
+ * @param execOptions - 実行時オプション
+ * @returns 子Issue番号とURL、失敗時はnull
+ */
+export async function createChildIssue(
+  context: IGitHubContext,
+  childPayload: CreateChildIssueOptions,
+  execOptions?: RunOptions,
+): Promise<{ number: number; url: string; parentLinked: boolean } | null> {
+  const args = buildGhArgs(context, [
+    "api",
+    "graphql",
+    "-f",
+    `query=mutation AddSubIssue($parentId: ID!, $title: String!, $body: String) {
+      addSubIssue(input: { parentIssueId: $parentId, title: $title, body: $body }) {
+        subIssue { number url }
+      }
+    }`,
+    "-F",
+    `parentId=${childPayload.parentNumber}`,
+    "-f",
+    `title=${childPayload.title}`,
+  ]);
+  if (childPayload.body) {
+    args.push("-f", `body=${childPayload.body}`);
+  }
+  if (childPayload.labels && childPayload.labels.length > 0) {
+    args.push("-f", `labels=${childPayload.labels.join(",")}`);
+  }
+  const result = await runGh(args, execOptions);
+  if (result.code !== 0) return null;
+  const data = parseJsonOutput<{
+    data?: { addSubIssue?: { subIssue?: { number: number; url: string } } };
+  }>(result.stdout);
+  if (!data?.data?.addSubIssue?.subIssue) return null;
+  return {
+    number: data.data.addSubIssue.subIssue.number,
+    url: data.data.addSubIssue.subIssue.url,
+    parentLinked: true,
+  };
+}
+
+/**
+ * Issueにラベルを追加する。
+ * @param context - 操作対象リポジトリ
+ * @param number - Issue番号
+ * @param labels - 追加するラベル一覧
+ * @param execOptions - 実行時オプション
+ * @returns 成功時true
+ */
+export async function addLabels(
+  context: IGitHubContext,
+  number: number,
+  labels: string[],
+  execOptions?: RunOptions,
+): Promise<boolean> {
+  const result = await runGh(
+    buildGhArgs(context, ["issue", "edit", String(number), "--add-label", labels.join(",")]),
+    execOptions,
+  );
+  return result.code === 0;
+}
+
+/**
+ * IssueをProjects V2に追加する。
+ * @param context - 操作対象リポジトリ
+ * @param issueNumber - Issue番号
+ * @param projectId - プロジェクトID
+ * @param execOptions - 実行時オプション
+ * @returns 成功時true
+ */
+export async function addToProject(
+  context: IGitHubContext,
+  issueNumber: number,
+  projectId: string,
+  execOptions?: RunOptions,
+): Promise<boolean> {
+  const args = buildGhArgs(context, [
+    "project",
+    "item-add",
+    "--owner",
+    context.owner,
+    "--repo",
+    context.repository,
+    String(projectId),
+    "--issue",
+    String(issueNumber),
+  ]);
+  const result = await runGh(args, execOptions);
+  return result.code === 0;
+}
+
+/**
+ * Projects V2のフィールド一覧を取得する。
+ * @param context - 操作対象リポジトリ
+ * @param projectId - プロジェクトID
+ * @param execOptions - 実行時オプション
+ * @returns フィールド定義の配列
+ */
+export async function getProjectFields(
+  context: IGitHubContext,
+  projectId: string,
+  execOptions?: RunOptions,
+): Promise<ProjectField[]> {
+  const args = buildGhArgs(context, [
+    "project",
+    "field-list",
+    String(projectId),
+    "--json",
+    "id,name,type,options",
+  ]);
+  const result = await runGh(args, execOptions);
+  if (result.code !== 0) return [];
+  return parseJsonOutput<ProjectField[]>(result.stdout) ?? [];
+}
+
+/**
+ * Projects V2のフィールド値を設定する。
+ * @param context - 操作対象リポジトリ
+ * @param fieldUpdate - フィールド更新内容
+ * @param execOptions - 実行時オプション
+ * @returns 成功時true
+ */
+export async function setProjectField(
+  context: IGitHubContext,
+  fieldUpdate: SetProjectFieldOptions,
+  execOptions?: RunOptions,
+): Promise<boolean> {
+  const args = buildGhArgs(context, [
+    "project",
+    "item-edit",
+    "--item-id",
+    fieldUpdate.itemId,
+    "--field-id",
+    fieldUpdate.fieldId,
+    "--value",
+    fieldUpdate.value,
+  ]);
+  const result = await runGh(args, execOptions);
+  return result.code === 0;
+}
+
+/**
+ * マイルストーンを作成する（GraphQL createMilestone mutation）。
+ * @param context - 操作対象リポジトリ
+ * @param milestoneData - マイルストーン作成データ
+ * @param execOptions - 実行時オプション
+ * @returns マイルストーン番号とURL、失敗時はnull
+ */
+export async function createMilestone(
+  context: IGitHubContext,
+  milestoneData: CreateMilestoneOptions,
+  execOptions?: RunOptions,
+): Promise<{ number: number; url: string } | null> {
+  const args = buildGhArgs(context, [
+    "api",
+    "graphql",
+    "-f",
+    `query=mutation CreateMilestone($repo: String!, $title: String!, $description: String, $dueOn: DateTime) {
+      createMilestone(input: { repositoryId: $repo, title: $title, description: $description, dueOn: $dueOn }) {
+        milestone { number url }
+      }
+    }`,
+    "-F",
+    `title=${milestoneData.title}`,
+  ]);
+  if (milestoneData.description) {
+    args.push("-F", `description=${milestoneData.description}`);
+  }
+  if (milestoneData.dueOn) {
+    args.push("-F", `dueOn=${milestoneData.dueOn}`);
+  }
+  const result = await runGh(args, execOptions);
+  if (result.code !== 0) return null;
+  const data = parseJsonOutput<{
+    data?: { createMilestone?: { milestone?: { number: number; url: string } } };
+  }>(result.stdout);
+  if (!data?.data?.createMilestone?.milestone) return null;
+  return {
+    number: data.data.createMilestone.milestone.number,
+    url: data.data.createMilestone.milestone.url,
+  };
+}
+
+/**
+ * マイルストーン一覧を取得する（GraphQL）。
+ * @param context - 操作対象リポジトリ
+ * @param execOptions - 実行時オプション
+ * @returns マイルストーンの配列
+ */
+export async function listMilestones(
+  context: IGitHubContext,
+  execOptions?: RunOptions,
+): Promise<{ number: number; title: string }[]> {
+  const args = buildGhArgs(context, [
+    "api",
+    "graphql",
+    "-f",
+    `query=query ListMilestones($repo: String!) {
+      repository(name: $repo) { milestones(first: 100) { nodes { number title } } }
+    }`,
+    "-F",
+    `repo=${context.repository}`,
+  ]);
+  const result = await runGh(args, execOptions);
+  if (result.code !== 0) return [];
+  const data = parseJsonOutput<{
+    data?: { repository?: { milestones?: { nodes?: { number: number; title: string }[] } } };
+  }>(result.stdout);
+  return data?.data?.repository?.milestones?.nodes ?? [];
 }
 
 /** GitHub 操作の統一インターフェース */
@@ -217,31 +431,31 @@ export interface IGitHubOperations {
   // === Issue 操作 ===
   createIssue(
     context: IGitHubContext,
-    opts: CreateIssueOptions,
-    options?: RunOptions,
+    payload: CreateIssueOptions,
+    execOptions?: RunOptions,
   ): Promise<{ number: number; url: string } | null>;
   searchIssues(
     context: IGitHubContext,
-    opts?: SearchIssuesOptions,
-    options?: RunOptions,
+    filter?: SearchIssuesOptions,
+    execOptions?: RunOptions,
   ): Promise<Issue[]>;
   updateIssue(
     context: IGitHubContext,
     number: number,
-    opts: UpdateIssueOptions,
-    options?: RunOptions,
+    changes: UpdateIssueOptions,
+    execOptions?: RunOptions,
   ): Promise<Issue | null>;
-  closeIssue(context: IGitHubContext, number: number, options?: RunOptions): Promise<boolean>;
+  closeIssue(context: IGitHubContext, number: number, execOptions?: RunOptions): Promise<boolean>;
   createChildIssue(
     context: IGitHubContext,
-    opts: CreateChildIssueOptions,
-    options?: RunOptions,
+    childPayload: CreateChildIssueOptions,
+    execOptions?: RunOptions,
   ): Promise<{ number: number; url: string; parentLinked: boolean } | null>;
   addLabels(
     context: IGitHubContext,
     number: number,
     labels: string[],
-    options?: RunOptions,
+    execOptions?: RunOptions,
   ): Promise<boolean>;
 
   // === Projects V2 操作 ===
@@ -249,29 +463,164 @@ export interface IGitHubOperations {
     context: IGitHubContext,
     issueNumber: number,
     projectId: string,
-    options?: RunOptions,
+    execOptions?: RunOptions,
   ): Promise<boolean>;
   getProjectFields(
     context: IGitHubContext,
     projectId: string,
-    options?: RunOptions,
+    execOptions?: RunOptions,
   ): Promise<ProjectField[]>;
   setProjectField(
     context: IGitHubContext,
-    opts: SetProjectFieldOptions,
-    options?: RunOptions,
+    fieldUpdate: SetProjectFieldOptions,
+    execOptions?: RunOptions,
   ): Promise<boolean>;
 
   // === Milestone 操作 ===
   createMilestone(
     context: IGitHubContext,
-    opts: CreateMilestoneOptions,
-    options?: RunOptions,
+    milestoneData: CreateMilestoneOptions,
+    execOptions?: RunOptions,
   ): Promise<{ number: number; url: string } | null>;
   listMilestones(
     context: IGitHubContext,
-    options?: RunOptions,
+    execOptions?: RunOptions,
   ): Promise<{ number: number; title: string }[]>;
+}
+
+// === Gateway 実装 ===
+
+/**
+ * IGitHubOperations の具象実装。
+ * 全メソッドの gh 呼び出しに `--repo owner/repository` を自動付与する。
+ * メソッドシグネチャはインターフェースに従い context を受け取るが、
+ * コンストラクタで渡されたコンテキストを優先する。
+ */
+export class GitHubOperations implements IGitHubOperations {
+  constructor(
+    private defaultContext: IGitHubContext,
+    private execOptions?: RunOptions,
+  ) {}
+
+  private resolveContext(context: IGitHubContext): IGitHubContext {
+    return context ?? this.defaultContext;
+  }
+
+  createIssue(
+    context: IGitHubContext,
+    payload: CreateIssueOptions,
+    execOptions?: RunOptions,
+  ): Promise<{ number: number; url: string } | null> {
+    return createIssue(this.resolveContext(context), payload, execOptions ?? this.execOptions);
+  }
+
+  searchIssues(
+    context: IGitHubContext,
+    filter?: SearchIssuesOptions,
+    execOptions?: RunOptions,
+  ): Promise<Issue[]> {
+    return searchIssues(this.resolveContext(context), filter, execOptions ?? this.execOptions);
+  }
+
+  updateIssue(
+    context: IGitHubContext,
+    number: number,
+    changes: UpdateIssueOptions,
+    execOptions?: RunOptions,
+  ): Promise<Issue | null> {
+    return updateIssue(
+      this.resolveContext(context),
+      number,
+      changes,
+      execOptions ?? this.execOptions,
+    );
+  }
+
+  closeIssue(
+    context: IGitHubContext,
+    number: number,
+    execOptions?: RunOptions,
+  ): Promise<boolean> {
+    return closeIssue(this.resolveContext(context), number, execOptions ?? this.execOptions);
+  }
+
+  createChildIssue(
+    context: IGitHubContext,
+    childPayload: CreateChildIssueOptions,
+    execOptions?: RunOptions,
+  ): Promise<{ number: number; url: string; parentLinked: boolean } | null> {
+    return createChildIssue(
+      this.resolveContext(context),
+      childPayload,
+      execOptions ?? this.execOptions,
+    );
+  }
+
+  addLabels(
+    context: IGitHubContext,
+    number: number,
+    labels: string[],
+    execOptions?: RunOptions,
+  ): Promise<boolean> {
+    return addLabels(this.resolveContext(context), number, labels, execOptions ?? this.execOptions);
+  }
+
+  addToProject(
+    context: IGitHubContext,
+    issueNumber: number,
+    projectId: string,
+    execOptions?: RunOptions,
+  ): Promise<boolean> {
+    return addToProject(
+      this.resolveContext(context),
+      issueNumber,
+      projectId,
+      execOptions ?? this.execOptions,
+    );
+  }
+
+  getProjectFields(
+    context: IGitHubContext,
+    projectId: string,
+    execOptions?: RunOptions,
+  ): Promise<ProjectField[]> {
+    return getProjectFields(
+      this.resolveContext(context),
+      projectId,
+      execOptions ?? this.execOptions,
+    );
+  }
+
+  setProjectField(
+    context: IGitHubContext,
+    fieldUpdate: SetProjectFieldOptions,
+    execOptions?: RunOptions,
+  ): Promise<boolean> {
+    return setProjectField(
+      this.resolveContext(context),
+      fieldUpdate,
+      execOptions ?? this.execOptions,
+    );
+  }
+
+  createMilestone(
+    context: IGitHubContext,
+    milestoneData: CreateMilestoneOptions,
+    execOptions?: RunOptions,
+  ): Promise<{ number: number; url: string } | null> {
+    return createMilestone(
+      this.resolveContext(context),
+      milestoneData,
+      execOptions ?? this.execOptions,
+    );
+  }
+
+  listMilestones(
+    context: IGitHubContext,
+    execOptions?: RunOptions,
+  ): Promise<{ number: number; title: string }[]> {
+    return listMilestones(this.resolveContext(context), execOptions ?? this.execOptions);
+  }
 }
 
 // === Domain Model Interfaces ===

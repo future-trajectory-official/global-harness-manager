@@ -1,5 +1,5 @@
 import { parseArgs } from "@std/cli";
-import { createIssue } from "../../../../../core/github.ts";
+import { createIssue, type IGitHubContext } from "../../../../../core/github.ts";
 import { applyLabelPrefix } from "../../../../../core/label-prefix.ts";
 
 interface CliArgs {
@@ -14,6 +14,14 @@ interface StdinInput {
   milestone?: string;
 }
 
+function resolveContext(repo: string | undefined): IGitHubContext {
+  const [owner, repository] = (repo ?? "").split("/");
+  if (!owner || !repository) {
+    throw new Error("--repo owner/repository は必須です");
+  }
+  return { owner, repository };
+}
+
 async function main() {
   const args = parseArgs(Deno.args, {
     string: ["repo", "label-prefix"],
@@ -22,10 +30,11 @@ async function main() {
 
   const input: StdinInput = await readStdin();
   const prefix = args["label-prefix"] ?? "";
+  const context = resolveContext(args.repo);
 
   const labels = applyLabelPrefix(["type:PBI", "status:idea"], prefix);
 
-  const result = await createIssue({
+  const result = await createIssue(context, {
     title: input.title,
     body: input.body,
     labels,
