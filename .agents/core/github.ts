@@ -71,14 +71,6 @@ export interface UpdateIssueOptions {
   state?: "open" | "closed";
 }
 
-/** createChildIssue の引数 */
-export interface CreateChildIssueOptions {
-  title: string;
-  body?: string;
-  labels?: string[];
-  parentNumber: number;
-}
-
 /** Projects V2 のフィールド定義 */
 export interface ProjectField {
   id: string;
@@ -212,48 +204,89 @@ export async function closeIssue(
 }
 
 /**
- * 指定されたIssueに子Issueを作成する（GraphQL addSubIssue mutation）。
+ * 指定されたIssue番号の詳細を取得する。
  * @param context - 操作対象リポジトリ
- * @param childPayload - 子Issue作成データ
+ * @param number - Issue番号
  * @param execOptions - 実行時オプション
- * @returns 子Issue番号とURL、失敗時はnull
+ * @returns Issue情報、存在しない場合はnull
  */
-export async function createChildIssue(
+export async function getIssue(
   context: IGitHubContext,
-  childPayload: CreateChildIssueOptions,
+  number: number,
   execOptions?: RunOptions,
-): Promise<{ number: number; url: string; parentLinked: boolean } | null> {
+): Promise<Issue | null> {
+  const result = await runGh(
+    buildGhArgs(context, [
+      "issue",
+      "view",
+      String(number),
+      "--json",
+      "number,url,title,state,labels,body,milestone",
+    ]),
+    execOptions,
+  );
+  if (result.code !== 0) return null;
+  return parseJsonOutput<Issue>(result.stdout);
+}
+
+/**
+ * 既存のIssueを指定された親Issueの子として関連付ける（GraphQL addSubIssue mutation）。
+ * @param context - 操作対象リポジトリ
+ * @param parentNumber - 親Issue番号
+ * @param childNumber - 子Issue番号
+ * @param execOptions - 実行時オプション
+ * @returns 成功時true
+ */
+export async function attachIssue(
+  context: IGitHubContext,
+  parentNumber: number,
+  childNumber: number,
+  execOptions?: RunOptions,
+): Promise<boolean> {
   const args = buildGhArgs(context, [
     "api",
     "graphql",
     "-f",
-    `query=mutation AddSubIssue($parentId: ID!, $title: String!, $body: String) {
-      addSubIssue(input: { parentIssueId: $parentId, title: $title, body: $body }) {
+    `query=mutation AddSubIssue($parentId: ID!, $subIssueId: ID!) {
+      addSubIssue(input: { parentIssueId: $parentId, subIssueId: $subIssueId }) {
         subIssue { number url }
       }
     }`,
     "-F",
-    `parentId=${childPayload.parentNumber}`,
-    "-f",
-    `title=${childPayload.title}`,
+    `parentId=${parentNumber}`,
+    "-F",
+    `subIssueId=${childNumber}`,
   ]);
-  if (childPayload.body) {
-    args.push("-f", `body=${childPayload.body}`);
-  }
-  if (childPayload.labels && childPayload.labels.length > 0) {
-    args.push("-f", `labels=${childPayload.labels.join(",")}`);
-  }
   const result = await runGh(args, execOptions);
-  if (result.code !== 0) return null;
-  const data = parseJsonOutput<{
-    data?: { addSubIssue?: { subIssue?: { number: number; url: string } } };
-  }>(result.stdout);
-  if (!data?.data?.addSubIssue?.subIssue) return null;
-  return {
-    number: data.data.addSubIssue.subIssue.number,
-    url: data.data.addSubIssue.subIssue.url,
-    parentLinked: true,
-  };
+  return result.code === 0;
+}
+
+/**
+ * 指定されたIssueを親Issueからの子関連付けを解除する（GraphQL removeSubIssue mutation）。
+ * @param context - 操作対象リポジトリ
+ * @param issueNumber - 解除する子Issue番号
+ * @param execOptions - 実行時オプション
+ * @returns 成功時true
+ */
+export async function detachIssue(
+  context: IGitHubContext,
+  issueNumber: number,
+  execOptions?: RunOptions,
+): Promise<boolean> {
+  const args = buildGhArgs(context, [
+    "api",
+    "graphql",
+    "-f",
+    `query=mutation RemoveSubIssue($subIssueId: ID!) {
+      removeSubIssue(input: { subIssueId: $subIssueId }) {
+        subIssue { number url }
+      }
+    }`,
+    "-F",
+    `subIssueId=${issueNumber}`,
+  ]);
+  const result = await runGh(args, execOptions);
+  return result.code === 0;
 }
 
 /**
@@ -446,11 +479,22 @@ export interface IGitHubOperations {
     execOptions?: RunOptions,
   ): Promise<Issue | null>;
   closeIssue(context: IGitHubContext, number: number, execOptions?: RunOptions): Promise<boolean>;
-  createChildIssue(
+  getIssue(
     context: IGitHubContext,
-    childPayload: CreateChildIssueOptions,
+    number: number,
     execOptions?: RunOptions,
-  ): Promise<{ number: number; url: string; parentLinked: boolean } | null>;
+  ): Promise<Issue | null>;
+  attachIssue(
+    context: IGitHubContext,
+    parentNumber: number,
+    childNumber: number,
+    execOptions?: RunOptions,
+  ): Promise<boolean>;
+  detachIssue(
+    context: IGitHubContext,
+    issueNumber: number,
+    execOptions?: RunOptions,
+  ): Promise<boolean>;
   addLabels(
     context: IGitHubContext,
     number: number,
@@ -544,14 +588,36 @@ export class GitHubOperations implements IGitHubOperations {
     return closeIssue(this.resolveContext(context), number, execOptions ?? this.execOptions);
   }
 
-  createChildIssue(
+  getIssue(
     context: IGitHubContext,
-    childPayload: CreateChildIssueOptions,
+    number: number,
     execOptions?: RunOptions,
-  ): Promise<{ number: number; url: string; parentLinked: boolean } | null> {
-    return createChildIssue(
+  ): Promise<Issue | null> {
+    return getIssue(this.resolveContext(context), number, execOptions ?? this.execOptions);
+  }
+
+  attachIssue(
+    context: IGitHubContext,
+    parentNumber: number,
+    childNumber: number,
+    execOptions?: RunOptions,
+  ): Promise<boolean> {
+    return attachIssue(
       this.resolveContext(context),
-      childPayload,
+      parentNumber,
+      childNumber,
+      execOptions ?? this.execOptions,
+    );
+  }
+
+  detachIssue(
+    context: IGitHubContext,
+    issueNumber: number,
+    execOptions?: RunOptions,
+  ): Promise<boolean> {
+    return detachIssue(
+      this.resolveContext(context),
+      issueNumber,
       execOptions ?? this.execOptions,
     );
   }
@@ -639,7 +705,8 @@ export interface DomainIssue {
   removeLabel(label: string): this;
   save(): Promise<this>;
   close(): Promise<this>;
-  createChild(params: CreateChildIssueOptions): Promise<DomainIssue>;
+  attach(child: DomainIssue): Promise<void>;
+  detach(child: DomainIssue): Promise<void>;
 }
 
 /** Project エンティティの Domain Model インターフェース */
