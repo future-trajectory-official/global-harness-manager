@@ -38,8 +38,3 @@ echo '{"labels":["type:WP"],"state":"open","limit":20}' | deno run -A .agents/sk
 ### 2. 実行
 
 - `--dry-run` で事前確認可能
-
-## 詳細リファレンス
-
-- 検索ロジックの詳細は
-  [spike-report-github-pbi-skills.md](/.local/spike-report-github-pbi-skills.md) を参照

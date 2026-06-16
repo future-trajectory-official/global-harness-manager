@@ -41,8 +41,3 @@ echo '{"title":"<sprint-title>","description":"<description>","dueOn":"<YYYY-MM-
 ### 3. 出力の確認
 
 - 成功時: `{ success: true, data: { number, title } }`
-
-## 詳細リファレンス
-
-- スプリント計画フローの詳細は
-  [spike-report-github-pbi-skills.md](/.local/spike-report-github-pbi-skills.md) を参照

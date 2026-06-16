@@ -39,8 +39,3 @@ echo '{"number":<issue-number>,"milestone":"<milestone-name>"}' | deno run -A .a
 
 - `status:idea` ラベルを削除し `status:todo` を追加
 - Issueの状態を強制的に `open` に設定
-
-## 詳細リファレンス
-
-- ステータス遷移設計の詳細は
-  [spike-report-github-pbi-skills.md](/.local/spike-report-github-pbi-skills.md) を参照

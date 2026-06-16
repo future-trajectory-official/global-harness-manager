@@ -42,8 +42,3 @@ echo '{"labels":["type:PBI"],"state":"open","limit":10}' | deno run -A .agents/s
 ### 3. 出力の確認
 
 - 成功時: `{ success: true, data: [{ number, title, state, labels, milestone }, ...] }`
-
-## 詳細リファレンス
-
-- 検索ロジックの詳細は
-  [spike-report-github-pbi-skills.md](/.local/spike-report-github-pbi-skills.md) を参照

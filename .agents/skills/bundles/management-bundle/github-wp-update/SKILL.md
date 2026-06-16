@@ -44,8 +44,3 @@ echo '{"number":<issue-number>,"addLabels":["<label>"],"removeLabels":["<label>"
 
 - `--dry-run` で事前確認可能
 - `--label-prefix` でラベル名にプレフィックスを付与可能
-
-## 詳細リファレンス
-
-- 更新ロジックの詳細は
-  [spike-report-github-pbi-skills.md](/.local/spike-report-github-pbi-skills.md) を参照

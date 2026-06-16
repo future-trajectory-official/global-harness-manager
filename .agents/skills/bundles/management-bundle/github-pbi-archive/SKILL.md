@@ -41,8 +41,3 @@ echo '{"number":<issue-number>}' | deno run -A .agents/skills/bundles/management
 ### 3. 出力の確認
 
 - 成功時: `{ success: true, data: { number, state } }`
-
-## 詳細リファレンス
-
-- アーカイフローの詳細は
-  [spike-report-github-pbi-skills.md](/.local/spike-report-github-pbi-skills.md) を参照

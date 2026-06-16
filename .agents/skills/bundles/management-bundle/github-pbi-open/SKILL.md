@@ -43,8 +43,3 @@ echo '{"title":"<PBI-title>","body":"<description>"}' | deno run -A .agents/skil
 
 - 成功時: `{ success: true, data: { number, title, labels, state } }`
 - 作成されたIssueに `type:PBI` + `status:idea` が付与されていることを確認
-
-## 詳細リファレンス
-
-- ラベル設計の詳細は [spike-report-github-pbi-skills.md](/.local/spike-report-github-pbi-skills.md)
-  を参照

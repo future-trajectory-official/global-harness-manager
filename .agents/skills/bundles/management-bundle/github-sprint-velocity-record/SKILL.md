@@ -42,8 +42,3 @@ echo '{"milestone":"<sprint-title>"}' | deno run -A .agents/skills/bundles/manag
 
 - 成功時:
   `{ success: true, data: { milestone, total, open, closed, completionRate, issues: [...] } }`
-
-## 詳細リファレンス
-
-- ベロシティ記録フローの詳細は
-  [spike-report-github-pbi-skills.md](/.local/spike-report-github-pbi-skills.md) を参照

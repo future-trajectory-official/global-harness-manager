@@ -41,8 +41,3 @@ echo '{"title":"<WP-title>","body":"<description>","parentNumber":<parent-issue-
 
 - 子Issueを作成後、親Issueに自動 `attach()`
 - `--dry-run` 時はattachをスキップ
-
-## 詳細リファレンス
-
-- WP設計の詳細は [spike-report-github-pbi-skills.md](/.local/spike-report-github-pbi-skills.md)
-  を参照
