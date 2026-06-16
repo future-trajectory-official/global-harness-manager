@@ -3,13 +3,13 @@ import { assertEquals } from "@std/assert";
 import {
   addLabels,
   addToProject,
+  attachIssue,
   closeIssue,
-  createChildIssue,
-  CreateChildIssueOptions,
   createIssue,
   CreateIssueOptions,
   createMilestone,
   CreateMilestoneOptions,
+  detachIssue,
   DomainIssue,
   DomainMilestone,
   DomainProject,
@@ -29,6 +29,9 @@ import {
   updateIssue,
   UpdateIssueOptions,
 } from "./github.ts";
+import { Issue as DomainIssueImpl } from "./issue.ts";
+import { Project as DomainProjectImpl } from "./project.ts";
+import { Milestone as DomainMilestoneImpl } from "./milestone.ts";
 
 // === Test Stub for IGitHubOperations ===
 class GitHubOperationsStub implements IGitHubOperations {
@@ -75,16 +78,34 @@ class GitHubOperationsStub implements IGitHubOperations {
   closeIssue(context: IGitHubContext, number: number, execOptions?: RunOptions): Promise<boolean> {
     return Promise.resolve(true);
   }
-  createChildIssue(
+  getIssue(
     context: IGitHubContext,
-    childPayload: CreateChildIssueOptions,
+    number: number,
     execOptions?: RunOptions,
-  ): Promise<{ number: number; url: string; parentLinked: boolean } | null> {
+  ): Promise<Issue | null> {
     return Promise.resolve({
-      number: 2,
-      url: `https://github.com/${context.owner}/${context.repository}/issues/2`,
-      parentLinked: true,
+      number: number,
+      url: `https://github.com/${context.owner}/${context.repository}/issues/${number}`,
+      title: "Found Issue",
+      state: "open",
+      labels: [{ name: "bug" }],
+      body: "",
     });
+  }
+  attachIssue(
+    context: IGitHubContext,
+    parentNumber: number,
+    childNumber: number,
+    execOptions?: RunOptions,
+  ): Promise<boolean> {
+    return Promise.resolve(true);
+  }
+  detachIssue(
+    context: IGitHubContext,
+    issueNumber: number,
+    execOptions?: RunOptions,
+  ): Promise<boolean> {
+    return Promise.resolve(true);
   }
   addLabels(
     context: IGitHubContext,
@@ -181,17 +202,11 @@ class DomainIssueStub implements DomainIssue {
     this.state = "closed";
     return Promise.resolve(this);
   }
-  createChild(params: CreateChildIssueOptions): Promise<DomainIssue> {
-    return Promise.resolve(
-      new DomainIssueStub(
-        this.context,
-        2,
-        params.title,
-        params.body || "",
-        [],
-        "open",
-      ),
-    );
+  attach(child: DomainIssue): Promise<void> {
+    return Promise.resolve();
+  }
+  detach(child: DomainIssue): Promise<void> {
+    return Promise.resolve();
   }
 
   static async create(context: IGitHubContext, params: CreateIssueOptions): Promise<DomainIssue> {
@@ -288,11 +303,23 @@ case "$ALL" in
     done
     echo '{"number":'"$NUM"',"url":"https://github.com/owner/repo/issues/1","title":"Updated","state":"open","labels":[{"name":"bug"}],"body":"","milestone":null}'
     ;;
+  *"issue view"*)
+    echo '{"number":1,"url":"https://github.com/owner/repo/issues/1","title":"Test Issue","state":"open","labels":[{"name":"bug"}],"body":"test body","milestone":{"title":"v1","number":1}}'
+    ;;
   *"issue close"*)
     exit 0
     ;;
-  *"project item-add"*|*"project field-list"*|*"project item-edit"*)
+  *"project item-add"*|*"project item-edit"*)
     exit 0
+    ;;
+  *"project field-list"*)
+    echo '[{"id":"field_1","name":"Status","type":"SINGLE_SELECT","options":[]},{"id":"field_2","name":"Priority","type":"SINGLE_SELECT","options":[]},{"id":"field_3","name":"Size","type":"NUMBER"}]'
+    ;;
+  *"CreateMilestone"*)
+    echo '{"data":{"createMilestone":{"milestone":{"number":1,"url":"https://github.com/owner/repo/milestone/1"}}}}'
+    ;;
+  *"ListMilestones"*)
+    echo '{"data":{"repository":{"milestones":{"nodes":[{"number":1,"title":"Sprint 1"}]}}}}'
     ;;
   *"api graphql"*)
     echo '{}'
@@ -386,14 +413,16 @@ Deno.test("github - IGitHubOperations closeIssue should return true", async () =
   assertEquals(result, true);
 });
 
-Deno.test("github - IGitHubOperations createChildIssue should return child issue", async () => {
+Deno.test("github - IGitHubOperations attachIssue should return true", async () => {
   const operations = new GitHubOperationsStub();
-  const result = await operations.createChildIssue(TEST_CONTEXT, {
-    title: "Child",
-    parentNumber: 1,
-  });
-  assertEquals(result?.number, 2);
-  assertEquals(result?.parentLinked, true);
+  const result = await operations.attachIssue(TEST_CONTEXT, 1, 2);
+  assertEquals(result, true);
+});
+
+Deno.test("github - IGitHubOperations detachIssue should return true", async () => {
+  const operations = new GitHubOperationsStub();
+  const result = await operations.detachIssue(TEST_CONTEXT, 1);
+  assertEquals(result, true);
 });
 
 Deno.test("github - IGitHubOperations addLabels should return true", async () => {
@@ -478,11 +507,16 @@ Deno.test("DomainIssue - close should close issue", async () => {
   assertEquals(result.state, "closed");
 });
 
-Deno.test("DomainIssue - createChild should create child issue", async () => {
-  const issue = new DomainIssueStub(TEST_CONTEXT, 1, "Parent", "", [], "open");
-  const child = await issue.createChild({ title: "Child", parentNumber: 1 });
-  assertEquals(child.number, 2);
-  assertEquals(child.title, "Child");
+Deno.test("DomainIssue - attach should attach child issue", async () => {
+  const parent = new DomainIssueStub(TEST_CONTEXT, 1, "Parent", "", [], "open");
+  const child = new DomainIssueStub(TEST_CONTEXT, 2, "Child", "", [], "open");
+  await parent.attach(child);
+});
+
+Deno.test("DomainIssue - detach should detach child issue", async () => {
+  const parent = new DomainIssueStub(TEST_CONTEXT, 1, "Parent", "", [], "open");
+  const child = new DomainIssueStub(TEST_CONTEXT, 2, "Child", "", [], "open");
+  await parent.detach(child);
 });
 
 Deno.test("DomainProject - find should return project", async () => {
@@ -545,4 +579,105 @@ Deno.test("JSON Schema - IGitHubContext fields do not conflict with harnessrc fi
   const topLevelKeys = Object.keys(schema.properties);
   assertEquals(topLevelKeys.includes("owner"), false);
   assertEquals(topLevelKeys.includes("repository"), false);
+});
+
+// === Real Domain Model Tests ===
+
+Deno.test("DomainIssueImpl - create should return new issue via Gateway", async () => {
+  await withMockGh(async () => {
+    const issue = await DomainIssueImpl.create(TEST_CONTEXT, { title: "Test" });
+    assertEquals(issue.number, 42);
+    assertEquals(issue.title, "Test");
+    assertEquals(issue.state, "open");
+  });
+});
+
+Deno.test("DomainIssueImpl - find should return issue via Gateway", async () => {
+  await withMockGh(async () => {
+    const issue = await DomainIssueImpl.find(TEST_CONTEXT, 1);
+    assertEquals(issue?.number, 1);
+    assertEquals(issue?.title, "Test Issue");
+    assertEquals(issue?.state, "open");
+  });
+});
+
+Deno.test("DomainIssueImpl - find should return null when issue not found", async () => {
+  const issue = await DomainIssueImpl.find(TEST_CONTEXT, 999);
+  assertEquals(issue, null);
+});
+
+Deno.test("DomainIssueImpl - list should return issue array via Gateway", async () => {
+  await withMockGh(async () => {
+    const issues = await DomainIssueImpl.list(TEST_CONTEXT, { state: "open" });
+    assertEquals(issues.length, 1);
+    assertEquals(issues[0].number, 1);
+  });
+});
+
+Deno.test("DomainIssueImpl - addLabel should add label and return this", async () => {
+  const issue = new DomainIssueImpl(TEST_CONTEXT, 1, "Test", "", [], "open");
+  const result = issue.addLabel("bug");
+  assertEquals(result.labels, ["bug"]);
+  assertEquals(result, issue);
+});
+
+Deno.test("DomainIssueImpl - removeLabel should remove label and return this", async () => {
+  const issue = new DomainIssueImpl(TEST_CONTEXT, 1, "Test", "", ["bug", "enhancement"], "open");
+  const result = issue.removeLabel("bug");
+  assertEquals(result.labels, ["enhancement"]);
+  assertEquals(result, issue);
+});
+
+Deno.test("DomainIssueImpl - attach should call Gateway attachIssue", async () => {
+  await withMockGh(async () => {
+    const parent = new DomainIssueImpl(TEST_CONTEXT, 1, "Parent", "", [], "open");
+    const child = new DomainIssueImpl(TEST_CONTEXT, 2, "Child", "", [], "open");
+    await parent.attach(child);
+  });
+});
+
+Deno.test("DomainIssueImpl - detach should call Gateway detachIssue", async () => {
+  await withMockGh(async () => {
+    const parent = new DomainIssueImpl(TEST_CONTEXT, 1, "Parent", "", [], "open");
+    const child = new DomainIssueImpl(TEST_CONTEXT, 2, "Child", "", [], "open");
+    await parent.detach(child);
+  });
+});
+
+Deno.test("DomainProjectImpl - find should return project", async () => {
+  const project = await DomainProjectImpl.find(TEST_CONTEXT, "PVT_xxx");
+  assertEquals(project.id, "PVT_xxx");
+});
+
+Deno.test("DomainProjectImpl - addItem should call Gateway addToProject", async () => {
+  await withMockGh(async () => {
+    const project = new DomainProjectImpl(TEST_CONTEXT, "PVT_xxx");
+    const issue = new DomainIssueImpl(TEST_CONTEXT, 1, "Test", "", [], "open");
+    await project.addItem(issue);
+  });
+});
+
+Deno.test("DomainProjectImpl - getFields should return fields via Gateway", async () => {
+  await withMockGh(async () => {
+    const project = new DomainProjectImpl(TEST_CONTEXT, "PVT_xxx");
+    const fields = await project.getFields();
+    assertEquals(fields.length, 3);
+    assertEquals(fields[0].name, "Status");
+  });
+});
+
+Deno.test("DomainMilestoneImpl - create should return milestone via Gateway", async () => {
+  await withMockGh(async () => {
+    const milestone = await DomainMilestoneImpl.create(TEST_CONTEXT, { title: "Sprint 1" });
+    assertEquals(milestone.number, 1);
+    assertEquals(milestone.title, "Sprint 1");
+  });
+});
+
+Deno.test("DomainMilestoneImpl - list should return milestones via Gateway", async () => {
+  await withMockGh(async () => {
+    const milestones = await DomainMilestoneImpl.list(TEST_CONTEXT);
+    assertEquals(milestones.length, 1);
+    assertEquals(milestones[0].title, "Sprint 1");
+  });
 });
