@@ -5,10 +5,9 @@ import { readJsonFromStdin } from "../../../../../core/io.ts";
 import { applyLabelPrefix } from "../../../../../core/label-prefix.ts";
 
 interface StdinInput {
+  milestone: string;
   labels?: string[];
   state?: "open" | "closed" | "all";
-  milestone?: string;
-  assignee?: string;
   limit?: number;
 }
 
@@ -24,10 +23,9 @@ async function main() {
   const labels = input.labels ? applyLabelPrefix(input.labels, prefix) : undefined;
 
   const issues = await Issue.list(context, {
-    state: input.state ?? "all",
-    labels,
     milestone: input.milestone,
-    assignee: input.assignee,
+    labels,
+    state: input.state ?? "all",
     limit: input.limit,
   }, { dryRun: args["dry-run"] });
 
@@ -38,7 +36,6 @@ async function main() {
       title: i.title,
       state: i.state,
       labels: i.labels,
-      milestone: i.milestone,
     })),
   }));
 }

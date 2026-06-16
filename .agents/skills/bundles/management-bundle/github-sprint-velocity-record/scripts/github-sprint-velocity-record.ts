@@ -2,44 +2,44 @@ import { parseArgs } from "@std/cli";
 import { Issue } from "../../../../../core/issue.ts";
 import { parseContext } from "../../../../../core/github.ts";
 import { readJsonFromStdin } from "../../../../../core/io.ts";
-import { applyLabelPrefix } from "../../../../../core/label-prefix.ts";
 
 interface StdinInput {
-  labels?: string[];
-  state?: "open" | "closed" | "all";
-  milestone?: string;
-  assignee?: string;
-  limit?: number;
+  milestone: string;
 }
 
 async function main() {
   const args = parseArgs(Deno.args, {
-    string: ["repo", "label-prefix"],
+    string: ["repo"],
     boolean: ["dry-run"],
   });
 
   const input = await readJsonFromStdin<StdinInput>();
   const context = parseContext(args.repo);
-  const prefix = args["label-prefix"] ?? "";
-  const labels = input.labels ? applyLabelPrefix(input.labels, prefix) : undefined;
 
   const issues = await Issue.list(context, {
-    state: input.state ?? "all",
-    labels,
     milestone: input.milestone,
-    assignee: input.assignee,
-    limit: input.limit,
+    state: "all",
   }, { dryRun: args["dry-run"] });
+
+  const total = issues.length;
+  const open = issues.filter((i) => i.state === "open").length;
+  const closed = issues.filter((i) => i.state === "closed").length;
 
   console.log(JSON.stringify({
     success: true,
-    data: issues.map((i) => ({
-      number: i.number,
-      title: i.title,
-      state: i.state,
-      labels: i.labels,
-      milestone: i.milestone,
-    })),
+    data: {
+      milestone: input.milestone,
+      total,
+      open,
+      closed,
+      completionRate: total > 0 ? Math.round((closed / total) * 100) : 0,
+      issues: issues.map((i) => ({
+        number: i.number,
+        title: i.title,
+        state: i.state,
+        labels: i.labels,
+      })),
+    },
   }));
 }
 

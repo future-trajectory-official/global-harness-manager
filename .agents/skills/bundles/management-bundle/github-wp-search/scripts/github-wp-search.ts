@@ -8,7 +8,6 @@ interface StdinInput {
   labels?: string[];
   state?: "open" | "closed" | "all";
   milestone?: string;
-  assignee?: string;
   limit?: number;
 }
 
@@ -27,7 +26,6 @@ async function main() {
     state: input.state ?? "all",
     labels,
     milestone: input.milestone,
-    assignee: input.assignee,
     limit: input.limit,
   }, { dryRun: args["dry-run"] });
 

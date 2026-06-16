@@ -6,6 +6,18 @@ export interface IGitHubContext {
   repository: string;
 }
 
+/**
+ * --repo 形式の文字列を IGitHubContext にパースする。
+ * 不正な形式（"/" を含まない等）の場合はエラーを投げる。
+ */
+export function parseContext(repo?: string): IGitHubContext {
+  const [owner, repository] = (repo ?? "").split("/");
+  if (!owner || !repository) {
+    throw new Error("--repo owner/repository は必須です");
+  }
+  return { owner, repository };
+}
+
 let ghCmd = "gh";
 
 /**
