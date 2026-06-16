@@ -1,5 +1,6 @@
 import { parseArgs } from "@std/cli";
-import { type IGitHubContext, updateIssue } from "../../../../../core/github.ts";
+import { type IGitHubContext } from "../../../../../core/github.ts";
+import { Issue } from "../../../../../core/issue.ts";
 import { applyLabelPrefix } from "../../../../../core/label-prefix.ts";
 
 interface CliArgs {
@@ -33,15 +34,20 @@ async function main() {
 
   const [ideaLabel, todoLabel] = applyLabelPrefix(["status:idea", "status:todo"], prefix);
 
-  const result = await updateIssue(context, input.number, {
-    state: "open",
-    milestone: input.milestone,
-    addLabels: [todoLabel],
-    removeLabels: [ideaLabel],
-  }, { dryRun: args["dry-run"] });
+  const issue = await Issue.find(context, input.number, { dryRun: args["dry-run"] });
+  if (!issue) {
+    console.log(JSON.stringify({ success: false, error: `Issue #${input.number} not found` }));
+    return;
+  }
+
+  issue.removeLabel(ideaLabel);
+  issue.addLabel(todoLabel);
+  if (input.milestone) issue.milestone = input.milestone;
+  issue.state = "open";
+  await issue.save();
 
   console.log(
-    JSON.stringify({ success: !!result, data: { number: input.number, status: "committed" } }),
+    JSON.stringify({ success: true, data: { number: input.number, status: "committed" } }),
   );
 }
 

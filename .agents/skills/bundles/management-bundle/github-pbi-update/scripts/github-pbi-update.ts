@@ -1,5 +1,6 @@
 import { parseArgs } from "@std/cli";
-import { type IGitHubContext, updateIssue } from "../../../../../core/github.ts";
+import { type IGitHubContext } from "../../../../../core/github.ts";
+import { Issue } from "../../../../../core/issue.ts";
 import { applyLabelPrefix } from "../../../../../core/label-prefix.ts";
 
 interface CliArgs {
@@ -36,16 +37,36 @@ async function main() {
   const prefix = args["label-prefix"] ?? "";
   const context = resolveContext(args.repo);
 
-  const result = await updateIssue(context, input.number, {
-    title: input.title,
-    body: input.body,
-    addLabels: input.addLabels ? applyLabelPrefix(input.addLabels, prefix) : undefined,
-    removeLabels: input.removeLabels ? applyLabelPrefix(input.removeLabels, prefix) : undefined,
-    milestone: input.milestone,
-    state: input.state,
-  }, { dryRun: args["dry-run"] });
+  const issue = await Issue.find(context, input.number, { dryRun: args["dry-run"] });
+  if (!issue) {
+    console.log(JSON.stringify({ success: false, error: `Issue #${input.number} not found` }));
+    return;
+  }
 
-  console.log(JSON.stringify({ success: !!result, data: result }));
+  if (input.title !== undefined) issue.title = input.title;
+  if (input.body !== undefined) issue.body = input.body;
+  if (input.milestone !== undefined) issue.milestone = input.milestone;
+  if (input.state !== undefined) issue.state = input.state;
+
+  if (input.addLabels) {
+    const prefixed = applyLabelPrefix(input.addLabels, prefix);
+    for (const label of prefixed) {
+      issue.addLabel(label);
+    }
+  }
+  if (input.removeLabels) {
+    const prefixed = applyLabelPrefix(input.removeLabels, prefix);
+    for (const label of prefixed) {
+      issue.removeLabel(label);
+    }
+  }
+
+  await issue.save();
+
+  console.log(JSON.stringify({
+    success: true,
+    data: { number: issue.number, title: issue.title, state: issue.state, labels: issue.labels },
+  }));
 }
 
 async function readStdin(): Promise<StdinInput> {

@@ -1,5 +1,6 @@
 import { parseArgs } from "@std/cli";
-import { type IGitHubContext, searchIssues } from "../../../../../core/github.ts";
+import { type IGitHubContext } from "../../../../../core/github.ts";
+import { Issue } from "../../../../../core/issue.ts";
 import { applyLabelPrefix } from "../../../../../core/label-prefix.ts";
 
 interface CliArgs {
@@ -36,7 +37,7 @@ async function main() {
 
   const labels = input.labels ? applyLabelPrefix(input.labels, prefix) : undefined;
 
-  const issues = await searchIssues(context, {
+  const issues = await Issue.list(context, {
     state: input.state ?? "all",
     labels,
     milestone: input.milestone,
@@ -44,7 +45,16 @@ async function main() {
     limit: input.limit,
   }, { dryRun: args["dry-run"] });
 
-  console.log(JSON.stringify({ success: true, data: issues }));
+  console.log(JSON.stringify({
+    success: true,
+    data: issues.map((i) => ({
+      number: i.number,
+      title: i.title,
+      state: i.state,
+      labels: i.labels,
+      milestone: i.milestone,
+    })),
+  }));
 }
 
 async function readStdin(): Promise<StdinInput> {

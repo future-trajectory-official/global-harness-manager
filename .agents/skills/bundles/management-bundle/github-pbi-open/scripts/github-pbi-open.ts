@@ -1,5 +1,6 @@
 import { parseArgs } from "@std/cli";
-import { createIssue, type IGitHubContext } from "../../../../../core/github.ts";
+import { type IGitHubContext } from "../../../../../core/github.ts";
+import { Issue } from "../../../../../core/issue.ts";
 import { applyLabelPrefix } from "../../../../../core/label-prefix.ts";
 
 interface CliArgs {
@@ -34,14 +35,17 @@ async function main() {
 
   const labels = applyLabelPrefix(["type:PBI", "status:idea"], prefix);
 
-  const result = await createIssue(context, {
+  const issue = await Issue.create(context, {
     title: input.title,
     body: input.body,
     labels,
     milestone: input.milestone,
   }, { dryRun: args["dry-run"] });
 
-  console.log(JSON.stringify({ success: !!result, data: result }));
+  console.log(JSON.stringify({
+    success: true,
+    data: { number: issue.number, title: issue.title, labels: issue.labels, state: issue.state },
+  }));
 }
 
 async function readStdin(): Promise<StdinInput> {
