@@ -96,27 +96,33 @@ GitHub Projects V2 で使用するカスタムフィールド名のマッピン�
   "size": "harness-size",
   "status": "harness-status",
   "sequence": "harness-sequence",
-  "effort": "harness-effort"
+  "effortInitial": "harness-effort-initial",
+  "effortPlaned": "harness-effort-planed",
+  "effortActual": "harness-effort-actual"
 }
 ```
 
-| プロパティ | 型     | 必須 | 説明                                                      |
-| ---------- | ------ | ---- | --------------------------------------------------------- |
-| `type`     | string | ✅   | PBI種別フィールド名。デフォルト: `"harness-type"`         |
-| `size`     | string | ✅   | PBIサイズフィールド名。デフォルト: `"harness-size"`       |
-| `status`   | string | ✅   | PBIステータスフィールド名。デフォルト: `"harness-status"` |
-| `sequence` | string | ✅   | 優先順序フィールド名。デフォルト: `"harness-sequence"`    |
-| `effort`   | string | ✅   | WP介入回数フィールド名。デフォルト: `"harness-effort"`    |
+| プロパティ      | 型     | 必須 | 説明                                                                   |
+| --------------- | ------ | ---- | ---------------------------------------------------------------------- |
+| `type`          | string | ✅   | PBI種別フィールド名。デフォルト: `"harness-type"`                      |
+| `size`          | string | ✅   | PBIサイズフィールド名。デフォルト: `"harness-size"`                    |
+| `status`        | string | ✅   | PBIステータスフィールド名。デフォルト: `"harness-status"`              |
+| `sequence`      | string | ✅   | 優先順序フィールド名。デフォルト: `"harness-sequence"`                 |
+| `effortInitial` | string | ✅   | 計画前見積（initial estimate）フィールド名。`"harness-effort-initial"` |
+| `effortPlaned`  | string | ✅   | 計画後見積（planned estimate）フィールド名。`"harness-effort-planed"`  |
+| `effortActual`  | string | ✅   | 完了時実績（actual effort）フィールド名。`"harness-effort-actual"`     |
 
 ### 各フィールドの値と意味
 
-| フィールド         | GitHub上の型  | 設定値の例                                             |
-| ------------------ | ------------- | ------------------------------------------------------ |
-| `harness-type`     | SINGLE_SELECT | `Epic`, `Feature`, `PBI`, `WP`, `Review`, `Reflection` |
-| `harness-size`     | SINGLE_SELECT | `XS`, `S`, `M`, `L`, `XL`                              |
-| `harness-status`   | SINGLE_SELECT | `IDEA`, `TODO`, `WIP`, `DONE`                          |
-| `harness-sequence` | NUMBER        | `1.0`, `2.0`, `3.0` （Weightはsizeから導出）           |
-| `harness-effort`   | NUMBER        | `1`, `2`, `3` （WP専用、人間の介入回数）               |
+| フィールド               | GitHub上の型  | 設定値の例                                             |
+| ------------------------ | ------------- | ------------------------------------------------------ |
+| `harness-type`           | SINGLE_SELECT | `Epic`, `Feature`, `PBI`, `WP`, `Review`, `Reflection` |
+| `harness-size`           | SINGLE_SELECT | `XS`, `S`, `M`, `L`, `XL`                              |
+| `harness-status`         | SINGLE_SELECT | `IDEA`, `TODO`, `WIP`, `DONE`                          |
+| `harness-sequence`       | NUMBER        | `1.0`, `2.0`, `3.0` （Weightはsizeから導出）           |
+| `harness-effort-initial` | NUMBER        | `3` （計画前見積の合計介入回数）                       |
+| `harness-effort-planed`  | NUMBER        | `2` （計画後見積の合計介入回数）                       |
+| `harness-effort-actual`  | NUMBER        | `1` （完了時実績の合計介入回数）                       |
 
 ---
 
