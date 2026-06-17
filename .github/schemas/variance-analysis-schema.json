@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/future-trajectory-official/global-harness-manager/.github/schemas/variance-analysis-schema.json",
+  "title": "WP Variance Analysis",
+  "description": "Schema for WP-level effort variance analysis data stored as GitHub Issue comments. Records 3-point estimation (initial/planed/actual) and 2-axis variance (planning phase vs execution phase).",
+  "type": "object",
+  "required": [
+    "schema",
+    "wpName",
+    "effortInitial",
+    "status",
+    "recordedAt"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "description": "Schema version identifier for forward compatibility.",
+      "enum": ["variance-analysis/v1"]
+    },
+    "wpName": {
+      "type": "string",
+      "description": "Work Package name as defined in the backlog (e.g. 'WP_2: Interactive移行スクリプト作成').",
+      "examples": ["WP_2: Interactive移行スクリプト作成"]
+    },
+    "effortInitial": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Pre-plan estimate: initial intervention count estimated at WP creation or selection time."
+    },
+    "effortPlaned": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Post-plan estimate: revised intervention count after PO alignment during session-planning. Null if not yet planned."
+    },
+    "effortActual": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Actual intervention count recorded at session end via record-session-metrics. Null if not yet completed."
+    },
+    "varianceInitialToPlaned": {
+      "type": ["integer", "null"],
+      "description": "Planning-phase variance: effortPlaned - effortInitial. ≥ 0 in practice (planed < initial is virtually impossible). > 0 indicates ambiguous requirements/ACs."
+    },
+    "variancePlanedToActual": {
+      "type": ["integer", "null"],
+      "description": "Execution-phase variance: effortActual - effortPlaned. Positive = implementation harder than planned; negative = smoother than expected."
+    },
+    "varianceTotal": {
+      "type": ["integer", "null"],
+      "description": "Total variance: effortActual - effortInitial. Overall deviation from initial estimate."
+    },
+    "varianceReason": {
+      "type": ["string", "null"],
+      "description": "Qualitative explanation of the root cause of variance. Follows metrics-guide.md effort_variance_reason convention.",
+      "examples": ["設計見直しによりスコープ拡大。当初想定より複雑なエッジケース対応が必要だった"]
+    },
+    "status": {
+      "type": "string",
+      "description": "WP completion status at time of recording.",
+      "enum": ["pending", "done"]
+    },
+    "recordedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of when this variance data was recorded."
+    }
+  },
+  "additionalProperties": false
+}
