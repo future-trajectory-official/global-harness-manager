@@ -81,26 +81,29 @@ GUARD:NOTE この GUARD ブロックはテンプレートの不変契約を宣�
 
 ### Phase 1: 準備（環境隔離・ブランチ準備）
 
-- [ ] **develop-environment-setup**（サンドボックス構築）
+- [ ] **[skill:develop-environment-setup]**（サンドボックス構築）
   - [ ] 必要なツールチェーンや実行環境が正しく構成されているか確認。
-- [ ] **initialize-branch**（作業ブランチ作成）
+- [ ] **[skill:initialize-branch]**（作業ブランチ作成）
   - [ ] 作業ブランチの作成と、ブランチ作成目的をPOに説明。
 
 ### Phase 2: Foreach (AC[].count) ACベースの開発
 
-- [ ] **ac-checkpoint-implementation (AC-1)**: [AC-1の内容]
-- [ ] **ac-checkpoint-implementation (AC-2)**: [AC-2の内容]
-- [ ] ...（AC数に応じて展開）
-- [ ] **hybrid-triage-commit (wip)**: 各AC完了後にWIP保存
+ACごとに「実装→WIP保存」を1セットとして逐次実行する：
+
+- [ ] **[skill:ac-checkpoint-implementation] (AC-1)**: [AC-1の内容]
+- [ ] **[skill:hybrid-triage-commit] (wip)**: AC-1完了をWIP保存
+- [ ] **[skill:ac-checkpoint-implementation] (AC-2)**: [AC-2の内容]
+- [ ] **[skill:hybrid-triage-commit] (wip)**: AC-2完了をWIP保存
+- [ ] ...（以降、AC数に応じて展開）
 
 ### Phase 3: リファクタリングと品質検証
 
-- [ ] **refactoring-loop**: コードの内部構造を改善
-- [ ] **quality-verification**: `deno task qa` 完全版品質検証
-- [ ] **hybrid-triage-commit (triage)**: WIPコミットの解体とアトミックコミット再構築
+- [ ] **[skill:refactoring-loop]**: コードの内部構造を改善
+- [ ] **[skill:quality-verification]**: `deno task qa` 完全版品質検証
+- [ ] **[skill:hybrid-triage-commit] (triage)**: WIPコミットの解体とアトミックコミット再構築
 
 ### Phase 4: 公開（push・PR作成・マージ）
 
 - [ ] **git push**: アトミックコミットをリモートへ反映
-- [ ] **create-pull-request**: Conventional Commits形式のPR作成
-- [ ] **merge-branch**: PO承認後のマージとクリーンアップ
+- [ ] **[skill:create-pull-request]**: Conventional Commits形式のPR作成
+- [ ] **[skill:merge-branch]**: PO承認後のマージとクリーンアップ
