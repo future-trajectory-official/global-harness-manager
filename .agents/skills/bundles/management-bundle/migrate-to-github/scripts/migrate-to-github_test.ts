@@ -89,8 +89,10 @@ Deno.test("migrate-to-github --migrate --dry-run should show migration plan", as
 
     assertEquals(code, 0);
     assertStringIncludes(output, "[DRY-RUN] Would create PBI Issue:");
-    assertStringIncludes(output, "Title: [TestEpic/TestFeature]/Active-PBI");
-    assertStringIncludes(output, "Labels: type:PBI, status:wip");
+    assertStringIncludes(output, "Epic: TestEpic");
+    assertStringIncludes(output, "Feature: TestFeature");
+    assertStringIncludes(output, "Title: Active-PBI");
+    assertStringIncludes(output, "Labels: type:PBI, status:WIP");
     assertStringIncludes(output, "child WP Issue(s):");
     assertStringIncludes(output, "WP_1: タスクA");
     assertStringIncludes(output, "AC1: タスクAの条件1");
@@ -123,7 +125,7 @@ Deno.test("migrate-to-github --migrate --dry-run should mark DONE PBI as closed"
     const output = new TextDecoder().decode(stdout);
 
     assertEquals(code, 0);
-    assertStringIncludes(output, "Labels: type:PBI, status:done");
+    assertStringIncludes(output, "Labels: type:PBI, status:DONE");
     assertStringIncludes(output, "WP_1: タスクB");
     assertStringIncludes(output, "AC1: 完了条件");
   } finally {
@@ -225,7 +227,9 @@ Deno.test("migrate-to-github --stdin should accept JSON from stdin", async () =>
 
     assertEquals(code, 0);
     assertStringIncludes(output, "[DRY-RUN] Would create PBI Issue:");
-    assertStringIncludes(output, "[TestEpic/TestFeature]/Active-PBI");
+    assertStringIncludes(output, "Epic: TestEpic");
+    assertStringIncludes(output, "Feature: TestFeature");
+    assertStringIncludes(output, "Title: Active-PBI");
   } finally {
     await Deno.remove(tmpFile);
   }

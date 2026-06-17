@@ -1,6 +1,7 @@
 import { parseArgs } from "@std/cli/parse-args";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { Issue } from "../../../../../core/issue.ts";
+import { createMilestone, listMilestones } from "../../../../../core/github.ts";
 import type { IGitHubContext } from "../../../../../core/github.ts";
 
 const PROJECT_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "../../../../../..");
@@ -41,6 +42,15 @@ const DEFAULT_HARNESSRC_PATH = join(PROJECT_ROOT, ".harnessrc");
 const FALLBACK_HARNESSRC_PATH = join(PROJECT_ROOT, ".github/schemas/harnessrc.example");
 const DEFAULT_BACKLOG_PATH = join(PROJECT_ROOT, ".agents/management/product-backlog.md");
 
+function extractFieldValue(body: string, fieldName: string): string {
+  const regex = new RegExp(
+    `^- \\*\\*${fieldName}\\*\\*:\\s*([\\s\\S]*?)(?=\\n- \\*\\*|\\n####|\\n###)`,
+  );
+  const match = body.match(regex);
+  if (!match) return "";
+  return match[1].replace(/\n\s{2,}/g, " ").trim();
+}
+
 function parseBacklog(content: string): PbiRecord[] {
   const pbiBlocks: PbiRecord[] = [];
   const pbiRegex =
@@ -52,13 +62,13 @@ function parseBacklog(content: string): PbiRecord[] {
     const pbiId = match[2];
     const body = match[3];
 
-    const titleMatch = body.match(/^- \*\*概要\*\*:\s*(.+)$/m);
-    const sizeMatch = body.match(/^- \*\*見積サイズ\*\*:\s*(\S+)$/m);
-    const proofMatch = body.match(/^- \*\*証明方法\*\*:\s*(.+)$/m);
+    const description = extractFieldValue(body, "概要");
+    const sizeMatch = body.match(/^- \*\*見積サイズ\*\*:\s*(\S+)/m);
+    const proofMethod = extractFieldValue(body, "証明方法");
 
     const wpList: WorkPackage[] = [];
     const wpRegex =
-      /####\s+(WP_[\w]+)\s*:\s*(.+)\n([\s\S]*?)(?=\n####\s+WP_|\n###\s+\[(?:TODO|WIP|DONE)\]|\n##(?!#)|$)/g;
+      /####\s+(WP_[\w']+)\s*:\s*(.+)\n([\s\S]*?)(?=\n####\s+WP_|\n###\s+\[(?:TODO|WIP|DONE)\]|\n##(?!#)|$)/g;
     let wpMatch: RegExpExecArray | null;
 
     while ((wpMatch = wpRegex.exec(body)) !== null) {
@@ -69,10 +79,11 @@ function parseBacklog(content: string): PbiRecord[] {
       const effort = effortMatch ? parseInt(effortMatch[1], 10) : 0;
 
       const acList: string[] = [];
-      const acRegex = /-\s+\[\s*.\s*\]\s+(.+)$/gm;
+      const acRegex =
+        /-\s+\[\s*.\s*\]\s+([\s\S]*?)(?=\n\s*-\s+\[\s*[ x]|\n\s*####|\n\s*###|\n\s*- \*\*|$)/g;
       let acMatch: RegExpExecArray | null;
       while ((acMatch = acRegex.exec(wpBody)) !== null) {
-        acList.push(acMatch[1].trim());
+        acList.push(acMatch[1].replace(/\n\s{6,}/g, " ").trim());
       }
 
       const allDone = !wpBody.match(/-\s+\[\s*]\s+/);
@@ -87,10 +98,10 @@ function parseBacklog(content: string): PbiRecord[] {
     pbiBlocks.push({
       id: pbiId,
       status,
-      title: titleMatch ? titleMatch[1].trim() : "",
+      title: description,
       size: sizeMatch ? sizeMatch[1].trim() : "",
-      description: titleMatch ? titleMatch[1].trim() : "",
-      proofMethod: proofMatch ? proofMatch[1].trim() : "",
+      description,
+      proofMethod,
       wpList,
     });
   }
@@ -101,23 +112,9 @@ function parseBacklog(content: string): PbiRecord[] {
 function buildIssueBody(pbi: PbiRecord): string {
   const lines: string[] = [];
   lines.push(`## 概要\n${pbi.description}`);
-  lines.push(`\n## 見積サイズ\n${pbi.size}`);
   if (pbi.proofMethod) {
     lines.push(`\n## 証明方法\n${pbi.proofMethod}`);
   }
-
-  if (pbi.wpList.length > 0) {
-    lines.push(`\n## Work Packages`);
-    for (const wp of pbi.wpList) {
-      const statusMark = wp.status === "done" ? "x" : " ";
-      lines.push(`\n### ${wp.name}`);
-      lines.push(`- Effort: ${wp.effort}回`);
-      for (const ac of wp.acList) {
-        lines.push(`- [${statusMark}] ${ac}`);
-      }
-    }
-  }
-
   return lines.join("\n");
 }
 
@@ -135,10 +132,72 @@ function buildWpIssueBody(wp: WorkPackage): string {
 }
 
 const PBI_LABELS: Record<PbiRecord["status"], string> = {
-  TODO: "status:todo",
-  WIP: "status:wip",
-  DONE: "status:done",
+  TODO: "status:TODO",
+  WIP: "status:WIP",
+  DONE: "status:DONE",
 };
+
+function parsePbiId(id: string): { epic?: string; feature?: string; name: string } {
+  const match = id.match(/^\[([^\/]+)(?:\/([^\]]+))?\]\/(.+)$/);
+  if (match) {
+    return { epic: match[1], feature: match[2], name: match[3] };
+  }
+  return { name: id };
+}
+
+async function findOrCreateEpic(context: IGitHubContext, epicId: string): Promise<Issue> {
+  const existing = await Issue.list(context, { labels: ["type:Epic"], state: "all" });
+  const found = existing.find((i) => i.title === epicId);
+  if (found) return found;
+  const epic = await Issue.create(context, {
+    title: epicId,
+    body: `## Epic\n${epicId}`,
+    labels: ["type:Epic"],
+  });
+  console.log(`  Created Epic Issue #${epic.number}: ${epicId}`);
+  return epic;
+}
+
+async function findOrCreateFeature(
+  context: IGitHubContext,
+  epicId: string,
+  featureId: string,
+  epicIssue: Issue,
+): Promise<Issue> {
+  const existing = await Issue.list(context, { labels: ["type:Feature"], state: "all" });
+  const found = existing.find((i) => i.title === featureId);
+  if (found) return found;
+  const feature = await Issue.create(context, {
+    title: featureId,
+    body: `## Feature\n${featureId}\n\nPart of Epic: ${epicId}`,
+    labels: ["type:Feature"],
+  });
+  await epicIssue.attach(feature);
+  console.log(`  Created Feature Issue #${feature.number}: ${featureId}`);
+  return feature;
+}
+
+function extractSprint(content: string, pbiId: string): string | undefined {
+  const pbiIndex = content.indexOf(pbiId);
+  if (pbiIndex === -1) return undefined;
+  const beforePbi = content.slice(0, pbiIndex);
+  const sprintMatch = beforePbi.match(/##\s+Sprint\s+(\d+)\s*$/m);
+  return sprintMatch ? `Sprint ${sprintMatch[1]}` : undefined;
+}
+
+async function ensureMilestone(
+  context: IGitHubContext,
+  sprintName: string,
+): Promise<string | undefined> {
+  const existing = await listMilestones(context);
+  if (existing.some((m) => m.title === sprintName)) return sprintName;
+  const created = await createMilestone(context, { title: sprintName });
+  if (created) {
+    console.log(`  Created Milestone: ${sprintName}`);
+    return sprintName;
+  }
+  return undefined;
+}
 
 async function loadConfig(harnessrcPath?: string): Promise<HarnessConfig | null> {
   const paths = harnessrcPath ? [harnessrcPath] : [DEFAULT_HARNESSRC_PATH, FALLBACK_HARNESSRC_PATH];
@@ -192,12 +251,30 @@ async function cmdMigrate(
   const [owner, repoName] = repo.split("/");
   const context: IGitHubContext = { owner, repository: repoName };
 
+  const parsed = parsePbiId(pbi.id);
+
+  const sprint = extractSprint(content, pbi.id);
+  const milestone = sprint ? await ensureMilestone(context, sprint) : undefined;
+
   const parentLabels = ["type:PBI", PBI_LABELS[pbi.status]];
+  if (pbi.size) {
+    const sizeLabel = `size:${pbi.size.toUpperCase()}`;
+    if (!parentLabels.includes(sizeLabel)) {
+      parentLabels.push(sizeLabel);
+    }
+  }
   const parentBody = buildIssueBody(pbi);
 
   if (dryRun) {
     console.log(`[DRY-RUN] Would create PBI Issue:`);
-    console.log(`  Title: ${pbi.id}`);
+    if (parsed.epic) {
+      console.log(`  Epic: ${parsed.epic}`);
+      if (parsed.feature) {
+        console.log(`  Feature: ${parsed.feature}`);
+      }
+    }
+    console.log(`  Title: ${parsed.name}`);
+    console.log(`  Milestone: ${milestone ?? "(none)"}`);
     console.log(`  Labels: ${parentLabels.join(", ")}`);
     console.log(`  Body:\n${parentBody}`);
     if (pbi.wpList.length > 0) {
@@ -210,11 +287,27 @@ async function cmdMigrate(
     return;
   }
 
-  const parentIssue = await Issue.create(context, {
-    title: pbi.id,
+  const issueParams = {
+    title: parsed.name,
     body: parentBody,
     labels: parentLabels,
-  });
+    milestone,
+  } as const;
+
+  let parentIssue: Issue;
+
+  if (parsed.epic) {
+    const epicIssue = await findOrCreateEpic(context, parsed.epic);
+    let featureIssue: Issue | undefined;
+    if (parsed.feature) {
+      featureIssue = await findOrCreateFeature(context, parsed.epic, parsed.feature, epicIssue);
+    }
+    parentIssue = await Issue.create(context, issueParams);
+    const attachTarget = featureIssue ?? epicIssue;
+    await attachTarget.attach(parentIssue);
+  } else {
+    parentIssue = await Issue.create(context, issueParams);
+  }
 
   if (pbi.status === "DONE") {
     await parentIssue.close();
@@ -224,7 +317,7 @@ async function cmdMigrate(
   }
 
   for (const wp of pbi.wpList) {
-    const wpTitle = `${pbi.id} / ${wp.name}`;
+    const wpTitle = wp.name;
     const wpBody = buildWpIssueBody(wp);
     const wpLabels = ["type:WP"];
 
