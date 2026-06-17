@@ -3,6 +3,45 @@
 本ドキュメントは `migrate-to-github` スキルの詳細手順を定義します。 Quick-Startからは Step 1〜3
 の手順が参照されます。
 
+---
+
+## 移行の全体像
+
+本PBI（Parallel-Run-and-Migration）では、ローカルMarkdown管理からGitHub
+Issues/Projects単体運用への移行を以下のフェーズで進めます。
+
+### 移行フェーズ一覧
+
+| Phase        | WP   | 内容                             | 状態      |
+| ------------ | ---- | -------------------------------- | --------- |
+| 設計         | WP_0 | 移行設計・運用フローの検討       | ✅ 完了   |
+| ツール       | WP_2 | Interactive移行スクリプト作成    | ✅ 完了   |
+| ドキュメント | WP_1 | 運用手順書・移行ガイド作成       | 🔄 進行中 |
+| 検証         | WP_3 | 移行データ検証                   | ⬜ 未着手 |
+| 完了         | WP_4 | 完全移行（ローカルファイル削除） | ⬜ 未着手 |
+
+### セッション系・スプリント系の移行の流れ
+
+| ワークフロー     | 移行前（ローカル）                                                    | 移行後（GitHub）                      |
+| ---------------- | --------------------------------------------------------------------- | ------------------------------------- |
+| `/sprint-start`  | [`product-backlog.md`](/.agents/management/product-backlog.md) の編集 | Milestone作成 + PBI Issue 作成/紐付け |
+| `/session-start` | task.md + implementation_plan.md の作成                               | PBI Issue の AC 更新 + WP子Issue操作  |
+| `/session-end`   | task.md の完了報告                                                    | GitHub Issue の Status 更新           |
+| `/sprint-end`    | product-backlog-archive.md への移動                                   | PBI Issue Close + Project V2 更新     |
+
+### 並行運用時の判断基準
+
+移行完了までは、**ローカルMarkdown管理を主（Source of
+Truth）**、GitHubのIssue/Projectを従として運用します。
+
+1. **新規PBIの作成**: まず [`product-backlog.md`](/.agents/management/product-backlog.md)
+   に追記し、その後に `migrate-to-github` スキルでGitHubへ移行する。
+2. **既存PBIの更新**: ローカルの [`product-backlog.md`](/.agents/management/product-backlog.md)
+   を編集し、必要に応じてGitHubのIssueを更新する。
+3. **移行順序**: WP_1（本ドキュメント）→ WP_3（検証）→ WP_4（完全移行）の順で進行する。
+
+---
+
 ## Step 1: 移行対象の全PBIを一覧表示する
 
 以下のコマンドで全PBIをJSON形式で取得する。
