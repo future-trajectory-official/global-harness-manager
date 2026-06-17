@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assertEquals, assertExists, assertStringIncludes } from "@std/assert";
 import { dirname, fromFileUrl, join, resolve } from "@std/path";
 
 const PROJECT_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "../../../../../..");
@@ -64,7 +64,7 @@ Deno.test("migrate-to-github --list --dry-run should parse backlog and list PBIs
   }
 });
 
-Deno.test("migrate-to-github --migrate --dry-run should show migration plan", async () => {
+Deno.test("migrate-to-github --migrate --dry-run should show migration plan with variance", async () => {
   const tmpFile = await Deno.makeTempFile({ suffix: ".md" });
   try {
     await Deno.writeTextFile(tmpFile, mockBacklog);
@@ -95,13 +95,15 @@ Deno.test("migrate-to-github --migrate --dry-run should show migration plan", as
     assertStringIncludes(output, "Labels: type:PBI, status:WIP");
     assertStringIncludes(output, "child WP Issue(s):");
     assertStringIncludes(output, "WP_1: タスクA");
+    assertStringIncludes(output, "Effort: initial=2");
+    assertStringIncludes(output, "Variance: init→planed");
     assertStringIncludes(output, "AC1: タスクAの条件1");
   } finally {
     await Deno.remove(tmpFile);
   }
 });
 
-Deno.test("migrate-to-github --migrate --dry-run should mark DONE PBI as closed", async () => {
+Deno.test("migrate-to-github --migrate --dry-run should show variance for DONE WP", async () => {
   const tmpFile = await Deno.makeTempFile({ suffix: ".md" });
   try {
     await Deno.writeTextFile(tmpFile, mockBacklog);
@@ -127,6 +129,9 @@ Deno.test("migrate-to-github --migrate --dry-run should mark DONE PBI as closed"
     assertEquals(code, 0);
     assertStringIncludes(output, "Labels: type:PBI, status:DONE");
     assertStringIncludes(output, "WP_1: タスクB");
+    assertStringIncludes(output, "(done)");
+    assertStringIncludes(output, "Effort: initial=1");
+    assertStringIncludes(output, "Variance: init→planed");
     assertStringIncludes(output, "AC1: 完了条件");
   } finally {
     await Deno.remove(tmpFile);
@@ -233,6 +238,27 @@ Deno.test("migrate-to-github --stdin should accept JSON from stdin", async () =>
   } finally {
     await Deno.remove(tmpFile);
   }
+});
+
+Deno.test("variance-analysis-schema.json should be valid JSON and contain required fields", async () => {
+  const schemaPath = join(PROJECT_ROOT, ".github/schemas/variance-analysis-schema.json");
+  const content = await Deno.readTextFile(schemaPath);
+  const schema = JSON.parse(content);
+
+  assertExists(schema.$schema);
+  assertEquals(schema.title, "WP Variance Analysis");
+  assertExists(schema.properties.schema);
+  assertEquals(schema.properties.schema.enum[0], "variance-analysis/v1");
+  assertExists(schema.properties.wpName);
+  assertExists(schema.properties.effortInitial);
+  assertExists(schema.properties.effortPlaned);
+  assertExists(schema.properties.effortActual);
+  assertExists(schema.properties.varianceInitialToPlaned);
+  assertExists(schema.properties.variancePlanedToActual);
+  assertExists(schema.properties.varianceTotal);
+  assertExists(schema.properties.varianceReason);
+  assertExists(schema.properties.status);
+  assertExists(schema.properties.recordedAt);
 });
 
 Deno.test("migrate-to-github without args should show help", async () => {
