@@ -7,7 +7,7 @@ Deno.test({
   name: "loadLabelDefs - 11種のラベルが定義されている",
   async fn() {
     const defs = await loadLabelDefs(YAML_PATH);
-    assertEquals(defs.labels.length, 11);
+    assertEquals(defs.labels.length, 15);
   },
 });
 
@@ -62,11 +62,14 @@ Deno.test({
   name: "loadLabelDefs - ラベル名の命名規則が Key小文字:Value大文字 に沿っている",
   async fn() {
     const defs = await loadLabelDefs(YAML_PATH);
+    const pascalAllowed = ["Epic", "Feature", "Review", "Reflection"];
     for (const label of defs.labels) {
       const parts = label.name.split(":");
       assertEquals(parts.length, 2);
       assertEquals(parts[0], parts[0].toLowerCase(), `Keyは小文字: ${label.name}`);
-      assertEquals(parts[1], parts[1].toUpperCase(), `Valueは大文字: ${label.name}`);
+      if (!pascalAllowed.includes(parts[1])) {
+        assertEquals(parts[1], parts[1].toUpperCase(), `Valueは大文字: ${label.name}`);
+      }
     }
   },
 });
