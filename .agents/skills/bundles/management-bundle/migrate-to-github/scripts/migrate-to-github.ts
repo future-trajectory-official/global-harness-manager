@@ -3,6 +3,7 @@ import { dirname, fromFileUrl, join, resolve } from "@std/path";
 import { Issue } from "../../../../../core/issue.ts";
 import { createMilestone, listMilestones } from "../../../../../core/github.ts";
 import type { IGitHubContext } from "../../../../../core/github.ts";
+import { executeCommand } from "../../../../../core/command.ts";
 
 const PROJECT_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "../../../../../..");
 
@@ -33,7 +34,9 @@ interface HarnessConfig {
     size: string;
     status: string;
     sequence: string;
-    effort: string;
+    effortInitial: string;
+    effortPlaned: string;
+    effortActual: string;
   };
   "harness-type"?: { options: string[] };
 }
@@ -199,6 +202,136 @@ async function ensureMilestone(
   return undefined;
 }
 
+function computeEffortTotal(wpList: WorkPackage[]): number {
+  return wpList.reduce((sum, wp) => sum + wp.effort, 0);
+}
+
+async function getProjectNodeId(
+  context: IGitHubContext,
+  projectNumber: string,
+): Promise<string | null> {
+  const result = await executeCommand({
+    cmd: "gh",
+    args: [
+      "project",
+      "view",
+      String(projectNumber),
+      "--owner",
+      context.owner,
+      "--format",
+      "json",
+      "--jq",
+      ".id",
+    ],
+  });
+  if (result.code !== 0) return null;
+  return result.stdout.trim() || null;
+}
+
+async function addToProjectAndGetItemId(
+  context: IGitHubContext,
+  issueNumber: number,
+  projectNumber: string,
+): Promise<string | null> {
+  const issueUrl =
+    `https://github.com/${context.owner}/${context.repository}/issues/${issueNumber}`;
+  const result = await executeCommand({
+    cmd: "gh",
+    args: [
+      "project",
+      "item-add",
+      String(projectNumber),
+      "--owner",
+      context.owner,
+      "--url",
+      issueUrl,
+      "--format",
+      "json",
+    ],
+  });
+  if (result.code !== 0) return null;
+  try {
+    const data = JSON.parse(result.stdout);
+    return data.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function setEffortProjectFields(
+  context: IGitHubContext,
+  projectNumber: string,
+  issueNumber: number,
+  effortInitial: number,
+  config: HarnessConfig,
+): Promise<void> {
+  const projectNodeId = await getProjectNodeId(context, projectNumber);
+  if (!projectNodeId) {
+    console.error(`  WARNING: Could not resolve project node ID for #${projectNumber}`);
+    return;
+  }
+
+  const itemId = await addToProjectAndGetItemId(context, issueNumber, projectNumber);
+  if (!itemId) {
+    console.error(`  WARNING: Could not add issue #${issueNumber} to project ${projectNumber}`);
+    return;
+  }
+
+  const fieldsResult = await executeCommand({
+    cmd: "gh",
+    args: [
+      "project",
+      "field-list",
+      String(projectNumber),
+      "--owner",
+      context.owner,
+      "--format",
+      "json",
+    ],
+  });
+  if (fieldsResult.code !== 0) {
+    console.error(`  WARNING: Could not list project fields`);
+    return;
+  }
+  const fields = JSON.parse(fieldsResult.stdout).fields as {
+    id: string;
+    name: string;
+    type: string;
+  }[];
+
+  const fieldNameToValue: Record<string, number> = {};
+  if (config.customFields?.effortInitial && effortInitial > 0) {
+    fieldNameToValue[config.customFields.effortInitial] = effortInitial;
+  }
+  for (const [fieldName, value] of Object.entries(fieldNameToValue)) {
+    const field = fields.find((f) => f.name === fieldName);
+    if (!field) {
+      console.error(`  WARNING: Project field "${fieldName}" not found on GitHub Project V2`);
+      continue;
+    }
+    const editResult = await executeCommand({
+      cmd: "gh",
+      args: [
+        "project",
+        "item-edit",
+        "--id",
+        itemId,
+        "--field-id",
+        field.id,
+        "--number",
+        String(value),
+        "--project-id",
+        projectNodeId,
+      ],
+    });
+    if (editResult.code === 0) {
+      console.log(`  Set ${fieldName} = ${value}`);
+    } else {
+      console.error(`  WARNING: Failed to set ${fieldName} = ${value}`);
+    }
+  }
+}
+
 async function loadConfig(harnessrcPath?: string): Promise<HarnessConfig | null> {
   const paths = harnessrcPath ? [harnessrcPath] : [DEFAULT_HARNESSRC_PATH, FALLBACK_HARNESSRC_PATH];
 
@@ -226,8 +359,9 @@ async function cmdList(backlogPath: string, dryRun: boolean): Promise<void> {
   for (const pbi of pbis) {
     const wpCount = pbi.wpList.length;
     const doneWps = pbi.wpList.filter((w) => w.status === "done").length;
+    const effortTotal = computeEffortTotal(pbi.wpList);
     console.log(`[${pbi.status}] ${pbi.id}`);
-    console.log(`  Size: ${pbi.size} | WPs: ${doneWps}/${wpCount}`);
+    console.log(`  Size: ${pbi.size} | WPs: ${doneWps}/${wpCount} | Effort: ${effortTotal}回`);
     console.log("");
   }
 }
@@ -265,6 +399,8 @@ async function cmdMigrate(
   }
   const parentBody = buildIssueBody(pbi);
 
+  const effortInitial = computeEffortTotal(pbi.wpList);
+
   if (dryRun) {
     console.log(`[DRY-RUN] Would create PBI Issue:`);
     if (parsed.epic) {
@@ -276,6 +412,12 @@ async function cmdMigrate(
     console.log(`  Title: ${parsed.name}`);
     console.log(`  Milestone: ${milestone ?? "(none)"}`);
     console.log(`  Labels: ${parentLabels.join(", ")}`);
+    console.log(`  Effort Fields (Project V2):`);
+    console.log(
+      `    ${_config?.customFields?.effortInitial ?? "harness-effort-initial"}: ${effortInitial}`,
+    );
+    console.log(`    ${_config?.customFields?.effortPlaned ?? "harness-effort-planed"}: (unset)`);
+    console.log(`    ${_config?.customFields?.effortActual ?? "harness-effort-actual"}: (unset)`);
     console.log(`  Body:\n${parentBody}`);
     if (pbi.wpList.length > 0) {
       console.log(`\n  With ${pbi.wpList.length} child WP Issue(s):`);
@@ -327,14 +469,34 @@ async function cmdMigrate(
       labels: wpLabels,
     });
 
-    await parentIssue.attach(wpIssue);
+    try {
+      await parentIssue.attach(wpIssue);
+    } catch {
+      console.error(`  WARNING: Failed to attach WP ${wpIssue.number} to parent`);
+    }
 
     if (wp.status === "done") {
-      await wpIssue.close();
-      console.log(`  Created WP Issue #${wpIssue.number} (closed): ${wp.name}`);
+      try {
+        await wpIssue.close();
+        console.log(`  Created WP Issue #${wpIssue.number} (closed): ${wp.name}`);
+      } catch {
+        console.error(`  WARNING: Failed to close WP ${wpIssue.number} (network issue)`);
+        console.log(`  Created WP Issue #${wpIssue.number}: ${wp.name}`);
+      }
     } else {
       console.log(`  Created WP Issue #${wpIssue.number}: ${wp.name}`);
     }
+  }
+
+  if (_config?.projects?.productBacklog && effortInitial > 0) {
+    console.log(`  Setting effort fields on Project V2...`);
+    await setEffortProjectFields(
+      context,
+      String(_config.projects.productBacklog),
+      parentIssue.number,
+      effortInitial,
+      _config,
+    );
   }
 }
 
