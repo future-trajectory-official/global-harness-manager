@@ -131,19 +131,32 @@ Deno.test("migrate-to-github --migrate --dry-run should mark DONE PBI as closed"
   }
 });
 
-Deno.test("migrate-to-github --list should read .harnessrc example as fallback", async () => {
-  const cmd = new Deno.Command(Deno.execPath(), {
-    args: [
-      "run",
-      "-A",
-      SCRIPT_PATH,
-      "--list",
-      "--dry-run",
-    ],
-    cwd: PROJECT_ROOT,
-  });
-  const { code } = await cmd.output();
-  assertEquals(code, 0);
+Deno.test("migrate-to-github --list --dry-run should work with explicit backlog path", async () => {
+  const tmpFile = await Deno.makeTempFile({ suffix: ".md" });
+  try {
+    await Deno.writeTextFile(tmpFile, mockBacklog);
+
+    const cmd = new Deno.Command(Deno.execPath(), {
+      args: [
+        "run",
+        "-A",
+        SCRIPT_PATH,
+        "--list",
+        "--dry-run",
+        "--backlog",
+        tmpFile,
+      ],
+      cwd: PROJECT_ROOT,
+    });
+    const { code, stdout } = await cmd.output();
+    const output = new TextDecoder().decode(stdout);
+
+    assertEquals(code, 0);
+    assertStringIncludes(output, "Active-PBI");
+    assertStringIncludes(output, "Completed-PBI");
+  } finally {
+    await Deno.remove(tmpFile);
+  }
 });
 
 Deno.test("migrate-to-github --help should display usage", async () => {
