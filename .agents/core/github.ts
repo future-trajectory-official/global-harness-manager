@@ -36,7 +36,7 @@ function runGh(
 }
 
 function buildGhArgs(context: IGitHubContext, args: string[]): string[] {
-  return [`--repo ${context.owner}/${context.repository}`, ...args];
+  return ["--repo", `${context.owner}/${context.repository}`, ...args];
 }
 
 function parseJsonOutput<T>(stdout: string): T | null {
@@ -116,14 +116,17 @@ export async function createIssue(
   payload: CreateIssueOptions,
   execOptions?: RunOptions,
 ): Promise<{ number: number; url: string } | null> {
-  const args: string[] = ["issue", "create", "--title", payload.title, "--json", "number,url"];
+  const args: string[] = ["issue", "create", "--title", payload.title];
   if (payload.body) args.push("--body", payload.body);
   if (payload.labels && payload.labels.length > 0) args.push("--label", payload.labels.join(","));
   if (payload.milestone) args.push("--milestone", payload.milestone);
   if (payload.assignee) args.push("--assignee", payload.assignee);
   const result = await runGh(buildGhArgs(context, args), execOptions);
   if (result.code !== 0) return null;
-  return parseJsonOutput<{ number: number; url: string }>(result.stdout);
+  const url = result.stdout.trim();
+  const numberMatch = url.match(/\/issues\/(\d+)$/);
+  if (!numberMatch) return null;
+  return { number: parseInt(numberMatch[1], 10), url };
 }
 
 /** searchIssues のフィルタ条件 */
@@ -255,20 +258,34 @@ export async function attachIssue(
   childNumber: number,
   execOptions?: RunOptions,
 ): Promise<boolean> {
-  const args = buildGhArgs(context, [
+  const [parentResult, childResult] = await Promise.all([
+    runGh(
+      buildGhArgs(context, ["issue", "view", String(parentNumber), "--json", "id"]),
+      execOptions,
+    ),
+    runGh(
+      buildGhArgs(context, ["issue", "view", String(childNumber), "--json", "id"]),
+      execOptions,
+    ),
+  ]);
+  if (parentResult.code !== 0 || childResult.code !== 0) return false;
+  const parentData = parseJsonOutput<{ id: string }>(parentResult.stdout);
+  const childData = parseJsonOutput<{ id: string }>(childResult.stdout);
+  if (!parentData || !childData) return false;
+  const args = [
     "api",
     "graphql",
     "-f",
     `query=mutation AddSubIssue($parentId: ID!, $subIssueId: ID!) {
-      addSubIssue(input: { parentIssueId: $parentId, subIssueId: $subIssueId }) {
+      addSubIssue(input: { issueId: $parentId, subIssueId: $subIssueId }) {
         subIssue { number url }
       }
     }`,
     "-F",
-    `parentId=${parentNumber}`,
+    `parentId=${parentData.id}`,
     "-F",
-    `subIssueId=${childNumber}`,
-  ]);
+    `subIssueId=${childData.id}`,
+  ];
   const result = await runGh(args, execOptions);
   return result.code === 0;
 }
@@ -285,7 +302,14 @@ export async function detachIssue(
   issueNumber: number,
   execOptions?: RunOptions,
 ): Promise<boolean> {
-  const args = buildGhArgs(context, [
+  const viewResult = await runGh(
+    buildGhArgs(context, ["issue", "view", String(issueNumber), "--json", "id"]),
+    execOptions,
+  );
+  if (viewResult.code !== 0) return false;
+  const data = parseJsonOutput<{ id: string }>(viewResult.stdout);
+  if (!data) return false;
+  const args = [
     "api",
     "graphql",
     "-f",
@@ -295,8 +319,8 @@ export async function detachIssue(
       }
     }`,
     "-F",
-    `subIssueId=${issueNumber}`,
-  ]);
+    `subIssueId=${data.id}`,
+  ];
   const result = await runGh(args, execOptions);
   return result.code === 0;
 }
@@ -402,7 +426,7 @@ export async function setProjectField(
 }
 
 /**
- * マイルストーンを作成する（GraphQL createMilestone mutation）。
+ * マイルストーンを作成する（REST API）。
  * @param context - 操作対象リポジトリ
  * @param milestoneData - マイルストーン作成データ
  * @param execOptions - 実行時オプション
@@ -413,38 +437,19 @@ export async function createMilestone(
   milestoneData: CreateMilestoneOptions,
   execOptions?: RunOptions,
 ): Promise<{ number: number; url: string } | null> {
-  const args = buildGhArgs(context, [
-    "api",
-    "graphql",
-    "-f",
-    `query=mutation CreateMilestone($repo: String!, $title: String!, $description: String, $dueOn: DateTime) {
-      createMilestone(input: { repositoryId: $repo, title: $title, description: $description, dueOn: $dueOn }) {
-        milestone { number url }
-      }
-    }`,
-    "-F",
-    `title=${milestoneData.title}`,
-  ]);
-  if (milestoneData.description) {
-    args.push("-F", `description=${milestoneData.description}`);
-  }
-  if (milestoneData.dueOn) {
-    args.push("-F", `dueOn=${milestoneData.dueOn}`);
-  }
+  const repo = `${context.owner}/${context.repository}`;
+  const args = ["api", `repos/${repo}/milestones`, "-f", `title=${milestoneData.title}`];
+  if (milestoneData.description) args.push("-f", `description=${milestoneData.description}`);
+  if (milestoneData.dueOn) args.push("-f", `due_on=${milestoneData.dueOn}`);
   const result = await runGh(args, execOptions);
   if (result.code !== 0) return null;
-  const data = parseJsonOutput<{
-    data?: { createMilestone?: { milestone?: { number: number; url: string } } };
-  }>(result.stdout);
-  if (!data?.data?.createMilestone?.milestone) return null;
-  return {
-    number: data.data.createMilestone.milestone.number,
-    url: data.data.createMilestone.milestone.url,
-  };
+  const data = parseJsonOutput<{ number: number; html_url: string }>(result.stdout);
+  if (!data) return null;
+  return { number: data.number, url: data.html_url };
 }
 
 /**
- * マイルストーン一覧を取得する（GraphQL）。
+ * マイルストーン一覧を取得する（REST API）。
  * @param context - 操作対象リポジトリ
  * @param execOptions - 実行時オプション
  * @returns マイルストーンの配列
@@ -453,22 +458,12 @@ export async function listMilestones(
   context: IGitHubContext,
   execOptions?: RunOptions,
 ): Promise<{ number: number; title: string }[]> {
-  const args = buildGhArgs(context, [
-    "api",
-    "graphql",
-    "-f",
-    `query=query ListMilestones($repo: String!) {
-      repository(name: $repo) { milestones(first: 100) { nodes { number title } } }
-    }`,
-    "-F",
-    `repo=${context.repository}`,
-  ]);
+  const repo = `${context.owner}/${context.repository}`;
+  const args = ["api", `repos/${repo}/milestones`, "--jq", ".[] | {number, title}"];
   const result = await runGh(args, execOptions);
   if (result.code !== 0) return [];
-  const data = parseJsonOutput<{
-    data?: { repository?: { milestones?: { nodes?: { number: number; title: string }[] } } };
-  }>(result.stdout);
-  return data?.data?.repository?.milestones?.nodes ?? [];
+  const data = parseJsonOutput<{ number: number; title: string }[]>(result.stdout);
+  return data ?? [];
 }
 
 /** GitHub 操作の統一インターフェース */

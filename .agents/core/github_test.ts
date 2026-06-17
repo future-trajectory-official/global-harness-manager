@@ -287,7 +287,7 @@ RESPONSE_FILE=$(dirname "$0")/mock-response.json
 ALL="$*"
 case "$ALL" in
   *"issue create"*)
-    cat "$RESPONSE_FILE"
+    echo "https://github.com/owner/repo/issues/42"
     ;;
   *"issue list"*)
     echo '[{"number":1,"url":"https://github.com/owner/repo/issues/1","title":"Test Issue","state":"open","labels":[{"name":"bug"}],"body":"test body","milestone":{"title":"v1","number":1}}]'
@@ -315,11 +315,11 @@ case "$ALL" in
   *"project field-list"*)
     echo '[{"id":"field_1","name":"Status","type":"SINGLE_SELECT","options":[]},{"id":"field_2","name":"Priority","type":"SINGLE_SELECT","options":[]},{"id":"field_3","name":"Size","type":"NUMBER"}]'
     ;;
-  *"CreateMilestone"*)
-    echo '{"data":{"createMilestone":{"milestone":{"number":1,"url":"https://github.com/owner/repo/milestone/1"}}}}'
+  *"CreateMilestone"*|*"milestones"*"-f"*)
+    echo '{"number":1,"html_url":"https://github.com/owner/repo/milestone/1"}'
     ;;
-  *"ListMilestones"*)
-    echo '{"data":{"repository":{"milestones":{"nodes":[{"number":1,"title":"Sprint 1"}]}}}}'
+  *"ListMilestones"*|*"milestones"*)
+    echo '[{"number":1,"title":"Sprint 1"}]'
     ;;
   *"api graphql"*)
     echo '{}'
