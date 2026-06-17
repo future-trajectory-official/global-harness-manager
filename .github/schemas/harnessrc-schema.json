@@ -84,13 +84,31 @@
           "description": "Custom field name for PBI sequence number.",
           "examples": ["harness-sequence"]
         },
-        "effort": {
+        "effortInitial": {
           "type": "string",
-          "description": "Custom field name for WP effort (intervention count).",
-          "examples": ["harness-effort"]
+          "description": "Custom field name for initial effort estimate (pre-plan total intervention count).",
+          "examples": ["harness-effort-initial"]
+        },
+        "effortPlaned": {
+          "type": "string",
+          "description": "Custom field name for planned effort estimate (post-plan total intervention count).",
+          "examples": ["harness-effort-planed"]
+        },
+        "effortActual": {
+          "type": "string",
+          "description": "Custom field name for actual effort (completed total intervention count).",
+          "examples": ["harness-effort-actual"]
         }
       },
-      "required": ["type", "size", "status", "sequence", "effort"],
+      "required": [
+        "type",
+        "size",
+        "status",
+        "sequence",
+        "effortInitial",
+        "effortPlaned",
+        "effortActual"
+      ],
       "additionalProperties": false
     },
     "harness-type": {

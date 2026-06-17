@@ -15,7 +15,9 @@
     "size": "harness-size",
     "status": "harness-status",
     "sequence": "harness-sequence",
-    "effort": "harness-effort"
+    "effortInitial": "harness-effort-initial",
+    "effortPlaned": "harness-effort-planed",
+    "effortActual": "harness-effort-actual"
   },
   "harness-type": {
     "options": ["Epic", "Feature", "PBI", "WP", "Review", "Reflection"]

@@ -565,7 +565,9 @@ Deno.test("JSON Schema - harnessrc-schema.json exists and has required fields", 
   assertEquals(schema.properties.customFields.required.includes("size"), true);
   assertEquals(schema.properties.customFields.required.includes("status"), true);
   assertEquals(schema.properties.customFields.required.includes("sequence"), true);
-  assertEquals(schema.properties.customFields.required.includes("effort"), true);
+  assertEquals(schema.properties.customFields.required.includes("effortInitial"), true);
+  assertEquals(schema.properties.customFields.required.includes("effortPlaned"), true);
+  assertEquals(schema.properties.customFields.required.includes("effortActual"), true);
   // Verify harness-type options
   assertEquals(schema.properties["harness-type"].properties.options.minItems, 6);
 });
