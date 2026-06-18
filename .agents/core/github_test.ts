@@ -560,16 +560,16 @@ Deno.test("DomainMilestone - list should return milestones", async () => {
 Deno.test("JSON Schema - harnessrc-schema.json exists and has required fields", () => {
   const schemaPath = new URL("../../.github/schemas/harnessrc-schema.json", import.meta.url);
   const schema = JSON.parse(Deno.readTextFileSync(schemaPath));
-  // Verify customFields mapping consistency
-  assertEquals(schema.properties.customFields.required.includes("type"), true);
+  // Verify customFields mapping consistency (type/status removed→labels/V2内蔵Status)
   assertEquals(schema.properties.customFields.required.includes("size"), true);
-  assertEquals(schema.properties.customFields.required.includes("status"), true);
+  assertEquals(schema.properties.customFields.required.includes("sizeActual"), true);
   assertEquals(schema.properties.customFields.required.includes("sequence"), true);
   assertEquals(schema.properties.customFields.required.includes("effortInitial"), true);
   assertEquals(schema.properties.customFields.required.includes("effortPlaned"), true);
   assertEquals(schema.properties.customFields.required.includes("effortActual"), true);
-  // Verify harness-type options
-  assertEquals(schema.properties["harness-type"].properties.options.minItems, 6);
+  assertEquals(schema.properties.customFields.required.includes("varianceText"), true);
+  // Verify harness-type section removed (replaced by Issue labels)
+  assertEquals(schema.properties["harness-type"], undefined);
 });
 
 Deno.test("JSON Schema - IGitHubContext fields do not conflict with harnessrc fields", () => {
