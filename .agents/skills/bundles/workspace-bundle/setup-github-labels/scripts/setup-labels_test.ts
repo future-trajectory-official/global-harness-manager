@@ -4,10 +4,10 @@ import { loadLabelDefs } from "./setup-labels.ts";
 const YAML_PATH = new URL("../references/label-definitions.yaml", import.meta.url).pathname;
 
 Deno.test({
-  name: "loadLabelDefs - 11種のラベルが定義されている",
+  name: "loadLabelDefs - 6種のtypeラベルのみ定義されている",
   async fn() {
     const defs = await loadLabelDefs(YAML_PATH);
-    assertEquals(defs.labels.length, 15);
+    assertEquals(defs.labels.length, 6);
   },
 });
 
@@ -37,23 +37,23 @@ Deno.test({
 });
 
 Deno.test({
-  name: "loadLabelDefs - status:IDEA/TODO/WIP/DONE が定義されている",
+  name: "loadLabelDefs - status:ラベルが削除されている",
   async fn() {
     const defs = await loadLabelDefs(YAML_PATH);
     const names = defs.labels.map((l) => l.name);
     for (const s of ["IDEA", "TODO", "WIP", "DONE"]) {
-      assertEquals(names.includes(`status:${s}`), true);
+      assertEquals(names.includes(`status:${s}`), false);
     }
   },
 });
 
 Deno.test({
-  name: "loadLabelDefs - size:XS/S/M/L/XL が定義されている",
+  name: "loadLabelDefs - size:ラベルが削除されている",
   async fn() {
     const defs = await loadLabelDefs(YAML_PATH);
     const names = defs.labels.map((l) => l.name);
     for (const s of ["XS", "S", "M", "L", "XL"]) {
-      assertEquals(names.includes(`size:${s}`), true);
+      assertEquals(names.includes(`size:${s}`), false);
     }
   },
 });

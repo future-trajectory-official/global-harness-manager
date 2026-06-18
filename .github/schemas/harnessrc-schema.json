@@ -7,8 +7,7 @@
   "required": [
     "version",
     "projects",
-    "customFields",
-    "harness-type"
+    "customFields"
   ],
   "properties": {
     "version": {
@@ -64,20 +63,15 @@
       "type": "object",
       "description": "Mapping of semantic field names to GitHub custom field names.",
       "properties": {
-        "type": {
-          "type": "string",
-          "description": "Custom field name for PBI type.",
-          "examples": ["harness-type"]
-        },
         "size": {
           "type": "string",
-          "description": "Custom field name for PBI size.",
-          "examples": ["harness-size"]
+          "description": "Custom field name for PBI size estimate.",
+          "examples": ["harness-size-estimate"]
         },
-        "status": {
+        "sizeActual": {
           "type": "string",
-          "description": "Custom field name for PBI status.",
-          "examples": ["harness-status"]
+          "description": "Custom field name for PBI actual size.",
+          "examples": ["harness-size-actual"]
         },
         "sequence": {
           "type": "string",
@@ -98,35 +92,22 @@
           "type": "string",
           "description": "Custom field name for actual effort (completed total intervention count).",
           "examples": ["harness-effort-actual"]
+        },
+        "varianceText": {
+          "type": "string",
+          "description": "Custom field name for variance analysis text (multi-line).",
+          "examples": ["harness-variance-text"]
         }
       },
       "required": [
-        "type",
         "size",
-        "status",
+        "sizeActual",
         "sequence",
         "effortInitial",
         "effortPlaned",
-        "effortActual"
+        "effortActual",
+        "varianceText"
       ],
-      "additionalProperties": false
-    },
-    "harness-type": {
-      "type": "object",
-      "description": "Configuration for the PBI type custom field.",
-      "properties": {
-        "options": {
-          "type": "array",
-          "description": "Available PBI type options.",
-          "items": {
-            "type": "string",
-            "enum": ["Epic", "Feature", "PBI", "WP", "Review", "Reflection"]
-          },
-          "minItems": 6,
-          "uniqueItems": true
-        }
-      },
-      "required": ["options"],
       "additionalProperties": false
     }
   },
