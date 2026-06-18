@@ -1,31 +1,25 @@
 # 運用ルール
 
-## harness-priority（小数運用）
+## Projects V2内蔵Status
 
-- 新規 PBI には `既存の最大値 + 1` を割り当てる
-- スプリント中に優先順位を変更する場合、2 値の間の小数を設定する（例: `10.0` と `11.0` の間に
-  `10.5`）
-- 小数が含まれていることは、スプリント開始後に挿入・再優先順位付けが行われた証拠となる
+Project V2の標準Statusフィールドを使用する（カスタムフィールド `harness-status` は削除）。
 
-## harness-parent
-
-親 PBI Issue の完全URL（`https://github.com/<owner>/<repo>/issues/<number>`）を記入する。 GitHub が
-URL を自動リンクするため、クリック可能なリンクとして表示される。 Sprint Board
-上でこの列を追加し、グループ化することで同一 PBI の WP を一覧表示できる。
+- **Product Backlog**: Backlog（旧IDEA） → Todo（旧TODO） → In Progress（旧WIP） → Done（旧DONE）
+- **Sprint Board**: Todo（旧TODO） → In Progress（旧WIP） → Done（旧DONE）
+- WPのStatusはそのWP単体の完了状態を表す
+- 同一PBI配下の全WPがDoneになった後に、親PBIのStatusをDoneに更新する
 
 ## Sprint Board ビュー設定（手動）
 
-1. **harness-parent 列を追加**: Fields → harness-parent にチェック
-2. **harness-parent でグループ化**: 列ヘッダー右クリック → Group by this field
+1. **親Issue列を追加**: Fields → Parent issue にチェック
+2. **親Issueでグループ化**: 列ヘッダー右クリック → Group by this field
 3. **マイルストーン列を追加**: Fields → Milestone にチェック
 4. **Closed Issue 非表示**: フィルタバーに `is:open` と入力
 
-## harness-status 遷移
+## harness-sequence（表示順序）
 
-- **Product Backlog**: IDEA → TODO → WIP → DONE
-- **Sprint Board**: TODO → WIP → DONE
-- WP の harness-status はその WP 単体の完了状態を表す
-- 同一 PBI 配下の全 WP が DONE になった後に、親 PBI の harness-status を DONE に更新する
+- 新規 PBI には `既存の最大値 + 1` を割り当てる（整数）
+- スプリント中に順序を変更する場合、2値の間の値を設定する
 
 ## マイルストーン
 

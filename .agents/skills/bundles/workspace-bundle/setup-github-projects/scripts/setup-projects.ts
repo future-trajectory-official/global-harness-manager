@@ -14,29 +14,44 @@ interface FieldDef {
 
 const PRODUCT_BACKLOG_FIELDS: FieldDef[] = [
   {
-    name: "harness-status",
-    dataType: "SINGLE_SELECT",
-    options: ["IDEA", "TODO", "WIP", "DONE"],
-  },
-  {
-    name: "harness-size",
+    name: "harness-size-estimate",
     dataType: "SINGLE_SELECT",
     options: ["XS", "S", "M", "L", "XL"],
   },
   {
-    name: "harness-priority",
+    name: "harness-size-actual",
+    dataType: "SINGLE_SELECT",
+    options: ["XS", "S", "M", "L", "XL"],
+  },
+  {
+    name: "harness-sequence",
     dataType: "NUMBER",
+  },
+  {
+    name: "harness-variance-text",
+    dataType: "TEXT",
   },
 ];
 
 const SPRINT_BOARD_FIELDS: FieldDef[] = [
   {
-    name: "harness-status",
-    dataType: "SINGLE_SELECT",
-    options: ["TODO", "WIP", "DONE"],
+    name: "harness-effort-initial",
+    dataType: "NUMBER",
   },
   {
-    name: "harness-parent",
+    name: "harness-effort-planed",
+    dataType: "NUMBER",
+  },
+  {
+    name: "harness-effort-actual",
+    dataType: "NUMBER",
+  },
+  {
+    name: "harness-sequence",
+    dataType: "NUMBER",
+  },
+  {
+    name: "harness-variance-text",
     dataType: "TEXT",
   },
 ];
@@ -267,8 +282,8 @@ export async function main(): Promise<void> {
   構成ファイル:    ${EXPORT_PATH}
 
 ⚠️  Sprint Board のビュー設定は UI から手動で行ってください：
-  1. 「harness-parent」列を追加（Fields → harness-parent）
-  2. harness-parent でグループ化（列ヘッダー右クリック → Group by）
+  1. 「親Issue（Parent issue）」列を追加（Fields → Parent issue）
+  2. 親Issueでグループ化（列ヘッダー右クリック → Group by this field）
   3. マイルストーン列を追加（Fields → Milestone）
   4. フィルタバーに is:open と入力（Closed Issue 非表示）
    操作方法の詳細は references/operation-rules.md を参照してください。`);

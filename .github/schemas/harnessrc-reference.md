@@ -18,8 +18,7 @@ cp .github/schemas/harnessrc.example .github/schemas/.harnessrc
   "issueTemplate": { ... },
   "projects": { ... },
   "milestone": { ... },
-  "customFields": { ... },
-  "harness-type": { ... }
+  "customFields": { ... }
 }
 ```
 
@@ -30,7 +29,6 @@ cp .github/schemas/harnessrc.example .github/schemas/.harnessrc
 | `projects`      | object | ✅   | GitHub Projects V2 のボード番号。        |
 | `milestone`     | object | ❌   | マイルストーン命名規則。                 |
 | `customFields`  | object | ✅   | GitHubカスタムフィールド名のマッピング。 |
-| `harness-type`  | object | ✅   | PBI種別の選択肢定義。                    |
 
 ---
 
@@ -92,61 +90,49 @@ GitHub Projects V2 で使用するカスタムフィールド名のマッピン�
 
 ```json
 "customFields": {
-  "type": "harness-type",
-  "size": "harness-size",
-  "status": "harness-status",
+  "size": "harness-size-estimate",
+  "sizeActual": "harness-size-actual",
   "sequence": "harness-sequence",
   "effortInitial": "harness-effort-initial",
   "effortPlaned": "harness-effort-planed",
-  "effortActual": "harness-effort-actual"
+  "effortActual": "harness-effort-actual",
+  "varianceText": "harness-variance-text"
 }
 ```
 
 | プロパティ      | 型     | 必須 | 説明                                                                   |
 | --------------- | ------ | ---- | ---------------------------------------------------------------------- |
-| `type`          | string | ✅   | PBI種別フィールド名。デフォルト: `"harness-type"`                      |
-| `size`          | string | ✅   | PBIサイズフィールド名。デフォルト: `"harness-size"`                    |
-| `status`        | string | ✅   | PBIステータスフィールド名。デフォルト: `"harness-status"`              |
-| `sequence`      | string | ✅   | 優先順序フィールド名。デフォルト: `"harness-sequence"`                 |
+| `size`          | string | ✅   | PBIサイズ見積フィールド名。デフォルト: `"harness-size-estimate"`       |
+| `sizeActual`    | string | ✅   | PBI実績サイズフィールド名。デフォルト: `"harness-size-actual"`         |
+| `sequence`      | string | ✅   | 表示順序フィールド名。デフォルト: `"harness-sequence"`                 |
 | `effortInitial` | string | ✅   | 計画前見積（initial estimate）フィールド名。`"harness-effort-initial"` |
 | `effortPlaned`  | string | ✅   | 計画後見積（planned estimate）フィールド名。`"harness-effort-planed"`  |
 | `effortActual`  | string | ✅   | 完了時実績（actual effort）フィールド名。`"harness-effort-actual"`     |
+| `varianceText`  | string | ✅   | 予実差分析テキストフィールド名。`"harness-variance-text"`              |
 
 ### 各フィールドの値と意味
 
-| フィールド               | GitHub上の型  | 設定値の例                                             |
-| ------------------------ | ------------- | ------------------------------------------------------ |
-| `harness-type`           | SINGLE_SELECT | `Epic`, `Feature`, `PBI`, `WP`, `Review`, `Reflection` |
-| `harness-size`           | SINGLE_SELECT | `XS`, `S`, `M`, `L`, `XL`                              |
-| `harness-status`         | SINGLE_SELECT | `IDEA`, `TODO`, `WIP`, `DONE`                          |
-| `harness-sequence`       | NUMBER        | `1.0`, `2.0`, `3.0` （Weightはsizeから導出）           |
-| `harness-effort-initial` | NUMBER        | `3` （計画前見積の合計介入回数）                       |
-| `harness-effort-planed`  | NUMBER        | `2` （計画後見積の合計介入回数）                       |
-| `harness-effort-actual`  | NUMBER        | `1` （完了時実績の合計介入回数）                       |
+| フィールド               | GitHub上の型  | 設定値の例                                         |
+| ------------------------ | ------------- | -------------------------------------------------- |
+| `harness-size-estimate`  | SINGLE_SELECT | `XS`, `S`, `M`, `L`, `XL`                          |
+| `harness-size-actual`    | SINGLE_SELECT | `XS`, `S`, `M`, `L`, `XL`                          |
+| `harness-sequence`       | NUMBER        | `1`, `2`, `3` （表示順）                           |
+| `harness-effort-initial` | NUMBER        | `3` （計画前見積の合計介入回数）                   |
+| `harness-effort-planed`  | NUMBER        | `2` （計画後見積の合計介入回数）                   |
+| `harness-effort-actual`  | NUMBER        | `1` （完了時実績の合計介入回数）                   |
+| `harness-variance-text`  | TEXT          | `"スコープ拡大により乖離。当初想定より複雑だった"` |
 
 ---
 
-## `harness-type`
+## PBI種別（Issue labels）
 
-PBI種別フィールドの選択肢を定義します。
+PBIの種別は Project V2 カスタムフィールドではなく、**Issue labels（`type:*`）** で管理します。
 
-```json
-"harness-type": {
-  "options": ["Epic", "Feature", "PBI", "WP", "Review", "Reflection"]
-}
-```
-
-| プロパティ | 型              | 必須 | 説明                                   |
-| ---------- | --------------- | ---- | -------------------------------------- |
-| `options`  | array of string | ✅   | PBI種別の選択肢リスト。現在は6種固定。 |
-
-### 各選択肢の意味
-
-| 値           | 階層    | 説明                                                  |
-| ------------ | ------- | ----------------------------------------------------- |
-| `Epic`       | 第1階層 | 長期的な大きな機能領域またはテーマ。                  |
-| `Feature`    | 第2階層 | Epic を構成する機能グループ。                         |
-| `PBI`        | 第3階層 | 最小管理単位のプロダクトバックログアイテム。          |
-| `WP`         | 第4階層 | PBI 配下の作業パッケージ。1セッションで完了する単位。 |
-| `Review`     | -       | スプリントレビュー専用PBI（実装を伴わない検証）。     |
-| `Reflection` | -       | 振り返り・KPT専用PBI。                                |
+| ラベル            | 階層    | 説明                                                  |
+| ----------------- | ------- | ----------------------------------------------------- |
+| `type:Epic`       | 第1階層 | 長期的な大きな機能領域またはテーマ。                  |
+| `type:Feature`    | 第2階層 | Epic を構成する機能グループ。                         |
+| `type:PBI`        | 第3階層 | 最小管理単位のプロダクトバックログアイテム。          |
+| `type:WP`         | 第4階層 | PBI 配下の作業パッケージ。1セッションで完了する単位。 |
+| `type:Review`     | -       | スプリントレビュー専用PBI（実装を伴わない検証）。     |
+| `type:Reflection` | -       | 振り返り・KPT専用PBI。                                |
