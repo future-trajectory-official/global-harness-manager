@@ -28,3 +28,5 @@ deno run -A .agents/skills/bundles/workspace-bundle/setup-github-projects/script
   — 各ボードのカスタムフィールドの型・選択肢
 - [運用ルール](/.agents/skills/bundles/workspace-bundle/setup-github-projects/references/operation-rules.md)
   — Priority の小数運用、Parent の記入ルール、Stage 遷移
+- [構成例](/.agents/skills/bundles/workspace-bundle/setup-github-projects/references/projects-config.json.example)
+  — スクリプト実行後に自動生成される構成ファイルの雛形（実値はリポジトリごとに異なるため追跡対象外）

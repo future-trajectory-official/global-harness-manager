@@ -118,8 +118,7 @@ async function runSafeMode(repo: string, defs: LabelDef[]): Promise<void> {
 
 async function runForceMode(repo: string, defs: LabelDef[]): Promise<void> {
   const existing = await getExistingLabels(repo);
-  const defNames = new Set(defs.map((l) => l.name));
-  const toDelete = [...existing].filter((name) => defNames.has(name));
+  const toDelete = [...existing];
 
   if (toDelete.length > 0) {
     console.log(`既存ラベルを ${toDelete.length} 個削除します...`);
