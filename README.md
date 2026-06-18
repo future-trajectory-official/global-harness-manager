@@ -98,3 +98,11 @@ flowchart TD
     Plan）を管理。
   - `core/`: ハーネス全体で共有される共通ユーティリティ。
 - `config/`: 環境固有の設定。`.example` ファイルを元に作成します。
+- `guides/`: ユーザー向けガイドドキュメント。
+  - [プロダクトバックログ運用ガイドライン](guides/backlog-guidelines.md)
+  - [GitHub Operations Guide](guides/github-operations-guide.md)
+  - [スプリント振り返りガイドライン](guides/sprint-reflection-guide.md)
+  - [スプリントレビューガイドライン](guides/sprint-review-guidelines.md)
+  - [メトリクス評価ガイド](guides/metrics-guide.md)
+  - [セッション振り返りガイド（KPT）](guides/reflection-guide.md)
+  - [PBI深掘りディスカッションガイド](guides/pbi-deep-dive.md)
