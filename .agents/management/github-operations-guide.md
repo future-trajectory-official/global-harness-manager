@@ -18,13 +18,13 @@
 
 ### 1.2. スプリント層 (Sprint Layer)
 
-| 概念                          | GitHub上の表現                                       | 作成タイミング                                 |
-| ----------------------------- | ---------------------------------------------------- | ---------------------------------------------- |
-| スプリント                    | Milestone（`Sprint N`）                              | `/sprint-start` の `github-sprint-init` スキル |
-| スプリントにコミットされたPBI | Issue（`type:PBI` ラベル） + Milestone に紐付け      | `/sprint-start` の `github-pbi-commit` スキル  |
-| PBIの状態管理                 | Project V2 の Status フィールド（TODO / WIP / DONE） | 各ワークフローで自動更新                       |
-| PBIのアーカイブ               | DONEのPBI Issue を Close（`github-pbi-archive`）     | `/sprint-end` 実行時                           |
-| スプリントレビュー結果        | Issueコメント / Project V2 のカスタムフィールド      | `/sprint-end` 実行時                           |
+| 概念                          | GitHub上の表現                                     | 作成タイミング                                 |
+| ----------------------------- | -------------------------------------------------- | ---------------------------------------------- |
+| スプリント                    | Milestone（`Sprint N`）                            | `/sprint-start` の `github-sprint-init` スキル |
+| スプリントにコミットされたPBI | Issue（`type:PBI` ラベル） + Milestone に紐付け    | `/sprint-start` の `github-pbi-commit` スキル  |
+| PBIの状態管理                 | Project V2 内蔵Status（Todo / In Progress / Done） | 各ワークフローで自動更新                       |
+| PBIのアーカイブ               | DONEのPBI Issue を Close（`github-pbi-archive`）   | `/sprint-end` 実行時                           |
+| スプリントレビュー結果        | Issueコメント / Project V2 のカスタムフィールド    | `/sprint-end` 実行時                           |
 
 ### 1.3. セッション層 (Session Layer)
 
@@ -78,13 +78,13 @@ Projects V2 では、以下のフィールドを活用して状態管理を行�
 
 ### 3.1. 標準フィールド
 
-| フィールド | 説明                        | 値の例                        |
-| ---------- | --------------------------- | ----------------------------- |
-| Title      | Issueのタイトル（自動反映） | `[EpicID/FeatureID]/PBI-Name` |
-| Status     | PBIの進捗状態               | `TODO`, `WIP`, `DONE`         |
-| Milestone  | 所属スプリント              | `Sprint 12`                   |
-| Assignees  | 担当者                      | （任意）                      |
-| Labels     | 種別・サイズラベル          | `type:PBI`, `size:M`          |
+| フィールド | 説明                            | 値の例                        |
+| ---------- | ------------------------------- | ----------------------------- |
+| Title      | Issueのタイトル（自動反映）     | `[EpicID/FeatureID]/PBI-Name` |
+| Status     | PBIの進捗状態（Project V2内蔵） | `Todo`, `In Progress`, `Done` |
+| Milestone  | 所属スプリント                  | `Sprint 12`                   |
+| Assignees  | 担当者                          | （任意）                      |
+| Labels     | 種別ラベルのみ                  | `type:PBI`                    |
 
 ### 3.2. 状態遷移とビューの活用
 
@@ -94,11 +94,11 @@ Project V2 ボードでは、**Status フィールド**
 | ビュー名             | フィルタ条件                                                          | 活用シーン                    |
 | -------------------- | --------------------------------------------------------------------- | ----------------------------- |
 | スプリントバックログ | Milestone = `Sprint N`                                                | スプリント開始時に全PBIを確認 |
-| 進行中PBI            | Status = `WIP`                                                        | 日次の進捗確認・滞りの発見    |
-| 未着手PBI            | Status = `TODO`                                                       | 次の着手候補の選定            |
-| 完了PBI              | Status = `DONE`                                                       | スプリント終了時の成果確認    |
+| 進行中PBI            | Status = `In Progress`                                                | 日次の進捗確認・滞りの発見    |
+| 未着手PBI            | Status = `Todo`                                                       | 次の着手候補の選定            |
+| 完了PBI              | Status = `Done`                                                       | スプリント終了時の成果確認    |
 | 種別別               | Labels contains `type:epic` / `type:feature` / `type:PBI` / `type:wp` | 階層構造の把握                |
-| サイズ別             | Labels contains `size:S` / `size:M` / `size:L`                        | 負荷分散の確認                |
+| サイズ別             | `harness-size-estimate` = XS / S / M / L / XL（Project V2フィールド） | 負荷分散の確認                |
 
 **具体的な運用イメージ**:
 
@@ -145,12 +145,15 @@ flowchart LR
 ### 4.1. PBI の状態遷移
 
 ```
-TODO (未着手) --> WIP (開発中) --> DONE (完了)
+Todo (未着手) --> In Progress (開発中) --> Done (完了)
 ```
 
-- **TODO**: スプリントにコミットされたが未着手のPBI。Project V2 上で灰色表示。
-- **WIP**: 現在開発中のPBI。Project V2 上で青色表示。子Issueの進捗で進行度を確認。
-- **DONE**: 全ACが完了しPO承認を得たPBI。Project V2 上で緑色表示。スプリント終了時に Close。
+- **Todo**: スプリントにコミットされたが未着手のPBI。Project V2 上で灰色表示。
+- **In Progress**: 現在開発中のPBI。Project V2 上で青色表示。子Issueの進捗で進行度を確認。
+- **Done**: 全ACが完了しPO承認を得たPBI。Project V2 上で緑色表示。スプリント終了時に Close。
+
+**Note**: 従来のカスタムフィールド `harness-status`（IDEA/TODO/WIP/DONE）は削除された。Project V2
+内蔵Status（Backlog/Todo/In Progress/Done）を使用する。
 
 ## 5. トラブルシューティング
 
@@ -174,7 +177,8 @@ TODO (未着手) --> WIP (開発中) --> DONE (完了)
 **原因と対処**:
 
 - **ラベル未作成**: `setup-github-labels` スキルを実行して標準ラベルを一括作成します。
-- **ラベル名のタイポ**: ラベル名は完全一致で指定します（例: `type:PBI`、`size:M`）。
+- **ラベル名のタイポ**: ラベル名は完全一致で指定します（例: `type:PBI`）。size関連は Project V2
+  カスタムフィールド（`harness-size-estimate`）で管理する。
 - **リポジトリ間の差異**: 各リポジトリに同じラベルセットが存在することを確認します。
 
 ### 5.3. Project Item と Issue の紐付け失敗
