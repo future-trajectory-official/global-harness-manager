@@ -15,7 +15,7 @@
 ### 2. Velocity & Estimation Accuracy (規模消化力と見積もり精度)
 
 - **定義**: 完了したPBIの「見積時Tシャツサイズ」のウェイト（具体的なポイント換算基準は
-  [backlog-guidelines.md の「2.2. PBI の見積り基準 (T-Shirt Size)」](/.agents/management/backlog-guidelines.md)
+  [backlog-guidelines.md の「2.2. PBI の見積り基準 (T-Shirt Size)」](/guides/backlog-guidelines.md)
   を参照）の集計値による独自ベロシティと、それに要した実際のセッション数（労力）のバランス。
 - **採点基準**:
   - 1:
