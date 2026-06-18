@@ -33,7 +33,7 @@ description: 特定されたWork Packageと文脈に最も適した専門ロー�
        [references/spike-application.md](/.agents/skills/bundles/management-bundle/session-planning/references/spike-application.md)
        のケースBを参照し、POにスパイクWP（`WP_0`）の分離を提案する。
 3. **計画後見積もりの算出**:
-   - 計画詳細化に伴い、[backlog-guidelines.md](/.agents/management/backlog-guidelines.md#221-Work-Packageの見積り基準-effort--人間の介入回数)
+   - 計画詳細化に伴い、[backlog-guidelines.md](/guides/backlog-guidelines.md#221-Work-Packageの見積り基準-effort--人間の介入回数)
      に基づいて「計画後見積もり（想定介入回数）」および「見積もり理由・懸念点」を検討・決定します。
 4. **実装計画の作成**:
    - 以下の内容を含む `implementation_plan.md` を **アーティファクト** として作成してください。

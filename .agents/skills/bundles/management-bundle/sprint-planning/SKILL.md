@@ -25,7 +25,7 @@ tags:
 
 - **プロダクトバックログ** ([product-backlog.md](/.agents/management/product-backlog.md))
   を読み込み、スプリントバックログのバックログアイテム（PBI）をピックアップします。
-- **運用ガイドライン** ([backlog-guidelines.md](/.agents/management/backlog-guidelines.md))
+- **運用ガイドライン** ([backlog-guidelines.md](/guides/backlog-guidelines.md))
   を読み込み、見積り基準やステータス管理の作法を確認します。
 
 ### 2. タスクの細分化

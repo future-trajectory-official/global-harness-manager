@@ -17,7 +17,7 @@ Package」を決定するためのスキルです。
    - 前回のセッションの成果（`RECOVERY LOG` 等）から、次に着手すべき論理的なステップを導き出します。
 3. **初期見積もりの算出**:
    - Work
-     Package選択にあたり、[backlog-guidelines.md](/.agents/management/backlog-guidelines.md#221-Work-Packageの見積り基準-effort--人間の介入回数)
+     Package選択にあたり、[backlog-guidelines.md](/guides/backlog-guidelines.md#221-Work-Packageの見積り基準-effort--人間の介入回数)
      に基づいて「初期見積もり（想定介入回数）」および「見積もり理由・懸念点」を検討します。
 4. **Work Packageの提示**:
    - 以下の形式でWork Packageを提示してください。

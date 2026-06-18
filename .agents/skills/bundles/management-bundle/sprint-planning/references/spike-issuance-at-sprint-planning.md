@@ -3,7 +3,7 @@
 本ドキュメントは、スプリントプランニングの場において技術的不確実性を検出し、プロダクトオーナー（PO）の判断でスパイクWP（`WP_0`）を発行するための基準と手順を定義する。
 
 スパイクWP自体の概念定義については
-[backlog-guidelines.md 2.2.3](/.agents/management/backlog-guidelines.md#223-スパイクwp-spike-work-package)
+[backlog-guidelines.md 2.2.3](/guides/backlog-guidelines.md#223-スパイクwp-spike-work-package)
 を参照すること。
 
 ## 技術的不確実性の検出タイミング

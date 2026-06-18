@@ -2,7 +2,7 @@
 
 本ドキュメントは、`session-planning` スキルがスパイクWP（Spike Work
 Package）およびスパイク後の本実装WPを扱うための具体的な手順を定義する。スパイクWPの概念定義は
-[backlog-guidelines.md 2.2.3](/.agents/management/backlog-guidelines.md#223-スパイクwp-spike-work-package)
+[backlog-guidelines.md 2.2.3](/guides/backlog-guidelines.md#223-スパイクwp-spike-work-package)
 を参照すること。
 
 本ドキュメントが扱うのは以下の2つのケースである。スパイクWP自体の発行判断（スプリントプランニング時のPO判断）は本ドキュメントの対象外とする。
