@@ -40,7 +40,9 @@ tags:
    - 実行後に表示される「推移テーブル」および「履歴」を確認し、予実精度やプロセスの改善兆候を把握してください。
 
 > [!TIP]
-> 各品質メトリクスの採点基準およびスキーマ詳細は
-> [metrics-guide.md](/.agents/skills/bundles/management-bundle/record-session-metrics/references/metrics-guide.md)
+> 各品質メトリクスの採点基準およびスキーマ詳細は [metrics-guide.md](/guides/metrics-guide.md)
 > を参照してください。 Effort（介入回数）の厳密な定義や3点見積もりフローについては
-> [backlog-guidelines.md](/.agents/management/backlog-guidelines.md) を参照してください。
+> [backlog-guidelines.md](/guides/backlog-guidelines.md) を参照してください。
+> 予実差分析のデータモデル詳細は
+> [variance-analysis-data-model.md](/.agents/skills/bundles/management-bundle/record-session-metrics/references/variance-analysis-data-model.md)
+> を参照してください。

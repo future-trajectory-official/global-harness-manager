@@ -17,8 +17,7 @@ tags:
 本スキルを実行するAI（および人間）は、以下の手順を最短経路で実行してください。
 
 1. **インプット情報の読み込み**
-   - [metrics-guide.md](/.agents/skills/bundles/management-bundle/evaluate-sprint-metrics/references/metrics-guide.md)
-     を読み込み、評価指標と採点基準を把握します。
+   - [metrics-guide.md](/guides/metrics-guide.md) を読み込み、評価指標と採点基準を把握します。
    - セッション履歴が記録されている [metrics.jsonl](/.agents/management/metrics.jsonl)
      を読み込み、4大指標（Intent, Constraint 等）のスコアを抽出します。
    - [product-backlog.md](/.agents/management/product-backlog.md)
@@ -45,7 +44,10 @@ tags:
 
 4. **スパイク後WPの乖離パターン集計**
    - スプリント内の全WPから
-     `WP_M'`（[スパイク後本実装WP](/.agents/management/backlog-guidelines.md#223-スパイクwp-spike-work-package)）を識別する
-   - [backlog-guidelines.md 2.2.1](/.agents/management/backlog-guidelines.md#221-work-packageの見積り基準-effort--人間の介入回数)
+     `WP_M'`（[スパイク後本実装WP](/guides/backlog-guidelines.md#223-スパイクwp-spike-work-package)）を識別する
+   - [backlog-guidelines.md 2.2.1](/guides/backlog-guidelines.md#221-work-packageの見積り基準-effort--人間の介入回数)
      の乖離分析基準に基づき、WP_M' の計画前見積・計画後見積・完了時実績の乖離パターンを集計する
    - 乖離がスパイク後WPに集中している場合、スプリント評価コメントに「スパイクプロセス全体の質的課題」を記載する
+   - 予実差分析のデータモデル詳細は
+     [variance-analysis-data-model.md](/.agents/skills/bundles/management-bundle/evaluate-sprint-metrics/references/variance-analysis-data-model.md)
+     を参照

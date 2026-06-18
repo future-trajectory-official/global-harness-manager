@@ -135,8 +135,7 @@ archive-backlog の結果をもとに record-velocity を実行する連携Phase
 - **入力（前提条件）**:
   - セッション履歴が記録されている `[metrics.jsonl](/.agents/management/metrics.jsonl)` (※
     またはそれに準ずるメトリクスログ)。
-  - `[metrics-guide.md](/.agents/skills/bundles/management-bundle/evaluate-sprint-metrics/references/metrics-guide.md)`
-    の定量採点基準。
+  - `[metrics-guide.md](/guides/metrics-guide.md)` の定量採点基準。
 - **手続き**:
   1. 採点基準に基づき、4つの主要指標（Goal Achievement, Velocity, Quality, Collaboration &
      Discipline）を1-5点で定量評価します。

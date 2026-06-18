@@ -304,6 +304,19 @@ case "$ALL" in
     echo '{"number":'"$NUM"',"url":"https://github.com/owner/repo/issues/1","title":"Updated","state":"open","labels":[{"name":"bug"}],"body":"","milestone":null}'
     ;;
   *"issue view"*)
+    # Extract issue number from args
+    ISSUE_NUM=""
+    for arg in "$@"; do
+      case "$arg" in
+        --json) break ;;
+        *) ISSUE_NUM="$arg" ;;
+      esac
+    done
+    # Return null for issue 999 (not found case)
+    if [ "$ISSUE_NUM" = "999" ]; then
+      echo "gh: issue 999 not found" >&2
+      exit 1
+    fi
     echo '{"number":1,"url":"https://github.com/owner/repo/issues/1","title":"Test Issue","state":"open","labels":[{"name":"bug"}],"body":"test body","milestone":{"title":"v1","number":1}}'
     ;;
   *"issue close"*)
@@ -604,8 +617,10 @@ Deno.test("DomainIssueImpl - find should return issue via Gateway", async () => 
 });
 
 Deno.test("DomainIssueImpl - find should return null when issue not found", async () => {
-  const issue = await DomainIssueImpl.find(TEST_CONTEXT, 999);
-  assertEquals(issue, null);
+  await withMockGh(async () => {
+    const issue = await DomainIssueImpl.find(TEST_CONTEXT, 999);
+    assertEquals(issue, null);
+  });
 });
 
 Deno.test("DomainIssueImpl - list should return issue array via Gateway", async () => {
