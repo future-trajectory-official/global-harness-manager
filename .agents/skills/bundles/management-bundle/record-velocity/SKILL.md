@@ -56,3 +56,6 @@ deno run -A .agents/skills/bundles/management-bundle/record-velocity/scripts/rec
 - 集計ロジックの詳細は
   [velocity-algorithm.md](/.agents/skills/bundles/management-bundle/record-velocity/references/velocity-algorithm.md)
   を参照
+- 予実差分析のデータモデル詳細は
+  [variance-analysis-data-model.md](/.agents/skills/bundles/management-bundle/record-velocity/references/variance-analysis-data-model.md)
+  を参照

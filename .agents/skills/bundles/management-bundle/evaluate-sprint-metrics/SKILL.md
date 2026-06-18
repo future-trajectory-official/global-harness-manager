@@ -48,3 +48,6 @@ tags:
    - [backlog-guidelines.md 2.2.1](/guides/backlog-guidelines.md#221-work-packageの見積り基準-effort--人間の介入回数)
      の乖離分析基準に基づき、WP_M' の計画前見積・計画後見積・完了時実績の乖離パターンを集計する
    - 乖離がスパイク後WPに集中している場合、スプリント評価コメントに「スパイクプロセス全体の質的課題」を記載する
+   - 予実差分析のデータモデル詳細は
+     [variance-analysis-data-model.md](/.agents/skills/bundles/management-bundle/evaluate-sprint-metrics/references/variance-analysis-data-model.md)
+     を参照
