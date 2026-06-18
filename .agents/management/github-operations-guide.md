@@ -50,7 +50,7 @@
 
 1. **`github-wp-search`**: 親PBIに紐づく未完了WPを検索する
 2. 該当WPの Issue に実装計画（ACリスト）をコメント追記する
-3. PBI Issue の Status フィールドを WIP に更新する
+3. PBI Issue の Status を `In Progress` に更新する
 
 ### 2.3. `/develop-work-package`
 
@@ -78,13 +78,13 @@ Projects V2 では、以下のフィールドを活用して状態管理を行�
 
 ### 3.1. 標準フィールド
 
-| フィールド | 説明                            | 値の例                        |
-| ---------- | ------------------------------- | ----------------------------- |
-| Title      | Issueのタイトル（自動反映）     | `[EpicID/FeatureID]/PBI-Name` |
-| Status     | PBIの進捗状態（Project V2内蔵） | `Todo`, `In Progress`, `Done` |
-| Milestone  | 所属スプリント                  | `Sprint 12`                   |
-| Assignees  | 担当者                          | （任意）                      |
-| Labels     | 種別ラベルのみ                  | `type:PBI`                    |
+| フィールド | 説明                            | 値の例                                   |
+| ---------- | ------------------------------- | ---------------------------------------- |
+| Title      | Issueのタイトル（PBI名を入力）  | `PBI-Name`                               |
+| Status     | PBIの進捗状態（Project V2内蔵） | `Backlog`, `Todo`, `In Progress`, `Done` |
+| Milestone  | 所属スプリント                  | `Sprint 12`                              |
+| Assignees  | 担当者                          | （任意）                                 |
+| Labels     | 種別ラベルのみ                  | `type:PBI`                               |
 
 ### 3.2. 状態遷移とビューの活用
 
@@ -93,26 +93,30 @@ Project V2 ボードでは、**Status フィールド**
 
 | ビュー名             | フィルタ条件                                                          | 活用シーン                    |
 | -------------------- | --------------------------------------------------------------------- | ----------------------------- |
-| スプリントバックログ | Milestone = `Sprint N`                                                | スプリント開始時に全PBIを確認 |
+| スプリントバックログ | Milestone = `Sprint N`, Status != `Done`                              | スプリント中に対象のPBI一覧   |
+| 未着手候補           | Status = `Backlog`                                                    | 将来のスプリントで検討するPBI |
+| 未着手（コミット済） | Status = `Todo`                                                       | 次の着手候補の選定            |
 | 進行中PBI            | Status = `In Progress`                                                | 日次の進捗確認・滞りの発見    |
-| 未着手PBI            | Status = `Todo`                                                       | 次の着手候補の選定            |
 | 完了PBI              | Status = `Done`                                                       | スプリント終了時の成果確認    |
 | 種別別               | Labels contains `type:epic` / `type:feature` / `type:PBI` / `type:wp` | 階層構造の把握                |
 | サイズ別             | `harness-size-estimate` = XS / S / M / L / XL（Project V2フィールド） | 負荷分散の確認                |
 
 **具体的な運用イメージ**:
 
-1. **スプリント開始時**:
-   「スプリントバックログ」ビューで今回のスコープを一覧し、POとコミット範囲を最終確認します。
-2. **セッション開始時**: 該当PBIの Status を手動で WIP
+1. **バックログリファインメント**:
+   「未着手候補（Backlog）」ビューでPBIの優先順位を整理し、スプリント計画の準備をします。
+2. **スプリント開始時**: 「未着手候補」から今回のスプリントで実施するPBIの Status を `Todo`
+   に変更し、POとコミット範囲を確定します。
+3. **セッション開始時**: 該当PBIの Status を手動で `In Progress`
    に変更し、着手を可視化します（将来のワークフロー自動化対象）。
-3. **日次確認**: 「進行中PBI」ビューで長期間 WIP のままのPBIを特定し、POに状況を報告します。
-4. **スプリント終了時**:
+4. **日次確認**: 「進行中PBI」ビューで長期間 `In Progress`
+   のままのPBIを特定し、POに状況を報告します。
+5. **スプリント終了時**:
    「完了PBI」ビューで今スプリントの成果を一覧し、未完了PBIは次スプリントに繰り越し判断します。
 
 **運用のポイント**:
 
-- PBI Issue の Status フィールドは原則として手動操作不要（ワークフロー内で自動更新）。
+- PBI Issue の Status は原則として手動操作不要（ワークフロー内で自動更新）。
 - 各 Issue に紐づく子Issue（WP）の状態は、親Issueのコメント欄または sub-issues
   ツリーで確認できます。
 - クロスプロジェクトで Projects V2 を利用する場合は、各 Issue の `repo`
@@ -128,8 +132,8 @@ flowchart LR
     subgraph GitHub
         P[Project V2 Board]
         M[Milestone: Sprint N]
-        I1[Issue: PBI-A\nStatus: WIP]
-        I2[Issue: PBI-B\nStatus: TODO]
+        I1[Issue: PBI-A\nStatus: In Progress]
+        I2[Issue: PBI-B\nStatus: Todo]
         C1[Child Issue: WP_1\nState: open]
         C2[Child Issue: WP_2\nState: closed]
     end
@@ -145,15 +149,17 @@ flowchart LR
 ### 4.1. PBI の状態遷移
 
 ```
-Todo (未着手) --> In Progress (開発中) --> Done (完了)
+Backlog (未着手候補) --> Todo (スプリントコミット済) --> In Progress (開発中) --> Done (完了)
 ```
 
-- **Todo**: スプリントにコミットされたが未着手のPBI。Project V2 上で灰色表示。
+- **Backlog**: 将来のスプリントで実施を検討するPBI。Project V2 上で薄灰色表示。
+- **Todo**: スプリント計画で実施すると決定し、コミットされたPBI。Project V2 上で灰色表示。
 - **In Progress**: 現在開発中のPBI。Project V2 上で青色表示。子Issueの進捗で進行度を確認。
 - **Done**: 全ACが完了しPO承認を得たPBI。Project V2 上で緑色表示。スプリント終了時に Close。
 
 **Note**: 従来のカスタムフィールド `harness-status`（IDEA/TODO/WIP/DONE）は削除された。Project V2
-内蔵Status（Backlog/Todo/In Progress/Done）を使用する。
+内蔵Status（Backlog/Todo/In Progress/Done）を使用する。スプリント未計画のPBIは `Backlog`
+のまま維持される。
 
 ## 5. トラブルシューティング
 
