@@ -30,15 +30,14 @@ interface HarnessConfig {
   projects?: { productBacklog: number; sprintBoard: number };
   milestone?: { template: string };
   customFields?: {
-    type: string;
     size: string;
-    status: string;
+    sizeActual: string;
     sequence: string;
     effortInitial: string;
     effortPlaned: string;
     effortActual: string;
+    varianceText: string;
   };
-  "harness-type"?: { options: string[] };
 }
 
 const DEFAULT_HARNESSRC_PATH = join(PROJECT_ROOT, ".harnessrc");
@@ -133,139 +132,6 @@ function buildWpIssueBody(wp: WorkPackage): string {
   }
   return lines.join("\n");
 }
-
-interface WpVarianceData {
-  schema: string;
-  wpName: string;
-  effortInitial: number;
-  effortPlaned: number | null;
-  effortActual: number | null;
-  varianceInitialToPlaned: number | null;
-  variancePlanedToActual: number | null;
-  varianceTotal: number | null;
-  varianceReason: string | null;
-  status: string;
-  recordedAt: string;
-}
-
-function computeWpVariance(
-  wp: WorkPackage,
-): Pick<
-  WpVarianceData,
-  | "effortInitial"
-  | "effortPlaned"
-  | "effortActual"
-  | "varianceInitialToPlaned"
-  | "variancePlanedToActual"
-  | "varianceTotal"
-> {
-  const effortInitial = wp.effort;
-  const effortPlaned: number | null = null;
-  const effortActual: number | null = null;
-
-  const varianceInitialToPlaned = null;
-  const variancePlanedToActual = null;
-  const varianceTotal = null;
-
-  return {
-    effortInitial,
-    effortPlaned,
-    effortActual,
-    varianceInitialToPlaned,
-    variancePlanedToActual,
-    varianceTotal,
-  };
-}
-
-function buildVarianceCommentBody(
-  wp: WorkPackage,
-  variance: Pick<
-    WpVarianceData,
-    | "effortInitial"
-    | "effortPlaned"
-    | "effortActual"
-    | "varianceInitialToPlaned"
-    | "variancePlanedToActual"
-    | "varianceTotal"
-  >,
-): string {
-  const now = new Date().toISOString();
-  const data: WpVarianceData = {
-    schema: "variance-analysis/v1",
-    wpName: wp.name,
-    effortInitial: variance.effortInitial,
-    effortPlaned: variance.effortPlaned,
-    effortActual: variance.effortActual,
-    varianceInitialToPlaned: variance.varianceInitialToPlaned,
-    variancePlanedToActual: variance.variancePlanedToActual,
-    varianceTotal: variance.varianceTotal,
-    varianceReason: null,
-    status: wp.status === "done" ? "done" : "pending",
-    recordedAt: now,
-  };
-
-  const jsonBlock = JSON.stringify(data, null, 2);
-
-  const fmt = (v: number | null): string => v !== null ? `${v >= 0 ? "+" : ""}${v}` : "N/A";
-  const summary = [
-    `### Variance Analysis`,
-    ``,
-    `| Field | Value |`,
-    `|------|-------|`,
-    `| Effort Initial | ${data.effortInitial} |`,
-    `| Effort Planed | ${data.effortPlaned ?? "N/A"} |`,
-    `| Effort Actual | ${data.effortActual ?? "N/A"} |`,
-    `| Variance (init→planed) | ${fmt(data.varianceInitialToPlaned)} |`,
-    `| Variance (planed→actual) | ${fmt(data.variancePlanedToActual)} |`,
-    `| Variance (total) | ${fmt(data.varianceTotal)} |`,
-    `| Status | ${data.status} |`,
-    data.varianceReason ? `| Reason | ${data.varianceReason} |` : "",
-    ``,
-  ].filter(Boolean).join("\n");
-
-  return [
-    `<!-- variance-analysis -->`,
-    ``,
-    jsonBlock,
-    ``,
-    summary,
-    `<!-- /variance-analysis -->`,
-  ].join("\n");
-}
-
-async function postIssueComment(
-  context: IGitHubContext,
-  issueNumber: number,
-  body: string,
-): Promise<void> {
-  try {
-    const result = await executeCommand({
-      cmd: "gh",
-      args: [
-        "issue",
-        "comment",
-        String(issueNumber),
-        "--repo",
-        `${context.owner}/${context.repository}`,
-        "--body",
-        body,
-      ],
-    });
-    if (result.code !== 0) {
-      console.error(
-        `  WARNING: Failed to post comment on issue #${issueNumber}: ${result.stderr.trim()}`,
-      );
-    }
-  } catch (err) {
-    console.error(`  WARNING: Error posting comment on issue #${issueNumber}: ${err}`);
-  }
-}
-
-const PBI_LABELS: Record<PbiRecord["status"], string> = {
-  TODO: "status:TODO",
-  WIP: "status:WIP",
-  DONE: "status:DONE",
-};
 
 function parsePbiId(id: string): { epic?: string; feature?: string; name: string } {
   const match = id.match(/^\[([^\/]+)(?:\/([^\]]+))?\]\/(.+)$/);
@@ -517,13 +383,7 @@ async function cmdMigrate(
   const sprint = extractSprint(content, pbi.id);
   const milestone = sprint ? await ensureMilestone(context, sprint) : undefined;
 
-  const parentLabels = ["type:PBI", PBI_LABELS[pbi.status]];
-  if (pbi.size) {
-    const sizeLabel = `size:${pbi.size.toUpperCase()}`;
-    if (!parentLabels.includes(sizeLabel)) {
-      parentLabels.push(sizeLabel);
-    }
-  }
+  const parentLabels = ["type:PBI"];
   const parentBody = buildIssueBody(pbi);
 
   const effortInitial = computeEffortTotal(pbi.wpList);
@@ -549,19 +409,7 @@ async function cmdMigrate(
     if (pbi.wpList.length > 0) {
       console.log(`\n  With ${pbi.wpList.length} child WP Issue(s):`);
       for (const wp of pbi.wpList) {
-        const v = computeWpVariance(wp);
-        const fmt = (n: number | null): string => n !== null ? `${n >= 0 ? "+" : ""}${n}` : "N/A";
         console.log(`    - ${wp.name} (${wp.status})`);
-        console.log(
-          `      Effort: initial=${wp.effort} | planed=${v.effortPlaned ?? "N/A"} | actual=${
-            v.effortActual ?? "N/A"
-          }`,
-        );
-        console.log(
-          `      Variance: init→planed=${fmt(v.varianceInitialToPlaned)} | planed→actual=${
-            fmt(v.variancePlanedToActual)
-          } | total=${fmt(v.varianceTotal)}`,
-        );
         console.log(`      ACs: ${wp.acList.join(" | ")}`);
       }
     }
@@ -618,10 +466,6 @@ async function cmdMigrate(
       try {
         await wpIssue.close();
         console.log(`  Created WP Issue #${wpIssue.number} (closed): ${wp.name}`);
-        const variance = computeWpVariance(wp);
-        const commentBody = buildVarianceCommentBody(wp, variance);
-        await postIssueComment(context, wpIssue.number, commentBody);
-        console.log(`    Posted variance analysis comment`);
       } catch {
         console.error(`  WARNING: Failed to close WP ${wpIssue.number} (network issue)`);
         console.log(`  Created WP Issue #${wpIssue.number}: ${wp.name}`);
