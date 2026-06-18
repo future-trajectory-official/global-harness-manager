@@ -20,7 +20,7 @@ const ROOT = new URL("../", import.meta.url).pathname;
 
 const BACKLOG_PATH = `${ROOT}.agents/management/product-backlog.md`;
 const ARCHIVE_PATH = `${ROOT}.agents/management/product-backlog-archive.md`;
-const GUIDELINES_PATH = `${ROOT}.agents/management/backlog-guidelines.md`;
+const GUIDELINES_PATH = `${ROOT}guides/backlog-guidelines.md`;
 
 function fileExists(path: string): boolean {
   try {
