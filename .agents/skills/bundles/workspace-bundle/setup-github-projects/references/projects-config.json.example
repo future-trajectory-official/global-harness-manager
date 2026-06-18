@@ -1,0 +1,25 @@
+{
+  "productBacklog": {
+    "number": 0,
+    "url": "https://github.com/orgs/<org>/projects/<number>",
+    "fields": [
+      { "name": "harness-size-estimate", "dataType": "SINGLE_SELECT", "options": ["XS", "S", "M", "L", "XL"] },
+      { "name": "harness-size-actual", "dataType": "SINGLE_SELECT", "options": ["XS", "S", "M", "L", "XL"] },
+      { "name": "harness-sequence", "dataType": "NUMBER" },
+      { "name": "harness-variance-text", "dataType": "TEXT" }
+    ]
+  },
+  "sprintBoard": {
+    "number": 0,
+    "url": "https://github.com/orgs/<org>/projects/<number>",
+    "fields": [
+      { "name": "harness-effort-initial", "dataType": "NUMBER" },
+      { "name": "harness-effort-planed", "dataType": "NUMBER" },
+      { "name": "harness-effort-actual", "dataType": "NUMBER" },
+      { "name": "harness-sequence", "dataType": "NUMBER" },
+      { "name": "harness-variance-text", "dataType": "TEXT" }
+    ]
+  },
+  "repo": "<owner/repo>",
+  "createdAt": "<ISO-8601>"
+}
