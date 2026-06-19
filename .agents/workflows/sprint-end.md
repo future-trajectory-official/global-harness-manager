@@ -37,6 +37,8 @@ description: スプリントの終了プロセス（レビュー、アーカイ�
   1. 「Sprint Review
      Report」のフォーマットに沿ってゴール達成度評価およびPBI完了・未完了状況が提示されていること。
   2. PO（ユーザー）がデモ内容および成果物を承認していること。
+  3. **【GitHubルート】** `type:Review` Issue に達成率、完了 PBI Issue
+     番号、エッジケース検証結果、デモ結果等のエビデンスが追記されていること。
 
 > [!IMPORTANT]
 > 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
@@ -172,6 +174,8 @@ archive-backlog の結果をもとに record-velocity を実行する連携Phase
   1. 「Sprint Retrospective
      (KPT)」のフォーマットに従ってKPTおよびAIからの改善提言が提示されていること。
   2. 次スプリントの改善Try（具体的なアクションやルール改修）について、ユーザーと合意が形成されていること。
+  3. **【GitHubルート】** `type:Reflection` Issue に Keep / Problem / Try
+     および参照元セッションが追記されていること。
 
 > [!IMPORTANT]
 > 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
