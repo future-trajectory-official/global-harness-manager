@@ -78,18 +78,6 @@ description: スプリントの開始プロセス（リファインメント、�
   さらに、スプリントレビュー時にそれらのAC達成をどう客観的に証明するか（実行ログの提示、テストのパス証明、browser_subagent等によるUI証跡の提示など）の「証明方法」も併せて定義する。
   このとき、バックログの肥大化とコンテキスト圧迫を防ぐため、詳細なデモ手順や証明方法の突き合わせチェックリストは外部ファイル（`sprint-review.md`
   等）に記述し、スプリントバックログの最下部にはその外部ファイルへの参照リンクのみを記述したレビュー検証PBI（例：`[SprintReview]/Sprint-N-Review-Verification`）を追加する規律を適用する。
-
-  <!-- GitHubルート（並行運用） -->
-
-  加えて、GitHub 運用時は `type:Review` / `type:Reflection` Issue を新規作成する。
-  - `type:Review`: 対象スプリントのマイルストーンを紐づけ、タイトルを `Sprint {N} Review`
-    とし、レビュー対象 PBI・エッジケース検証項目・デモ手順を Issue body
-    に追記する。`.agents/management/sprint-review.md.example`
-    の構成に沿い、作成時は計画を記入し、実施時に 🟢/🔴 で判定を更新する。
-  - `type:Reflection`: 対象スプリントのマイルストーンを紐づけ、タイトルを `Sprint {N} Reflection`
-    とし、前回の Try を基に今スプリントのフォーカスを追記する。
-  - 両 Issue には `type:Review` / `type:Reflection` ラベルのみ付与し、`status:*` / `size:*`
-    ラベルは付与しない。
 - **期待される結果（終了条件）**:
   1. すべての着手対象タスクに明確な AC とエッジケースが定義されていること。
   2. **【Refactor観点】**
