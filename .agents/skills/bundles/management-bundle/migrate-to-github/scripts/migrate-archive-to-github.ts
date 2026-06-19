@@ -392,24 +392,6 @@ async function setProjectFields(
 
   const fieldUpdates: { name: string; value: string }[] = [];
 
-  if (config.customFields?.effortInitial && entry.effortInitial > 0) {
-    const name = config.customFields.effortInitial;
-    if (fieldIdMap.has(name)) {
-      fieldUpdates.push({ name, value: String(entry.effortInitial) });
-    }
-  }
-  if (config.customFields?.effortPlaned && entry.effortPlaned > 0) {
-    const name = config.customFields.effortPlaned;
-    if (fieldIdMap.has(name)) {
-      fieldUpdates.push({ name, value: String(entry.effortPlaned) });
-    }
-  }
-  if (config.customFields?.effortActual && entry.effortActual > 0) {
-    const name = config.customFields.effortActual;
-    if (fieldIdMap.has(name)) {
-      fieldUpdates.push({ name, value: String(entry.effortActual) });
-    }
-  }
   if (config.customFields?.sizeActual && entry.sizeActual) {
     const name = config.customFields.sizeActual;
     if (fieldIdMap.has(name)) {
@@ -508,10 +490,7 @@ async function cmdDryRun(archivePath: string): Promise<void> {
           : "Create independent PBI"
       }`,
     );
-    console.log(`    Project V2 fields to set:`);
-    console.log(`      ${"harness-effort-initial"}: ${entry.effortInitial}`);
-    console.log(`      ${"harness-effort-planed"}: ${entry.effortPlaned}`);
-    console.log(`      ${"harness-effort-actual"}: ${entry.effortActual}`);
+    console.log(`    Project V2 fields to set (Product Backlog):`);
     console.log(`      ${"harness-size-actual"}: ${entry.sizeActual || "(unset)"}`);
     if (entry.varianceText) {
       console.log(`      ${"harness-variance-text"}: ${entry.varianceText.slice(0, 60)}...`);
@@ -554,16 +533,7 @@ async function cmdMigrate(
       }
       if (entry.sprint) console.log(`    Milestone: ${entry.sprint}`);
       if (config.customFields) {
-        console.log(`    Fields to set:`);
-        if (config.customFields.effortInitial && entry.effortInitial > 0) {
-          console.log(`      ${config.customFields.effortInitial}: ${entry.effortInitial}`);
-        }
-        if (config.customFields.effortPlaned && entry.effortPlaned > 0) {
-          console.log(`      ${config.customFields.effortPlaned}: ${entry.effortPlaned}`);
-        }
-        if (config.customFields.effortActual && entry.effortActual > 0) {
-          console.log(`      ${config.customFields.effortActual}: ${entry.effortActual}`);
-        }
+        console.log(`    Fields to set (Product Backlog):`);
         if (config.customFields.sizeActual && entry.sizeActual) {
           console.log(`      ${config.customFields.sizeActual}: ${entry.sizeActual}`);
         }
@@ -583,16 +553,6 @@ async function cmdMigrate(
     const issue = await ensureIssue(context, entry, config);
     console.log(`  Issue #${issue.number}: ${issue.title}`);
 
-    if (config.projects?.sprintBoard) {
-      console.log(`  Setting effort fields on Sprint Board #${config.projects.sprintBoard}...`);
-      await setProjectFields(
-        context,
-        String(config.projects.sprintBoard),
-        issue.number,
-        entry,
-        config,
-      );
-    }
     if (config.projects?.productBacklog) {
       console.log(
         `  Setting size/variance fields on Product Backlog #${config.projects.productBacklog}...`,

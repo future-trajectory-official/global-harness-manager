@@ -6,8 +6,12 @@
 ## 用途
 
 - アーカイブ済みPBIの履歴をGitHub上で参照可能にする
-- スプリントレビューやベロシティ分析で実績データをProject V2から直接参照可能にする
+- Product Backlogに実績サイズ（size-actual）と乖離理由（variance-text）を記録する
 - 既存のIssueが存在する場合はスキップされる（冪等）
+
+> **注**: PBIレベルのeffort値はWP effortの集計値であり、Sprint
+> Board上でWP単位で記録するeffortと混在させるべきではないため、アーカイブPBIのeffortデータはSprint
+> Boardには書き込みません。
 
 ## 前提条件
 
@@ -46,10 +50,9 @@ Found 55 archived PBI(s):
     Size: estimate=M / actual=XS
     Effort: initial=1 / planed=1 / actual=1
     Action: Create independent PBI
-    Project V2 fields to set:
-      harness-effort-initial: 1
-      harness-effort-planed: 1
-      ...
+    Project V2 fields to set (Product Backlog):
+      harness-size-actual: XS
+      harness-variance-text: Sprint 11 全PBIの受入基準...
 ```
 
 ### 2. 本実行
@@ -81,9 +84,9 @@ deno run -A .agents/skills/bundles/management-bundle/migrate-to-github/scripts/m
 1. `product-backlog-archive.md` をパースし、全完了PBIエントリを抽出
 2. 各エントリについて: a. 同一タイトルの既存Issue（`type:PBI` ラベル）を検索 b.
    存在しない場合のみ新規Issueを作成（`type:PBI`、完了状態でclose） c.
-   Epic/Feature構造がある場合は階層も作成 d. 該当Sprintのマイルストーンを設定 e. IssueをSprint Board
-   #11 に追加し、effort-initial/planed/actual を設定 f. IssueをProduct Backlog #10
-   に追加し、size-actual、variance-text を設定
+   Epic/Feature構造がある場合は階層も作成 d. 該当Sprintのマイルストーンを設定 e. Product
+   Backlogに追加し、size-actual、variance-text を設定 ※ アーカイブPBIはSprint
+   Boardには追加しません。effortデータは参照用としてIssue Bodyにのみ含まれます。
 
 ## 注意事項
 
