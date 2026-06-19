@@ -414,7 +414,7 @@ export async function getProjectFields(
  * @returns 成功時true
  */
 export async function setProjectField(
-  context: IGitHubContext,
+  _context: IGitHubContext,
   fieldUpdate: SetProjectFieldOptions,
   execOptions?: RunOptions,
 ): Promise<boolean> {
