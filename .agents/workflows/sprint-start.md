@@ -82,10 +82,12 @@ description: スプリントの開始プロセス（リファインメント、�
   <!-- GitHubルート（並行運用） -->
 
   加えて、GitHub 運用時は `type:Review` / `type:Reflection` Issue を新規作成する。
-  - `type:Review`: 対象スプリントをタイトルに含め（例: `Sprint 12 Review`）、レビュー対象
-    PBI・エッジケース検証項目・デモ手順を Issue body に追記する。
-  - `type:Reflection`: 対象スプリントをタイトルに含め（例: `Sprint 12 Reflection`）、前回の Try
-    を基に今スプリントのフォーカスを追記する。
+  - `type:Review`: 対象スプリントのマイルストーンを紐づけ、タイトルを `Sprint {N} Review`
+    とし、レビュー対象 PBI・エッジケース検証項目・デモ手順を Issue body
+    に追記する。`.agents/management/sprint-review.md.example`
+    の構成に沿い、作成時は計画を記入し、実施時に 🟢/🔴 で判定を更新する。
+  - `type:Reflection`: 対象スプリントのマイルストーンを紐づけ、タイトルを `Sprint {N} Reflection`
+    とし、前回の Try を基に今スプリントのフォーカスを追記する。
   - 両 Issue には `type:Review` / `type:Reflection` ラベルのみ付与し、`status:*` / `size:*`
     ラベルは付与しない。
 - **期待される結果（終了条件）**:
