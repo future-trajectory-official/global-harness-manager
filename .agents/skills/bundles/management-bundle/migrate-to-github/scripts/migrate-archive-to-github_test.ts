@@ -67,9 +67,8 @@ Deno.test("migrate-archive-to-github --dry-run should parse archive and show pla
     assertStringIncludes(output, "[TestEpic/TestFeature]/Completed-PBI");
     assertStringIncludes(output, "Sprint 11");
     assertStringIncludes(output, "Sprint 10");
-    assertStringIncludes(output, "harness-effort-initial: 1");
-    assertStringIncludes(output, "harness-effort-planed: 1");
-    assertStringIncludes(output, "harness-effort-actual: 1");
+    assertStringIncludes(output, "Effort: initial=1 / planed=1 / actual=1");
+    assertStringIncludes(output, "Effort: initial=2 / planed=3 / actual=4");
     assertStringIncludes(output, "harness-size-actual: XS");
     assertStringIncludes(output, "harness-size-actual: S");
   } finally {
@@ -160,8 +159,8 @@ Deno.test("migrate-archive-to-github --dry-run should handle entries with missin
     assertEquals(code, 0);
     assertStringIncludes(output, "Valid-PBI");
     assertStringIncludes(output, "Found 3 archived PBI(s)");
-    assertStringIncludes(output, "harness-effort-initial: 1");
-    assertStringIncludes(output, "harness-effort-initial: 0");
+    assertStringIncludes(output, "Effort: initial=1 / planed=1 / actual=1");
+    assertStringIncludes(output, "Effort: initial=0 / planed=0 / actual=0");
   } finally {
     await Deno.remove(tmpFile);
   }
