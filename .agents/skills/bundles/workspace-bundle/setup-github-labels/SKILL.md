@@ -1,6 +1,6 @@
 ---
 name: setup-github-labels
-description: "任意のGitHubリポジトリにHarness標準ラベル（type/status/size 11種）を一括構築する"
+description: "任意のGitHubリポジトリにHarness標準ラベル（type 6種）を一括構築する"
 tags:
   trigger:
     - github-label-setup
@@ -12,7 +12,7 @@ tags:
 
 # setup-github-labels
 
-任意のGitHubリポジトリに対して、type/status/size の11種ラベルを一括作成します。
+任意のGitHubリポジトリに対して、type の6種ラベルを一括作成します。
 
 ## 実行方法
 
@@ -25,7 +25,7 @@ deno run -A .agents/skills/bundles/workspace-bundle/setup-github-labels/scripts/
 | モード  | 動作                                                        |
 | ------- | ----------------------------------------------------------- |
 | `safe`  | 競合する既存ラベルが1つでもあれば中断し、競合一覧を報告する |
-| `force` | 既存ラベルを全削除してから全11種を再作成する                |
+| `force` | 既存ラベルを全削除してから全6種を再作成する                 |
 
 ## リファレンス
 

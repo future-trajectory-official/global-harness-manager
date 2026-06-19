@@ -18,7 +18,7 @@ async function main() {
 
   const input = await readJsonFromStdin<StdinInput>();
   const context = parseContext(args.repo);
-  const labels = applyLabelPrefix(["type:PBI", "status:idea"], args["label-prefix"] ?? "");
+  const labels = applyLabelPrefix(["type:PBI"], args["label-prefix"] ?? "");
 
   const issue = await Issue.create(context, {
     title: input.title,
