@@ -43,3 +43,13 @@ echo '{"pbiId":"[Epic/Feature]/PBI-Name","repo":"owner/repo"}' | deno run -A .ag
 | `--backlog <path>`   |            | backlogファイルのパス（省略時は `product-backlog.md`） |
 | `--harnessrc <path>` |            | `.harnessrc` 設定ファイルのパス                        |
 | `--help`             | `-h`       | ヘルプを表示                                           |
+
+## 関連スクリプト
+
+### アーカイブPBI一括移行
+
+`product-backlog-archive.md` に記録された全完了PBIを一括でGitHub Issue化し、Project
+V2に実績データを設定します。
+
+詳細:
+[アーカイブ移行ガイド](/.agents/skills/bundles/management-bundle/migrate-to-github/references/archive-migration-guide.md)|

@@ -326,7 +326,7 @@ case "$ALL" in
     exit 0
     ;;
   *"project field-list"*)
-    echo '[{"id":"field_1","name":"Status","type":"SINGLE_SELECT","options":[]},{"id":"field_2","name":"Priority","type":"SINGLE_SELECT","options":[]},{"id":"field_3","name":"Size","type":"NUMBER"}]'
+    echo '{"fields":[{"id":"field_1","name":"Status","type":"SINGLE_SELECT","options":[]},{"id":"field_2","name":"Priority","type":"SINGLE_SELECT","options":[]},{"id":"field_3","name":"Size","type":"NUMBER"}]}'
     ;;
   *"CreateMilestone"*|*"milestones"*"-f"*)
     echo '{"number":1,"html_url":"https://github.com/owner/repo/milestone/1"}'
