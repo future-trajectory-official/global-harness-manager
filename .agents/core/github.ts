@@ -87,6 +87,7 @@ export interface UpdateIssueOptions {
 export interface ProjectField {
   id: string;
   name: string;
+  type?: string;
   options?: { id: string; name: string }[];
 }
 
@@ -95,6 +96,9 @@ export interface SetProjectFieldOptions {
   itemId: string;
   fieldId: string;
   value: string;
+  projectId?: string;
+  valueType?: "number" | "text" | "singleSelectOptionId";
+  fieldType?: string;
 }
 
 /** createMilestone の引数 */
@@ -156,7 +160,7 @@ export async function searchIssues(
     "--json",
     "number,url,title,state,labels,body,milestone",
   ];
-  if (filter.state && filter.state !== "all") args.push("--state", filter.state);
+  if (filter.state) args.push("--state", filter.state);
   if (filter.labels && filter.labels.length > 0) args.push("--label", filter.labels.join(","));
   if (filter.milestone) args.push("--milestone", filter.milestone);
   if (filter.assignee) args.push("--assignee", filter.assignee);
@@ -387,16 +391,19 @@ export async function getProjectFields(
   projectId: string,
   execOptions?: RunOptions,
 ): Promise<ProjectField[]> {
-  const args = buildGhArgs(context, [
+  const args = [
     "project",
     "field-list",
     String(projectId),
-    "--json",
-    "id,name,type,options",
-  ]);
+    "--owner",
+    context.owner,
+    "--format",
+    "json",
+  ];
   const result = await runGh(args, execOptions);
   if (result.code !== 0) return [];
-  return parseJsonOutput<ProjectField[]>(result.stdout) ?? [];
+  const data = parseJsonOutput<{ fields: ProjectField[] }>(result.stdout);
+  return data?.fields ?? [];
 }
 
 /**
@@ -411,16 +418,24 @@ export async function setProjectField(
   fieldUpdate: SetProjectFieldOptions,
   execOptions?: RunOptions,
 ): Promise<boolean> {
-  const args = buildGhArgs(context, [
+  const valueFlag = fieldUpdate.valueType === "singleSelectOptionId" || fieldUpdate.fieldType === "singleSelect"
+    ? "--single-select-option-id"
+    : /^\d+$/.test(fieldUpdate.value)
+    ? "--number"
+    : "--text";
+  const args = [
     "project",
     "item-edit",
-    "--item-id",
+    "--id",
     fieldUpdate.itemId,
     "--field-id",
     fieldUpdate.fieldId,
-    "--value",
+    valueFlag,
     fieldUpdate.value,
-  ]);
+  ];
+  if (fieldUpdate.projectId) {
+    args.push("--project-id", fieldUpdate.projectId);
+  }
   const result = await runGh(args, execOptions);
   return result.code === 0;
 }
