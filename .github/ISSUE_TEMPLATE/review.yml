@@ -1,0 +1,58 @@
+name: Review作成
+description: スプリントレビュー記録用のIssueを新規作成
+labels:
+  - type:Review
+body:
+  - type: input
+    id: target_sprint
+    attributes:
+      label: 対象スプリント
+      description: "レビュー対象のスプリント番号を入力してください。"
+      placeholder: "Sprint 12"
+    validations:
+      required: true
+
+  - type: textarea
+    id: review_plan
+    attributes:
+      label: レビュー計画
+      description: "レビュー対象のPBI、エッジケース検証項目、デモ手順を記述してください。"
+      placeholder: "- PBI-A: ユーザー認証機能のデモ\n- PBI-B: ログ出力機能のテスト結果確認\n- エッジケース: 無効なトークン時の挙動"
+    validations:
+      required: false
+
+  - type: textarea
+    id: achievement_summary
+    attributes:
+      label: 達成状況サマリー
+      description: "スプリントゴールに対する達成率や、完了・未完了PBIの概要を記述してください。"
+      placeholder: "- スプリントゴール達成率: 80%\n- 完了PBI: 3/4\n- 未完了PBI: PBI-C（次スプリントに繰り越し）"
+    validations:
+      required: false
+
+  - type: textarea
+    id: completed_pbis
+    attributes:
+      label: 完了PBI一覧
+      description: "完了したPBIのIssue番号を列挙してください。"
+      placeholder: "- #42\n- #43\n- #44"
+    validations:
+      required: false
+
+  - type: textarea
+    id: edge_case_validation
+    attributes:
+      label: エッジケース検証結果
+      description: "定義したAC・エッジケースの検証結果を記述してください。"
+      placeholder: "- 無効な入力値: エラーメッセージが表示されることを確認\n- 境界値: 最大長文字列でも正常に処理されることを確認"
+    validations:
+      required: false
+
+  - type: textarea
+    id: demo_evidence
+    attributes:
+      label: デモ結果・エビデンス
+      description: "デモの結果、テストパスログ、スクリーンショット等の客観的エビデンスを記述してください。"
+      placeholder: "- deno task qa: 309 passed\n- 実機デモ: PO承認済み"
+    validations:
+      required: false
