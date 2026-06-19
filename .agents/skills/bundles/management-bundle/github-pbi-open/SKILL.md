@@ -1,6 +1,6 @@
 ---
 name: github-pbi-open
-description: GitHub Issueとして新規PBI（type:PBI, status:idea）を作成する。
+description: GitHub Issueとして新規PBI（type:PBI）を作成する。
 tags:
   trigger:
     - github-pbi-open
@@ -11,8 +11,7 @@ tags:
 
 # github-pbi-open
 
-新しいPBI（アイデア段階）をGitHub Issueとして作成します。自動的に `type:PBI` および `status:idea`
-ラベルが付与されます。
+新しいPBI（アイデア段階）をGitHub Issueとして作成します。自動的に `type:PBI` ラベルが付与されます。
 
 ## 前提条件
 
@@ -42,4 +41,4 @@ echo '{"title":"<PBI-title>","body":"<description>"}' | deno run -A .agents/skil
 ### 3. 出力の確認
 
 - 成功時: `{ success: true, data: { number, title, labels, state } }`
-- 作成されたIssueに `type:PBI` + `status:idea` が付与されていることを確認
+- 作成されたIssueに `type:PBI` が付与されていることを確認
