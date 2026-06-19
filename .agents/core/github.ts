@@ -418,11 +418,12 @@ export async function setProjectField(
   fieldUpdate: SetProjectFieldOptions,
   execOptions?: RunOptions,
 ): Promise<boolean> {
-  const valueFlag = fieldUpdate.valueType === "singleSelectOptionId" || fieldUpdate.fieldType === "singleSelect"
-    ? "--single-select-option-id"
-    : /^\d+$/.test(fieldUpdate.value)
-    ? "--number"
-    : "--text";
+  const valueFlag =
+    fieldUpdate.valueType === "singleSelectOptionId" || fieldUpdate.fieldType === "singleSelect"
+      ? "--single-select-option-id"
+      : /^\d+$/.test(fieldUpdate.value)
+      ? "--number"
+      : "--text";
   const args = [
     "project",
     "item-edit",

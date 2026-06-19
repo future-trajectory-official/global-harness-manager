@@ -241,7 +241,7 @@ async function ensureMilestone(
 async function ensureIssue(
   context: IGitHubContext,
   entry: ArchiveEntry,
-  config: HarnessConfig,
+  _config: HarnessConfig,
 ): Promise<{ number: number; title: string }> {
   const existingIssues = await Issue.list(context, {
     labels: ["type:PBI"],
