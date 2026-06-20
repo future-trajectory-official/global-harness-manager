@@ -19,6 +19,7 @@ const NEW_SKILLS = [
   "github-sprint-velocity-record",
 ];
 
+/** 既存4スキルのスクリプトがdeno checkをパスすることを検証 */
 Deno.test("skills_smoke - existing 4 skills should pass deno check", async () => {
   for (const name of EXISTING_SKILLS) {
     const cmd = new Deno.Command("deno", {
@@ -33,6 +34,7 @@ Deno.test("skills_smoke - existing 4 skills should pass deno check", async () =>
   }
 });
 
+/** 新規7スキルのスクリプトがdeno checkをパスすることを検証 */
 Deno.test("skills_smoke - new 7 skills should pass deno check", async () => {
   for (const name of NEW_SKILLS) {
     const cmd = new Deno.Command("deno", {
@@ -47,6 +49,49 @@ Deno.test("skills_smoke - new 7 skills should pass deno check", async () => {
   }
 });
 
+const WP_G_SKILLS = [
+  "review-issue",
+  "reflection-issue",
+];
+
+/** WP_g: review-issue / reflection-issue のスクリプトがdeno checkをパスすることを検証 */
+Deno.test("skills_smoke - WP_g skills should pass deno check", async () => {
+  for (const name of WP_G_SKILLS) {
+    const cmd = new Deno.Command("deno", {
+      args: ["check", `${SKILL_DIR}/${name}/scripts/${name}.ts`],
+    });
+    const output = await cmd.output();
+    assertEquals(
+      output.code,
+      0,
+      `${name} failed deno check: ${new TextDecoder().decode(output.stderr)}`,
+    );
+  }
+});
+
+/** WP_g: JSON Schemaが有効なdraft-07形式であることを検証 */
+Deno.test("skills_smoke - WP_g skills should have valid JSON schemas", async () => {
+  for (const name of WP_G_SKILLS) {
+    const schema = JSON.parse(
+      await Deno.readTextFile(`.github/schemas/${name}-payload.schema.json`),
+    );
+    assertEquals(schema.$schema, "http://json-schema.org/draft-07/schema#");
+    assertEquals(typeof schema.type, "string");
+    assertEquals(Array.isArray(schema.required), true);
+  }
+});
+
+/** WP_g: SKILL.mdにQuick-Start/前提条件/手順の必須セクションが存在することを検証 */
+Deno.test("skills_smoke - WP_g skills should have SKILL.md with required sections", async () => {
+  for (const name of WP_G_SKILLS) {
+    const skillMd = await Deno.readTextFile(`${SKILL_DIR}/${name}/SKILL.md`);
+    assertEquals(skillMd.includes("## Quick-Start"), true, `${name} SKILL.md missing Quick-Start`);
+    assertEquals(skillMd.includes("## 前提条件"), true, `${name} SKILL.md missing 前提条件`);
+    assertEquals(skillMd.includes("## 手順"), true, `${name} SKILL.md missing 手順`);
+  }
+});
+
+/** --repoに不正な形式を渡した時にエラーメッセージが出力されることを検証 */
 Deno.test("skills_smoke - --repo validation should print error for invalid format", async () => {
   const cmd = new Deno.Command("deno", {
     args: [
