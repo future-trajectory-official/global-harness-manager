@@ -128,4 +128,4 @@
 
 ## JSON Schema
 
-厳密なバリデーションは `schemas/review-issue-payload.schema.json` を参照。
+厳密なバリデーションは `/.github/schemas/review-issue-payload.schema.json` を参照。

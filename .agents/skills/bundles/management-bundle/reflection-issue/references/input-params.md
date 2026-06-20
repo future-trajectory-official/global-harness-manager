@@ -47,4 +47,4 @@
 
 ## JSON Schema
 
-厳密なバリデーションは `schemas/reflection-issue-payload.schema.json` を参照。
+厳密なバリデーションは `/.github/schemas/reflection-issue-payload.schema.json` を参照。

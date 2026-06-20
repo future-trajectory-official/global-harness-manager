@@ -73,7 +73,7 @@ Deno.test("skills_smoke - WP_g skills should pass deno check", async () => {
 Deno.test("skills_smoke - WP_g skills should have valid JSON schemas", async () => {
   for (const name of WP_G_SKILLS) {
     const schema = JSON.parse(
-      await Deno.readTextFile(`${SKILL_DIR}/${name}/schemas/${name}-payload.schema.json`),
+      await Deno.readTextFile(`.github/schemas/${name}-payload.schema.json`),
     );
     assertEquals(schema.$schema, "http://json-schema.org/draft-07/schema#");
     assertEquals(typeof schema.type, "string");
