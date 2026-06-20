@@ -19,6 +19,7 @@ const NEW_SKILLS = [
   "github-sprint-velocity-record",
 ];
 
+/** 既存4スキルのスクリプトがdeno checkをパスすることを検証 */
 Deno.test("skills_smoke - existing 4 skills should pass deno check", async () => {
   for (const name of EXISTING_SKILLS) {
     const cmd = new Deno.Command("deno", {
@@ -33,6 +34,7 @@ Deno.test("skills_smoke - existing 4 skills should pass deno check", async () =>
   }
 });
 
+/** 新規7スキルのスクリプトがdeno checkをパスすることを検証 */
 Deno.test("skills_smoke - new 7 skills should pass deno check", async () => {
   for (const name of NEW_SKILLS) {
     const cmd = new Deno.Command("deno", {
@@ -52,6 +54,7 @@ const WP_G_SKILLS = [
   "reflection-issue",
 ];
 
+/** WP_g: review-issue / reflection-issue のスクリプトがdeno checkをパスすることを検証 */
 Deno.test("skills_smoke - WP_g skills should pass deno check", async () => {
   for (const name of WP_G_SKILLS) {
     const cmd = new Deno.Command("deno", {
@@ -66,6 +69,7 @@ Deno.test("skills_smoke - WP_g skills should pass deno check", async () => {
   }
 });
 
+/** WP_g: JSON Schemaが有効なdraft-07形式であることを検証 */
 Deno.test("skills_smoke - WP_g skills should have valid JSON schemas", async () => {
   for (const name of WP_G_SKILLS) {
     const schema = JSON.parse(
@@ -77,6 +81,7 @@ Deno.test("skills_smoke - WP_g skills should have valid JSON schemas", async () 
   }
 });
 
+/** WP_g: SKILL.mdにQuick-Start/前提条件/手順の必須セクションが存在することを検証 */
 Deno.test("skills_smoke - WP_g skills should have SKILL.md with required sections", async () => {
   for (const name of WP_G_SKILLS) {
     const skillMd = await Deno.readTextFile(`${SKILL_DIR}/${name}/SKILL.md`);
@@ -86,6 +91,7 @@ Deno.test("skills_smoke - WP_g skills should have SKILL.md with required section
   }
 });
 
+/** --repoに不正な形式を渡した時にエラーメッセージが出力されることを検証 */
 Deno.test("skills_smoke - --repo validation should print error for invalid format", async () => {
   const cmd = new Deno.Command("deno", {
     args: [
