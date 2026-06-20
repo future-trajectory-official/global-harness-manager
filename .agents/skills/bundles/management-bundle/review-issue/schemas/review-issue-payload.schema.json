@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/future-trajectory-official/global-harness-manager/schemas/review-issue-payload.schema.json",
+  "title": "ReviewIssuePayload",
+  "description": "ReviewIssue 作成のための入力パラメータ",
+  "type": "object",
+  "required": ["title", "milestone", "milestoneNumber"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Issue タイトル"
+    },
+    "milestone": {
+      "type": "string",
+      "description": "マイルストーン名（例: Sprint 12）"
+    },
+    "milestoneNumber": {
+      "type": "integer",
+      "description": "マイルストーン番号"
+    },
+    "sprintGoal": {
+      "type": "string",
+      "description": "スプリントゴール"
+    },
+    "reviewDate": {
+      "type": "string",
+      "description": "レビュー実施日"
+    },
+    "demoEnvironment": {
+      "type": "string",
+      "description": "デモ環境"
+    },
+    "achievementRate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "達成率（%）"
+    },
+    "pbiResults": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pbiId", "pbiTitle", "proofMethod", "acResults"],
+        "properties": {
+          "pbiId": { "type": "string" },
+          "pbiTitle": { "type": "string" },
+          "proofMethod": { "type": "string" },
+          "acResults": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["ac", "proofMethod", "evidence", "result"],
+              "properties": {
+                "ac": { "type": "string" },
+                "proofMethod": { "type": "string" },
+                "evidence": { "type": "string" },
+                "result": { "type": "string", "enum": ["pass", "fail", "pending"] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "edgeCaseValidations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["description", "result"],
+        "properties": {
+          "description": { "type": "string" },
+          "result": { "type": "string", "enum": ["pass", "fail", "pending"] },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "poFeedback": { "type": "string" },
+    "approvalDate": { "type": "string" },
+    "approvalState": {
+      "type": "string",
+      "enum": ["approved", "rejected", "pending"]
+    },
+    "rejectionReason": { "type": "string" },
+    "handoffItems": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
