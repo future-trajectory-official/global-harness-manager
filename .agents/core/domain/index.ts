@@ -4,5 +4,7 @@ export * from "./value-objects.ts";
 export * from "./vision-usecase.ts";
 export * from "./product-goal-usecase.ts";
 export * from "./sprint-usecase.ts";
+export * from "./epic-usecase.ts";
+export * from "./feature-usecase.ts";
 export * from "./plan-gateway.ts";
 export * from "./config-gateway.ts";
