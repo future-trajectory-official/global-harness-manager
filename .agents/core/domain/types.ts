@@ -100,11 +100,11 @@ export interface SizeVariance {
   readonly varianceReason?: string;
 }
 
-/** 工数実績。全数値は0以上。 */
+/** 工数実績。initialEstimate は作成時に設定し、plannedEstimate/actual は段階的に更新する。 */
 export interface EffortRecord {
   readonly initialEstimate: number;
-  readonly plannedEstimate: number;
-  readonly actual: number;
+  readonly plannedEstimate?: number;
+  readonly actual?: number;
 }
 
 /** AIによるプロセス分析結果。 */
