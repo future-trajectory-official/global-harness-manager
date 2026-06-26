@@ -31,6 +31,33 @@ export interface Identifier {
 }
 
 /**
+ * Identifier の生成ヘルパー。
+ *
+ * ## 生成ルール
+ *
+ * | 関数 | id | 用途 | 該当操作 |
+ * |------|----|------|----------|
+ * | `identify(scope, title)` | undefined | 新規作成 | establish, set, start |
+ * | `identify(scope, title, id)` | 指定値 | 既存参照 | pivot, end, setGoal, find |
+ *
+ * id が undefined かどうかで、UseCase は「新規作成」と「既存更新」を切り替える。
+ */
+export function identify<T extends Identifier>(
+  scope: EntityScope,
+  title: string,
+  id?: string,
+): T {
+  return {
+    scope,
+    title: { value: title },
+    id,
+    describe(): Plan {
+      return { summary: title, steps: [] };
+    },
+  } as unknown as T;
+}
+
+/**
  * エンティティの検索条件。
  * describe() は dry-run 時に検索内容を Plan として返す。
  */
@@ -133,6 +160,7 @@ export type Operation =
   | "closeItem"
   | "findItem"
   | "searchItems"
+  | "addComment"
   | "createTimebox"
   | "updateTimebox"
   | "closeTimebox"
@@ -168,14 +196,19 @@ export interface VisionStatement {
   readonly differentiator: string;
 }
 
-/** 単一のターゲットアウトカム。 */
+/** 単一のターゲットアウトカム。タイトルと説明文で構成。 */
 export interface Outcome {
+  readonly title: string;
   readonly description: string;
 }
 
 /** アウトカムのリスト。 */
 export interface Outcomes {
   readonly items: readonly Outcome[];
+}
+
+/** ビジョンの識別子。 */
+export interface VisionIdentifier extends Identifier {
 }
 
 /** ビジョンデータ全体。ステートメント・アウトカム・変更履歴を内包。 */
@@ -192,6 +225,10 @@ export interface GoalStatement {
   readonly description: string;
 }
 
+/** プロダクトゴールの識別子。 */
+export interface ProductGoalIdentifier extends Identifier {
+}
+
 /** プロダクトゴールデータ。変更履歴を保持可能。 */
 export interface ProductGoalData {
   readonly statement: GoalStatement;
@@ -200,8 +237,24 @@ export interface ProductGoalData {
 
 // ======== Sprint系 ========
 
-/** Sprint の識別子。title.value がスプリント名を保持。ファクトリで number を解決する。 */
+/**
+ * Sprint の識別子。
+ * 直接生成せず `sprintId(scope, number, id?)` を使用すること。
+ * これにより "Sprint 16", "sprint 16", "Sprint16" 等の表記ブレを防止する。
+ */
 export interface SprintIdentifier extends Identifier {
+}
+
+/**
+ * Sprint の Identifier を生成する。
+ * number から正規化された "Sprint N" 形式の title を自動設定する。
+ * id を省略した場合は新規作成用（start）、指定した場合は既存参照用（end, setGoal, find）。
+ */
+export function sprintId(scope: EntityScope, number: number, id?: string): SprintIdentifier {
+  if (!Number.isInteger(number) || number < 1) {
+    throw new Error(`INVALID_INPUT: Sprint number must be a positive integer`);
+  }
+  return identify(scope, `Sprint ${number}`, id);
 }
 
 /** Sprint の全データ。 */

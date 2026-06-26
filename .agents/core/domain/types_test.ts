@@ -1,5 +1,5 @@
 import { assertEquals, assertInstanceOf } from "@std/assert";
-import { Size } from "./types.ts";
+import { Size, sprintId } from "./types.ts";
 import type {
   AcceptanceCriteria,
   BoardOutput,
@@ -23,7 +23,6 @@ import type {
   SearchCondition,
   SessionMetrics,
   SizeVariance,
-  SprintIdentifier,
   SprintMetrics,
   Step,
   StepResult,
@@ -89,6 +88,7 @@ Deno.test("types - Step should support all operation types", () => {
     "closeItem",
     "findItem",
     "searchItems",
+    "addComment",
     "createTimebox",
     "updateTimebox",
     "closeTimebox",
@@ -140,18 +140,21 @@ Deno.test("types - VisionStatement should have all fields", () => {
 Deno.test("types - VisionData should contain statement and outcomes", () => {
   const data: VisionData = {
     statement: { targetAudience: "dev", value: "speed", differentiator: "AI" },
-    outcomes: { items: [{ description: "Faster delivery" }] },
+    outcomes: { items: [{ title: "Speed", description: "Faster delivery" }] },
   };
   assertEquals(data.outcomes.items.length, 1);
 });
 
-Deno.test("types - SprintIdentifier should extend Identifier", () => {
-  const id: SprintIdentifier = {
-    scope: { owner: "org", repository: "repo" },
-    title: { value: "Sprint 15" },
-    describe: () => ({ summary: "get sprint", steps: [] }),
-  };
+Deno.test("types - sprintId should generate Sprint N format", () => {
+  const id = sprintId({ owner: "org", repository: "repo" }, 15);
   assertEquals(id.title.value, "Sprint 15");
+  assertEquals(id.id, undefined);
+});
+
+Deno.test("types - sprintId should accept id for persisted entities", () => {
+  const id = sprintId({ owner: "org", repository: "repo" }, 15, "MI_kwA...");
+  assertEquals(id.title.value, "Sprint 15");
+  assertEquals(id.id, "MI_kwA...");
 });
 
 Deno.test("types - EpicIdentifier should be an Identifier", () => {
