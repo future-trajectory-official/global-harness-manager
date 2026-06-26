@@ -16,29 +16,45 @@ export function createSize(value: string): Size {
 }
 
 /**
- * EffortRecord を生成する。全数値は0以上である必要がある。
+ * EffortRecord を生成する。initialEstimate のみ必須。plannedEstimate/actual は setter で段階的に設定する。
  */
-export function createEffortRecord(
-  initialEstimate: number,
-  plannedEstimate: number,
-  actual: number,
-): EffortRecord {
+export function createEffortRecord(initialEstimate: number): EffortRecord {
   if (!Number.isFinite(initialEstimate) || initialEstimate < 0) {
     throw new Error(
       `INVALID_INPUT: initialEstimate は0以上の数値である必要があります (received: ${initialEstimate})`,
     );
   }
+  return { initialEstimate };
+}
+
+/**
+ * EffortRecord に plannedEstimate を設定した新しいオブジェクトを返す。元のオブジェクトは不変。
+ */
+export function withPlannedEstimate(
+  record: EffortRecord,
+  plannedEstimate: number,
+): EffortRecord {
   if (!Number.isFinite(plannedEstimate) || plannedEstimate < 0) {
     throw new Error(
       `INVALID_INPUT: plannedEstimate は0以上の数値である必要があります (received: ${plannedEstimate})`,
     );
   }
+  return { ...record, plannedEstimate };
+}
+
+/**
+ * EffortRecord に actual を設定した新しいオブジェクトを返す。元のオブジェクトは不変。
+ */
+export function withActual(
+  record: EffortRecord,
+  actual: number,
+): EffortRecord {
   if (!Number.isFinite(actual) || actual < 0) {
     throw new Error(
       `INVALID_INPUT: actual は0以上の数値である必要があります (received: ${actual})`,
     );
   }
-  return { initialEstimate, plannedEstimate, actual } as const;
+  return { ...record, actual };
 }
 
 /**

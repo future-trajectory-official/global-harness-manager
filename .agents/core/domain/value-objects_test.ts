@@ -1,6 +1,12 @@
 import { assertEquals, assertThrows } from "@std/assert";
 import { Size } from "./types.ts";
-import { createEffortRecord, createSize, createSizeVariance } from "./value-objects.ts";
+import {
+  createEffortRecord,
+  createSize,
+  createSizeVariance,
+  withActual,
+  withPlannedEstimate,
+} from "./value-objects.ts";
 
 Deno.test("value-objects - createSize should return valid Size", () => {
   const size = createSize("M");
@@ -24,16 +30,16 @@ Deno.test("value-objects - createSize should throw for empty string", () => {
   );
 });
 
-Deno.test("value-objects - createEffortRecord should return valid record", () => {
-  const record = createEffortRecord(1, 2, 3);
+Deno.test("value-objects - createEffortRecord should return record with initialEstimate only", () => {
+  const record = createEffortRecord(1);
   assertEquals(record.initialEstimate, 1);
-  assertEquals(record.plannedEstimate, 2);
-  assertEquals(record.actual, 3);
+  assertEquals(record.plannedEstimate, undefined);
+  assertEquals(record.actual, undefined);
 });
 
 Deno.test("value-objects - createEffortRecord should throw for negative initialEstimate", () => {
   assertThrows(
-    () => createEffortRecord(-1, 2, 3),
+    () => createEffortRecord(-1),
     Error,
     "INVALID_INPUT",
   );
@@ -41,7 +47,7 @@ Deno.test("value-objects - createEffortRecord should throw for negative initialE
 
 Deno.test("value-objects - createEffortRecord should throw for NaN", () => {
   assertThrows(
-    () => createEffortRecord(NaN, 2, 3),
+    () => createEffortRecord(NaN),
     Error,
     "INVALID_INPUT",
   );
@@ -49,15 +55,55 @@ Deno.test("value-objects - createEffortRecord should throw for NaN", () => {
 
 Deno.test("value-objects - createEffortRecord should throw for Infinity", () => {
   assertThrows(
-    () => createEffortRecord(Infinity, 2, 3),
+    () => createEffortRecord(Infinity),
     Error,
     "INVALID_INPUT",
   );
 });
 
 Deno.test("value-objects - createEffortRecord should accept zero", () => {
-  const record = createEffortRecord(0, 0, 0);
-  assertEquals(record.actual, 0);
+  const record = createEffortRecord(0);
+  assertEquals(record.initialEstimate, 0);
+  assertEquals(record.plannedEstimate, undefined);
+});
+
+Deno.test("value-objects - withPlannedEstimate should add plannedEstimate", () => {
+  const record = createEffortRecord(1);
+  const updated = withPlannedEstimate(record, 2);
+  assertEquals(updated.initialEstimate, 1);
+  assertEquals(updated.plannedEstimate, 2);
+  assertEquals(updated.actual, undefined);
+});
+
+Deno.test("value-objects - withPlannedEstimate should not mutate original", () => {
+  const record = createEffortRecord(1);
+  withPlannedEstimate(record, 2);
+  assertEquals(record.plannedEstimate, undefined);
+});
+
+Deno.test("value-objects - withPlannedEstimate should throw for negative", () => {
+  assertThrows(
+    () => withPlannedEstimate(createEffortRecord(1), -1),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
+Deno.test("value-objects - withActual should add actual", () => {
+  const record = createEffortRecord(1);
+  const withPlanned = withPlannedEstimate(record, 2);
+  const completed = withActual(withPlanned, 3);
+  assertEquals(completed.initialEstimate, 1);
+  assertEquals(completed.plannedEstimate, 2);
+  assertEquals(completed.actual, 3);
+});
+
+Deno.test("value-objects - withActual should throw for negative", () => {
+  assertThrows(
+    () => withActual(createEffortRecord(1), -5),
+    Error,
+    "INVALID_INPUT",
+  );
 });
 
 Deno.test("value-objects - createSizeVariance should accept all fields", () => {
