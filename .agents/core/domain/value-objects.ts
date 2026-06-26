@@ -29,6 +29,7 @@ export function createEffortRecord(initialEstimate: number): EffortRecord {
 
 /**
  * EffortRecord に plannedEstimate を設定した新しいオブジェクトを返す。元のオブジェクトは不変。
+ * plannedEstimate は initialEstimate 以上である必要がある（計画時に想定より減ることは想定しない）。
  */
 export function withPlannedEstimate(
   record: EffortRecord,
@@ -37,6 +38,11 @@ export function withPlannedEstimate(
   if (!Number.isFinite(plannedEstimate) || plannedEstimate < 0) {
     throw new Error(
       `INVALID_INPUT: plannedEstimate は0以上の数値である必要があります (received: ${plannedEstimate})`,
+    );
+  }
+  if (plannedEstimate < record.initialEstimate) {
+    throw new Error(
+      `INVALID_INPUT: plannedEstimate (${plannedEstimate}) は initialEstimate (${record.initialEstimate}) 以上である必要があります`,
     );
   }
   return { ...record, plannedEstimate };
@@ -58,18 +64,38 @@ export function withActual(
 }
 
 /**
- * SizeVariance を生成する。全てのフィールドは任意。
+ * SizeVariance を生成する。全てのフィールドは Builder で段階的に設定する。
  */
-export function createSizeVariance(
-  options: {
-    estimate?: Size;
-    actual?: Size;
-    varianceReason?: string;
-  },
+export function createSizeVariance(): SizeVariance {
+  return {};
+}
+
+/**
+ * SizeVariance に 予定サイズ を設定した新しいオブジェクトを返す。
+ */
+export function withSizeEstimate(
+  sv: SizeVariance,
+  estimate: Size,
 ): SizeVariance {
-  return {
-    estimate: options.estimate,
-    actual: options.actual,
-    varianceReason: options.varianceReason,
-  };
+  return { ...sv, estimate };
+}
+
+/**
+ * SizeVariance に 実績サイズ を設定した新しいオブジェクトを返す。
+ */
+export function withSizeActual(
+  sv: SizeVariance,
+  actual: Size,
+): SizeVariance {
+  return { ...sv, actual };
+}
+
+/**
+ * SizeVariance に 乖離理由 を設定した新しいオブジェクトを返す。
+ */
+export function withVarianceReason(
+  sv: SizeVariance,
+  varianceReason: string,
+): SizeVariance {
+  return { ...sv, varianceReason };
 }
