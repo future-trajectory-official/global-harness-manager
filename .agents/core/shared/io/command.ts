@@ -1,5 +1,5 @@
 import { logger } from "./logger.ts";
-import { PROJECT_ROOT } from "./constants.ts";
+import { PROJECT_ROOT } from "../types/constants.ts";
 
 // --- Process Execution Wrapper ---
 export interface ExecuteOptions {

@@ -1,5 +1,5 @@
-import { executeCommand } from "./command.ts";
-import { fsUtil } from "./fs.ts";
+import { executeCommand } from "../io/command.ts";
+import { fsUtil } from "../io/fs.ts";
 
 /**
  * Distribution destination verification utilities.

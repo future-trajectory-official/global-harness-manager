@@ -25,12 +25,12 @@ Deno.test("command - executeCommand should run in PROJECT_ROOT by default", asyn
 Deno.test("command - executeCommand should respect custom cwd", async () => {
   const result = await executeCommand({
     cmd: "ls",
-    args: ["constants.ts"],
+    args: ["harness-core.ts"],
     cwd: "./.agents/core",
   });
 
   assertEquals(result.code, 0);
-  assertStringIncludes(result.stdout, "constants.ts");
+  assertStringIncludes(result.stdout, "harness-core.ts");
 });
 
 /**

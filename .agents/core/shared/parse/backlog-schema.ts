@@ -12,7 +12,7 @@ export interface BacklogSchema {
   sections: string[];
 }
 
-const PROJECT_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "../..");
+const PROJECT_ROOT = resolve(dirname(fromFileUrl(import.meta.url)), "..", "..", "..", "..");
 
 function readTextFileSync(path: string): string {
   const resolved = join(PROJECT_ROOT, path);

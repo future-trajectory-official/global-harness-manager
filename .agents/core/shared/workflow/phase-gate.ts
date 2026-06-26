@@ -1,8 +1,8 @@
 import { join, resolve } from "@std/path";
 import { parseArgs } from "@std/cli/parse-args";
-import { logger } from "./logger.ts";
-import { type BundlePathValue, PATHS, PROJECT_ROOT } from "./constants.ts";
-import { errorUtil } from "./error.ts";
+import { logger } from "../io/logger.ts";
+import { type BundlePathValue, PATHS, PROJECT_ROOT } from "../types/constants.ts";
+import { errorUtil } from "../types/error.ts";
 
 /**
  * SKILL.md の内容から `[text](path)` 形式のリンクを抽出する。

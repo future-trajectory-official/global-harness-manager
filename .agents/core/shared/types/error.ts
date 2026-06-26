@@ -1,4 +1,4 @@
-import { logger } from "./logger.ts";
+import { logger } from "../io/logger.ts";
 
 /**
  * Error utility for consistent error handling and logging.
