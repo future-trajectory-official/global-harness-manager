@@ -6,6 +6,9 @@ import {
   createSizeVariance,
   withActual,
   withPlannedEstimate,
+  withSizeActual,
+  withSizeEstimate,
+  withVarianceReason,
 } from "./value-objects.ts";
 
 Deno.test("value-objects - createSize should return valid Size", () => {
@@ -89,6 +92,19 @@ Deno.test("value-objects - withPlannedEstimate should throw for negative", () =>
   );
 });
 
+Deno.test("value-objects - withPlannedEstimate should throw when less than initialEstimate", () => {
+  assertThrows(
+    () => withPlannedEstimate(createEffortRecord(3), 1),
+    Error,
+    "initialEstimate",
+  );
+});
+
+Deno.test("value-objects - withPlannedEstimate should allow equal to initialEstimate", () => {
+  const updated = withPlannedEstimate(createEffortRecord(2), 2);
+  assertEquals(updated.plannedEstimate, 2);
+});
+
 Deno.test("value-objects - withActual should add actual", () => {
   const record = createEffortRecord(1);
   const withPlanned = withPlannedEstimate(record, 2);
@@ -106,29 +122,43 @@ Deno.test("value-objects - withActual should throw for negative", () => {
   );
 });
 
-Deno.test("value-objects - createSizeVariance should accept all fields", () => {
-  const sv = createSizeVariance({
-    estimate: Size.M,
-    actual: Size.S,
-    varianceReason: "Overestimated",
-  });
-  assertEquals(sv.estimate?.toString(), "M");
-  assertEquals(sv.actual?.toString(), "S");
-  assertEquals(sv.varianceReason, "Overestimated");
-});
-
-Deno.test("value-objects - createSizeVariance should accept partial fields", () => {
-  const sv = createSizeVariance({ estimate: Size.L });
-  assertEquals(sv.estimate?.toWeight(), 5);
-  assertEquals(sv.actual, undefined);
-  assertEquals(sv.varianceReason, undefined);
-});
-
-Deno.test("value-objects - createSizeVariance should accept empty options", () => {
-  const sv = createSizeVariance({});
+Deno.test("value-objects - createSizeVariance should start empty", () => {
+  const sv = createSizeVariance();
   assertEquals(sv.estimate, undefined);
   assertEquals(sv.actual, undefined);
   assertEquals(sv.varianceReason, undefined);
+});
+
+Deno.test("value-objects - withSizeEstimate should set estimate", () => {
+  const sv = createSizeVariance();
+  const updated = withSizeEstimate(sv, Size.M);
+  assertEquals(updated.estimate?.toString(), "M");
+  assertEquals(updated.actual, undefined);
+});
+
+Deno.test("value-objects - withSizeActual should set actual", () => {
+  const sv = createSizeVariance();
+  const updated = withSizeActual(sv, Size.S);
+  assertEquals(updated.actual?.toString(), "S");
+});
+
+Deno.test("value-objects - withVarianceReason should set reason", () => {
+  const sv = createSizeVariance();
+  const updated = withVarianceReason(sv, "Overestimated");
+  assertEquals(updated.varianceReason, "Overestimated");
+});
+
+Deno.test("value-objects - SizeVariance builder should compose incrementally", () => {
+  const sv = withVarianceReason(
+    withSizeActual(
+      withSizeEstimate(createSizeVariance(), Size.L),
+      Size.M,
+    ),
+    "Slightly over",
+  );
+  assertEquals(sv.estimate?.toWeight(), 5);
+  assertEquals(sv.actual?.toWeight(), 3);
+  assertEquals(sv.varianceReason, "Slightly over");
 });
 
 Deno.test("value-objects - Size fromString should return Size for valid input", () => {
