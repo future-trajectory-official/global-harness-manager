@@ -49,6 +49,12 @@ export interface ChangeReason {
   readonly description: string;
 }
 
+/** 変更履歴の1エントリ。理由とタイムスタンプを持つ。 */
+export interface ChangeEntry {
+  readonly reason: ChangeReason;
+  readonly timestamp: Date;
+}
+
 /**
  * PBI/WP の見積サイズ。不変クラス。
  * XS(1), S(2), M(3), L(5), XL(8) の5段階。
@@ -172,10 +178,11 @@ export interface Outcomes {
   readonly items: readonly Outcome[];
 }
 
-/** ビジョンデータ全体。ステートメントとアウトカムを内包。 */
+/** ビジョンデータ全体。ステートメント・アウトカム・変更履歴を内包。 */
 export interface VisionData {
   readonly statement: VisionStatement;
   readonly outcomes: Outcomes;
+  readonly changeHistory?: readonly ChangeEntry[];
 }
 
 // ======== Product Goal系 ========
@@ -185,16 +192,16 @@ export interface GoalStatement {
   readonly description: string;
 }
 
-/** プロダクトゴールデータ。 */
+/** プロダクトゴールデータ。変更履歴を保持可能。 */
 export interface ProductGoalData {
   readonly statement: GoalStatement;
+  readonly changeHistory?: readonly ChangeEntry[];
 }
 
 // ======== Sprint系 ========
 
-/** Sprint の識別子。number でスプリント番号を特定する。 */
+/** Sprint の識別子。title.value がスプリント名を保持。ファクトリで number を解決する。 */
 export interface SprintIdentifier extends Identifier {
-  readonly number: number;
 }
 
 /** Sprint の全データ。 */
@@ -357,9 +364,8 @@ export interface WorkPackageSearchCondition extends SearchCondition {
 
 // ======== Review系 ========
 
-/** スプリントレビューの記述。対象スプリントと環境を指定。 */
+/** スプリントレビューの記述。環境情報を保持。 */
 export interface ReviewStatement {
-  readonly sprintNumber: number;
   readonly environment: string;
 }
 
@@ -370,14 +376,8 @@ export interface AcGroup {
   readonly acJudgments: readonly AcJudgment[];
 }
 
-/** 単一 AC の判定結果。judgment で合否を管理。 */
-export interface AcJudgment {
-  readonly acNumber: string;
-  readonly description: string;
-  readonly judgment: "unchecked" | "pass" | "conditional" | "fail" | "removed";
-  readonly evidence?: string;
-  readonly note?: string;
-}
+/** 単一 AC の判定結果。AcceptanceCriteria と同一構造。 */
+export type AcJudgment = AcceptanceCriteria;
 
 /** レビュー全体の判定。pass/conditional/fail の3値。 */
 export interface OverallReviewResult {
@@ -389,10 +389,11 @@ export interface OverallReviewResult {
 export interface ReviewIdentifier extends Identifier {
 }
 
-/** スプリントレビューの全データ。計画・事後ACグループと全体判定を含む。 */
+/** スプリントレビューの全データ。対象スプリント・計画・事後ACグループと全体判定を含む。 */
 export interface ReviewData {
   readonly identifier: ReviewIdentifier;
   readonly statement: ReviewStatement;
+  readonly sprint: SprintIdentifier;
   readonly plannedAcGroups: readonly AcGroup[];
   readonly postPlanAcGroups?: readonly AcGroup[];
   readonly overallResult?: OverallReviewResult;

@@ -145,14 +145,13 @@ Deno.test("types - VisionData should contain statement and outcomes", () => {
   assertEquals(data.outcomes.items.length, 1);
 });
 
-Deno.test("types - SprintIdentifier should extend Identifier with number", () => {
+Deno.test("types - SprintIdentifier should extend Identifier", () => {
   const id: SprintIdentifier = {
     scope: { owner: "org", repository: "repo" },
     title: { value: "Sprint 15" },
-    number: 15,
     describe: () => ({ summary: "get sprint", steps: [] }),
   };
-  assertEquals(id.number, 15);
+  assertEquals(id.title.value, "Sprint 15");
 });
 
 Deno.test("types - EpicIdentifier should be an Identifier", () => {

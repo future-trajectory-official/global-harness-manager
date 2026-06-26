@@ -542,6 +542,11 @@ interface ChangeReason {
   readonly description: string;
 }
 
+interface ChangeEntry {
+  readonly reason: ChangeReason;
+  readonly timestamp: Date;
+}
+
 class Size {
   private constructor(
     private readonly _display: string,
@@ -638,6 +643,7 @@ interface Outcomes {
 interface VisionData {
   readonly statement: VisionStatement;
   readonly outcomes: Outcomes;
+  readonly changeHistory?: readonly ChangeEntry[];
 }
 
 // ======== Product Goal系 ========
@@ -648,12 +654,12 @@ interface GoalStatement {
 
 interface ProductGoalData {
   readonly statement: GoalStatement;
+  readonly changeHistory?: readonly ChangeEntry[];
 }
 
 // ======== Sprint系 ========
 
 interface SprintIdentifier extends Identifier {
-  readonly number: number;
 }
 
 interface SprintData {
@@ -792,7 +798,6 @@ interface WorkPackageSearchCondition extends SearchCondition {
 // ======== Review系 ========
 
 interface ReviewStatement {
-  readonly sprintNumber: number;
   readonly environment: string;
 }
 
@@ -802,13 +807,8 @@ interface AcGroup {
   readonly acJudgments: readonly AcJudgment[];
 }
 
-interface AcJudgment {
-  readonly acNumber: string;
-  readonly description: string;
-  readonly judgment: "unchecked" | "pass" | "conditional" | "fail" | "removed";
-  readonly evidence?: string;
-  readonly note?: string;
-}
+// AcceptanceCriteria と同一構造。型エイリアスとして統一。
+type AcJudgment = AcceptanceCriteria;
 
 interface OverallReviewResult {
   readonly judgment: "pass" | "conditional" | "fail";
@@ -821,6 +821,7 @@ interface ReviewIdentifier extends Identifier {
 interface ReviewData {
   readonly identifier: ReviewIdentifier;
   readonly statement: ReviewStatement;
+  readonly sprint: SprintIdentifier;
   readonly plannedAcGroups: readonly AcGroup[];
   readonly postPlanAcGroups?: readonly AcGroup[];
   readonly overallResult?: OverallReviewResult;
