@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { fromFileUrl, join } from "@std/path";
-import { fsUtil } from "../.agents/core/fs.ts";
+import { fsUtil } from "../.agents/core/shared/io/fs.ts";
 import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 
 /**

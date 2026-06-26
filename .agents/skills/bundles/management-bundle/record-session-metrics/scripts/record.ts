@@ -1,6 +1,6 @@
 import { parseArgs } from "@std/cli";
-import { getManagementPath } from "../../../../../core/constants.ts";
-import { MESSAGES } from "../../../../../core/messages.ts";
+import { getManagementPath } from "../../../../../core/shared/types/constants.ts";
+import { MESSAGES } from "../../../../../core/shared/types/messages.ts";
 
 export interface SessionMetrics {
   intent: string;

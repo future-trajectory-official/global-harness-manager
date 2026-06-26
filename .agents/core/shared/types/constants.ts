@@ -33,9 +33,9 @@ export function findProjectRoot(
     // NotFound の場合などは無視して次に進む
   }
 
-  // 3. フォールバック: スクリプト自体の位置から 2 階層上
+  // 3. フォールバック: スクリプト自体の位置から 4 階層上（.agents/core/shared/types/ → プロジェクトルート）
   const __dirname = dirname(fromFileUrl(options.importMetaUrl));
-  return join(__dirname, "..", "..");
+  return join(__dirname, "..", "..", "..", "..");
 }
 
 export const PROJECT_ROOT = findProjectRoot();

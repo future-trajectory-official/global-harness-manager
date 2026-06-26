@@ -108,7 +108,7 @@ Deno.test("constants - findProjectRoot: 1. 環境変数 HARNESS_WORKSPACE_ROOT �
     statSync: () => {
       throw new Error("should not stat");
     },
-    importMetaUrl: "file:///some/path/.agents/core/constants.ts",
+    importMetaUrl: "file:///some/path/.agents/core/shared/types/constants.ts",
   });
   assertEquals(root, "/global/harness/workspace");
 });
@@ -128,7 +128,7 @@ Deno.test("constants - findProjectRoot: 2. カレントディレクトリ直下�
       }
       throw new Error("not found");
     },
-    importMetaUrl: "file:///some/other/path/.agents/core/constants.ts",
+    importMetaUrl: "file:///some/other/path/.agents/core/shared/types/constants.ts",
   });
   assertEquals(root, "/my/current/project");
 });
@@ -136,7 +136,7 @@ Deno.test("constants - findProjectRoot: 2. カレントディレクトリ直下�
 /**
  * constants - findProjectRoot: 環境変数も cwd の .agents も存在しない場合、
  * importMetaUrl からフォールバック解決されることを検証する。
- * .agents/core/constants.ts のパスから2階層上のディレクトリをルートとみなすことを確認する。
+ * .agents/core/shared/types/constants.ts のパスから4階層上のディレクトリをルートとみなすことを確認する。
  */
 Deno.test("constants - findProjectRoot: 3. カレントディレクトリ直下に .agents がない、環境変数もない場合は importMetaUrl からフォールバックする", () => {
   const root = findProjectRoot({
@@ -145,8 +145,8 @@ Deno.test("constants - findProjectRoot: 3. カレントディレクトリ直下�
     statSync: () => {
       throw new Deno.errors.NotFound("not found");
     },
-    importMetaUrl: "file:///absolute/path/to/harness/.agents/core/constants.ts",
+    importMetaUrl: "file:///absolute/path/to/harness/.agents/core/shared/types/constants.ts",
   });
-  // constants.ts は .agents/core/ 配下にあるため、2階層上は /absolute/path/to/harness となる
+  // constants.ts は .agents/core/shared/types/ 配下にあるため、4階層上は /absolute/path/to/harness となる
   assertEquals(root, "/absolute/path/to/harness");
 });

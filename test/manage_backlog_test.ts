@@ -4,7 +4,7 @@ import {
   extractPbiBlock,
   loadBacklogSchema,
   updateContents,
-} from "../.agents/core/backlog-schema.ts";
+} from "../.agents/core/shared/parse/backlog-schema.ts";
 
 /**
  * manage_backlog.ts のテスト
