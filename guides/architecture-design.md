@@ -1099,7 +1099,6 @@ sequenceDiagram
     Domain-->>Skill: Plan
     Skill->>Gateway: PlanGateway.execute(Plan)
     Gateway-->>Skill: WorkPackageData / ProductBacklogItemData
-    Skill->>Domain: extractData()
 
     Note over Skill: AIが数値を解釈<br/>ProcessAnalysisを生成
 
