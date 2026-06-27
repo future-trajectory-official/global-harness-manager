@@ -65,6 +65,16 @@ export interface SearchCondition {
   describe(): Plan;
 }
 
+/**
+ * エンティティの開閉状態。
+ * 全Domainエンティティ（PBI, WP, Vision, Epic, Feature, Sprint等）で共通。
+ * archive/close 操作でのみ closed へ遷移する。
+ */
+export type EntityState = "open" | "closed";
+
+/** EntityState の全値。 */
+export const ENTITY_STATES: readonly EntityState[] = ["open", "closed"] as const;
+
 /** 汎用リスト。items は不変。 */
 export interface List<T> {
   readonly items: readonly T[];
@@ -161,6 +171,7 @@ export type Operation =
   | "findItem"
   | "searchItems"
   | "addComment"
+  | "editComment"
   | "createTimebox"
   | "updateTimebox"
   | "closeTimebox"
@@ -211,11 +222,12 @@ export interface Outcomes {
 export interface VisionIdentifier extends Identifier {
 }
 
-/** ビジョンデータ全体。ステートメント・アウトカム・変更履歴を内包。 */
+/** ビジョンデータ全体。ステートメント・アウトカム・変更履歴・開閉状態を内包。 */
 export interface VisionData {
   readonly statement: VisionStatement;
   readonly outcomes: Outcomes;
   readonly changeHistory?: readonly ChangeEntry[];
+  readonly state: EntityState;
 }
 
 // ======== Product Goal系 ========
@@ -229,10 +241,11 @@ export interface GoalStatement {
 export interface ProductGoalIdentifier extends Identifier {
 }
 
-/** プロダクトゴールデータ。変更履歴を保持可能。 */
+/** プロダクトゴールデータ。変更履歴・開閉状態を保持可能。 */
 export interface ProductGoalData {
   readonly statement: GoalStatement;
   readonly changeHistory?: readonly ChangeEntry[];
+  readonly state: EntityState;
 }
 
 // ======== Sprint系 ========
@@ -262,6 +275,7 @@ export interface SprintData {
   readonly identifier: SprintIdentifier;
   readonly goal: GoalStatement;
   readonly dueDate?: Date;
+  readonly state: EntityState;
 }
 
 // ======== Epic系 ========
@@ -279,6 +293,7 @@ export interface EpicIdentifier extends Identifier {
 export interface EpicData {
   readonly identifier: EpicIdentifier;
   readonly statement: EpicStatement;
+  readonly state: EntityState;
 }
 
 /** Epic の検索条件。キーワードで部分一致検索可能。 */
@@ -302,6 +317,7 @@ export interface FeatureData {
   readonly identifier: FeatureIdentifier;
   readonly statement: FeatureStatement;
   readonly parentEpic?: EpicIdentifier;
+  readonly state: EntityState;
 }
 
 /** Feature の検索条件。親Epicでの絞り込みが可能。 */
@@ -344,11 +360,13 @@ export interface ProductBacklogItemProcessEvidence extends ProcessEvidence {
   readonly sizeVariance: SizeVariance;
 }
 
-/** PBI の全データ。親Featureとプロセス証跡を保持可能。 */
+/** PBI の全データ。親Feature・進行段階・開閉状態・プロセス証跡を保持可能。 */
 export interface ProductBacklogItemData {
   readonly identifier: ProductBacklogItemIdentifier;
   readonly statement: ProductBacklogItemStatement;
   readonly parentFeature?: FeatureIdentifier;
+  readonly stage: Stage;
+  readonly state: EntityState;
   readonly processEvidence?: ProductBacklogItemProcessEvidence;
 }
 
@@ -358,6 +376,20 @@ export interface ProductBacklogItemSearchCondition extends SearchCondition {
   readonly sprintNumber?: number;
   readonly status?: string;
 }
+
+/**
+ * 作業アイテム（PBI, WP）の進行段階。
+ * propose/define により idea で生成され、commit → todo、start → inProgress、complete → done と遷移する。
+ */
+export type Stage = "idea" | "todo" | "inProgress" | "done";
+
+/** Stage の全値。 */
+export const STAGES: readonly Stage[] = [
+  "idea",
+  "todo",
+  "inProgress",
+  "done",
+] as const;
 
 // ======== WP系 ========
 
@@ -397,11 +429,13 @@ export interface SessionMetrics {
 export interface WorkPackageProcessEvidence extends ProcessEvidence {
 }
 
-/** WP の全データ。親PBI・セッションメトリクス・KPTA を保持可能。 */
+/** WP の全データ。親PBI・進行段階・開閉状態・セッションメトリクス・KPTA を保持可能。 */
 export interface WorkPackageData {
   readonly identifier: WorkPackageIdentifier;
   readonly statement: WorkPackageStatement;
   readonly parentPbi: ProductBacklogItemIdentifier;
+  readonly stage: Stage;
+  readonly state: EntityState;
   readonly processEvidence?: WorkPackageProcessEvidence;
   readonly sessionMetrics?: SessionMetrics;
   readonly kpta?: KeepProblemTryAdvice;
@@ -442,7 +476,7 @@ export interface OverallReviewResult {
 export interface ReviewIdentifier extends Identifier {
 }
 
-/** スプリントレビューの全データ。対象スプリント・計画・事後ACグループと全体判定を含む。 */
+/** スプリントレビューの全データ。対象スプリント・計画・事後ACグループと全体判定・開閉状態を含む。 */
 export interface ReviewData {
   readonly identifier: ReviewIdentifier;
   readonly statement: ReviewStatement;
@@ -450,6 +484,7 @@ export interface ReviewData {
   readonly plannedAcGroups: readonly AcGroup[];
   readonly postPlanAcGroups?: readonly AcGroup[];
   readonly overallResult?: OverallReviewResult;
+  readonly state: EntityState;
 }
 
 /** スプリントレビューの検索条件。 */
@@ -485,12 +520,13 @@ export interface KeepProblemTryAdvice {
 export interface RetrospectiveIdentifier extends Identifier {
 }
 
-/** 振り返りの全データ。対象スプリント・KPTA・メトリクスを保持。 */
+/** 振り返りの全データ。対象スプリント・KPTA・メトリクス・開閉状態を保持。 */
 export interface RetrospectiveData {
   readonly identifier: RetrospectiveIdentifier;
   readonly sprint: SprintIdentifier;
   readonly kpta?: KeepProblemTryAdvice;
   readonly metrics?: SprintMetrics;
+  readonly state: EntityState;
 }
 
 /** 振り返りの検索条件。 */
