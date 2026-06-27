@@ -912,11 +912,13 @@ sequenceDiagram
     else 実実行モード
         Skill->>Domain: UseCase.operation(inputs)
         Domain-->>Skill: Plan
-        Skill->>Gateway: PlanGateway.execute(Plan)
+        Note over Domain: PlanGateway.execute(Plan)<br/>（DIにより注入されたGateway実装を呼び出し）
+        Domain->>Gateway: execute(Plan)
         Note over Gateway: Stepごとに<br/>適切なハンドラにルーティング
         Gateway->>External: gh CLI / API呼び出し
         External-->>Gateway: 実行結果
-        Gateway-->>Skill: ExecutionResult
+        Gateway-->>Domain: ExecutionResult
+        Domain-->>Skill: 実行結果の要約
         Note over Skill: 結果を解釈・整形
         Skill-->>User: 実行完了を報告
     end
@@ -1096,9 +1098,10 @@ sequenceDiagram
 
     User->>Skill: セッション終了 / スプリント終了
     Skill->>Domain: find(WP#5)
-    Domain-->>Skill: Plan
-    Skill->>Gateway: PlanGateway.execute(Plan)
-    Gateway-->>Skill: WorkPackageData / ProductBacklogItemData
+    Note over Domain: PlanGateway.execute(Plan)<br/>（DI注入されたGatewayで実行）
+    Domain->>Gateway: execute(Plan)
+    Gateway-->>Domain: WorkPackageData / ProductBacklogItemData
+    Domain-->>Skill: データ
 
     Note over Skill: AIが数値を解釈<br/>ProcessAnalysisを生成
 
