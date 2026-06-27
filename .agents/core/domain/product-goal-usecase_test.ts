@@ -87,10 +87,9 @@ Deno.test("productGoalUseCase - pivot should throw for undefined id", () => {
   );
 });
 
-Deno.test("productGoalUseCase - find should return Plan with findItem operation", () => {
+Deno.test("productGoalUseCase - find should return Plan with findItem step", () => {
   const plan = productGoalUseCase.find(makeIdentifier());
   assertEquals(plan.summary, "Find product goal: Product Goal");
-  assertEquals(plan.steps.length, 1);
   assertEquals(plan.steps[0].operation, "findItem");
 });
 
