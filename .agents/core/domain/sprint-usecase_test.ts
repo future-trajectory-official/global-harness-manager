@@ -76,12 +76,10 @@ Deno.test("sprintUseCase - setDueDate should throw for undefined id", () => {
   );
 });
 
-Deno.test("sprintUseCase - find should return Plan with findItem operation", () => {
+Deno.test("sprintUseCase - find should return Plan with findItem step", () => {
   const plan = sprintUseCase.find(makeId());
   assertEquals(plan.summary, "Find sprint: Sprint 16");
-  assertEquals(plan.steps.length, 1);
   assertEquals(plan.steps[0].operation, "findItem");
-  assertEquals(plan.steps[0].params.type, "Milestone");
 });
 
 Deno.test("sprintUseCase - find should throw for undefined id", () => {

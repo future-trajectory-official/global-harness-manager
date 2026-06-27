@@ -141,6 +141,7 @@ Deno.test("types - VisionData should contain statement and outcomes", () => {
   const data: VisionData = {
     statement: { targetAudience: "dev", value: "speed", differentiator: "AI" },
     outcomes: { items: [{ title: "Speed", description: "Faster delivery" }] },
+    state: "open",
   };
   assertEquals(data.outcomes.items.length, 1);
 });

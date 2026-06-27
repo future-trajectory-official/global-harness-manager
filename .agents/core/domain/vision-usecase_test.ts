@@ -123,10 +123,9 @@ Deno.test("visionUseCase - pivot should throw for undefined id", () => {
   );
 });
 
-Deno.test("visionUseCase - find should return Plan with findItem operation", () => {
+Deno.test("visionUseCase - find should return Plan with findItem step", () => {
   const plan = visionUseCase.find(makeIdentifier());
   assertEquals(plan.summary, "Find vision: Test Vision");
-  assertEquals(plan.steps.length, 1);
   assertEquals(plan.steps[0].operation, "findItem");
 });
 

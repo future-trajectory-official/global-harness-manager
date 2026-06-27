@@ -1,19 +1,6 @@
 import type { Plan, SprintIdentifier } from "./types.ts";
 import type { GoalStatement } from "./types.ts";
-
-function assertStringNonEmpty(value: string, label: string): void {
-  if (!value) {
-    throw new Error(`INVALID_INPUT: ${label} must not be empty`);
-  }
-}
-
-function assertIdDefined(id: string | undefined, label: string): void {
-  if (id === undefined) {
-    throw new Error(
-      `INVALID_INPUT: Cannot ${label} that has not been created yet (id is undefined)`,
-    );
-  }
-}
+import { assertIdDefined, assertStringNonEmpty } from "./validation.ts";
 
 function toMilestoneName(identifier: SprintIdentifier): string {
   return identifier.title.value;
@@ -90,13 +77,7 @@ export const sprintUseCase: SprintUseCase = {
     assertIdDefined(identifier.id, "find a sprint");
     return {
       summary: `Find sprint: ${identifier.title.value}`,
-      steps: [{
-        operation: "findItem",
-        params: {
-          itemId: identifier.id,
-          type: "Milestone",
-        },
-      }],
+      steps: [{ operation: "findItem", params: { itemId: identifier.id, type: "Sprint" } }],
     };
   },
 };

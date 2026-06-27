@@ -1,25 +1,6 @@
 import type { Plan } from "./types.ts";
 import type { ChangeReason, EpicIdentifier, EpicSearchCondition, EpicStatement } from "./types.ts";
-
-function assertTitleNonEmpty(title: { value: string }, label: string): void {
-  if (!title.value) {
-    throw new Error(`INVALID_INPUT: ${label} must not be empty`);
-  }
-}
-
-function assertStringNonEmpty(value: string, label: string): void {
-  if (!value) {
-    throw new Error(`INVALID_INPUT: ${label} must not be empty`);
-  }
-}
-
-function assertIdDefined(id: string | undefined, label: string): void {
-  if (id === undefined) {
-    throw new Error(
-      `INVALID_INPUT: Cannot ${label} that has not been created yet (id is undefined)`,
-    );
-  }
-}
+import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
 
 /**
  * Epic の Issue Body を生成する。
@@ -123,17 +104,11 @@ export const epicUseCase: EpicUseCase = {
     assertIdDefined(identifier.id, "find an epic");
     return {
       summary: `Find epic: ${identifier.title.value}`,
-      steps: [{
-        operation: "findItem",
-        params: {
-          itemId: identifier.id,
-          type: "Epic",
-        },
-      }],
+      steps: [{ operation: "findItem", params: { itemId: identifier.id, type: "Epic" } }],
     };
   },
 
-  search(condition): Plan {
+  search(condition: EpicSearchCondition): Plan {
     return {
       summary: condition.describe().summary,
       steps: condition.describe().steps,

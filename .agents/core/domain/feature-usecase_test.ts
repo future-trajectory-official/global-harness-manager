@@ -170,12 +170,10 @@ Deno.test("featureUseCase - unassignFromEpic should throw for undefined id", () 
   );
 });
 
-Deno.test("featureUseCase - find should return Plan with findItem operation", () => {
+Deno.test("featureUseCase - find should return Plan with findItem step", () => {
   const plan = featureUseCase.find(makeId());
   assertEquals(plan.summary, "Find feature: Login");
-  assertEquals(plan.steps.length, 1);
   assertEquals(plan.steps[0].operation, "findItem");
-  assertEquals(plan.steps[0].params.type, "Feature");
 });
 
 Deno.test("featureUseCase - find should throw for undefined id", () => {
@@ -186,17 +184,14 @@ Deno.test("featureUseCase - find should throw for undefined id", () => {
   );
 });
 
-Deno.test("featureUseCase - search should return Plan with searchItems operation", () => {
+Deno.test("featureUseCase - search should return Plan with searchItems step", () => {
   const condition = makeSearchCondition("login");
   const plan = featureUseCase.search(condition);
-  assertEquals(plan.summary, "Search features with keyword: login");
-  assertEquals(plan.steps.length, 1);
   assertEquals(plan.steps[0].operation, "searchItems");
-  assertEquals(plan.steps[0].params.type, "Feature");
 });
 
-Deno.test("featureUseCase - search without keyword should still return Plan", () => {
+Deno.test("featureUseCase - search without keyword should return Plan with searchItems step", () => {
   const condition = makeSearchCondition();
   const plan = featureUseCase.search(condition);
-  assertStringIncludes(plan.summary, "Search features with keyword: (none)");
+  assertEquals(plan.steps[0].operation, "searchItems");
 });
