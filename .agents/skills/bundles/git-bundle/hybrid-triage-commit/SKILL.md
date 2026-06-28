@@ -31,7 +31,14 @@ git add -A && git commit -m "[wip] <savepoint>"
 
 ### triage モード（プッシュ直前）
 
-**「意味単位で分割する」** が唯一の目的。
+**「意味単位で分割する」** が唯一の目的。以下の値は
+[hybrid-triage-commit-process.md](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)
+で確認すること：
+
+- `<base>` — ベースブランチ名の導出方法
+- `<wip-branch>` — WIPブランチ名の特定方法
+- `<clean-name>` — 新ブランチ名の命名規則
+- 意味単位の分類基準（feat / fix / refactor / test / docs / chore の定義）
 
 ```bash
 # 準備: ベースから新ブランチ
@@ -40,21 +47,16 @@ git checkout <base> && git pull && git checkout -b <clean-name>
 git diff --name-status <base>..<wip-branch>
 ```
 
-出力されたファイル一覧を意味単位（feat / fix / refactor / test / docs / chore）に分類し、単位ごとに
-`git checkout <wip-branch> -- <files>` + `git add` + `git commit` を繰り返す。
+出力されたファイル一覧を意味単位に分類し、単位ごとに以下を繰り返す：
 
 ```bash
-# 例: feat グループ
-git checkout <wip-branch> -- path/to/files
-git add path/to/files
-git commit -m "feat(scope): 説明"
+git checkout <wip-branch> -- <files>
+git add <files>
+git commit -m "<type>(<scope>): <description>"
 ```
 
-- 追跡対象外のファイル（`.gitignore` で除外されたもの）は commit できない。`git ls-files`
-  で確認すること。
+- 追跡対象外のファイル（`.gitignore` で除外）は commit できない。`git ls-files` で確認。
 - 完了後: `git branch -D <wip-branch>`
 
-詳細な手順と実例:
-[hybrid-triage-commit-process.md](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)
-対話的仕分けスクリプト:
+対話的仕分けにはスクリプト:
 [git-triage.ts](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts)
