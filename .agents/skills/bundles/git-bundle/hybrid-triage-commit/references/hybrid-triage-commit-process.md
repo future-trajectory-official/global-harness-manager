@@ -35,34 +35,36 @@ AIエージェントに「人間と同じようにこまめに思考を切り替
 ```mermaid
 graph TD
     A[開発開始: Phase 2] --> B(マイルストーン達成/テスト通過)
-    B --> C[WIP一時コミット: git commit -m 'wip savepoint']
+    B --> C[WIP一時コミット: git commit -m '[wip] savepoint']
     C --> D{開発完了?}
     D -- No --> B
     D -- Yes: Phase 3 --> E[トリアージ開始: version-control-specialist 起動]
-    E --> F[WIPの一括リセット: git reset --soft main]
-    F --> G[diff の論理的俯瞰と仕分け]
-    G --> H[美しいアトミックコミットの順次作成 docs/refactor/test]
-    H --> I[PR作成 & Push]
+    E --> F[ベースから新ブランチを作成]
+    F --> G[WIPブランチとのdiffを論理俯瞰]
+    G --> H[美しいアトミックコミットを順次作成 feat/refactor/test]
+    H --> I[WIPブランチを削除]
+    I --> J[PR作成 & Push]
 ```
 
 ### 1. WIP一時コミットによる自動セーブ (開発中)
 
 - 開発フェーズ（Phase
-  2）の実行中、テストが新しくパスした瞬間や、重要なファイル書き換えが成功した瞬間ごとに、AIは
-  `git commit -am "[wip] savepoint"` などの一時的なセーブポイントを作成します。
+  2）の実行中、テストが新しくパスした瞬間や、重要なファイル書き換えが成功した瞬間ごとに、WIP専用ブランチ上で
+  `git commit -m "[wip] savepoint"` などの一時的なセーブポイントを作成します。
 - **効果**: 途中で試行錯誤が失敗したりコードが壊れた場合、いつでも `git checkout`
   で過去の動いていた状態に切り戻す（Revertability）ことができ、AIの認知的不安を解消します。
 
 ### 2. ポストトリアージによる「歴史の編纂」 (プッシュ直前)
 
-- 開発およびすべてのローカル検証（fmt / lint）が完了した完了フェーズ（Phase 4 または Phase
-  5）の冒頭で、`[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
+- 開発およびすべてのローカル検証（fmt / lint）が完了した完了フェーズ（Phase
+  3）の冒頭で、`[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
   ロールを呼び出し、`[hybrid-triage-commit](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
   スキル（`triage` モード）を実行します。
-- これまで積み重ねた WIP コミットを `git reset --soft origin/main`
-  などで一旦ステージング状態に戻し、全変更の diff を俯瞰します。
-- 意味のある論理的なアトミックコミット（例：`[test] ...`, `[refactor] ...`, `[fix] ...`）へと
+- ベースブランチから新しくブランチを作成し、WIPブランチとの `git diff` を俯瞰します。
+- 意味のある論理的なアトミックコミット（例：`feat: ...`, `refactor: ...`, `fix: ...`）へと
   **完璧に事後トリアージして再構築（歴史の編纂）します**。
+- **歴史改変禁止**: `git reset --soft` / `git commit --amend` / `git rebase`
+  は使用しません。新ブランチ作成による再構築で対応します。
 
 ---
 
@@ -72,3 +74,44 @@ graph TD
    集中できるため、認知限界を超えずに品質の高い実装が完走できます。
 2. **履歴の圧倒的な美しさ（論理的整合性）**:
    未来の確定した時点（すべてが動き検証された状態）から過去を遡ってコミットを切り出すため、無駄な試行錯誤や手戻りバグが一切含まれない、芸術的なストーリー性を持った履歴が誕生します。
+
+---
+
+## 非対話環境でのトリアージ手順
+
+`git-triage.ts`
+スクリプトが使用できない環境では、以下の手動手順でアトミックコミットを再構築します。歴史改変コマンドは使用しません。
+
+1. **WIPブランチの最新状態を確認**: `git log --oneline <wip-branch>`
+2. **ベースブランチに移動**: `git checkout <base-branch> && git pull`
+3. **新ブランチを作成**: `git checkout -b <clean-branch-name>`
+4. **差分ファイルの確認**: `git diff --name-only <base-branch>..<wip-branch>` で全変更を把握
+5. **論理グループへの分割**:
+   - 変更内容を確認し、`feat` / `fix` / `chore` / `docs` / `refactor` / `test` 等の論理単位に分類
+   - 各グループごとに `git checkout <wip-branch> -- <files>` でファイルを適用し、`git commit`
+     でコミット
+6. **Conventional Commits の遵守**: コミットメッセージは `type(scope): 説明` の形式に従う
+7. **最終確認**: `git log --oneline` で履歴の論理性を確認
+8. **WIPブランチの削除**: `git branch -D <wip-branch>`
+
+```bash
+# 実例：3つの論理コミットに分割する場合
+git checkout github-management
+git pull origin github-management
+git checkout -b feature/xxx
+git diff --name-only github-management..feature/xxx-wip
+# グループ1: 機能追加
+git checkout feature/xxx-wip -- path/to/feat/files
+git add path/to/feat/files
+git commit -m "feat(scope): 機能追加の説明"
+# グループ2: 設定更新
+git checkout feature/xxx-wip -- path/to/chore/files
+git add path/to/chore/files
+git commit -m "chore: 設定更新"
+# グループ3: テスト追加
+git checkout feature/xxx-wip -- path/to/test/files
+git add path/to/test/files
+git commit -m "test(scope): テスト追加"
+# WIPブランチ削除
+git branch -D feature/xxx-wip
+```
