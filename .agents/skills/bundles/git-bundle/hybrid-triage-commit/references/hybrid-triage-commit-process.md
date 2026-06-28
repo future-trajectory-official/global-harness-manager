@@ -74,3 +74,44 @@ graph TD
    集中できるため、認知限界を超えずに品質の高い実装が完走できます。
 2. **履歴の圧倒的な美しさ（論理的整合性）**:
    未来の確定した時点（すべてが動き検証された状態）から過去を遡ってコミットを切り出すため、無駄な試行錯誤や手戻りバグが一切含まれない、芸術的なストーリー性を持った履歴が誕生します。
+
+---
+
+## 非対話環境でのトリアージ手順
+
+`git-triage.ts`
+スクリプトが使用できない環境では、以下の手動手順でアトミックコミットを再構築します。歴史改変コマンドは使用しません。
+
+1. **WIPブランチの最新状態を確認**: `git log --oneline <wip-branch>`
+2. **ベースブランチに移動**: `git checkout <base-branch> && git pull`
+3. **新ブランチを作成**: `git checkout -b <clean-branch-name>`
+4. **差分ファイルの確認**: `git diff --name-only <base-branch>..<wip-branch>` で全変更を把握
+5. **論理グループへの分割**:
+   - 変更内容を確認し、`feat` / `fix` / `chore` / `docs` / `refactor` / `test` 等の論理単位に分類
+   - 各グループごとに `git checkout <wip-branch> -- <files>` でファイルを適用し、`git commit`
+     でコミット
+6. **Conventional Commits の遵守**: コミットメッセージは `type(scope): 説明` の形式に従う
+7. **最終確認**: `git log --oneline` で履歴の論理性を確認
+8. **WIPブランチの削除**: `git branch -D <wip-branch>`
+
+```bash
+# 実例：3つの論理コミットに分割する場合
+git checkout github-management
+git pull origin github-management
+git checkout -b feature/xxx
+git diff --name-only github-management..feature/xxx-wip
+# グループ1: 機能追加
+git checkout feature/xxx-wip -- path/to/feat/files
+git add path/to/feat/files
+git commit -m "feat(scope): 機能追加の説明"
+# グループ2: 設定更新
+git checkout feature/xxx-wip -- path/to/chore/files
+git add path/to/chore/files
+git commit -m "chore: 設定更新"
+# グループ3: テスト追加
+git checkout feature/xxx-wip -- path/to/test/files
+git add path/to/test/files
+git commit -m "test(scope): テスト追加"
+# WIPブランチ削除
+git branch -D feature/xxx-wip
+```
