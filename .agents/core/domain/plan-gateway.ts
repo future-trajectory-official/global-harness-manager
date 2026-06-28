@@ -31,9 +31,9 @@ export interface PlanGateway {
   /**
    * Planに含まれる全Stepを逐次実行する。
    *
-   * @param plan - 実行対象のPlan。steps が空でないこと。
+   * @param plan - 実行対象のPlan。steps が空の場合は空の ExecutionResult を返す。
    * @returns 全Stepの実行結果。StepResult の配列は Plan.steps と同数となる。
-   * @throws {Error} INVALID_INPUT - plan.steps が空の場合。
+   *   steps が空の場合は stepResults: [] を返す。
    * @throws {Error} GATEWAY_ERROR - 外部サービスとの通信に失敗した場合。
    */
   execute(plan: Plan): Promise<ExecutionResult>;
