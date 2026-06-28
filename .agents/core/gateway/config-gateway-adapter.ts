@@ -1,5 +1,11 @@
 import { executeCommand } from "../shared/io/command.ts";
-import type { BoardOutput, ConfigContent, LabelDefinition, List } from "../domain/types.ts";
+import type {
+  BoardOutput,
+  ConfigContent,
+  EntityScope,
+  LabelDefinition,
+  List,
+} from "../domain/types.ts";
 import type { ConfigGateway } from "../domain/config-gateway.ts";
 
 export class ConfigGatewayAdapter implements ConfigGateway {
@@ -7,6 +13,15 @@ export class ConfigGatewayAdapter implements ConfigGateway {
     private readonly owner: string,
     private readonly repository: string,
   ) {}
+
+  async resolveScope(): Promise<EntityScope> {
+    const result = await executeCommand({
+      cmd: "gh",
+      args: ["repo", "view", "--json", "owner,name"],
+    });
+    const data = JSON.parse(result.stdout);
+    return { owner: data.owner.login, repository: data.name };
+  }
 
   readConfig(source: string): ConfigContent {
     const content = Deno.readTextFileSync(source);
