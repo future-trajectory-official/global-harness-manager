@@ -4,6 +4,7 @@ import { identify } from "../../../../core/domain/types.ts";
 import type { EntityScope, Outcomes, VisionStatement } from "../../../../core/domain/types.ts";
 import { visionUseCase } from "../../../../core/domain/vision-usecase.ts";
 import { PlanGatewayAdapter } from "../../../../core/gateway/plan-gateway-adapter.ts";
+import { errorUtil } from "../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../core/shared/io/io.ts";
 
 interface EstablishVisionInput {
@@ -16,30 +17,36 @@ interface EstablishVisionInput {
 }
 
 async function main(): Promise<void> {
-  const args = parseArgs(Deno.args, {
-    boolean: ["dry-run"],
-    alias: { "dry-run": "d" },
-  });
+  try {
+    const args = parseArgs(Deno.args, {
+      boolean: ["dry-run"],
+      alias: { "dry-run": "d" },
+    });
 
-  const input = await readJsonFromStdin<EstablishVisionInput>();
-  const identifier = identify(input.scope, input.title);
-  const statement: VisionStatement = {
-    targetAudience: input.targetAudience,
-    value: input.value,
-    differentiator: input.differentiator,
-  };
-  const outcomes: Outcomes = { items: input.outcomes };
+    const input = await readJsonFromStdin<EstablishVisionInput>();
+    const identifier = identify(input.scope, input.title);
+    const statement: VisionStatement = {
+      targetAudience: input.targetAudience,
+      value: input.value,
+      differentiator: input.differentiator,
+    };
+    const outcomes: Outcomes = { items: input.outcomes };
 
-  const plan = visionUseCase.establish(identifier, statement, outcomes);
+    const plan = visionUseCase.establish(identifier, statement, outcomes);
 
-  if (args["dry-run"]) {
-    console.log(JSON.stringify({ summary: plan.summary, steps: plan.steps }, null, 2));
-    Deno.exit(0);
+    if (args["dry-run"]) {
+      console.log(JSON.stringify({ summary: plan.summary, steps: plan.steps }, null, 2));
+      return;
+    }
+
+    const gateway = new PlanGatewayAdapter(input.scope.owner, input.scope.repository);
+    const result = await gateway.execute(plan);
+    console.log(JSON.stringify(result, null, 2));
+  } catch (e) {
+    const err = errorUtil.toError(e);
+    errorUtil.log(err);
+    Deno.exit(1);
   }
-
-  const gateway = new PlanGatewayAdapter(input.scope.owner, input.scope.repository);
-  const result = await gateway.execute(plan);
-  console.log(JSON.stringify(result, null, 2));
 }
 
 if (import.meta.main) {
