@@ -8,29 +8,70 @@ tags:
 
 # establish-vision
 
-## Quick Start
+## 役割宣言
 
-```bash
-# 1. スコープを設定し、ビジョン情報を JSON で標準入力から渡す
-echo '{
-  "title": "My Project Vision",
-  "scope": { "owner": "my-org", "repository": "my-repo" },
-  "targetAudience": "AIを活用した開発初心者",
-  "value": "クローンするだけで環境が整う",
-  "differentiator": "教育的協働で成長させる",
-  "outcomes": [
-    { "title": "Zero-setup", "description": "即座に開発開始" },
-    { "title": "Growth", "description": "使うほどスキル向上" }
-  ]
-}' | deno run -A .agents/skills/bundles/management-bundle/establish-vision/establish_vision.ts
-# 出力: GitHub Issue 作成結果（作成された Issue の番号等）
+AI は以下の宣言を行ってから対話を開始してください：
 
-# 2. dry-run モード: 実行せず Plan を確認する
-echo '{"title":"My Project Vision","scope":{"owner":"my-org","repository":"my-repo"},"targetAudience":"AI開発初心者","value":"即座に開始","differentiator":"教育的協働","outcomes":[{"title":"Zero-setup","description":"即座に開発開始"}]}' | deno run -A .agents/skills/bundles/management-bundle/establish-vision/establish_vision.ts --dry-run
-# 出力: Plan の内容（実行される Step 一覧）
+> 「私はこれから、あなたのプロダクトのビジョンを明確にし、バージョン管理された GitHub Issue
+> として確立するプロセスを支援します。対話を通じてビジョンの各要素を具体化していきます。」
+
+---
+
+## Quick Start（対話フロー）
+
+本スキルは対話型で進行します。以下の手順でユーザーから情報を収集し、収集した情報を Domain
+層の型へマッピングして `establish_vision.ts` に渡します。
+
+### Step 1: プロジェクト名の確認
+
+ユーザーにプロジェクト名を尋ね、Issue タイトルを確定します。
+
+```
+質問例: 「ビジョンを定義するプロジェクトの名前は何ですか？」
 ```
 
-**注意**: 各フィールドの意味と設計意図は、以下の「Reference」セクションを先に読んでください。
+### Step 2: ビジョン要素の収集
+
+以下の各要素を、ユーザーとの対話を通じて1つずつ確認しながら埋めていきます。
+
+| # | 要素             | 質問例                                                                                               |
+| - | ---------------- | ---------------------------------------------------------------------------------------------------- |
+| 1 | **対象ユーザー** | 「このプロダクトの主なユーザーは誰ですか？具体的なペルソナを教えてください。」                       |
+| 2 | **提供価値**     | 「ユーザーはこのプロダクトを使うことで、どんな体験を得られますか？」                                 |
+| 3 | **差別化要因**   | 「既存の代替手段では満たせない、このプロダクト独自の価値は何ですか？」                               |
+| 4 | **アウトカム**   | 「このプロダクトが普及したとき、ユーザーの日常はどう変わりますか？（複数あれば全て教えてください）」 |
+
+`VISION.md.example`（`.agents/management/VISION.md.example`）を参照し、各要素の記述例をユーザーに提示しながら対話を進めてください。
+
+### Step 3: 情報のドメイン層への受け渡し
+
+収集した情報を以下のフォーマットにマッピングし、`establish_vision.ts`（`--dry-run`
+なし）に標準入力から渡します。
+
+```json
+{
+  "title": "<確定したタイトル>",
+  "scope": { "owner": "<owner>", "repository": "<repo>" },
+  "targetAudience": "<対象ユーザー>",
+  "value": "<提供価値>",
+  "differentiator": "<差別化要因>",
+  "outcomes": [
+    { "title": "<アウトカム1の短い名前>", "description": "<アウトカム1の説明>" }
+  ]
+}
+```
+
+`scope` は事前に `gh repo view --json owner,name`
+等で動的に解決し、ユーザーに確認してから設定してください。
+
+### Step 4: dry-run 確認（任意）
+
+実際に作成する前に `--dry-run` モードで Plan の内容（Issue 作成 +
+コメント追加の流れ）をユーザーに提示し、承認を得てから Step 3 を実行してください。
+
+```bash
+echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/establish-vision/establish_vision.ts --dry-run
+```
 
 ---
 
@@ -39,15 +80,15 @@ echo '{"title":"My Project Vision","scope":{"owner":"my-org","repository":"my-re
 ### ビジョンとは何か
 
 プロダクトビジョンは、プロジェクトの長期的な存在意義と方向性を定義する「North Star」です。
-`VISION.md.example`（`.agents/management/VISION.md.example`）を参考に、ビジョンの各要素（対象ユーザー・提供価値・差別化要因・アウトカム）を定義します。
+以下の要素で構成され、判断に迷った時の立ち返り先となります。
 
-### 詳細リファレンス
-
-入力 JSON の完全なスキーマ定義、実行される操作、出力形式については以下を参照してください：
-
-- [input-schema.md](/.agents/skills/bundles/management-bundle/establish-vision/references/input-schema.md)
+- **タイトル**: Issue のタイトルになるプロジェクト名
+- **対象ユーザー (targetAudience)**: 誰のためのプロダクトか
+- **提供価値 (value)**: ユーザーが得られる体験
+- **差別化要因 (differentiator)**: 競合では満たせない独自性
+- **アウトカム (outcomes)**: 普及した時の具体的な変化（複数可）
 
 ### dry-run モード
 
-`--dry-run`（または `-d`）フラグを指定すると、Plan の内容（summary と各 Step の
-operation/params）を表示して終了します。実際の GitHub API は呼び出されません。
+`--dry-run` フラグを指定すると、GitHub API を実際に呼び出さずに Plan の内容のみを表示します。AI
+は実際の作成前に必ず dry-run で内容を確認し、ユーザーの承認を得てから本実行してください。
