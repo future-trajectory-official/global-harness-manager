@@ -35,34 +35,36 @@ AIエージェントに「人間と同じようにこまめに思考を切り替
 ```mermaid
 graph TD
     A[開発開始: Phase 2] --> B(マイルストーン達成/テスト通過)
-    B --> C[WIP一時コミット: git commit -m 'wip savepoint']
+    B --> C[WIP一時コミット: git commit -m '[wip] savepoint']
     C --> D{開発完了?}
     D -- No --> B
     D -- Yes: Phase 3 --> E[トリアージ開始: version-control-specialist 起動]
-    E --> F[WIPの一括リセット: git reset --soft main]
-    F --> G[diff の論理的俯瞰と仕分け]
-    G --> H[美しいアトミックコミットの順次作成 docs/refactor/test]
-    H --> I[PR作成 & Push]
+    E --> F[ベースから新ブランチを作成]
+    F --> G[WIPブランチとのdiffを論理俯瞰]
+    G --> H[美しいアトミックコミットを順次作成 feat/refactor/test]
+    H --> I[WIPブランチを削除]
+    I --> J[PR作成 & Push]
 ```
 
 ### 1. WIP一時コミットによる自動セーブ (開発中)
 
 - 開発フェーズ（Phase
-  2）の実行中、テストが新しくパスした瞬間や、重要なファイル書き換えが成功した瞬間ごとに、AIは
-  `git commit -am "[wip] savepoint"` などの一時的なセーブポイントを作成します。
+  2）の実行中、テストが新しくパスした瞬間や、重要なファイル書き換えが成功した瞬間ごとに、WIP専用ブランチ上で
+  `git commit -m "[wip] savepoint"` などの一時的なセーブポイントを作成します。
 - **効果**: 途中で試行錯誤が失敗したりコードが壊れた場合、いつでも `git checkout`
   で過去の動いていた状態に切り戻す（Revertability）ことができ、AIの認知的不安を解消します。
 
 ### 2. ポストトリアージによる「歴史の編纂」 (プッシュ直前)
 
-- 開発およびすべてのローカル検証（fmt / lint）が完了した完了フェーズ（Phase 4 または Phase
-  5）の冒頭で、`[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
+- 開発およびすべてのローカル検証（fmt / lint）が完了した完了フェーズ（Phase
+  3）の冒頭で、`[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
   ロールを呼び出し、`[hybrid-triage-commit](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
   スキル（`triage` モード）を実行します。
-- これまで積み重ねた WIP コミットを `git reset --soft origin/main`
-  などで一旦ステージング状態に戻し、全変更の diff を俯瞰します。
-- 意味のある論理的なアトミックコミット（例：`[test] ...`, `[refactor] ...`, `[fix] ...`）へと
+- ベースブランチから新しくブランチを作成し、WIPブランチとの `git diff` を俯瞰します。
+- 意味のある論理的なアトミックコミット（例：`feat: ...`, `refactor: ...`, `fix: ...`）へと
   **完璧に事後トリアージして再構築（歴史の編纂）します**。
+- **歴史改変禁止**: `git reset --soft` / `git commit --amend` / `git rebase`
+  は使用しません。新ブランチ作成による再構築で対応します。
 
 ---
 
