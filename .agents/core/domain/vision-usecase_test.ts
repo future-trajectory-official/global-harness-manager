@@ -154,9 +154,9 @@ Deno.test("formatVisionComment - should generate L2-compliant comment body", () 
   assertStringIncludes(comment, "### Zero-setup\n\nクローンするだけで環境が整う");
 });
 
-Deno.test("formatVisionBody - should generate history table", () => {
-  const body = formatVisionBody(1, makeStatement());
+Deno.test("formatVisionBody - should generate history table with initial entry", () => {
+  const body = formatVisionBody();
   assertStringIncludes(body, "## History");
   assertStringIncludes(body, "| 日付 | バージョン | 概要 |");
-  assertStringIncludes(body, "| 1 | AIを活用した開発初心者... |");
+  assertStringIncludes(body, "| 1 | プロジェクト開始 |");
 });
