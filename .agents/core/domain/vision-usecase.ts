@@ -75,6 +75,10 @@ export const visionUseCase: VisionUseCase = {
       summary: `Establish vision: ${identifier.title.value}`,
       steps: [
         {
+          operation: "searchItems",
+          params: { type: "Vision" },
+        },
+        {
           operation: "createItem",
           params: {
             title: identifier.title.value,
@@ -123,10 +127,15 @@ export const visionUseCase: VisionUseCase = {
 
   find(identifier): Plan {
     assertTitleNonEmpty(identifier.title, "Vision title");
-    assertIdDefined(identifier.id, "find a vision");
+    if (identifier.id) {
+      return {
+        summary: `Find vision: ${identifier.title.value}`,
+        steps: [{ operation: "findItem", params: { itemId: identifier.id, type: "Vision" } }],
+      };
+    }
     return {
       summary: `Find vision: ${identifier.title.value}`,
-      steps: [{ operation: "findItem", params: { itemId: identifier.id, type: "Vision" } }],
+      steps: [{ operation: "searchItems", params: { type: "Vision" } }],
     };
   },
 };
