@@ -33,9 +33,8 @@ git commit -m "[wip] <savepoint description>"
 1. ベースブランチから新ブランチを作成する
 2. WIP ブランチとの差分を確認する: `git diff --name-only <base>..<wip-branch>`
 3. ファイルを適用し、論理グループごとにコミットする:
-
-   **対話環境**: `deno run -A scripts/git-triage.ts triage` **非対話環境**:
-   `git checkout <wip-branch> -- <files>` + `git commit` を手動で繰り返す
+   - 対話環境: `deno run -A scripts/git-triage.ts triage`
+   - 非対話環境: `git checkout <wip-branch> -- <files>` と `git commit` を手動で繰り返す
 
 詳細:
 [hybrid-triage-commit-process.md](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)
