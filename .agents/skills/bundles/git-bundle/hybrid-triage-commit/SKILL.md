@@ -34,6 +34,9 @@ git commit -m "[wip] <savepoint description>"
 2. WIP ブランチからファイルを適用する: `git checkout <wip-branch> -- <files>`
 3. `deno run -A scripts/git-triage.ts triage` を実行し、対話的にアトミックコミットを作成する
 
-詳細手順: [references/hybrid-triage-commit-process.md](references/hybrid-triage-commit-process.md)
-スクリプトリファレンス: [scripts/git-triage.ts](scripts/git-triage.ts) 非対話環境での代替手順:
-[references/hybrid-triage-commit-process.md#非対話環境でのトリアージ手順](references/hybrid-triage-commit-process.md)
+詳細手順:
+[/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)
+スクリプトリファレンス:
+[/.agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts)
+非対話環境での代替手順:
+[/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)
