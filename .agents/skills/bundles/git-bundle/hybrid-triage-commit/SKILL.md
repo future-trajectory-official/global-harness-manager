@@ -12,31 +12,46 @@ tags:
 
 # hybrid-triage-commit
 
-WIP と Triage の2モードで、試行錯誤中のセーブとプッシュ直前の履歴整理を両立する。
+試行錯誤中は細かく WIP 保存し、完了後に diff を意味単位で再構成する。
 
 ## 制約
 
-`git reset --soft` / `commit --amend` / `rebase` 等の歴史改変操作は禁止。 Triage
-はベースから新ブランチを作成し、WIP ブランチとの diff を確認しながら `add + commit` で構築する。
+`git reset --soft` / `commit --amend` / `rebase` は禁止。 Triage
+はベースから新ブランチを作成し、diff を俯瞰して意味単位で `add + commit` し直す。
 
 ## Quick-Start
 
-### wip モード（開発中、こまめに実行）
+### wip モード（開発中）
+
+意味は問わない。動いたらセーブする。
 
 ```bash
-git add <files>
-git commit -m "[wip] <savepoint description>"
+git add -A && git commit -m "[wip] <savepoint>"
 ```
 
 ### triage モード（プッシュ直前）
 
-1. ベースブランチから新ブランチを作成する
-2. WIP ブランチとの差分を確認する: `git diff --name-only <base>..<wip-branch>`
-3. ファイルを適用し、論理グループごとにコミットする:
-   - 対話環境: `deno run -A scripts/git-triage.ts triage`
-   - 非対話環境: `git checkout <wip-branch> -- <files>` と `git commit` を手動で繰り返す
+**「意味単位で分割する」**
+が唯一の目的。参考：[hybrid-triage-commit-process.md](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)
 
-詳細:
-[hybrid-triage-commit-process.md](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)
-スクリプト:
+```bash
+# 0. 事前準備（ベースから新ブランチ）
+git checkout <base> && git pull && git checkout -b <clean-name>
+# 1. WIP との差分を俯瞰
+git diff --name-status <base>..<wip-branch>
+# 2. 意味単位に分割してコミット
+git checkout <wip-branch> -- path/to/feat/files   # feat グループ
+git add path/to/feat/files
+git commit -m "feat(scope): 機能追加"
+git checkout <wip-branch> -- path/to/fix/files    # fix グループ
+git add path/to/fix/files
+git commit -m "fix(scope): バグ修正"
+git checkout <wip-branch> -- path/to/test/files   # test グループ
+git add path/to/test/files
+git commit -m "test(scope): テスト追加"
+# 3. WIP ブランチを削除
+git branch -D <wip-branch>
+```
+
+対話的な仕分けにはスクリプトも利用可能:
 [git-triage.ts](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts)
