@@ -176,7 +176,8 @@ export type Operation =
   | "updateTimebox"
   | "closeTimebox"
   | "readConfig"
-  | "writeConfig";
+  | "writeConfig"
+  | "createLabel";
 
 /** Plan 内の1実行単位。operation と params で構成。 */
 export interface Step {
@@ -189,11 +190,23 @@ export interface ExecutionResult {
   readonly stepResults: readonly StepResult[];
 }
 
+/**
+ * Gateway実行時のコンテキスト。
+ * 前Stepの実行結果を後続Stepが参照するための連鎖機構。
+ * createItem で作成した Issue 番号を addComment が解決する等に使用する。
+ */
+export interface ExecutionContext {
+  readonly stepResults: readonly StepResult[];
+}
+
 /** 1Step の実行結果。success=false の場合 error に理由が設定される。 */
 export interface StepResult {
   readonly operation: string;
   readonly success: boolean;
+  /** Issue番号（リポジトリ内で一意）。gh CLI 操作の大半はこちらを使用する。 */
   readonly itemId?: string;
+  /** GitHub GraphQL node_id（グローバルに一意）。必要に応じて API 操作に使用する。 */
+  readonly nodeId?: string;
   readonly output?: unknown;
   readonly error?: string;
 }
@@ -547,3 +560,6 @@ export interface ConfigContent {
   readonly source: string;
   readonly content: string;
 }
+
+/** GitHub Issue ラベルの定義。label-types.ts から再エクスポート。 */
+export type { LabelDefinition } from "./label-types.ts";
