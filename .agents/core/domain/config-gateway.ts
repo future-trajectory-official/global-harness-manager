@@ -1,4 +1,4 @@
-import type { BoardOutput, ConfigContent, List } from "./types.ts";
+import type { BoardOutput, ConfigContent, LabelDefinition, List } from "./types.ts";
 
 /**
  * 環境設定の管理を担当するGatewayのポート（インターフェース）。
@@ -41,7 +41,7 @@ export interface ConfigGateway {
    * @returns ボードの一覧。ボードが存在しない場合は totalCount が 0 の空リスト。
    * @throws {Error} GATEWAY_ERROR - gh CLIの実行に失敗した場合。
    */
-  listBoards(): List<BoardOutput>;
+  listBoards(): Promise<List<BoardOutput>>;
 
   /**
    * 新しいProject V2ボードを作成する。
@@ -52,5 +52,14 @@ export interface ConfigGateway {
    * @throws {Error} INVALID_INPUT - name または owner が空文字の場合。
    * @throws {Error} GATEWAY_ERROR - ボードの作成に失敗した場合。
    */
-  createBoard(name: string, owner: string): BoardOutput;
+  createBoard(name: string, owner: string): Promise<BoardOutput>;
+
+  /**
+   * GitHub Issue ラベルを作成する。
+   *
+   * @param label - 作成するラベルの定義（name, color, description）。
+   * @throws {Error} INVALID_INPUT - name が空文字の場合。
+   * @throws {Error} GATEWAY_ERROR - gh CLI の実行に失敗した場合。
+   */
+  createLabel(label: LabelDefinition): Promise<void>;
 }
