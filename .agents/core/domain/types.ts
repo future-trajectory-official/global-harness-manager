@@ -163,27 +163,126 @@ export interface Plan {
   readonly steps: readonly Step[];
 }
 
-/** Gateway層が実行する操作種別。 */
-export type Operation =
-  | "createItem"
-  | "updateItem"
-  | "closeItem"
-  | "findItem"
-  | "searchItems"
-  | "addComment"
-  | "editComment"
-  | "createTimebox"
-  | "updateTimebox"
-  | "closeTimebox"
-  | "readConfig"
-  | "writeConfig"
-  | "createLabel";
+// ======== Entity + Operation 型（Discriminated Step 用） ========
 
-/** Plan 内の1実行単位。operation と params で構成。 */
-export interface Step {
-  readonly operation: Operation;
+/** エンティティ種別。全9種のDomainエンティティを識別する。 */
+export type EntityType =
+  | "Vision"
+  | "ProductGoal"
+  | "Feature"
+  | "Epic"
+  | "ProductBacklogItem"
+  | "WorkPackage"
+  | "Sprint"
+  | "Review"
+  | "Retrospective";
+
+// ---- Entity-specific OperationType ----
+
+/** Vision エンティティの操作種別。汎用操作に加え establish/pivot の混在を許容。 */
+export type VisionOperation = "create" | "update" | "view" | "search" | "comment";
+
+/** ProductGoal エンティティの操作種別。 */
+export type ProductGoalOperation = "create" | "update" | "view" | "search" | "comment";
+
+/** Feature エンティティの操作種別。 */
+export type FeatureOperation = "create" | "update" | "view" | "search" | "comment";
+
+/** Epic エンティティの操作種別。 */
+export type EpicOperation = "create" | "update" | "view" | "search" | "comment";
+
+/** ProductBacklogItem エンティティの操作種別。PbiValidator.PbiOperation と対応。 */
+export type ProductBacklogItemOperation =
+  | "propose"
+  | "commit"
+  | "start"
+  | "complete"
+  | "archive"
+  | "update"
+  | "estimateSize"
+  | "confirmSize"
+  | "recordAnalysis"
+  | "defineAcceptanceCriteria"
+  | "assignToFeature"
+  | "unassignFromFeature"
+  | "view"
+  | "search";
+
+/** WorkPackage エンティティの操作種別。WpValidator.WpOperation と対応。 */
+export type WorkPackageOperation =
+  | "define"
+  | "commit"
+  | "start"
+  | "complete"
+  | "archive"
+  | "update"
+  | "assignToProductBacklogItem"
+  | "unassignFromProductBacklogItem"
+  | "estimateInitialEffort"
+  | "estimatePlannedEffort"
+  | "recordActualEffort"
+  | "recordAnalysis"
+  | "recordSessionMetrics"
+  | "view"
+  | "search";
+
+/** Sprint エンティティの操作種別。 */
+export type SprintOperation =
+  | "create"
+  | "endSprint"
+  | "setGoal"
+  | "setDueDate"
+  | "view"
+  | "search"
+  | "comment";
+
+/** Review エンティティの操作種別。ReviewValidator.ReviewOperation と対応。 */
+export type ReviewOperation = "plan" | "update" | "report" | "archive" | "view" | "search";
+
+/** Retrospective エンティティの操作種別。RetrospectiveValidator.RetrospectiveOperation と対応。 */
+export type RetrospectiveOperation = "plan" | "execute" | "archive" | "view" | "search";
+
+/**
+ * Plan 内の1実行単位。Discriminated Union により entity と operation の組合せを型安全に表現する。
+ * entity ごとに許容される operation が異なるため、不正な組合せはコンパイル時に検出される。
+ */
+export type Step = {
+  readonly entity: "Vision";
+  readonly operation: VisionOperation;
   readonly params: Record<string, unknown>;
-}
+} | {
+  readonly entity: "ProductGoal";
+  readonly operation: ProductGoalOperation;
+  readonly params: Record<string, unknown>;
+} | {
+  readonly entity: "Feature";
+  readonly operation: FeatureOperation;
+  readonly params: Record<string, unknown>;
+} | {
+  readonly entity: "Epic";
+  readonly operation: EpicOperation;
+  readonly params: Record<string, unknown>;
+} | {
+  readonly entity: "ProductBacklogItem";
+  readonly operation: ProductBacklogItemOperation;
+  readonly params: Record<string, unknown>;
+} | {
+  readonly entity: "WorkPackage";
+  readonly operation: WorkPackageOperation;
+  readonly params: Record<string, unknown>;
+} | {
+  readonly entity: "Sprint";
+  readonly operation: SprintOperation;
+  readonly params: Record<string, unknown>;
+} | {
+  readonly entity: "Review";
+  readonly operation: ReviewOperation;
+  readonly params: Record<string, unknown>;
+} | {
+  readonly entity: "Retrospective";
+  readonly operation: RetrospectiveOperation;
+  readonly params: Record<string, unknown>;
+};
 
 /** Plan の実行結果。各 Step の結果を保持。 */
 export interface ExecutionResult {

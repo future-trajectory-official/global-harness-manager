@@ -15,8 +15,10 @@ export * from "./workpackage-usecase.ts";
 export { assertValidTransition as assertWpValidTransition } from "./wp-state-machine.ts";
 export * from "./wp-validator.ts";
 export * from "./review-usecase.ts";
-export * from "./review-validator.ts";
-export * from "./retrospective-usecase.ts";
-export * from "./retrospective-validator.ts";
+export type { ValidationResult } from "./entity-validator.ts";
+export type { ReviewOperation as ReviewValidationOperation } from "./review-validator.ts";
+export type {
+  RetrospectiveOperation as RetrospectiveValidationOperation,
+} from "./retrospective-validator.ts";
 export * from "./plan-gateway.ts";
 export * from "./config-gateway.ts";
