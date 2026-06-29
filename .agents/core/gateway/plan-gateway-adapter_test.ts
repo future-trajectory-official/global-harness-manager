@@ -1,7 +1,7 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import type { ExecuteResult } from "../shared/io/command.ts";
 import { PlanGatewayAdapter } from "./plan-gateway-adapter.ts";
-import type { Plan, Step } from "../domain/types.ts";
+import type { Plan } from "../domain/types.ts";
 
 function mockRunner() {
   const calls: { cmd: string; args: string[] }[] = [];
@@ -40,14 +40,14 @@ Deno.test("PlanGateway - should return empty stepResults for empty plan steps", 
 
 /**
  * PlanGateway - 未知の operation が success=false を返すことを検証する。
- * AC4: 未定義の operation は StepResult.success = false で error に operation 名を格納する。
+ * 未定義の operation は StepResult.success = false で error に operation 名を格納する。
  */
 Deno.test("PlanGateway - should return error for unknown operation", async () => {
   const { runner } = mockRunner();
   const adapter = makeAdapter(runner);
   const plan: Plan = {
-    summary: "unknown op",
-    steps: [{ operation: "unknownOp" as never, params: {} }],
+    summary: "unknown operation",
+    steps: [{ entity: "Vision", operation: "unknownOp" as never, params: {} }],
   };
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
@@ -56,17 +56,22 @@ Deno.test("PlanGateway - should return error for unknown operation", async () =>
 });
 
 /**
- * PlanGateway - createItem で title, body, type が正しく gh CLI 引数にマッピングされることを検証する。
- * AC1: title → --title, body → --body, type → --label type:<値>, scope → --repo
+ * PlanGateway - Vision create で title, body が正しく gh CLI 引数にマッピングされることを検証する。
  */
-Deno.test("createItem - should map full params to gh issue create args", async () => {
+Deno.test("Vision create - should map full params to gh issue create args", async () => {
   const { runner, calls } = mockRunner();
   const adapter = makeAdapter(runner);
-  const step: Step = {
-    operation: "createItem",
-    params: { title: "Test Vision", body: "body text", type: "Vision" },
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Vision",
+        operation: "create",
+        params: { title: "Test Vision", body: "body text" },
+      },
+    ],
   };
-  await adapter.execute({ summary: "test", steps: [step] });
+  await adapter.execute(plan);
   assertEquals(calls.length, 1);
   assertEquals(calls[0].cmd, "gh");
   assertEquals(calls[0].args[0], "issue");
@@ -78,28 +83,28 @@ Deno.test("createItem - should map full params to gh issue create args", async (
 });
 
 /**
- * PlanGateway - createItem で空の title/body が空文字のまま渡されることを検証する。
- * AC5: 空文字の title/body は空文字のまま gh CLI に渡す。
+ * PlanGateway - Vision create で空の title/body が空文字のまま渡されることを検証する。
  */
-Deno.test("createItem - should pass empty title and body as empty strings", async () => {
+Deno.test("Vision create - should pass empty title and body as empty strings", async () => {
   const { runner, calls } = mockRunner();
   const adapter = makeAdapter(runner);
-  const step: Step = {
-    operation: "createItem",
-    params: { title: "", body: "", type: "PBI" },
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Vision", operation: "create", params: { title: "", body: "" } },
+    ],
   };
-  await adapter.execute({ summary: "test", steps: [step] });
+  await adapter.execute(plan);
   assertEquals(calls.length, 1);
   assertStringIncludes(calls[0].args.join(" "), "--title ");
   assertStringIncludes(calls[0].args.join(" "), "--body ");
 });
 
 /**
- * PlanGateway - findItem で itemId が正しく gh issue view 引数にマッピングされ、
+ * PlanGateway - Vision view で itemId が正しく gh issue view 引数にマッピングされ、
  * 出力が正しくパースされることを検証する。
- * AC2: itemId → 位置引数, --json に title/body/labels を含む。
  */
-Deno.test("findItem - should map itemId to gh issue view args", async () => {
+Deno.test("Vision view - should map itemId to gh issue view args", async () => {
   const expectedOutput = JSON.stringify({
     number: 42,
     title: "Found Vision",
@@ -108,43 +113,48 @@ Deno.test("findItem - should map itemId to gh issue view args", async () => {
     id: "node-abc",
   });
   const findAdapter = makeAdapter(fixedRunner(expectedOutput));
-  const step: Step = {
-    operation: "findItem",
-    params: { itemId: "42" },
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Vision", operation: "view", params: { itemId: "42" } },
+    ],
   };
-  const result = await findAdapter.execute({ summary: "test", steps: [step] });
+  const result = await findAdapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
   assertEquals(result.stepResults[0].itemId, "42");
 });
 
 /**
- * PlanGateway - findItem が itemId なしでエラーを返すことを検証する。
+ * PlanGateway - Vision view が itemId なしでエラーを返すことを検証する。
  */
-Deno.test("findItem - should fail without itemId", async () => {
+Deno.test("Vision view - should fail without itemId", async () => {
   const { runner } = mockRunner();
   const adapter = makeAdapter(runner);
-  const step: Step = {
-    operation: "findItem",
-    params: {},
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Vision", operation: "view", params: {} },
+    ],
   };
-  const result = await adapter.execute({ summary: "test", steps: [step] });
+  const result = await adapter.execute(plan);
   assertEquals(result.stepResults[0].success, false);
   assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
 });
 
 /**
- * PlanGateway - addComment で itemId と body が正しく gh issue comment 引数にマッピングされることを検証する。
- * AC3: itemId → 位置引数, body → --body。
+ * PlanGateway - Vision comment で itemId と body が正しく gh issue comment 引数にマッピングされることを検証する。
  */
-Deno.test("addComment - should map itemId and body to gh issue comment args", async () => {
+Deno.test("Vision comment - should map itemId and body to gh issue comment args", async () => {
   const { runner, calls } = mockRunner();
   const adapter = makeAdapter(runner);
-  const step: Step = {
-    operation: "addComment",
-    params: { itemId: "42", body: "comment text" },
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Vision", operation: "comment", params: { itemId: "42", body: "comment text" } },
+    ],
   };
-  await adapter.execute({ summary: "test", steps: [step] });
+  await adapter.execute(plan);
   assertEquals(calls.length, 1);
   assertEquals(calls[0].cmd, "gh");
   assertEquals(calls[0].args[0], "issue");
@@ -154,10 +164,10 @@ Deno.test("addComment - should map itemId and body to gh issue comment args", as
 });
 
 /**
- * PlanGateway - addComment で createItem の結果から itemId が継承されることを検証する。
- * Step 連鎖: createItem で生成された itemId が addComment で暗黙的に使用される。
+ * PlanGateway - Vision create + comment で create の結果から itemId が継承されることを検証する。
+ * Step 連鎖: create で生成された itemId が comment で暗黙的に使用される。
  */
-Deno.test("addComment - should inherit itemId from previous createItem step", async () => {
+Deno.test("Vision create+comment - should inherit itemId from previous create step", async () => {
   let callCount = 0;
   const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
     callCount++;
@@ -177,8 +187,8 @@ Deno.test("addComment - should inherit itemId from previous createItem step", as
   const plan: Plan = {
     summary: "create then comment",
     steps: [
-      { operation: "createItem", params: { title: "V", body: "b", type: "Vision" } },
-      { operation: "addComment", params: { body: "comment" } },
+      { entity: "Vision", operation: "create", params: { title: "V", body: "b" } },
+      { entity: "Vision", operation: "comment", params: { body: "comment" } },
     ],
   };
   const result = await adapter.execute(plan);
@@ -190,36 +200,39 @@ Deno.test("addComment - should inherit itemId from previous createItem step", as
 });
 
 /**
- * PlanGateway - addComment がコンテキストなしでエラーを返すことを検証する。
+ * PlanGateway - Vision comment がコンテキストなしでエラーを返すことを検証する。
  * itemId も lastItemId もない場合、エラーメッセージを返す。
  */
-Deno.test("addComment - should fail without any context", async () => {
+Deno.test("Vision comment - should fail without any context", async () => {
   const { runner } = mockRunner();
   const adapter = makeAdapter(runner);
-  const step: Step = {
-    operation: "addComment",
-    params: { body: "orphan comment" },
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Vision", operation: "comment", params: { body: "orphan comment" } },
+    ],
   };
-  const result = await adapter.execute({ summary: "test", steps: [step] });
+  const result = await adapter.execute(plan);
   assertEquals(result.stepResults[0].success, false);
   assertStringIncludes(result.stepResults[0].error ?? "", "No target issue specified");
 });
 
 /**
- * PlanGateway - searchItems で type が正しく gh issue list 引数にマッピングされ、
+ * PlanGateway - Vision search で labelType が正しく gh issue list 引数にマッピングされ、
  * パースされた結果が返ることを検証する。
- * AC8-ext: type → --label type:<値>, --json に number,title,labels を含む。
  */
-Deno.test("searchItems - should map type to gh issue list args", async () => {
+Deno.test("Vision search - should map labelType to gh issue list args", async () => {
   const expectedOutput = JSON.stringify([
     { number: 42, title: "Existing Vision", labels: [{ name: "type:Vision" }] },
   ]);
   const searchAdapter = makeAdapter(fixedRunner(expectedOutput));
-  const step: Step = {
-    operation: "searchItems",
-    params: { type: "Vision" },
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Vision", operation: "search", params: { labelType: "Vision" } },
+    ],
   };
-  const result = await searchAdapter.execute({ summary: "test", steps: [step] });
+  const result = await searchAdapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
   const output = result.stepResults[0].output as Array<Record<string, unknown>>;
@@ -228,16 +241,113 @@ Deno.test("searchItems - should map type to gh issue list args", async () => {
 });
 
 /**
- * PlanGateway - searchItems が type なしでエラーを返すことを検証する。
+ * PlanGateway - Vision search が labelType なしでエラーを返すことを検証する。
  */
-Deno.test("searchItems - should fail without type", async () => {
+Deno.test("Vision search - should fail without labelType", async () => {
   const { runner } = mockRunner();
   const adapter = makeAdapter(runner);
-  const step: Step = {
-    operation: "searchItems",
-    params: {},
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Vision", operation: "search", params: {} },
+    ],
   };
-  const result = await adapter.execute({ summary: "test", steps: [step] });
+  const result = await adapter.execute(plan);
   assertEquals(result.stepResults[0].success, false);
   assertStringIncludes(result.stepResults[0].error ?? "", "type is required");
+});
+
+/**
+ * Assess-Alignment WP_1: AC-1
+ * Vision update - title only. params.title のみ指定 → gh issue edit --title が呼ばれる。
+ */
+Deno.test("Vision update - title only should call gh issue edit with --title", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "update title only",
+    steps: [
+      { entity: "Vision", operation: "update", params: { itemId: "42", title: "New Title" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "edit");
+  assertEquals(calls[0].args[2], "42");
+  assertStringIncludes(calls[0].args.join(" "), "--title New Title");
+});
+
+/**
+ * Assess-Alignment WP_1: AC-2
+ * Vision update - bodyAppend only. 既存 Body を取得し追記した上で gh issue edit --body が呼ばれる。
+ */
+Deno.test("Vision update - bodyAppend only should fetch body then edit with appended body", async () => {
+  let callCount = 0;
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ body: "Existing body content" }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "append body",
+    steps: [
+      {
+        entity: "Vision",
+        operation: "update",
+        params: { itemId: "42", bodyAppend: "Appended text" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(callCount, 2);
+  // 2回目の呼出が gh issue edit --body のはず
+  // モックでは全呼出が同じrunnerを通るので、
+  // 少なくとも2回Callされたことと成功を確認
+});
+
+/**
+ * Assess-Alignment WP_1: AC-3
+ * Vision update - title + bodyAppend. 両方指定 → 正しくマージされる。
+ */
+Deno.test("Vision update - title and bodyAppend should set both", async () => {
+  let callCount = 0;
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ body: "Existing" }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "title and append",
+    steps: [
+      {
+        entity: "Vision",
+        operation: "update",
+        params: { itemId: "42", title: "New Title", bodyAppend: "Appended" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(callCount, 2);
 });

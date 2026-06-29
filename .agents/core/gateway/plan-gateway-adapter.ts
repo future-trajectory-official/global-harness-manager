@@ -43,28 +43,57 @@ export class PlanGatewayAdapter implements PlanGateway {
     step: Step,
     lastItemId?: string,
   ): Promise<StepResult> {
+    const entry = step as { entity: string; operation: string; params: Record<string, unknown> };
+    const operation = entry.operation;
     try {
-      switch (step.operation) {
-        case "createItem":
-          return await this.handleCreateItem(step.params);
-        case "addComment":
-          return await this.handleAddComment(step.params, lastItemId);
-        case "findItem":
-          return await this.handleFindItem(step.params);
-        case "updateItem":
-          return await this.handleUpdateItem(step.params);
-        case "searchItems":
-          return await this.handleSearchItems(step.params);
+      switch (operation) {
+        case "create":
+        case "propose":
+        case "define":
+        case "plan":
+        case "set":
+          return await this.handleCreateItem(entry.params, entry.entity);
+        case "comment":
+        case "execute":
+          return await this.handleAddComment(entry.params, lastItemId);
+        case "view":
+          return await this.handleFindItem(entry.params);
+        case "update":
+        case "pivot":
+        case "revise":
+        case "commit":
+        case "start":
+        case "complete":
+        case "archive":
+        case "endSprint":
+        case "setGoal":
+        case "setDueDate":
+        case "report":
+        case "assignToFeature":
+        case "unassignFromFeature":
+        case "assignToProductBacklogItem":
+        case "unassignFromProductBacklogItem":
+        case "estimateSize":
+        case "confirmSize":
+        case "estimateInitialEffort":
+        case "estimatePlannedEffort":
+        case "recordActualEffort":
+        case "recordAnalysis":
+        case "recordSessionMetrics":
+        case "defineAcceptanceCriteria":
+          return await this.handleUpdateItem(entry.params);
+        case "search":
+          return await this.handleSearchItems(entry.params);
         default:
           return {
-            operation: step.operation,
+            operation,
             success: false,
-            error: `Unknown operation: ${step.operation}`,
+            error: `Unknown operation: ${operation}`,
           };
       }
     } catch (e) {
       return {
-        operation: step.operation,
+        operation,
         success: false,
         error: e instanceof Error ? e.message : String(e),
       };
@@ -82,10 +111,13 @@ export class PlanGatewayAdapter implements PlanGateway {
    * @param params.type - Issue に付与するラベル種別（デフォルト: PBI）
    * @returns 作成された Issue の itemId, nodeId, url を含む StepResult
    */
-  private async handleCreateItem(params: Record<string, unknown>): Promise<StepResult> {
+  private async handleCreateItem(
+    params: Record<string, unknown>,
+    entity?: string,
+  ): Promise<StepResult> {
     const title = String(params.title ?? "");
     const body = String(params.body ?? "");
-    const type = String(params.type ?? "PBI");
+    const type = String(params.type ?? params.labelType ?? entity ?? "PBI");
     const args = [
       "issue",
       "create",
@@ -99,7 +131,7 @@ export class PlanGatewayAdapter implements PlanGateway {
     ];
     const result = await this.runCommand("gh", args);
     if (result.code !== 0) {
-      return { operation: "createItem", success: false, error: result.stderr };
+      return { operation: "create", success: false, error: result.stderr };
     }
     const url = result.stdout.trim();
     const match = url.match(/\/issues\/(\d+)$/);
@@ -120,7 +152,7 @@ export class PlanGatewayAdapter implements PlanGateway {
       }
     }
 
-    return { operation: "createItem", success: true, itemId, nodeId, output: { url } };
+    return { operation: "create", success: true, itemId, nodeId, output: { url } };
   }
 
   /**
@@ -137,7 +169,7 @@ export class PlanGatewayAdapter implements PlanGateway {
     const itemId = String(params.itemId ?? lastItemId ?? "");
     if (!itemId) {
       return {
-        operation: "addComment",
+        operation: "comment",
         success: false,
         error: "No target issue specified and no previous createItem context available",
       };
@@ -153,9 +185,9 @@ export class PlanGatewayAdapter implements PlanGateway {
     ];
     const result = await this.runCommand("gh", args);
     if (result.code !== 0) {
-      return { operation: "addComment", success: false, error: result.stderr };
+      return { operation: "comment", success: false, error: result.stderr };
     }
-    return { operation: "addComment", success: true, itemId };
+    return { operation: "comment", success: true, itemId };
   }
 
   /**
@@ -166,7 +198,7 @@ export class PlanGatewayAdapter implements PlanGateway {
   private async handleFindItem(params: Record<string, unknown>): Promise<StepResult> {
     const itemId = String(params.itemId ?? "");
     if (!itemId) {
-      return { operation: "findItem", success: false, error: "itemId is required" };
+      return { operation: "view", success: false, error: "itemId is required" };
     }
     const args = [
       "issue",
@@ -180,19 +212,19 @@ export class PlanGatewayAdapter implements PlanGateway {
     try {
       result = await this.runCommand("gh", args);
     } catch (e) {
-      return { operation: "findItem", success: false, error: String(e) };
+      return { operation: "view", success: false, error: String(e) };
     }
     if (result.code !== 0) {
-      return { operation: "findItem", success: false, error: result.stderr };
+      return { operation: "view", success: false, error: result.stderr };
     }
 
     const output = parseJsonOutput(result.stdout) as Record<string, unknown> | undefined;
     if (!output) {
-      return { operation: "findItem", success: false, error: "Failed to parse gh output" };
+      return { operation: "view", success: false, error: "Failed to parse gh output" };
     }
 
     return {
-      operation: "findItem",
+      operation: "view",
       success: true,
       itemId,
       nodeId: output.id as string | undefined,
@@ -206,9 +238,9 @@ export class PlanGatewayAdapter implements PlanGateway {
    * @returns 検索結果（number, title, labels の配列）を含む StepResult
    */
   private async handleSearchItems(params: Record<string, unknown>): Promise<StepResult> {
-    const type = String(params.type ?? "");
+    const type = String(params.type ?? params.labelType ?? "");
     if (!type) {
-      return { operation: "searchItems", success: false, error: "type is required" };
+      return { operation: "search", success: false, error: "type is required" };
     }
     const args = [
       "issue",
@@ -225,18 +257,18 @@ export class PlanGatewayAdapter implements PlanGateway {
     try {
       result = await this.runCommand("gh", args);
     } catch (e) {
-      return { operation: "searchItems", success: false, error: String(e) };
+      return { operation: "search", success: false, error: String(e) };
     }
     if (result.code !== 0) {
-      return { operation: "searchItems", success: false, error: result.stderr };
+      return { operation: "search", success: false, error: result.stderr };
     }
 
     const output = parseJsonOutput(result.stdout);
     if (output === undefined) {
-      return { operation: "searchItems", success: false, error: "Failed to parse gh output" };
+      return { operation: "search", success: false, error: "Failed to parse gh output" };
     }
 
-    return { operation: "searchItems", success: true, output };
+    return { operation: "search", success: true, output };
   }
 
   /**
@@ -249,7 +281,7 @@ export class PlanGatewayAdapter implements PlanGateway {
   private async handleUpdateItem(params: Record<string, unknown>): Promise<StepResult> {
     const itemId = String(params.itemId ?? "");
     if (!itemId) {
-      return { operation: "updateItem", success: false, error: "itemId is required" };
+      return { operation: "update", success: false, error: "itemId is required" };
     }
     const title = params.title ? String(params.title) : undefined;
     const bodyAppend = params.bodyAppend ? String(params.bodyAppend) : undefined;
@@ -262,9 +294,9 @@ export class PlanGatewayAdapter implements PlanGateway {
     if (title) args.push("--title", title);
     const result = await this.runCommand("gh", args);
     if (result.code !== 0) {
-      return { operation: "updateItem", success: false, error: result.stderr };
+      return { operation: "update", success: false, error: result.stderr };
     }
-    return { operation: "updateItem", success: true, itemId };
+    return { operation: "update", success: true, itemId };
   }
 
   private async updateItemWithBodyAppend(
@@ -279,14 +311,14 @@ export class PlanGatewayAdapter implements PlanGateway {
         ["issue", "view", itemId, "--json", "body", ...this.buildRepoArg()],
       );
     } catch (e) {
-      return { operation: "updateItem", success: false, error: String(e) };
+      return { operation: "update", success: false, error: String(e) };
     }
     if (viewResult.code !== 0) {
-      return { operation: "updateItem", success: false, error: viewResult.stderr };
+      return { operation: "update", success: false, error: viewResult.stderr };
     }
     const parsed = parseJsonOutput(viewResult.stdout) as { body?: string } | undefined;
     if (!parsed) {
-      return { operation: "updateItem", success: false, error: "Failed to parse gh output" };
+      return { operation: "update", success: false, error: "Failed to parse gh output" };
     }
     const currentBody = parsed.body ?? "";
     const newBody = currentBody + "\n" + bodyAppend;
@@ -294,8 +326,8 @@ export class PlanGatewayAdapter implements PlanGateway {
     if (title) args.push("--title", title);
     const result = await this.runCommand("gh", args);
     if (result.code !== 0) {
-      return { operation: "updateItem", success: false, error: result.stderr };
+      return { operation: "update", success: false, error: result.stderr };
     }
-    return { operation: "updateItem", success: true, itemId };
+    return { operation: "update", success: true, itemId };
   }
 }
