@@ -75,19 +75,21 @@ export const visionUseCase: VisionUseCase = {
       summary: `Establish vision: ${identifier.title.value}`,
       steps: [
         {
-          operation: "searchItems",
-          params: { type: "Vision" },
+          entity: "Vision",
+          operation: "search",
+          params: { labelType: "Vision" },
         },
         {
-          operation: "createItem",
+          entity: "Vision",
+          operation: "create",
           params: {
             title: identifier.title.value,
-            type: "Vision",
             body: formatVisionBody(),
           },
         },
         {
-          operation: "addComment",
+          entity: "Vision",
+          operation: "comment",
           params: {
             body: formatVisionComment(statement, outcomes, 1),
           },
@@ -107,16 +109,17 @@ export const visionUseCase: VisionUseCase = {
       summary: `Pivot vision: ${identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "Vision",
+          operation: "update",
           params: {
             itemId: identifier.id,
             title: identifier.title.value,
-            type: "Vision",
             bodyAppend: formatVisionHistoryLine(2, reason.description),
           },
         },
         {
-          operation: "addComment",
+          entity: "Vision",
+          operation: "comment",
           params: {
             body: formatVisionComment(statement, outcomes, 2),
           },
@@ -130,12 +133,12 @@ export const visionUseCase: VisionUseCase = {
     if (identifier.id) {
       return {
         summary: `Find vision: ${identifier.title.value}`,
-        steps: [{ operation: "findItem", params: { itemId: identifier.id, type: "Vision" } }],
+        steps: [{ entity: "Vision", operation: "view", params: { itemId: identifier.id } }],
       };
     }
     return {
       summary: `Find vision: ${identifier.title.value}`,
-      steps: [{ operation: "searchItems", params: { type: "Vision" } }],
+      steps: [{ entity: "Vision", operation: "search", params: { labelType: "Vision" } }],
     };
   },
 };

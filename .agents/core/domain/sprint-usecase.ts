@@ -19,7 +19,8 @@ export const sprintUseCase: SprintUseCase = {
     return {
       summary: `Start sprint: ${identifier.title.value}`,
       steps: [{
-        operation: "createTimebox",
+        entity: "Sprint",
+        operation: "create",
         params: {
           title: toMilestoneName(identifier),
           description: toMilestoneName(identifier),
@@ -33,7 +34,8 @@ export const sprintUseCase: SprintUseCase = {
     return {
       summary: `End sprint: ${identifier.title.value}`,
       steps: [{
-        operation: "closeTimebox",
+        entity: "Sprint",
+        operation: "endSprint",
         params: {
           itemId: identifier.id,
           title: toMilestoneName(identifier),
@@ -48,7 +50,8 @@ export const sprintUseCase: SprintUseCase = {
     return {
       summary: `Set goal for sprint: ${identifier.title.value}`,
       steps: [{
-        operation: "updateTimebox",
+        entity: "Sprint",
+        operation: "setGoal",
         params: {
           itemId: identifier.id,
           title: toMilestoneName(identifier),
@@ -63,7 +66,8 @@ export const sprintUseCase: SprintUseCase = {
     return {
       summary: `Set due date for sprint: ${identifier.title.value}`,
       steps: [{
-        operation: "updateTimebox",
+        entity: "Sprint",
+        operation: "setDueDate",
         params: {
           itemId: identifier.id,
           title: toMilestoneName(identifier),
@@ -77,7 +81,7 @@ export const sprintUseCase: SprintUseCase = {
     assertIdDefined(identifier.id, "find a sprint");
     return {
       summary: `Find sprint: ${identifier.title.value}`,
-      steps: [{ operation: "findItem", params: { itemId: identifier.id, type: "Sprint" } }],
+      steps: [{ entity: "Sprint", operation: "view", params: { itemId: identifier.id } }],
     };
   },
 };
