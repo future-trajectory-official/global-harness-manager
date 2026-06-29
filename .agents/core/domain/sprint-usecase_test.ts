@@ -13,19 +13,19 @@ function makeGoal(description = "Complete Domain layer implementation"): GoalSta
   return { description };
 }
 
-Deno.test("sprintUseCase - start should return Plan with createTimebox operation", () => {
+Deno.test("sprintUseCase - start should return Plan with create operation", () => {
   const plan = sprintUseCase.start(sprintId(scope, 16));
   assertEquals(plan.summary, "Start sprint: Sprint 16");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "createTimebox");
+  assertEquals(plan.steps[0].operation, "create");
   assertEquals(plan.steps[0].params.title, "Sprint 16");
 });
 
-Deno.test("sprintUseCase - end should return Plan with closeTimebox operation", () => {
+Deno.test("sprintUseCase - end should return Plan with endSprint operation", () => {
   const plan = sprintUseCase.end(makeId());
   assertEquals(plan.summary, "End sprint: Sprint 16");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "closeTimebox");
+  assertEquals(plan.steps[0].operation, "endSprint");
 });
 
 Deno.test("sprintUseCase - end should throw for undefined id", () => {
@@ -36,11 +36,11 @@ Deno.test("sprintUseCase - end should throw for undefined id", () => {
   );
 });
 
-Deno.test("sprintUseCase - setGoal should return Plan with updateTimebox operation", () => {
+Deno.test("sprintUseCase - setGoal should return Plan with setGoal operation", () => {
   const plan = sprintUseCase.setGoal(makeId(), makeGoal());
   assertEquals(plan.summary, "Set goal for sprint: Sprint 16");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateTimebox");
+  assertEquals(plan.steps[0].operation, "setGoal");
   assertEquals(plan.steps[0].params.description, "Complete Domain layer implementation");
 });
 
@@ -60,11 +60,11 @@ Deno.test("sprintUseCase - setGoal should throw for undefined id", () => {
   );
 });
 
-Deno.test("sprintUseCase - setDueDate should return Plan with updateTimebox operation", () => {
+Deno.test("sprintUseCase - setDueDate should return Plan with setDueDate operation", () => {
   const plan = sprintUseCase.setDueDate(makeId(), new Date("2026-07-10"));
   assertEquals(plan.summary, "Set due date for sprint: Sprint 16");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateTimebox");
+  assertEquals(plan.steps[0].operation, "setDueDate");
   assertEquals(plan.steps[0].params.dueDate, "2026-07-10T00:00:00.000Z");
 });
 
@@ -76,10 +76,10 @@ Deno.test("sprintUseCase - setDueDate should throw for undefined id", () => {
   );
 });
 
-Deno.test("sprintUseCase - find should return Plan with findItem step", () => {
+Deno.test("sprintUseCase - find should return Plan with view operation", () => {
   const plan = sprintUseCase.find(makeId());
   assertEquals(plan.summary, "Find sprint: Sprint 16");
-  assertEquals(plan.steps[0].operation, "findItem");
+  assertEquals(plan.steps[0].operation, "view");
 });
 
 Deno.test("sprintUseCase - find should throw for undefined id", () => {

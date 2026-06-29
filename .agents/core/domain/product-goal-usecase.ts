@@ -47,15 +47,16 @@ export const productGoalUseCase: ProductGoalUseCase = {
       summary: `Set product goal: ${identifier.title.value}`,
       steps: [
         {
-          operation: "createItem",
+          entity: "ProductGoal",
+          operation: "create",
           params: {
             title: identifier.title.value,
-            type: "Goal",
             body: formatGoalBody(1, statement),
           },
         },
         {
-          operation: "addComment",
+          entity: "ProductGoal",
+          operation: "comment",
           params: {
             body: formatGoalComment(statement, 1),
           },
@@ -73,16 +74,17 @@ export const productGoalUseCase: ProductGoalUseCase = {
       summary: `Pivot product goal: ${identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "ProductGoal",
+          operation: "update",
           params: {
             itemId: identifier.id,
             title: identifier.title.value,
-            type: "Goal",
             bodyAppend: formatGoalHistoryLine(2, reason.description),
           },
         },
         {
-          operation: "addComment",
+          entity: "ProductGoal",
+          operation: "comment",
           params: {
             body: formatGoalComment(statement, 2),
           },
@@ -96,7 +98,7 @@ export const productGoalUseCase: ProductGoalUseCase = {
     assertIdDefined(identifier.id, "find a product goal");
     return {
       summary: `Find product goal: ${identifier.title.value}`,
-      steps: [{ operation: "findItem", params: { itemId: identifier.id, type: "Goal" } }],
+      steps: [{ entity: "ProductGoal", operation: "view", params: { itemId: identifier.id } }],
     };
   },
 };

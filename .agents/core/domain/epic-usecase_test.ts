@@ -31,19 +31,22 @@ function makeSearchCondition(keyword?: string): EpicSearchCondition {
     describe() {
       return {
         summary: `Search epics with keyword: ${this.keyword ?? "(none)"}`,
-        steps: [{ operation: "searchItems", params: { type: "Epic", keyword: this.keyword } }],
+        steps: [{
+          entity: "Epic",
+          operation: "search",
+          params: { labelType: "Epic", keyword: this.keyword },
+        }],
       };
     },
   };
 }
 
-Deno.test("epicUseCase - define should return Plan with createItem operation", () => {
+Deno.test("epicUseCase - define should return Plan with create operation", () => {
   const plan = epicUseCase.define(makeId({ id: undefined }), makeStatement());
   assertEquals(plan.summary, "Define epic: Authentication");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "createItem");
+  assertEquals(plan.steps[0].operation, "create");
   assertEquals(plan.steps[0].params.title, "Authentication");
-  assertEquals(plan.steps[0].params.type, "Epic");
 });
 
 Deno.test("epicUseCase - define body should include description", () => {
@@ -68,13 +71,12 @@ Deno.test("epicUseCase - define should throw for empty description", () => {
   );
 });
 
-Deno.test("epicUseCase - revise should return Plan with updateItem + addComment", () => {
+Deno.test("epicUseCase - revise should return Plan with update + comment", () => {
   const plan = epicUseCase.revise(makeId(), makeStatement(), makeReason());
   assertEquals(plan.summary, "Revise epic: Authentication");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
-  assertEquals(plan.steps[0].params.type, "Epic");
-  assertEquals(plan.steps[1].operation, "addComment");
+  assertEquals(plan.steps[0].operation, "update");
+  assertEquals(plan.steps[1].operation, "comment");
 });
 
 Deno.test("epicUseCase - revise should throw for empty reason", () => {
@@ -93,10 +95,10 @@ Deno.test("epicUseCase - revise should throw for undefined id", () => {
   );
 });
 
-Deno.test("epicUseCase - find should return Plan with findItem step", () => {
+Deno.test("epicUseCase - find should return Plan with view step", () => {
   const plan = epicUseCase.find(makeId());
   assertEquals(plan.summary, "Find epic: Authentication");
-  assertEquals(plan.steps[0].operation, "findItem");
+  assertEquals(plan.steps[0].operation, "view");
 });
 
 Deno.test("epicUseCase - find should throw for undefined id", () => {
@@ -107,14 +109,14 @@ Deno.test("epicUseCase - find should throw for undefined id", () => {
   );
 });
 
-Deno.test("epicUseCase - search should return Plan with searchItems step", () => {
+Deno.test("epicUseCase - search should return Plan with search step", () => {
   const condition = makeSearchCondition("auth");
   const plan = epicUseCase.search(condition);
-  assertEquals(plan.steps[0].operation, "searchItems");
+  assertEquals(plan.steps[0].operation, "search");
 });
 
-Deno.test("epicUseCase - search without keyword should return Plan with searchItems step", () => {
+Deno.test("epicUseCase - search without keyword should return Plan with search step", () => {
   const condition = makeSearchCondition();
   const plan = epicUseCase.search(condition);
-  assertEquals(plan.steps[0].operation, "searchItems");
+  assertEquals(plan.steps[0].operation, "search");
 });

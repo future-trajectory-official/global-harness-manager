@@ -53,13 +53,13 @@ function makeReason(description = "Completed retrospective"): ChangeReason {
   return { description };
 }
 
-Deno.test("retrospectiveUseCase - plan should return Plan with createItem + addComment", () => {
+Deno.test("retrospectiveUseCase - plan should return Plan with plan + execute", () => {
   const plan = retrospectiveUseCase.plan(makeIdentifier(), makeSprint());
   assertEquals(plan.summary, "Plan retrospective: Sprint 15 Retrospective");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "createItem");
-  assertEquals(plan.steps[0].params.type, "Retrospective");
-  assertEquals(plan.steps[1].operation, "addComment");
+  assertEquals(plan.steps[0].operation, "plan");
+  assertEquals(plan.steps[0].params.body, "## Sprint Retrospective\n\n- **Sprint**: Sprint 15");
+  assertEquals(plan.steps[1].operation, "execute");
 });
 
 Deno.test("retrospectiveUseCase - plan should throw for empty title", () => {
@@ -70,7 +70,7 @@ Deno.test("retrospectiveUseCase - plan should throw for empty title", () => {
   );
 });
 
-Deno.test("retrospectiveUseCase - execute should return Plan with updateItem + editComment", () => {
+Deno.test("retrospectiveUseCase - execute should return Plan with execute + execute", () => {
   const plan = retrospectiveUseCase.execute(
     makeIdentifier(),
     makeKpta(),
@@ -79,8 +79,8 @@ Deno.test("retrospectiveUseCase - execute should return Plan with updateItem + e
   );
   assertEquals(plan.summary, "Execute retrospective: Sprint 15 Retrospective");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[0].operation, "execute");
+  assertEquals(plan.steps[1].operation, "execute");
 });
 
 Deno.test("retrospectiveUseCase - execute should throw for undefined id", () => {
@@ -153,12 +153,12 @@ Deno.test("retrospectiveUseCase - execute should throw for empty kpta advise", (
   );
 });
 
-Deno.test("retrospectiveUseCase - archive should return Plan with closeItem + editComment", () => {
+Deno.test("retrospectiveUseCase - archive should return Plan with archive + archive", () => {
   const plan = retrospectiveUseCase.archive(makeIdentifier());
   assertEquals(plan.summary, "Archive retrospective: Sprint 15 Retrospective");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "closeItem");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[0].operation, "archive");
+  assertEquals(plan.steps[1].operation, "archive");
 });
 
 Deno.test("retrospectiveUseCase - archive should throw for undefined id", () => {
@@ -169,10 +169,10 @@ Deno.test("retrospectiveUseCase - archive should throw for undefined id", () => 
   );
 });
 
-Deno.test("retrospectiveUseCase - find should return Plan with findItem step", () => {
+Deno.test("retrospectiveUseCase - find should return Plan with view step", () => {
   const plan = retrospectiveUseCase.find(makeIdentifier());
   assertEquals(plan.summary, "Find retrospective: Sprint 15 Retrospective");
-  assertEquals(plan.steps[0].operation, "findItem");
+  assertEquals(plan.steps[0].operation, "view");
 });
 
 Deno.test("retrospectiveUseCase - find should throw for undefined id", () => {

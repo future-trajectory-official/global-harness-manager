@@ -101,7 +101,11 @@ function makeSearchCondition(): WorkPackageSearchCondition {
     describe() {
       return {
         summary: "Search WP for PBI: User Authentication",
-        steps: [{ operation: "searchItems", params: { type: "WP", parentPbi: "pbi-1" } }],
+        steps: [{
+          entity: "WorkPackage",
+          operation: "search",
+          params: { labelType: "WP", parentPbi: "pbi-1" },
+        }],
       };
     },
   };
@@ -109,7 +113,7 @@ function makeSearchCondition(): WorkPackageSearchCondition {
 
 // ===== define =====
 
-Deno.test("define should return Plan with createItem and addComment", () => {
+Deno.test("define should return Plan with define and update", () => {
   const plan = workPackageUseCase.define(
     makeWpId({ id: undefined }),
     makeStatement(),
@@ -117,10 +121,10 @@ Deno.test("define should return Plan with createItem and addComment", () => {
   );
   assertEquals(plan.summary, "Define WP: Implement Login");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "createItem");
+  assertEquals(plan.steps[0].operation, "define");
   assertEquals(plan.steps[0].params.title, "Implement Login");
-  assertEquals(plan.steps[0].params.type, "WP");
-  assertEquals(plan.steps[1].operation, "addComment");
+  assertEquals(plan.steps[0].params.parentPbi, "pbi-1");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 Deno.test("define should throw for empty title", () => {
@@ -164,14 +168,14 @@ Deno.test("define should throw for undefined parent PBI id", () => {
 
 // ===== commit =====
 
-Deno.test("commit should return Plan with updateItem and editComment", () => {
+Deno.test("commit should return Plan with commit and update", () => {
   const plan = workPackageUseCase.commit(makeWpId(), makeSprintId());
   assertEquals(plan.summary, "Commit WP Implement Login to Sprint 15");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "commit");
   assertEquals(plan.steps[0].params.stage, "todo");
   assertEquals(plan.steps[0].params.state, "open");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 Deno.test("commit should throw for undefined id", () => {
@@ -192,12 +196,12 @@ Deno.test("commit should throw for empty sprint title", () => {
 
 // ===== revise =====
 
-Deno.test("revise should return Plan with updateItem and editComment", () => {
+Deno.test("revise should return Plan with update (x2)", () => {
   const plan = workPackageUseCase.revise(makeWpId(), makeStatement(), makeReason());
   assertEquals(plan.summary, "Revise WP: Implement Login");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[0].operation, "update");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 Deno.test("revise should throw for empty title", () => {
@@ -239,14 +243,14 @@ Deno.test("revise should throw for empty reason", () => {
 
 // ===== start =====
 
-Deno.test("start should return Plan with updateItem stage=inProgress and editComment", () => {
+Deno.test("start should return Plan with start stage=inProgress and update", () => {
   const plan = workPackageUseCase.start(makeWpId());
   assertEquals(plan.summary, "Start WP: Implement Login");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "start");
   assertEquals(plan.steps[0].params.stage, "inProgress");
   assertEquals(plan.steps[0].params.state, "open");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 Deno.test("start should throw for undefined id", () => {
@@ -267,14 +271,14 @@ Deno.test("start should throw for empty title", () => {
 
 // ===== complete =====
 
-Deno.test("complete should return Plan with updateItem stage=done and editComment (no parent promotion)", () => {
+Deno.test("complete should return Plan with complete stage=done and update (no parent promotion)", () => {
   const plan = workPackageUseCase.complete(makeWpId());
   assertEquals(plan.summary, "Complete WP: Implement Login");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "complete");
   assertEquals(plan.steps[0].params.stage, "done");
   assertEquals(plan.steps[0].params.state, "open");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 Deno.test("complete should throw for undefined id", () => {
@@ -295,14 +299,14 @@ Deno.test("complete should throw for empty title", () => {
 
 // ===== archive =====
 
-Deno.test("archive should return Plan with closeItem and editComment", () => {
+Deno.test("archive should return Plan with archive and update", () => {
   const plan = workPackageUseCase.archive(makeWpId());
   assertEquals(plan.summary, "Archive WP: Implement Login");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "closeItem");
+  assertEquals(plan.steps[0].operation, "archive");
   assertEquals(plan.steps[0].params.stage, "done");
   assertEquals(plan.steps[0].params.state, "closed");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 Deno.test("archive should throw for undefined id", () => {
@@ -315,12 +319,12 @@ Deno.test("archive should throw for undefined id", () => {
 
 // ===== assignToProductBacklogItem =====
 
-Deno.test("assignToProductBacklogItem should return Plan with updateItem", () => {
+Deno.test("assignToProductBacklogItem should return Plan with assignToProductBacklogItem", () => {
   const pbi = makeParentPbi();
   const plan = workPackageUseCase.assignToProductBacklogItem(makeWpId(), pbi);
   assertEquals(plan.summary, "Assign WP Implement Login to PBI User Authentication");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "assignToProductBacklogItem");
   assertEquals(plan.steps[0].params.parentPbi, "pbi-1");
 });
 
@@ -344,11 +348,11 @@ Deno.test("assignToProductBacklogItem should throw for undefined pbi id", () => 
 
 // ===== unassignFromProductBacklogItem =====
 
-Deno.test("unassignFromProductBacklogItem should return Plan with updateItem", () => {
+Deno.test("unassignFromProductBacklogItem should return Plan with unassignFromProductBacklogItem", () => {
   const plan = workPackageUseCase.unassignFromProductBacklogItem(makeWpId());
   assertEquals(plan.summary, "Unassign WP Implement Login from PBI");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "unassignFromProductBacklogItem");
 });
 
 Deno.test("unassignFromProductBacklogItem should throw for undefined id", () => {
@@ -361,11 +365,11 @@ Deno.test("unassignFromProductBacklogItem should throw for undefined id", () => 
 
 // ===== estimateInitialEffort =====
 
-Deno.test("estimateInitialEffort should return Plan with updateItem", () => {
+Deno.test("estimateInitialEffort should return Plan with estimateInitialEffort", () => {
   const plan = workPackageUseCase.estimateInitialEffort(makeWpId(), makeEffort());
   assertEquals(plan.summary, "Estimate initial effort for WP: Implement Login");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "estimateInitialEffort");
   assertEquals(plan.steps[0].params.effortInitial, 3);
 });
 
@@ -379,11 +383,11 @@ Deno.test("estimateInitialEffort should throw for undefined id", () => {
 
 // ===== estimatePlannedEffort =====
 
-Deno.test("estimatePlannedEffort should return Plan with updateItem", () => {
+Deno.test("estimatePlannedEffort should return Plan with estimatePlannedEffort", () => {
   const plan = workPackageUseCase.estimatePlannedEffort(makeWpId(), makeEffort());
   assertEquals(plan.summary, "Estimate planned effort for WP: Implement Login");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "estimatePlannedEffort");
   assertEquals(plan.steps[0].params.effortPlanned, 5);
 });
 
@@ -397,11 +401,11 @@ Deno.test("estimatePlannedEffort should throw for undefined id", () => {
 
 // ===== recordActualEffort =====
 
-Deno.test("recordActualEffort should return Plan with updateItem", () => {
+Deno.test("recordActualEffort should return Plan with recordActualEffort", () => {
   const plan = workPackageUseCase.recordActualEffort(makeWpId(), makeEffort());
   assertEquals(plan.summary, "Record actual effort for WP: Implement Login");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "recordActualEffort");
   assertEquals(plan.steps[0].params.effortActual, 5);
 });
 
@@ -415,11 +419,11 @@ Deno.test("recordActualEffort should throw for undefined id", () => {
 
 // ===== recordAnalysis =====
 
-Deno.test("recordAnalysis should return Plan with editComment", () => {
+Deno.test("recordAnalysis should return Plan with recordAnalysis", () => {
   const plan = workPackageUseCase.recordAnalysis(makeWpId(), makeAnalysis());
   assertEquals(plan.summary, "Record analysis for WP: Implement Login");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "editComment");
+  assertEquals(plan.steps[0].operation, "recordAnalysis");
 });
 
 Deno.test("recordAnalysis should throw for undefined id", () => {
@@ -444,11 +448,11 @@ Deno.test("recordAnalysis should throw for empty planningReview", () => {
 
 // ===== recordSessionMetrics =====
 
-Deno.test("recordSessionMetrics should return Plan with updateItem", () => {
+Deno.test("recordSessionMetrics should return Plan with recordSessionMetrics", () => {
   const plan = workPackageUseCase.recordSessionMetrics(makeWpId(), makeMetrics());
   assertEquals(plan.summary, "Record session metrics for WP: Implement Login");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "recordSessionMetrics");
 });
 
 Deno.test("recordSessionMetrics should throw for undefined id", () => {
@@ -461,12 +465,11 @@ Deno.test("recordSessionMetrics should throw for undefined id", () => {
 
 // ===== find =====
 
-Deno.test("find should return Plan with findItem", () => {
+Deno.test("find should return Plan with view", () => {
   const plan = workPackageUseCase.find(makeWpId());
   assertEquals(plan.summary, "Find WP: Implement Login");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "findItem");
-  assertEquals(plan.steps[0].params.type, "WP");
+  assertEquals(plan.steps[0].operation, "view");
 });
 
 Deno.test("find should throw for undefined id", () => {
@@ -484,5 +487,5 @@ Deno.test("search should delegate to condition.describe()", () => {
   const plan = workPackageUseCase.search(condition);
   assertEquals(plan.summary, "Search WP for PBI: User Authentication");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "searchItems");
+  assertEquals(plan.steps[0].operation, "search");
 });

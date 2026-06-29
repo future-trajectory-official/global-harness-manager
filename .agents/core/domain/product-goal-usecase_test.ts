@@ -23,13 +23,12 @@ function makeReason(description = "Strategy change"): ChangeReason {
   return { description };
 }
 
-Deno.test("productGoalUseCase - set should return Plan with createItem + addComment", () => {
+Deno.test("productGoalUseCase - set should return Plan with create + comment", () => {
   const plan = productGoalUseCase.set(makeIdentifier(), makeStatement());
   assertEquals(plan.summary, "Set product goal: Product Goal");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "createItem");
-  assertEquals(plan.steps[0].params.type, "Goal");
-  assertEquals(plan.steps[1].operation, "addComment");
+  assertEquals(plan.steps[0].operation, "create");
+  assertEquals(plan.steps[1].operation, "comment");
 });
 
 Deno.test("productGoalUseCase - set body should be history table", () => {
@@ -62,12 +61,12 @@ Deno.test("productGoalUseCase - set should throw for empty description", () => {
   );
 });
 
-Deno.test("productGoalUseCase - pivot should return Plan with updateItem + addComment", () => {
+Deno.test("productGoalUseCase - pivot should return Plan with update + comment", () => {
   const plan = productGoalUseCase.pivot(makeIdentifier(), makeStatement(), makeReason());
   assertEquals(plan.summary, "Pivot product goal: Product Goal");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
-  assertEquals(plan.steps[1].operation, "addComment");
+  assertEquals(plan.steps[0].operation, "update");
+  assertEquals(plan.steps[1].operation, "comment");
 });
 
 Deno.test("productGoalUseCase - pivot should throw for empty reason", () => {
@@ -87,10 +86,10 @@ Deno.test("productGoalUseCase - pivot should throw for undefined id", () => {
   );
 });
 
-Deno.test("productGoalUseCase - find should return Plan with findItem step", () => {
+Deno.test("productGoalUseCase - find should return Plan with view step", () => {
   const plan = productGoalUseCase.find(makeIdentifier());
   assertEquals(plan.summary, "Find product goal: Product Goal");
-  assertEquals(plan.steps[0].operation, "findItem");
+  assertEquals(plan.steps[0].operation, "view");
 });
 
 Deno.test("productGoalUseCase - find should throw for undefined id", () => {

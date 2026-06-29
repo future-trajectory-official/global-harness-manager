@@ -52,19 +52,22 @@ function makeSearchCondition(
     describe() {
       return {
         summary: `Search features with keyword: ${this.keyword ?? "(none)"}`,
-        steps: [{ operation: "searchItems", params: { type: "Feature", keyword: this.keyword } }],
+        steps: [{
+          entity: "Feature",
+          operation: "search",
+          params: { labelType: "Feature", keyword: this.keyword },
+        }],
       };
     },
   };
 }
 
-Deno.test("featureUseCase - define should return Plan with createItem operation", () => {
+Deno.test("featureUseCase - define should return Plan with create operation", () => {
   const plan = featureUseCase.define(makeId({ id: undefined }), makeStatement());
   assertEquals(plan.summary, "Define feature: Login");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "createItem");
+  assertEquals(plan.steps[0].operation, "create");
   assertEquals(plan.steps[0].params.title, "Login");
-  assertEquals(plan.steps[0].params.type, "Feature");
 });
 
 Deno.test("featureUseCase - define body should include description", () => {
@@ -104,13 +107,12 @@ Deno.test("featureUseCase - define should throw for parentEpic with undefined id
   );
 });
 
-Deno.test("featureUseCase - revise should return Plan with updateItem + addComment", () => {
+Deno.test("featureUseCase - revise should return Plan with update + comment", () => {
   const plan = featureUseCase.revise(makeId(), makeStatement(), makeReason());
   assertEquals(plan.summary, "Revise feature: Login");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
-  assertEquals(plan.steps[0].params.type, "Feature");
-  assertEquals(plan.steps[1].operation, "addComment");
+  assertEquals(plan.steps[0].operation, "update");
+  assertEquals(plan.steps[1].operation, "comment");
 });
 
 Deno.test("featureUseCase - revise should throw for empty reason", () => {
@@ -129,12 +131,12 @@ Deno.test("featureUseCase - revise should throw for undefined id", () => {
   );
 });
 
-Deno.test("featureUseCase - assignToEpic should return Plan with updateItem", () => {
+Deno.test("featureUseCase - assignToEpic should return Plan with update", () => {
   const epic = makeEpicId();
   const plan = featureUseCase.assignToEpic(makeId(), epic);
   assertEquals(plan.summary, "Assign feature Login to epic Authentication");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "update");
   assertEquals(plan.steps[0].params.parentEpic, "epic-1");
 });
 
@@ -154,11 +156,11 @@ Deno.test("featureUseCase - assignToEpic should throw for epic with undefined id
   );
 });
 
-Deno.test("featureUseCase - unassignFromEpic should return Plan with updateItem", () => {
+Deno.test("featureUseCase - unassignFromEpic should return Plan with update", () => {
   const plan = featureUseCase.unassignFromEpic(makeId());
   assertEquals(plan.summary, "Unassign feature Login from epic");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "update");
   assertEquals(plan.steps[0].params.parentEpic, undefined);
 });
 
@@ -170,10 +172,10 @@ Deno.test("featureUseCase - unassignFromEpic should throw for undefined id", () 
   );
 });
 
-Deno.test("featureUseCase - find should return Plan with findItem step", () => {
+Deno.test("featureUseCase - find should return Plan with view step", () => {
   const plan = featureUseCase.find(makeId());
   assertEquals(plan.summary, "Find feature: Login");
-  assertEquals(plan.steps[0].operation, "findItem");
+  assertEquals(plan.steps[0].operation, "view");
 });
 
 Deno.test("featureUseCase - find should throw for undefined id", () => {
@@ -184,14 +186,14 @@ Deno.test("featureUseCase - find should throw for undefined id", () => {
   );
 });
 
-Deno.test("featureUseCase - search should return Plan with searchItems step", () => {
+Deno.test("featureUseCase - search should return Plan with search step", () => {
   const condition = makeSearchCondition("login");
   const plan = featureUseCase.search(condition);
-  assertEquals(plan.steps[0].operation, "searchItems");
+  assertEquals(plan.steps[0].operation, "search");
 });
 
-Deno.test("featureUseCase - search without keyword should return Plan with searchItems step", () => {
+Deno.test("featureUseCase - search without keyword should return Plan with search step", () => {
   const condition = makeSearchCondition();
   const plan = featureUseCase.search(condition);
-  assertEquals(plan.steps[0].operation, "searchItems");
+  assertEquals(plan.steps[0].operation, "search");
 });

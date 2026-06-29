@@ -95,15 +95,16 @@ export const reviewUseCase: ReviewUseCase = {
       summary: `Plan review: ${identifier.title.value}`,
       steps: [
         {
-          operation: "createItem",
+          entity: "Review",
+          operation: "plan",
           params: {
             title: identifier.title.value,
-            type: "Review",
             body: formatReviewBody(sprint),
           },
         },
         {
-          operation: "addComment",
+          entity: "Review",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: `Review planned for ${sprint.title.value}`,
@@ -121,16 +122,17 @@ export const reviewUseCase: ReviewUseCase = {
       summary: `Revise review: ${identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "Review",
+          operation: "update",
           params: {
             itemId: identifier.id,
             title: identifier.title.value,
-            type: "Review",
             body: formatReviewReviseBody(removed, added),
           },
         },
         {
-          operation: "editComment",
+          entity: "Review",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Revise", reason.description),
@@ -147,17 +149,18 @@ export const reviewUseCase: ReviewUseCase = {
       summary: `Report review: ${data.identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "Review",
+          operation: "report",
           params: {
             itemId: data.identifier.id,
-            type: "Review",
             body: formatReportBody(data),
             overallResult: data.overallResult,
             postPlanAcGroups: data.postPlanAcGroups,
           },
         },
         {
-          operation: "addComment",
+          entity: "Review",
+          operation: "update",
           params: {
             itemId: data.identifier.id,
             body: formatEditComment("Report", `Overall: ${data.overallResult?.judgment ?? "N/A"}`),
@@ -174,14 +177,16 @@ export const reviewUseCase: ReviewUseCase = {
       summary: `Archive review: ${identifier.title.value}`,
       steps: [
         {
-          operation: "closeItem",
+          entity: "Review",
+          operation: "archive",
           params: {
             itemId: identifier.id,
             state: "closed",
           },
         },
         {
-          operation: "editComment",
+          entity: "Review",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Archive", `Archived ${identifier.title.value}`),
@@ -197,10 +202,10 @@ export const reviewUseCase: ReviewUseCase = {
     return {
       summary: `Find review: ${identifier.title.value}`,
       steps: [{
-        operation: "findItem",
+        entity: "Review",
+        operation: "view",
         params: {
           itemId: identifier.id,
-          type: "Review",
         },
       }],
     };

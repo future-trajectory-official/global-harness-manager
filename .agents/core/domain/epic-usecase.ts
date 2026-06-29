@@ -62,10 +62,10 @@ export const epicUseCase: EpicUseCase = {
     return {
       summary: `Define epic: ${identifier.title.value}`,
       steps: [{
-        operation: "createItem",
+        entity: "Epic",
+        operation: "create",
         params: {
           title: identifier.title.value,
-          type: "Epic",
           body: formatEpicBody(statement),
         },
       }],
@@ -81,16 +81,17 @@ export const epicUseCase: EpicUseCase = {
       summary: `Revise epic: ${identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "Epic",
+          operation: "update",
           params: {
             itemId: identifier.id,
             title: identifier.title.value,
-            type: "Epic",
             body: formatEpicBody(statement),
           },
         },
         {
-          operation: "addComment",
+          entity: "Epic",
+          operation: "comment",
           params: {
             body: formatReviseComment(statement, reason),
           },
@@ -104,7 +105,7 @@ export const epicUseCase: EpicUseCase = {
     assertIdDefined(identifier.id, "find an epic");
     return {
       summary: `Find epic: ${identifier.title.value}`,
-      steps: [{ operation: "findItem", params: { itemId: identifier.id, type: "Epic" } }],
+      steps: [{ entity: "Epic", operation: "view", params: { itemId: identifier.id } }],
     };
   },
 

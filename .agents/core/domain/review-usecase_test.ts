@@ -65,13 +65,12 @@ function makeReviewData(overrides?: Partial<ReviewData>): ReviewData {
   };
 }
 
-Deno.test("reviewUseCase - plan should return Plan with createItem + addComment", () => {
+Deno.test("reviewUseCase - plan should return Plan with plan + update steps", () => {
   const plan = reviewUseCase.plan(makeIdentifier(), makeSprint());
   assertEquals(plan.summary, "Plan review: Sprint 15 Review");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "createItem");
-  assertEquals(plan.steps[0].params.type, "Review");
-  assertEquals(plan.steps[1].operation, "addComment");
+  assertEquals(plan.steps[0].operation, "plan");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 Deno.test("reviewUseCase - plan should throw for empty title", () => {
@@ -90,7 +89,7 @@ Deno.test("reviewUseCase - plan should throw for empty sprint title", () => {
   );
 });
 
-Deno.test("reviewUseCase - revise should return Plan with updateItem + editComment", () => {
+Deno.test("reviewUseCase - revise should return Plan with two update steps", () => {
   const plan = reviewUseCase.revise(
     makeIdentifier(),
     makeRemovedACs(),
@@ -99,8 +98,8 @@ Deno.test("reviewUseCase - revise should return Plan with updateItem + editComme
   );
   assertEquals(plan.summary, "Revise review: Sprint 15 Review");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[0].operation, "update");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 Deno.test("reviewUseCase - revise should throw for undefined id", () => {
@@ -131,7 +130,7 @@ Deno.test("reviewUseCase - revise should throw for empty reason", () => {
   );
 });
 
-Deno.test("reviewUseCase - report should return Plan with updateItem + addComment", () => {
+Deno.test("reviewUseCase - report should return Plan with report + update steps", () => {
   const data = makeReviewData({
     overallResult: { judgment: "pass", reason: "All ACs satisfied" },
     postPlanAcGroups: [{
@@ -143,10 +142,10 @@ Deno.test("reviewUseCase - report should return Plan with updateItem + addCommen
   const plan = reviewUseCase.report(data);
   assertEquals(plan.summary, "Report review: Sprint 15 Review");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "report");
   const overallResult = plan.steps[0].params.overallResult as { judgment: string } | undefined;
   assertEquals(overallResult?.judgment, "pass");
-  assertEquals(plan.steps[1].operation, "addComment");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 Deno.test("reviewUseCase - report should throw for undefined id", () => {
@@ -157,12 +156,12 @@ Deno.test("reviewUseCase - report should throw for undefined id", () => {
   );
 });
 
-Deno.test("reviewUseCase - archive should return Plan with closeItem + editComment", () => {
+Deno.test("reviewUseCase - archive should return Plan with archive + update steps", () => {
   const plan = reviewUseCase.archive(makeIdentifier());
   assertEquals(plan.summary, "Archive review: Sprint 15 Review");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "closeItem");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[0].operation, "archive");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 Deno.test("reviewUseCase - archive should throw for undefined id", () => {
@@ -173,10 +172,10 @@ Deno.test("reviewUseCase - archive should throw for undefined id", () => {
   );
 });
 
-Deno.test("reviewUseCase - find should return Plan with findItem step", () => {
+Deno.test("reviewUseCase - find should return Plan with view step", () => {
   const plan = reviewUseCase.find(makeIdentifier());
   assertEquals(plan.summary, "Find review: Sprint 15 Review");
-  assertEquals(plan.steps[0].operation, "findItem");
+  assertEquals(plan.steps[0].operation, "view");
 });
 
 Deno.test("reviewUseCase - find should throw for undefined id", () => {

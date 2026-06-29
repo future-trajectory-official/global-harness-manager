@@ -122,10 +122,10 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Propose PBI: ${identifier.title.value}`,
       steps: [{
-        operation: "createItem",
+        entity: "ProductBacklogItem",
+        operation: "propose",
         params: {
           title: identifier.title.value,
-          type: "PBI",
           body: formatPbiBody(statement, parentFeature?.id),
           ...(parentFeature?.id ? { parentFeature: parentFeature.id } : {}),
         },
@@ -142,16 +142,17 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
       summary: `Revise PBI: ${identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "ProductBacklogItem",
+          operation: "update",
           params: {
             itemId: identifier.id,
             title: identifier.title.value,
-            type: "PBI",
             body: formatPbiBody(statement),
           },
         },
         {
-          operation: "editComment",
+          entity: "ProductBacklogItem",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatReviseComment(statement, reason),
@@ -168,7 +169,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
       summary: `Commit PBI ${identifier.title.value} to ${sprint.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "ProductBacklogItem",
+          operation: "commit",
           params: {
             itemId: identifier.id,
             stage: "todo",
@@ -177,7 +179,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           },
         },
         {
-          operation: "editComment",
+          entity: "ProductBacklogItem",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Commit", `Committed to ${sprint.title.value}`),
@@ -194,7 +197,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
       summary: `Start PBI: ${identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "ProductBacklogItem",
+          operation: "start",
           params: {
             itemId: identifier.id,
             stage: "inProgress",
@@ -202,7 +206,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           },
         },
         {
-          operation: "editComment",
+          entity: "ProductBacklogItem",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Start", `Started work on ${identifier.title.value}`),
@@ -219,7 +224,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
       summary: `Complete PBI: ${identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "ProductBacklogItem",
+          operation: "complete",
           params: {
             itemId: identifier.id,
             stage: "done",
@@ -227,7 +233,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           },
         },
         {
-          operation: "editComment",
+          entity: "ProductBacklogItem",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Complete", `Completed ${identifier.title.value}`),
@@ -244,7 +251,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
       summary: `Archive PBI: ${identifier.title.value}`,
       steps: [
         {
-          operation: "closeItem",
+          entity: "ProductBacklogItem",
+          operation: "archive",
           params: {
             itemId: identifier.id,
             stage: "done",
@@ -252,7 +260,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           },
         },
         {
-          operation: "editComment",
+          entity: "ProductBacklogItem",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Archive", `Archived ${identifier.title.value}`),
@@ -269,10 +278,10 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Define acceptance criteria for: ${identifier.title.value}`,
       steps: workPackages.map((wp) => ({
-        operation: "createItem" as const,
+        entity: "ProductBacklogItem",
+        operation: "defineAcceptanceCriteria",
         params: {
           title: wp.identifier.title.value,
-          type: "WP",
           parentPbi: identifier.id,
           body: wp.statement.acceptanceCriteria.items.map((ac) =>
             `- [ ] AC${ac.number}: ${ac.description}`
@@ -289,7 +298,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Assign PBI ${identifier.title.value} to feature ${feature.title.value}`,
       steps: [{
-        operation: "updateItem",
+        entity: "ProductBacklogItem",
+        operation: "assignToFeature",
         params: {
           itemId: identifier.id,
           parentFeature: feature.id,
@@ -304,7 +314,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Unassign PBI ${identifier.title.value} from feature`,
       steps: [{
-        operation: "updateItem",
+        entity: "ProductBacklogItem",
+        operation: "unassignFromFeature",
         params: {
           itemId: identifier.id,
           parentFeature: undefined,
@@ -319,7 +330,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Estimate size for PBI: ${identifier.title.value}`,
       steps: [{
-        operation: "updateItem",
+        entity: "ProductBacklogItem",
+        operation: "estimateSize",
         params: {
           itemId: identifier.id,
           sizeEstimate: variance.estimate?.toString(),
@@ -334,7 +346,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Confirm size for PBI: ${identifier.title.value}`,
       steps: [{
-        operation: "updateItem",
+        entity: "ProductBacklogItem",
+        operation: "confirmSize",
         params: {
           itemId: identifier.id,
           sizeActual: variance.actual?.toString(),
@@ -365,7 +378,8 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Record analysis for PBI: ${identifier.title.value}`,
       steps: [{
-        operation: "editComment",
+        entity: "ProductBacklogItem",
+        operation: "recordAnalysis",
         params: {
           itemId: identifier.id,
           body: lines.join("\n"),
@@ -380,10 +394,10 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Find PBI: ${identifier.title.value}`,
       steps: [{
-        operation: "findItem",
+        entity: "ProductBacklogItem",
+        operation: "view",
         params: {
           itemId: identifier.id,
-          type: "PBI",
         },
       }],
     };

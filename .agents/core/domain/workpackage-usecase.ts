@@ -175,16 +175,17 @@ export const workPackageUseCase: WorkPackageUseCase = {
       summary: `Define WP: ${identifier.title.value}`,
       steps: [
         {
-          operation: "createItem",
+          entity: "WorkPackage",
+          operation: "define",
           params: {
             title: identifier.title.value,
-            type: "WP",
             parentPbi: parentPbi.id,
             body: formatWpBody(statement),
           },
         },
         {
-          operation: "addComment",
+          entity: "WorkPackage",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Define", `Defined ${identifier.title.value}`),
@@ -202,7 +203,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
       summary: `Commit WP ${identifier.title.value} to ${sprint.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "WorkPackage",
+          operation: "commit",
           params: {
             itemId: identifier.id,
             stage: "todo",
@@ -211,7 +213,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
           },
         },
         {
-          operation: "editComment",
+          entity: "WorkPackage",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Commit", `Committed to ${sprint.title.value}`),
@@ -234,16 +237,17 @@ export const workPackageUseCase: WorkPackageUseCase = {
       summary: `Revise WP: ${identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "WorkPackage",
+          operation: "update",
           params: {
             itemId: identifier.id,
             title: identifier.title.value,
-            type: "WP",
             body: formatWpBody(statement),
           },
         },
         {
-          operation: "editComment",
+          entity: "WorkPackage",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Revise", reason.description),
@@ -260,7 +264,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
       summary: `Start WP: ${identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "WorkPackage",
+          operation: "start",
           params: {
             itemId: identifier.id,
             stage: "inProgress",
@@ -268,7 +273,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
           },
         },
         {
-          operation: "editComment",
+          entity: "WorkPackage",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Start", `Started work on ${identifier.title.value}`),
@@ -285,7 +291,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
       summary: `Complete WP: ${identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "WorkPackage",
+          operation: "complete",
           params: {
             itemId: identifier.id,
             stage: "done",
@@ -293,7 +300,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
           },
         },
         {
-          operation: "editComment",
+          entity: "WorkPackage",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Complete", `Completed ${identifier.title.value}`),
@@ -310,7 +318,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
       summary: `Archive WP: ${identifier.title.value}`,
       steps: [
         {
-          operation: "closeItem",
+          entity: "WorkPackage",
+          operation: "archive",
           params: {
             itemId: identifier.id,
             stage: "done",
@@ -318,7 +327,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
           },
         },
         {
-          operation: "editComment",
+          entity: "WorkPackage",
+          operation: "update",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Archive", `Archived ${identifier.title.value}`),
@@ -335,7 +345,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Assign WP ${identifier.title.value} to PBI ${pbi.title.value}`,
       steps: [{
-        operation: "updateItem",
+        entity: "WorkPackage",
+        operation: "assignToProductBacklogItem",
         params: {
           itemId: identifier.id,
           parentPbi: pbi.id,
@@ -350,7 +361,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Unassign WP ${identifier.title.value} from PBI`,
       steps: [{
-        operation: "updateItem",
+        entity: "WorkPackage",
+        operation: "unassignFromProductBacklogItem",
         params: {
           itemId: identifier.id,
           parentPbi: undefined,
@@ -365,7 +377,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Estimate initial effort for WP: ${identifier.title.value}`,
       steps: [{
-        operation: "updateItem",
+        entity: "WorkPackage",
+        operation: "estimateInitialEffort",
         params: {
           itemId: identifier.id,
           effortInitial: effort.initialEstimate,
@@ -381,7 +394,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Estimate planned effort for WP: ${identifier.title.value}`,
       steps: [{
-        operation: "updateItem",
+        entity: "WorkPackage",
+        operation: "estimatePlannedEffort",
         params: {
           itemId: identifier.id,
           effortPlanned: effort.plannedEstimate,
@@ -397,7 +411,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Record actual effort for WP: ${identifier.title.value}`,
       steps: [{
-        operation: "updateItem",
+        entity: "WorkPackage",
+        operation: "recordActualEffort",
         params: {
           itemId: identifier.id,
           effortActual: effort.actual,
@@ -414,7 +429,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Record analysis for WP: ${identifier.title.value}`,
       steps: [{
-        operation: "editComment",
+        entity: "WorkPackage",
+        operation: "recordAnalysis",
         params: {
           itemId: identifier.id,
           body: formatAnalysisBody(analysis),
@@ -429,7 +445,8 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Record session metrics for WP: ${identifier.title.value}`,
       steps: [{
-        operation: "updateItem",
+        entity: "WorkPackage",
+        operation: "recordSessionMetrics",
         params: {
           itemId: identifier.id,
           body: formatSessionMetricsBody(metrics),
@@ -444,10 +461,10 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Find WP: ${identifier.title.value}`,
       steps: [{
-        operation: "findItem",
+        entity: "WorkPackage",
+        operation: "view",
         params: {
           itemId: identifier.id,
-          type: "WP",
         },
       }],
     };

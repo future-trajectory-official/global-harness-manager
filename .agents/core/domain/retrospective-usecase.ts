@@ -82,15 +82,16 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
       summary: `Plan retrospective: ${identifier.title.value}`,
       steps: [
         {
-          operation: "createItem",
+          entity: "Retrospective",
+          operation: "plan",
           params: {
             title: identifier.title.value,
-            type: "Retrospective",
             body: formatRetroBody(sprint),
           },
         },
         {
-          operation: "addComment",
+          entity: "Retrospective",
+          operation: "execute",
           params: {
             itemId: identifier.id,
             body: `Retrospective planned for ${sprint.title.value}`,
@@ -112,17 +113,18 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
       summary: `Execute retrospective: ${identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "Retrospective",
+          operation: "execute",
           params: {
             itemId: identifier.id,
-            type: "Retrospective",
             body: `${formatKptaBody(kpta)}\n\n${formatMetricsBody(metrics)}`,
             kpta,
             metrics,
           },
         },
         {
-          operation: "editComment",
+          entity: "Retrospective",
+          operation: "execute",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Execute", reason.description),
@@ -139,14 +141,16 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
       summary: `Archive retrospective: ${identifier.title.value}`,
       steps: [
         {
-          operation: "closeItem",
+          entity: "Retrospective",
+          operation: "archive",
           params: {
             itemId: identifier.id,
             state: "closed",
           },
         },
         {
-          operation: "editComment",
+          entity: "Retrospective",
+          operation: "archive",
           params: {
             itemId: identifier.id,
             body: formatEditComment("Archive", `Archived ${identifier.title.value}`),
@@ -162,10 +166,10 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
     return {
       summary: `Find retrospective: ${identifier.title.value}`,
       steps: [{
-        operation: "findItem",
+        entity: "Retrospective",
+        operation: "view",
         params: {
           itemId: identifier.id,
-          type: "Retrospective",
         },
       }],
     };

@@ -71,33 +71,66 @@ Deno.test("types - List should have readonly items and totalCount", () => {
 
 Deno.test("types - Plan should have summary and steps", () => {
   const plan: Plan = {
-    summary: "Create item",
+    summary: "Create vision",
     steps: [
-      { operation: "createItem", params: { title: "test", type: "PBI" } },
+      { entity: "Vision", operation: "create", params: { title: "test" } },
     ],
   };
-  assertEquals(plan.summary, "Create item");
+  assertEquals(plan.summary, "Create vision");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "createItem");
+  assertEquals(plan.steps[0].entity, "Vision");
+  assertEquals(plan.steps[0].operation, "create");
 });
 
-Deno.test("types - Step should support all operation types", () => {
-  const operations = [
-    "createItem",
-    "updateItem",
-    "closeItem",
-    "findItem",
-    "searchItems",
-    "addComment",
-    "createTimebox",
-    "updateTimebox",
-    "closeTimebox",
-    "readConfig",
-    "writeConfig",
-  ] as const;
-  for (const op of operations) {
-    const step: Step = { operation: op, params: {} };
-    assertEquals(step.operation, op);
+Deno.test("types - Step should support all entity types with valid operations", () => {
+  const steps: Step[] = [
+    { entity: "Vision", operation: "create", params: {} },
+    { entity: "Vision", operation: "update", params: {} },
+    { entity: "Vision", operation: "view", params: {} },
+    { entity: "Vision", operation: "search", params: {} },
+    { entity: "Vision", operation: "comment", params: {} },
+    { entity: "ProductGoal", operation: "create", params: {} },
+    { entity: "ProductGoal", operation: "update", params: {} },
+    { entity: "ProductGoal", operation: "view", params: {} },
+    { entity: "ProductGoal", operation: "search", params: {} },
+    { entity: "Feature", operation: "create", params: {} },
+    { entity: "Feature", operation: "update", params: {} },
+    { entity: "Feature", operation: "view", params: {} },
+    { entity: "Feature", operation: "search", params: {} },
+    { entity: "Epic", operation: "create", params: {} },
+    { entity: "Epic", operation: "update", params: {} },
+    { entity: "Epic", operation: "view", params: {} },
+    { entity: "Epic", operation: "search", params: {} },
+    { entity: "ProductBacklogItem", operation: "propose", params: {} },
+    { entity: "ProductBacklogItem", operation: "commit", params: {} },
+    { entity: "ProductBacklogItem", operation: "start", params: {} },
+    { entity: "ProductBacklogItem", operation: "complete", params: {} },
+    { entity: "ProductBacklogItem", operation: "archive", params: {} },
+    { entity: "ProductBacklogItem", operation: "update", params: {} },
+    { entity: "ProductBacklogItem", operation: "view", params: {} },
+    { entity: "ProductBacklogItem", operation: "search", params: {} },
+    { entity: "WorkPackage", operation: "define", params: {} },
+    { entity: "WorkPackage", operation: "commit", params: {} },
+    { entity: "WorkPackage", operation: "view", params: {} },
+    { entity: "WorkPackage", operation: "search", params: {} },
+    { entity: "Sprint", operation: "create", params: {} },
+    { entity: "Sprint", operation: "endSprint", params: {} },
+    { entity: "Sprint", operation: "setGoal", params: {} },
+    { entity: "Sprint", operation: "view", params: {} },
+    { entity: "Review", operation: "plan", params: {} },
+    { entity: "Review", operation: "update", params: {} },
+    { entity: "Review", operation: "report", params: {} },
+    { entity: "Review", operation: "view", params: {} },
+    { entity: "Review", operation: "search", params: {} },
+    { entity: "Retrospective", operation: "plan", params: {} },
+    { entity: "Retrospective", operation: "execute", params: {} },
+    { entity: "Retrospective", operation: "view", params: {} },
+    { entity: "Retrospective", operation: "search", params: {} },
+  ];
+  assertEquals(steps.length, 42);
+  for (const step of steps) {
+    assertEquals(typeof step.entity, "string");
+    assertEquals(typeof step.operation, "string");
   }
 });
 

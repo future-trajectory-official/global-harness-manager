@@ -106,7 +106,11 @@ function makeSearchCondition(): ProductBacklogItemSearchCondition {
     describe() {
       return {
         summary: "Search PBIs with keyword: login",
-        steps: [{ operation: "searchItems", params: { type: "PBI", keyword: "login" } }],
+        steps: [{
+          entity: "ProductBacklogItem",
+          operation: "search",
+          params: { labelType: "PBI", keyword: "login" },
+        }],
       };
     },
   };
@@ -115,17 +119,16 @@ function makeSearchCondition(): ProductBacklogItemSearchCondition {
 // ===== propose =====
 
 /**
- * propose の正常系。id が undefined の場合に createItem 操作を含む Plan が返ることを確認する。
- * @description PBI発案時に正しい Plan（createItem）が生成されること
+ * propose の正常系。id が undefined の場合に propose 操作を含む Plan が返ることを確認する。
+ * @description PBI発案時に正しい Plan（propose）が生成されること
  * @verify Plan.summary と Plan.steps[0].operation/params が期待値と一致すること
  */
-Deno.test("propose should return Plan with createItem operation", () => {
+Deno.test("propose should return Plan with propose operation", () => {
   const plan = productBacklogItemUseCase.propose(makePbiId({ id: undefined }), makeStatement());
   assertEquals(plan.summary, "Propose PBI: User Authentication");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "createItem");
+  assertEquals(plan.steps[0].operation, "propose");
   assertEquals(plan.steps[0].params.title, "User Authentication");
-  assertEquals(plan.steps[0].params.type, "PBI");
 });
 
 /**
@@ -190,17 +193,16 @@ Deno.test("propose should throw for parentFeature with undefined id", () => {
 // ===== revise =====
 
 /**
- * revise の正常系。updateItem と editComment の2ステップからなる Plan が返ることを確認する。
- * @description PBI修正時に正しい Plan（updateItem + editComment）が生成されること
+ * revise の正常系。update と update の2ステップからなる Plan が返ることを確認する。
+ * @description PBI修正時に正しい Plan（update + update）が生成されること
  * @verify Plan.summary、steps の長さ、各 step の operation が期待値と一致すること
  */
-Deno.test("revise should return Plan with updateItem + editComment", () => {
+Deno.test("revise should return Plan with 2 update operations", () => {
   const plan = productBacklogItemUseCase.revise(makePbiId(), makeStatement(), makeReason());
   assertEquals(plan.summary, "Revise PBI: User Authentication");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
-  assertEquals(plan.steps[0].params.type, "PBI");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[0].operation, "update");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 /**
@@ -233,17 +235,17 @@ Deno.test("revise should throw for empty reason", () => {
 // ===== commit =====
 
 /**
- * commit の正常系。updateItem（sprint 設定）と editComment の Plan が返ることを確認する。
- * @description PBIのスプリントコミット時に正しい Plan（updateItem + editComment）が生成されること
+ * commit の正常系。commit（sprint 設定）と update の Plan が返ることを確認する。
+ * @description PBIのスプリントコミット時に正しい Plan（commit + update）が生成されること
  * @verify Plan.summary、steps の長さ、各 step の operation/params が期待値と一致すること
  */
-Deno.test("commit should return Plan with updateItem + editComment", () => {
+Deno.test("commit should return Plan with commit + update", () => {
   const plan = productBacklogItemUseCase.commit(makePbiId(), makeSprintId());
   assertEquals(plan.summary, "Commit PBI User Authentication to Sprint 15");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "commit");
   assertEquals(plan.steps[0].params.sprint, "Sprint 15");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 /**
@@ -262,16 +264,16 @@ Deno.test("commit should throw for undefined id", () => {
 // ===== start =====
 
 /**
- * start の正常系。updateItem（開始状態への変更）と editComment の Plan が返ることを確認する。
- * @description PBIの開始時に正しい Plan（updateItem + editComment）が生成されること
+ * start の正常系。start（開始状態への変更）と update の Plan が返ることを確認する。
+ * @description PBIの開始時に正しい Plan（start + update）が生成されること
  * @verify Plan.summary、steps の長さ、各 step の operation が期待値と一致すること
  */
-Deno.test("start should return Plan with updateItem + editComment", () => {
+Deno.test("start should return Plan with start + update", () => {
   const plan = productBacklogItemUseCase.start(makePbiId());
   assertEquals(plan.summary, "Start PBI: User Authentication");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[0].operation, "start");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 /**
@@ -290,46 +292,45 @@ Deno.test("start should throw for undefined id", () => {
 // ===== complete =====
 
 /**
- * complete の正常系。updateItem（完了状態への変更）と editComment の Plan が返ることを確認する。
- * @description PBIの完了時に正しい Plan（updateItem + editComment）が生成されること
+ * complete の正常系。complete（完了状態への変更）と update の Plan が返ることを確認する。
+ * @description PBIの完了時に正しい Plan（complete + update）が生成されること
  * @verify Plan.summary、steps の長さ、各 step の operation が期待値と一致すること
  */
-Deno.test("complete should return Plan with updateItem + editComment", () => {
+Deno.test("complete should return Plan with complete + update", () => {
   const plan = productBacklogItemUseCase.complete(makePbiId());
   assertEquals(plan.summary, "Complete PBI: User Authentication");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "updateItem");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[0].operation, "complete");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 // ===== archive =====
 
 /**
- * archive の正常系。closeItem（クローズ）と editComment の Plan が返ることを確認する。
- * @description PBIのアーカイブ時に正しい Plan（closeItem + editComment）が生成されること
+ * archive の正常系。archive（クローズ）と update の Plan が返ることを確認する。
+ * @description PBIのアーカイブ時に正しい Plan（archive + update）が生成されること
  * @verify Plan.summary、steps の長さ、各 step の operation が期待値と一致すること
  */
-Deno.test("archive should return Plan with closeItem + editComment", () => {
+Deno.test("archive should return Plan with archive + update", () => {
   const plan = productBacklogItemUseCase.archive(makePbiId());
   assertEquals(plan.summary, "Archive PBI: User Authentication");
   assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "closeItem");
-  assertEquals(plan.steps[1].operation, "editComment");
+  assertEquals(plan.steps[0].operation, "archive");
+  assertEquals(plan.steps[1].operation, "update");
 });
 
 // ===== defineAcceptanceCriteria =====
 
 /**
- * defineAcceptanceCriteria の正常系。WP ごとに createItem 操作を含む Plan が返ることを確認する。
- * @description 受入基準定義時に正しい Plan（createItem per WP）が生成されること
+ * defineAcceptanceCriteria の正常系。WP ごとに defineAcceptanceCriteria 操作を含む Plan が返ることを確認する。
+ * @description 受入基準定義時に正しい Plan（defineAcceptanceCriteria per WP）が生成されること
  * @verify Plan.steps の長さ、operation/params.type が期待値と一致すること
  */
-Deno.test("defineAcceptanceCriteria should return Plan with createItem per WP", () => {
+Deno.test("defineAcceptanceCriteria should return Plan with defineAcceptanceCriteria", () => {
   const wps = makeWorkPackageData();
   const plan = productBacklogItemUseCase.defineAcceptanceCriteria(makePbiId(), wps);
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "createItem");
-  assertEquals(plan.steps[0].params.type, "WP");
+  assertEquals(plan.steps[0].operation, "defineAcceptanceCriteria");
 });
 
 /**
@@ -348,72 +349,72 @@ Deno.test("defineAcceptanceCriteria should throw for empty WP list", () => {
 // ===== assignToFeature =====
 
 /**
- * assignToFeature の正常系。updateItem（Feature 紐付け）を含む Plan が返ることを確認する。
- * @description PBI への Feature 割り当て時に正しい Plan（updateItem）が生成されること
+ * assignToFeature の正常系。assignToFeature（Feature 紐付け）を含む Plan が返ることを確認する。
+ * @description PBI への Feature 割り当て時に正しい Plan（assignToFeature）が生成されること
  * @verify Plan.summary、steps の長さ、params.parentFeature が期待値と一致すること
  */
-Deno.test("assignToFeature should return Plan with updateItem", () => {
+Deno.test("assignToFeature should return Plan with assignToFeature", () => {
   const plan = productBacklogItemUseCase.assignToFeature(makePbiId(), makeFeatureId());
   assertEquals(plan.summary, "Assign PBI User Authentication to feature Authentication");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "assignToFeature");
   assertEquals(plan.steps[0].params.parentFeature, "feature-1");
 });
 
 // ===== unassignFromFeature =====
 
 /**
- * unassignFromFeature の正常系。updateItem（Feature 解除）を含む Plan が返ることを確認する。
- * @description PBI からの Feature 割り当て解除時に正しい Plan（updateItem）が生成されること
+ * unassignFromFeature の正常系。unassignFromFeature（Feature 解除）を含む Plan が返ることを確認する。
+ * @description PBI からの Feature 割り当て解除時に正しい Plan（unassignFromFeature）が生成されること
  * @verify Plan.summary と steps の長さ、operation が期待値と一致すること
  */
-Deno.test("unassignFromFeature should return Plan with updateItem", () => {
+Deno.test("unassignFromFeature should return Plan with unassignFromFeature", () => {
   const plan = productBacklogItemUseCase.unassignFromFeature(makePbiId());
   assertEquals(plan.summary, "Unassign PBI User Authentication from feature");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "unassignFromFeature");
 });
 
 // ===== estimateSize =====
 
 /**
- * estimateSize の正常系。updateItem（見積もり設定）を含む Plan が返ることを確認する。
- * @description PBI のサイズ見積もり時に正しい Plan（updateItem）が生成されること
+ * estimateSize の正常系。estimateSize（見積もり設定）を含む Plan が返ることを確認する。
+ * @description PBI のサイズ見積もり時に正しい Plan（estimateSize）が生成されること
  * @verify Plan.summary、steps の長さ、operation が期待値と一致すること
  */
-Deno.test("estimateSize should return Plan with updateItem", () => {
+Deno.test("estimateSize should return Plan with estimateSize", () => {
   const plan = productBacklogItemUseCase.estimateSize(makePbiId(), makeSizeVariance());
   assertEquals(plan.summary, "Estimate size for PBI: User Authentication");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "estimateSize");
 });
 
 // ===== confirmSize =====
 
 /**
- * confirmSize の正常系。updateItem（サイズ確定）を含む Plan が返ることを確認する。
- * @description PBI のサイズ確定時に正しい Plan（updateItem）が生成されること
+ * confirmSize の正常系。confirmSize（サイズ確定）を含む Plan が返ることを確認する。
+ * @description PBI のサイズ確定時に正しい Plan（confirmSize）が生成されること
  * @verify Plan.summary、steps の長さ、operation が期待値と一致すること
  */
-Deno.test("confirmSize should return Plan with updateItem", () => {
+Deno.test("confirmSize should return Plan with confirmSize", () => {
   const plan = productBacklogItemUseCase.confirmSize(makePbiId(), makeSizeVariance());
   assertEquals(plan.summary, "Confirm size for PBI: User Authentication");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "updateItem");
+  assertEquals(plan.steps[0].operation, "confirmSize");
 });
 
 // ===== recordAnalysis =====
 
 /**
- * recordAnalysis の正常系。editComment（分析結果コメント）を含む Plan が返ることを確認する。
- * @description PBI のプロセス分析記録時に正しい Plan（editComment）が生成されること
+ * recordAnalysis の正常系。recordAnalysis（分析結果コメント）を含む Plan が返ることを確認する。
+ * @description PBI のプロセス分析記録時に正しい Plan（recordAnalysis）が生成されること
  * @verify Plan.summary、steps の長さ、operation が期待値と一致すること
  */
-Deno.test("recordAnalysis should return Plan with editComment", () => {
+Deno.test("recordAnalysis should return Plan with recordAnalysis", () => {
   const plan = productBacklogItemUseCase.recordAnalysis(makePbiId(), makeProcessAnalysis());
   assertEquals(plan.summary, "Record analysis for PBI: User Authentication");
   assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "editComment");
+  assertEquals(plan.steps[0].operation, "recordAnalysis");
 });
 
 /**
@@ -436,14 +437,14 @@ Deno.test("recordAnalysis should throw for empty planningReview", () => {
 // ===== find =====
 
 /**
- * find の正常系。findItem 操作を含む Plan が返ることを確認する。
- * @description PBI 検索時に正しい Plan（findItem）が生成されること
+ * find の正常系。view 操作を含む Plan が返ることを確認する。
+ * @description PBI 検索時に正しい Plan（view）が生成されること
  * @verify Plan.summary と steps[0].operation が期待値と一致すること
  */
-Deno.test("find should return Plan with findItem step", () => {
+Deno.test("find should return Plan with view step", () => {
   const plan = productBacklogItemUseCase.find(makePbiId());
   assertEquals(plan.summary, "Find PBI: User Authentication");
-  assertEquals(plan.steps[0].operation, "findItem");
+  assertEquals(plan.steps[0].operation, "view");
 });
 
 /**
@@ -462,12 +463,12 @@ Deno.test("find should throw for undefined id", () => {
 // ===== search =====
 
 /**
- * search の正常系。searchItems 操作を含む Plan が返ることを確認する。
- * @description PBI のキーワード検索時に正しい Plan（searchItems）が生成されること
- * @verify steps[0].operation が "searchItems" と一致すること
+ * search の正常系。search 操作を含む Plan が返ることを確認する。
+ * @description PBI のキーワード検索時に正しい Plan（search）が生成されること
+ * @verify steps[0].operation が "search" と一致すること
  */
-Deno.test("search should return Plan with searchItems step", () => {
+Deno.test("search should return Plan with search step", () => {
   const condition = makeSearchCondition();
   const plan = productBacklogItemUseCase.search(condition);
-  assertEquals(plan.steps[0].operation, "searchItems");
+  assertEquals(plan.steps[0].operation, "search");
 });

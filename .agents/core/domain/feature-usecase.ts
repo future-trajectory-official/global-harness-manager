@@ -99,10 +99,10 @@ export const featureUseCase: FeatureUseCase = {
     return {
       summary: `Define feature: ${identifier.title.value}`,
       steps: [{
-        operation: "createItem",
+        entity: "Feature",
+        operation: "create",
         params: {
           title: identifier.title.value,
-          type: "Feature",
           body: formatFeatureBody(statement, parentEpic?.id),
           ...(parentEpic?.id ? { parentEpic: parentEpic.id } : {}),
         },
@@ -119,16 +119,17 @@ export const featureUseCase: FeatureUseCase = {
       summary: `Revise feature: ${identifier.title.value}`,
       steps: [
         {
-          operation: "updateItem",
+          entity: "Feature",
+          operation: "update",
           params: {
             itemId: identifier.id,
             title: identifier.title.value,
-            type: "Feature",
             body: formatFeatureBody(statement),
           },
         },
         {
-          operation: "addComment",
+          entity: "Feature",
+          operation: "comment",
           params: {
             body: formatReviseComment(statement, reason),
           },
@@ -143,7 +144,8 @@ export const featureUseCase: FeatureUseCase = {
     return {
       summary: `Assign feature ${identifier.title.value} to epic ${epic.title.value}`,
       steps: [{
-        operation: "updateItem",
+        entity: "Feature",
+        operation: "update",
         params: {
           itemId: identifier.id,
           parentEpic: epic.id,
@@ -157,7 +159,8 @@ export const featureUseCase: FeatureUseCase = {
     return {
       summary: `Unassign feature ${identifier.title.value} from epic`,
       steps: [{
-        operation: "updateItem",
+        entity: "Feature",
+        operation: "update",
         params: {
           itemId: identifier.id,
           parentEpic: undefined,
@@ -171,7 +174,7 @@ export const featureUseCase: FeatureUseCase = {
     assertIdDefined(identifier.id, "find a feature");
     return {
       summary: `Find feature: ${identifier.title.value}`,
-      steps: [{ operation: "findItem", params: { itemId: identifier.id, type: "Feature" } }],
+      steps: [{ entity: "Feature", operation: "view", params: { itemId: identifier.id } }],
     };
   },
 
