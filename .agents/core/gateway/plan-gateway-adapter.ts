@@ -5,6 +5,11 @@ import type { PlanGateway } from "../domain/plan-gateway.ts";
 
 export type CommandRunner = (cmd: string, args: string[]) => Promise<ExecuteResult>;
 
+type EntityHandler = (
+  step: Step,
+  lastItemId?: string,
+) => Promise<StepResult>;
+
 function parseJsonOutput(raw: string): unknown {
   try {
     return JSON.parse(raw);
@@ -14,11 +19,17 @@ function parseJsonOutput(raw: string): unknown {
 }
 
 export class PlanGatewayAdapter implements PlanGateway {
+  private readonly handlers: Map<string, EntityHandler>;
+
   constructor(
     private readonly owner: string,
     private readonly repository: string,
     private readonly runCommand: CommandRunner = (cmd, args) => executeCommand({ cmd, args }),
-  ) {}
+  ) {
+    this.handlers = new Map([
+      ["Vision", this.handleVisionStep.bind(this)],
+    ]);
+  }
 
   async execute(plan: Plan): Promise<ExecutionResult> {
     if (plan.steps.length === 0) {
@@ -44,59 +55,81 @@ export class PlanGatewayAdapter implements PlanGateway {
     lastItemId?: string,
   ): Promise<StepResult> {
     const entry = step as { entity: string; operation: string; params: Record<string, unknown> };
+    const entity = entry.entity;
     const operation = entry.operation;
+
+    const handler = this.handlers.get(entity);
+    if (!handler) {
+      return {
+        operation,
+        success: false,
+        error: `No handler registered for entity type: ${entity}`,
+      };
+    }
+
     try {
-      switch (operation) {
-        case "create":
-        case "propose":
-        case "define":
-        case "plan":
-        case "set":
-          return await this.handleCreateItem(entry.params, entry.entity);
-        case "comment":
-        case "execute":
-          return await this.handleAddComment(entry.params, lastItemId);
-        case "view":
-          return await this.handleFindItem(entry.params);
-        case "update":
-        case "pivot":
-        case "revise":
-        case "commit":
-        case "start":
-        case "complete":
-        case "archive":
-        case "endSprint":
-        case "setGoal":
-        case "setDueDate":
-        case "report":
-        case "assignToFeature":
-        case "unassignFromFeature":
-        case "assignToProductBacklogItem":
-        case "unassignFromProductBacklogItem":
-        case "estimateSize":
-        case "confirmSize":
-        case "estimateInitialEffort":
-        case "estimatePlannedEffort":
-        case "recordActualEffort":
-        case "recordAnalysis":
-        case "recordSessionMetrics":
-        case "defineAcceptanceCriteria":
-          return await this.handleUpdateItem(entry.params);
-        case "search":
-          return await this.handleSearchItems(entry.params);
-        default:
-          return {
-            operation,
-            success: false,
-            error: `Unknown operation: ${operation}`,
-          };
-      }
+      return await handler(step, lastItemId);
     } catch (e) {
       return {
         operation,
         success: false,
         error: e instanceof Error ? e.message : String(e),
       };
+    }
+  }
+
+  private async handleVisionStep(
+    step: Step,
+    lastItemId?: string,
+  ): Promise<StepResult> {
+    const entry = step as { entity: string; operation: string; params: Record<string, unknown> };
+    const operation = entry.operation;
+    const params = entry.params;
+
+    switch (operation) {
+      case "create":
+      case "propose":
+      case "define":
+      case "plan":
+      case "set":
+        return await this.handleCreateItem(params, entry.entity);
+      case "comment":
+      case "execute":
+        return await this.handleAddComment(params, lastItemId);
+      case "view":
+        return await this.handleFindItem(params);
+      case "update":
+      case "pivot":
+      case "revise":
+      case "commit":
+      case "start":
+      case "complete":
+      case "archive":
+      case "endSprint":
+      case "setGoal":
+      case "setDueDate":
+      case "report":
+      case "assignToFeature":
+      case "unassignFromFeature":
+      case "assignToProductBacklogItem":
+      case "unassignFromProductBacklogItem":
+      case "estimateSize":
+      case "confirmSize":
+      case "estimateInitialEffort":
+      case "estimatePlannedEffort":
+      case "recordActualEffort":
+      case "recordAnalysis":
+      case "recordSessionMetrics":
+      case "defineAcceptanceCriteria":
+        return await this.handleUpdateItem(params);
+      case "search":
+        return await this.handleSearchItems(params);
+      default:
+        return {
+          operation,
+          success: false,
+          error: `Unknown operation: ${operation}`,
+        };
     }
   }
 
