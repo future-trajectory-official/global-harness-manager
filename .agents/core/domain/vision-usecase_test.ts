@@ -161,6 +161,19 @@ Deno.test("formatVisionComment - should generate L2-compliant comment body", () 
   assertStringIncludes(comment, "### Zero-setup\n\nクローンするだけで環境が整う");
 });
 
+Deno.test("formatVisionComment - should include Elevator Pitch and Passion when provided", () => {
+  const statement = makeStatement({
+    elevatorPitch: "誰もが即座に規律あるAI協働開発を始められるようにする",
+    passion: "AIを単なる作業の丸投げ先にしないという強い思い",
+  });
+  const comment = formatVisionComment(statement, makeOutcomes(), 1);
+  assertStringIncludes(comment, "## Elevator Pitch");
+  assertStringIncludes(comment, "誰もが即座に規律あるAI協働開発を始められるようにする");
+  assertStringIncludes(comment, "## Passion");
+  assertStringIncludes(comment, "AIを単なる作業の丸投げ先にしないという強い思い");
+  assertStringIncludes(comment, "## Statement");
+});
+
 Deno.test("formatVisionBody - should generate history table with initial entry", () => {
   const body = formatVisionBody();
   assertStringIncludes(body, "## History");

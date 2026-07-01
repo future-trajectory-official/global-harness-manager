@@ -72,14 +72,19 @@ Deno.test("Vision create - should map full params to gh issue create args", asyn
     ],
   };
   await adapter.execute(plan);
-  assertEquals(calls.length, 1);
+  assertEquals(calls.length, 2);
+  // call[0]: duplicate check search
   assertEquals(calls[0].cmd, "gh");
-  assertEquals(calls[0].args[0], "issue");
-  assertEquals(calls[0].args[1], "create");
-  assertStringIncludes(calls[0].args.join(" "), "--title Test Vision");
-  assertStringIncludes(calls[0].args.join(" "), "--body body text");
+  assertStringIncludes(calls[0].args.join(" "), "issue list");
   assertStringIncludes(calls[0].args.join(" "), "--label type:Vision");
-  assertStringIncludes(calls[0].args.join(" "), `--repo ${OWNER}/${REPO}`);
+  // call[1]: actual create
+  assertEquals(calls[1].cmd, "gh");
+  assertEquals(calls[1].args[0], "issue");
+  assertEquals(calls[1].args[1], "create");
+  assertStringIncludes(calls[1].args.join(" "), "--title Test Vision");
+  assertStringIncludes(calls[1].args.join(" "), "--body body text");
+  assertStringIncludes(calls[1].args.join(" "), "--label type:Vision");
+  assertStringIncludes(calls[1].args.join(" "), `--repo ${OWNER}/${REPO}`);
 });
 
 /**
@@ -95,9 +100,13 @@ Deno.test("Vision create - should pass empty title and body as empty strings", a
     ],
   };
   await adapter.execute(plan);
-  assertEquals(calls.length, 1);
-  assertStringIncludes(calls[0].args.join(" "), "--title ");
-  assertStringIncludes(calls[0].args.join(" "), "--body ");
+  assertEquals(calls.length, 2);
+  // call[0]: duplicate check search (returns empty list)
+  assertEquals(calls[0].cmd, "gh");
+  assertStringIncludes(calls[0].args.join(" "), "issue list");
+  // call[1]: actual create
+  assertStringIncludes(calls[1].args.join(" "), "--title ");
+  assertStringIncludes(calls[1].args.join(" "), "--body ");
 });
 
 /**
@@ -171,16 +180,23 @@ Deno.test("Vision create+comment - should inherit itemId from previous create st
   let callCount = 0;
   const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
     callCount++;
+    // call 1: duplicate check search (returns empty - no existing Vision)
     if (callCount === 1) {
+      return Promise.resolve({ code: 0, stdout: "[]", stderr: "" });
+    }
+    // call 2: handleCreateItem → gh issue create
+    if (callCount === 2) {
       return Promise.resolve({
         code: 0,
         stdout: `https://github.com/${OWNER}/${REPO}/issues/99`,
         stderr: "",
       });
     }
-    if (callCount === 2) {
+    // call 3: nodeId fetch inside handleCreateItem
+    if (callCount === 3) {
       return Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "node-99" }), stderr: "" });
     }
+    // call 4: handleAddComment
     return Promise.resolve({ code: 0, stdout: "", stderr: "" });
   };
   const adapter = makeAdapter(chainedRunner);

@@ -30,6 +30,18 @@ export function formatVisionComment(
   const lines: string[] = [];
   lines.push(`# Version: ${version}`);
   lines.push("");
+  if (statement.elevatorPitch) {
+    lines.push("## Elevator Pitch");
+    lines.push("");
+    lines.push(statement.elevatorPitch);
+    lines.push("");
+  }
+  if (statement.passion) {
+    lines.push("## Passion");
+    lines.push("");
+    lines.push(statement.passion);
+    lines.push("");
+  }
   lines.push("## Statement");
   lines.push("");
   lines.push("### Target");
