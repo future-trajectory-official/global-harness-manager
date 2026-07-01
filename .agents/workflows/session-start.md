@@ -17,9 +17,7 @@ description: 価値観同期・Work Package特定・戦略策定を段階的に�
   `[assess-alignment](/.agents/skills/bundles/management-bundle/assess-alignment/SKILL.md)`
 - **成果物**: 「Vision & Capability Alignment Report」
 - **セルフチェック**:
-  - [ ] **[価値基準]**
-        `[assess-alignment](/.agents/skills/bundles/management-bundle/assess-alignment/SKILL.md)`
-        が出力した「Vision & Capability Alignment Report」のビジョン表明を判断基準として宣言したか。
+  - [ ] **[価値基準]** プロジェクトのビジョン表明を判断基準として宣言したか。
   - [ ] **[能力確認]** 現在のチーム（ロール）と行使可能なスキルを棚卸しし、PO に提示したか。
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。

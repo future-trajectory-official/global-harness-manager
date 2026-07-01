@@ -20,6 +20,9 @@
 /cov_profile/
 /coverage/
 
+# 生成されるProject V2構成（他リポジトリに配布不可）
+.agents/skills/bundles/workspace-bundle/setup-github-projects/references/projects-config.json
+
 
 # OS/エディタ固有のファイル
 .DS_Store
