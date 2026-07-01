@@ -14,7 +14,7 @@ description: 価値観同期・Work Package特定・戦略策定を段階的に�
 
 - **ロール**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行役として開始)
 - **実行スキル**:
-  `[verify-vision-capability](/.agents/skills/bundles/management-bundle/verify-vision-capability/SKILL.md)`
+  `[assess-alignment](/.agents/skills/bundles/management-bundle/assess-alignment/SKILL.md)`
 - **成果物**: 「Vision & Capability Alignment Report」
 - **セルフチェック**:
   - [ ] **[価値基準]** `[VISION.md](/.agents/management/VISION.md)`

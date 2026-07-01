@@ -33,7 +33,7 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 プロジェクトの「北極星」となる価値とターゲットを言語化します。
 
 - **読み込むペルソナ**: `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ)
-- **実行するスキル**: `craft-vision`
+- **実行するスキル**: `establish-vision`
 - **終了条件**: ユーザーがステートメントに合意し、`[VISION.md](/.agents/management/VISION.md)`
   が生成されること。
 
