@@ -34,8 +34,8 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 
 - **読み込むペルソナ**: `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ)
 - **実行するスキル**: `establish-vision`
-- **終了条件**: ユーザーがステートメントに合意し、`[VISION.md](/.agents/management/VISION.md)`
-  が生成されること。
+- **終了条件**: ユーザーがステートメントに合意し、`establish-vision` スキルにより GitHub Issue
+  としての Vision が作成されること。
 
 <!-- STOP -->
 
