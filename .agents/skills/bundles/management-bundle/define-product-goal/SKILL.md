@@ -8,8 +8,8 @@ tags:
 
 # define-product-goal
 
-`craft-vision`
-で合意したビジョンを、「いつまでに・何を達成するか」という具体的なプロダクトゴールに落とし込み、`[product-backlog.md](/.agents/management/product-backlog.md)`
+`establish-vision`
+で作成したビジョンを、「いつまでに・何を達成するか」という具体的なプロダクトゴールに落とし込み、`[product-backlog.md](/.agents/management/product-backlog.md)`
 のプロダクトゴールセクションと `[epic-master.md](/.agents/management/epic-master.md)`
 の初期構造を生成します。
 
