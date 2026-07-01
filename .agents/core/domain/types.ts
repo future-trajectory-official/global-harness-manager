@@ -317,6 +317,8 @@ export interface VisionStatement {
   readonly targetAudience: string;
   readonly value: string;
   readonly differentiator: string;
+  readonly elevatorPitch?: string;
+  readonly passion?: string;
 }
 
 /** 単一のターゲットアウトカム。タイトルと説明文で構成。 */

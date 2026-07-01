@@ -92,6 +92,21 @@ export class PlanGatewayAdapter implements PlanGateway {
       case "define":
       case "plan":
       case "set":
+        if (entry.entity === "Vision") {
+          const existingItems = await this.handleSearchItems({ labelType: entry.entity });
+          if (
+            existingItems.success && Array.isArray(existingItems.output) &&
+            existingItems.output.length > 0
+          ) {
+            const existing = existingItems.output[0] as { number: number };
+            return {
+              operation,
+              success: false,
+              error:
+                `A ${entry.entity} already exists (Issue #${existing.number}). Use pivot to update instead.`,
+            };
+          }
+        }
         return await this.handleCreateItem(params, entry.entity);
       case "comment":
       case "execute":

@@ -10,6 +10,8 @@ import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
 interface EstablishVisionInput {
   scope?: EntityScope;
+  elevatorPitch?: string;
+  passion?: string;
   targetAudience: string;
   value: string;
   differentiator: string;
@@ -32,6 +34,8 @@ async function main(): Promise<void> {
     const scope = input.scope ?? await resolveScope();
     const identifier = identify(scope, `Vision of ${scope.repository}`);
     const statement: VisionStatement = {
+      elevatorPitch: input.elevatorPitch,
+      passion: input.passion,
       targetAudience: input.targetAudience,
       value: input.value,
       differentiator: input.differentiator,
