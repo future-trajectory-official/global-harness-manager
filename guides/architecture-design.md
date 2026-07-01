@@ -47,7 +47,7 @@ L1（運用ガイド）は以下の責務分離を定義している。
 
 - **対象**: プロジェクト管理情報（PBI/WP/Review/Retrospective等）を GitHub Issues / Projects V2
   上で操作する全スキル
-- **非対象**: 対話型スキル（`craft-vision`, `product-backlog-refinement`
+- **非対象**: 対話型スキル（`product-backlog-refinement`
   等、GitHub操作を伴わないもの）、開発環境そのもののセットアップ（`setup-harness-env` 等）
 
 ### 1.3. 設計順序
