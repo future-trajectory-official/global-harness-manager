@@ -1,4 +1,4 @@
-import { assertEquals, assertThrows } from "@std/assert";
+import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import type {
   AcceptanceCriterias,
   ChangeReason,
@@ -7,6 +7,7 @@ import type {
 } from "./types.ts";
 import { reviewUseCase } from "./review-usecase.ts";
 import type { ReviewData } from "./types.ts";
+import type { ReviewPlanInput } from "./review-usecase.ts";
 
 function makeIdentifier(overrides?: Partial<ReviewIdentifier>): ReviewIdentifier {
   return {
@@ -24,6 +25,28 @@ function makeSprint(overrides?: Partial<SprintIdentifier>): SprintIdentifier {
     title: { value: "Sprint 15" },
     id: "sprint-15",
     describe: () => ({ summary: "describe", steps: [] }),
+    ...overrides,
+  };
+}
+
+function makePlanInput(overrides?: Partial<ReviewPlanInput>): ReviewPlanInput {
+  return {
+    pbis: [
+      {
+        number: 1,
+        title: "PBIタイトル",
+        wps: [
+          {
+            number: 1,
+            title: "WPタイトル",
+            acs: [
+              { number: "1", description: "AC1の説明", verificationPlan: "dry-runでPlanを確認" },
+              { number: "2", description: "AC2の説明" },
+            ],
+          },
+        ],
+      },
+    ],
     ...overrides,
   };
 }
@@ -66,16 +89,39 @@ function makeReviewData(overrides?: Partial<ReviewData>): ReviewData {
 }
 
 Deno.test("reviewUseCase - plan should return Plan with plan + update steps", () => {
-  const plan = reviewUseCase.plan(makeIdentifier(), makeSprint());
+  const plan = reviewUseCase.plan(makeIdentifier(), makeSprint(), makePlanInput());
   assertEquals(plan.summary, "Plan review: Sprint 15 Review");
   assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].operation, "plan");
+  assertEquals(plan.steps[0].params.sprint, "Sprint 15");
   assertEquals(plan.steps[1].operation, "update");
+});
+
+Deno.test("reviewUseCase - plan body should include all ACs as ❔ unchecked", () => {
+  const plan = reviewUseCase.plan(makeIdentifier(), makeSprint(), makePlanInput());
+  const body = plan.steps[0].params.body as string;
+  assertStringIncludes(body, "Sprint 15");
+  assertStringIncludes(body, "❔");
+  assertStringIncludes(body, "AC_1: AC1の説明");
+  assertStringIncludes(body, "AC_2: AC2の説明");
+  assertStringIncludes(body, "PBIタイトル");
+  assertStringIncludes(body, "WPタイトル");
+  assertStringIncludes(body, "dry-runでPlanを確認");
+});
+
+Deno.test("reviewUseCase - plan body should include legend", () => {
+  const plan = reviewUseCase.plan(makeIdentifier(), makeSprint(), makePlanInput());
+  const body = plan.steps[0].params.body as string;
+  assertStringIncludes(body, "凡例");
+  assertStringIncludes(body, "✅ 合格");
+  assertStringIncludes(body, "❌ 不合格");
+  assertStringIncludes(body, "➖ 論理削除");
 });
 
 Deno.test("reviewUseCase - plan should throw for empty title", () => {
   assertThrows(
-    () => reviewUseCase.plan(makeIdentifier({ title: { value: "" } }), makeSprint()),
+    () =>
+      reviewUseCase.plan(makeIdentifier({ title: { value: "" } }), makeSprint(), makePlanInput()),
     Error,
     "INVALID_INPUT",
   );
@@ -83,7 +129,8 @@ Deno.test("reviewUseCase - plan should throw for empty title", () => {
 
 Deno.test("reviewUseCase - plan should throw for empty sprint title", () => {
   assertThrows(
-    () => reviewUseCase.plan(makeIdentifier(), makeSprint({ title: { value: "" } })),
+    () =>
+      reviewUseCase.plan(makeIdentifier(), makeSprint({ title: { value: "" } }), makePlanInput()),
     Error,
     "INVALID_INPUT",
   );
