@@ -9,12 +9,63 @@ import type {
 } from "./types.ts";
 import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
 
-/** Review Issue の初期本文を生成する。スプリント情報をヘッダーとして記述する。 */
-function formatReviewBody(sprint: SprintIdentifier): string {
+/** スプリントレビュー計画の入力。検証対象となるPBI/WP/ACの一覧と各ACの検証方法を定義する。 */
+export interface ReviewPlanInput {
+  readonly pbis: readonly ReviewPlanPbi[];
+}
+
+export interface ReviewPlanPbi {
+  readonly number: number;
+  readonly title: string;
+  readonly wps: readonly ReviewPlanWp[];
+}
+
+export interface ReviewPlanWp {
+  readonly number: number;
+  readonly title: string;
+  readonly acs: readonly ReviewPlanAc[];
+}
+
+export interface ReviewPlanAc {
+  readonly number: string;
+  readonly description: string;
+  readonly verificationPlan?: string;
+}
+
+/** Review Issue の計画本文を生成する。全ACを ❔ 未確認で列挙した検証台帳を作成する。 */
+function formatPlanBody(sprint: SprintIdentifier, planInput: ReviewPlanInput): string {
   const lines: string[] = [];
   lines.push("## Sprint Review");
   lines.push("");
   lines.push(`- **Sprint**: ${sprint.title.value}`);
+  lines.push("");
+  lines.push("## 凡例");
+  lines.push("");
+  lines.push(
+    "- ❔ 未確認（初期状態。レビュー時に全ACを確認し、結果に応じて下記のいずれかに上書きする）",
+  );
+  lines.push("- ✅ 合格");
+  lines.push("- ⚠️ 条件付き合格");
+  lines.push("- ❌ 不合格");
+  lines.push("- ➖ 論理削除（スプリント中の仕様変更等により確認対象外となったもの）");
+  lines.push("");
+  lines.push("## 計画時確認項目");
+  lines.push("");
+  for (const pbi of planInput.pbis) {
+    lines.push(`### 📦 PBI: [${pbi.number}] ${pbi.title}`);
+    lines.push("");
+    for (const wp of pbi.wps) {
+      lines.push(`#### WP_${wp.number}: ${wp.title}`);
+      lines.push("");
+      for (const ac of wp.acs) {
+        lines.push(`- ❔ AC_${ac.number}: ${ac.description}`);
+        if (ac.verificationPlan) {
+          lines.push(`  - **検証方法**: ${ac.verificationPlan}`);
+        }
+      }
+      lines.push("");
+    }
+  }
   return lines.join("\n");
 }
 
@@ -62,8 +113,8 @@ function formatReportBody(data: ReviewData): string {
 
 /** Review（スプリントレビュー）エンティティに対する全操作を定義するUseCaseインターフェース。 */
 export interface ReviewUseCase {
-  /** Review Issue を新規作成する。対象スプリントを紐づける。 */
-  plan(identifier: ReviewIdentifier, sprint: SprintIdentifier): Plan;
+  /** Review Issue を新規作成する。対象スプリントを紐づけ、全ACを ❔ 未確認で列挙した検証台帳を生成する。 */
+  plan(identifier: ReviewIdentifier, sprint: SprintIdentifier, planInput: ReviewPlanInput): Plan;
 
   /** Review の内容を改訂する。既存ACは論理削除（judgment=removed）のみ許可、新規ACは自由。 */
   revise(
@@ -88,7 +139,7 @@ export interface ReviewUseCase {
 
 /** ReviewUseCase の具象実装。各メソッドは入力バリデーション後に Plan を生成する。 */
 export const reviewUseCase: ReviewUseCase = {
-  plan(identifier, sprint): Plan {
+  plan(identifier, sprint, planInput): Plan {
     assertTitleNonEmpty(identifier.title, "Review title");
     assertTitleNonEmpty(sprint.title, "Sprint title");
     return {
@@ -99,7 +150,8 @@ export const reviewUseCase: ReviewUseCase = {
           operation: "plan",
           params: {
             title: identifier.title.value,
-            body: formatReviewBody(sprint),
+            body: formatPlanBody(sprint, planInput),
+            sprint: sprint.title.value,
           },
         },
         {
