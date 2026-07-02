@@ -37,12 +37,12 @@
             {
               "number": "1",
               "description": "ReviewUseCase.planを呼び出しReview Issueを作成するPlanを生成する",
-              "verificationPlan": "sprint-startワークフローPhase 2を実行し、plan-reviewスキルが正しく呼ばれReview Issueが作成されることを確認する"
+              "verificationPlan": "sprint-startのPhase 2実行後、Review Issueが作成され、タイトル・スプリント・全ACが ❔ で記録されていることを確認する"
             },
             {
               "number": "2",
               "description": "dry-runモードがPlanをJSONで出力しgh CLI操作を行わない",
-              "verificationPlan": "plan-review --dry-run を実行しPlan表示後にGatewayを呼ばず終了することを確認する"
+              "verificationPlan": "--dry-run 実行時の出力にPlan構造が含まれ、実際のIssue作成が行われないことを確認する"
             }
           ]
         }
@@ -54,19 +54,19 @@
 
 ### 各フィールドの説明
 
-| フィールム               | 必須 | 説明                                                        |
-| ------------------------ | ---- | ----------------------------------------------------------- |
-| `sprintNumber`           | 必須 | レビュー対象のスプリント番号                                |
-| `pbis`                   | 必須 | レビュー対象のPBI一覧                                       |
-| `pbis[].number`          | 必須 | PBI番号（バックログ上の識別子）                             |
-| `pbis[].title`           | 必須 | PBIタイトル                                                 |
-| `pbis[].wps`             | 必須 | 当該PBIに属するWP一覧                                       |
-| `wps[].number`           | 必須 | WP番号                                                      |
-| `wps[].title`            | 必須 | WPタイトル                                                  |
-| `wps[].acs`              | 必須 | 当該WPに属するAC一覧                                        |
-| `acs[].number`           | 必須 | AC番号                                                      |
-| `acs[].description`      | 必須 | ACの内容                                                    |
-| `acs[].verificationPlan` | 任意 | 「どのワークフロー/スキルを使って」「何を確認するか」を記述 |
+| フィールム               | 必須 | 説明                                                                                         |
+| ------------------------ | ---- | -------------------------------------------------------------------------------------------- |
+| `sprintNumber`           | 必須 | レビュー対象のスプリント番号                                                                 |
+| `pbis`                   | 必須 | レビュー対象のPBI一覧                                                                        |
+| `pbis[].number`          | 必須 | PBI番号（バックログ上の識別子）                                                              |
+| `pbis[].title`           | 必須 | PBIタイトル                                                                                  |
+| `pbis[].wps`             | 必須 | 当該PBIに属するWP一覧                                                                        |
+| `wps[].number`           | 必須 | WP番号                                                                                       |
+| `wps[].title`            | 必須 | WPタイトル                                                                                   |
+| `wps[].acs`              | 必須 | 当該WPに属するAC一覧                                                                         |
+| `acs[].number`           | 必須 | AC番号                                                                                       |
+| `acs[].description`      | 必須 | ACの内容                                                                                     |
+| `acs[].verificationPlan` | 任意 | 具体的な検証手段（ワークフロー実行 / CLI操作 / 目視確認 / AI検証等）と、確認すべき項目を記述 |
 
 ## 実行例
 
@@ -82,7 +82,7 @@ echo '{"sprintNumber": 17, "pbis": [{"number": 1, "title": "PBI例", "wps": [{"n
 - **スプリント番号**: 対象スプリント
 - **凡例**: 各ACの判定結果の見方（❔未確認 / ✅合格 / ⚠️条件付き / ❌不合格 / ➖論理削除）
 - **PBI/WP/ACの一覧**: 全ACが ❔ 未確認で列挙される
-- **検証方法**: 各ACに紐付く検証手順
+- **検証方法**: 各ACに紐付く具体的な検証手段と確認項目
 
 ```
 ## Sprint Review
