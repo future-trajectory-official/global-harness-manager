@@ -19,7 +19,7 @@ Deno.test("assess-alignment: find without id は search Plan を生成する", (
 });
 
 Deno.test("assess-alignment: find with id は view Plan を生成する", () => {
-  const identifier = identify(makeScope(), "Vision of test-repo", "42");
+  const identifier = identify(makeScope(), "Vision of test-repo", "node-id", "42");
   const plan = visionUseCase.find(identifier);
 
   assertEquals(plan.steps.length, 1);
@@ -31,7 +31,7 @@ Deno.test("assess-alignment: find with id は view Plan を生成する", () => 
 Deno.test("assess-alignment: dry-run は search + view の 2 Plan 構造を持つ", () => {
   const scope = makeScope();
   const searchIdentifier = identify(scope, "Vision of test-repo");
-  const viewIdentifier = identify(scope, "Vision of test-repo", "<itemId>");
+  const viewIdentifier = identify(scope, "Vision of test-repo", "node-id", "<itemId>");
   const searchPlan = visionUseCase.find(searchIdentifier);
   const viewPlan = visionUseCase.find(viewIdentifier);
 
