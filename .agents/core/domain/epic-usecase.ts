@@ -84,7 +84,7 @@ export const epicUseCase: EpicUseCase = {
           entity: "Epic",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             title: identifier.title.value,
             body: formatEpicBody(statement),
           },
@@ -105,7 +105,7 @@ export const epicUseCase: EpicUseCase = {
     assertIdDefined(identifier.id, "find an epic");
     return {
       summary: `Find epic: ${identifier.title.value}`,
-      steps: [{ entity: "Epic", operation: "view", params: { itemId: identifier.id } }],
+      steps: [{ entity: "Epic", operation: "view", params: { itemId: identifier.code } }],
     };
   },
 

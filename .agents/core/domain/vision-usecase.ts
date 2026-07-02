@@ -124,7 +124,7 @@ export const visionUseCase: VisionUseCase = {
           entity: "Vision",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             title: identifier.title.value,
             bodyAppend: formatVisionHistoryLine(2, reason.description),
           },
@@ -145,7 +145,7 @@ export const visionUseCase: VisionUseCase = {
     if (identifier.id) {
       return {
         summary: `Find vision: ${identifier.title.value}`,
-        steps: [{ entity: "Vision", operation: "view", params: { itemId: identifier.id } }],
+        steps: [{ entity: "Vision", operation: "view", params: { itemId: identifier.code } }],
       };
     }
     return {

@@ -93,7 +93,7 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
           entity: "Retrospective",
           operation: "execute",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: `Retrospective planned for ${sprint.title.value}`,
           },
         },
@@ -116,7 +116,7 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
           entity: "Retrospective",
           operation: "execute",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: `${formatKptaBody(kpta)}\n\n${formatMetricsBody(metrics)}`,
             kpta,
             metrics,
@@ -126,7 +126,7 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
           entity: "Retrospective",
           operation: "execute",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Execute", reason.description),
           },
         },
@@ -144,7 +144,7 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
           entity: "Retrospective",
           operation: "archive",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             state: "closed",
           },
         },
@@ -152,7 +152,7 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
           entity: "Retrospective",
           operation: "archive",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Archive", `Archived ${identifier.title.value}`),
           },
         },
@@ -169,7 +169,7 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
         entity: "Retrospective",
         operation: "view",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
         },
       }],
     };

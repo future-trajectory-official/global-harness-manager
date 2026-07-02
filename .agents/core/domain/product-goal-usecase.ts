@@ -77,7 +77,7 @@ export const productGoalUseCase: ProductGoalUseCase = {
           entity: "ProductGoal",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             title: identifier.title.value,
             bodyAppend: formatGoalHistoryLine(2, reason.description),
           },
@@ -98,7 +98,7 @@ export const productGoalUseCase: ProductGoalUseCase = {
     assertIdDefined(identifier.id, "find a product goal");
     return {
       summary: `Find product goal: ${identifier.title.value}`,
-      steps: [{ entity: "ProductGoal", operation: "view", params: { itemId: identifier.id } }],
+      steps: [{ entity: "ProductGoal", operation: "view", params: { itemId: identifier.code } }],
     };
   },
 };

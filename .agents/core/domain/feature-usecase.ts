@@ -122,7 +122,7 @@ export const featureUseCase: FeatureUseCase = {
           entity: "Feature",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             title: identifier.title.value,
             body: formatFeatureBody(statement),
           },
@@ -147,7 +147,7 @@ export const featureUseCase: FeatureUseCase = {
         entity: "Feature",
         operation: "update",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           parentEpic: epic.id,
         },
       }],
@@ -162,7 +162,7 @@ export const featureUseCase: FeatureUseCase = {
         entity: "Feature",
         operation: "update",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           parentEpic: undefined,
         },
       }],
@@ -174,7 +174,7 @@ export const featureUseCase: FeatureUseCase = {
     assertIdDefined(identifier.id, "find a feature");
     return {
       summary: `Find feature: ${identifier.title.value}`,
-      steps: [{ entity: "Feature", operation: "view", params: { itemId: identifier.id } }],
+      steps: [{ entity: "Feature", operation: "view", params: { itemId: identifier.code } }],
     };
   },
 

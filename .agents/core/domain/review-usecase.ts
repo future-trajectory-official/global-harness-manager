@@ -106,7 +106,7 @@ export const reviewUseCase: ReviewUseCase = {
           entity: "Review",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: `Review planned for ${sprint.title.value}`,
           },
         },
@@ -125,7 +125,7 @@ export const reviewUseCase: ReviewUseCase = {
           entity: "Review",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             title: identifier.title.value,
             body: formatReviewReviseBody(removed, added),
           },
@@ -134,7 +134,7 @@ export const reviewUseCase: ReviewUseCase = {
           entity: "Review",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Revise", reason.description),
           },
         },
@@ -152,7 +152,7 @@ export const reviewUseCase: ReviewUseCase = {
           entity: "Review",
           operation: "report",
           params: {
-            itemId: data.identifier.id,
+            itemId: data.identifier.code,
             body: formatReportBody(data),
             overallResult: data.overallResult,
             postPlanAcGroups: data.postPlanAcGroups,
@@ -162,7 +162,7 @@ export const reviewUseCase: ReviewUseCase = {
           entity: "Review",
           operation: "update",
           params: {
-            itemId: data.identifier.id,
+            itemId: data.identifier.code,
             body: formatEditComment("Report", `Overall: ${data.overallResult?.judgment ?? "N/A"}`),
           },
         },
@@ -180,7 +180,7 @@ export const reviewUseCase: ReviewUseCase = {
           entity: "Review",
           operation: "archive",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             state: "closed",
           },
         },
@@ -188,7 +188,7 @@ export const reviewUseCase: ReviewUseCase = {
           entity: "Review",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Archive", `Archived ${identifier.title.value}`),
           },
         },
@@ -205,7 +205,7 @@ export const reviewUseCase: ReviewUseCase = {
         entity: "Review",
         operation: "view",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
         },
       }],
     };
