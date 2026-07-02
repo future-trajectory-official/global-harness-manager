@@ -21,12 +21,14 @@ export interface EntityScope {
 /**
  * Domain層のエンティティを一意に識別する。
  * id が undefined の場合は未作成（createItem が必要）。
+ * id は GitHub node-id（グローバル識別子）、code はリポジトリ内識別子（Issue番号等）。
  * describe() は dry-run 時に「何をするか」を Plan として返す。
  */
 export interface Identifier {
   readonly scope: EntityScope;
   readonly title: Title;
   readonly id?: string;
+  readonly code?: string;
   describe(): Plan;
 }
 
@@ -35,10 +37,11 @@ export interface Identifier {
  *
  * ## 生成ルール
  *
- * | 関数 | id | 用途 | 該当操作 |
- * |------|----|------|----------|
- * | `identify(scope, title)` | undefined | 新規作成 | establish, set, start |
- * | `identify(scope, title, id)` | 指定値 | 既存参照 | pivot, end, setGoal, find |
+ * | 関数 | id | code | 用途 | 該当操作 |
+ * |------|----|------|------|----------|
+ * | `identify(scope, title)` | undefined | undefined | 新規作成 | establish, set, start |
+ * | `identify(scope, title, id)` | 指定値 | undefined | 既存参照(idのみ) | find, view |
+ * | `identify(scope, title, id, code)` | 指定値 | 指定値 | 既存参照(完全) | pivot, end, setGoal |
  *
  * id が undefined かどうかで、UseCase は「新規作成」と「既存更新」を切り替える。
  */
@@ -46,11 +49,13 @@ export function identify<T extends Identifier>(
   scope: EntityScope,
   title: string,
   id?: string,
+  code?: string,
 ): T {
   return {
     scope,
     title: { value: title },
     id,
+    code,
     describe(): Plan {
       return { summary: title, steps: [] };
     },
@@ -377,11 +382,16 @@ export interface SprintIdentifier extends Identifier {
  * number から正規化された "Sprint N" 形式の title を自動設定する。
  * id を省略した場合は新規作成用（start）、指定した場合は既存参照用（end, setGoal, find）。
  */
-export function sprintId(scope: EntityScope, number: number, id?: string): SprintIdentifier {
+export function sprintId(
+  scope: EntityScope,
+  number: number,
+  id?: string,
+  code?: string,
+): SprintIdentifier {
   if (!Number.isInteger(number) || number < 1) {
     throw new Error(`INVALID_INPUT: Sprint number must be a positive integer`);
   }
-  return identify(scope, `Sprint ${number}`, id);
+  return identify(scope, `Sprint ${number}`, id, code);
 }
 
 /** Sprint の全データ。 */
