@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import type { ExecuteResult } from "../shared/io/command.ts";
 import { PlanGatewayAdapter } from "./plan-gateway-adapter.ts";
 import type { Plan } from "../domain/types.ts";
@@ -366,4 +366,251 @@ Deno.test("Vision update - title and bodyAppend should set both", async () => {
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
   assertEquals(callCount, 2);
+});
+
+// ======== Review Operation Tests ========
+
+Deno.test("Review plan - milestone string should map to gh issue create --milestone", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "plan",
+        params: { title: "Sprint 15 Review", body: "body", sprint: "15" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assert(calls.length >= 1);
+  assertStringIncludes(calls[0].args.join(" "), "issue create");
+  assertStringIncludes(calls[0].args.join(" "), "--milestone 15");
+  assertStringIncludes(calls[0].args.join(" "), "--label type:Review");
+});
+
+Deno.test("Review plan - milestone SprintIdentifier should map to --milestone", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "plan",
+        params: {
+          title: "Sprint 15 Review",
+          body: "body",
+          sprint: { title: { value: "Sprint 15" } },
+        },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assert(calls.length >= 1);
+  assertStringIncludes(calls[0].args.join(" "), "--milestone Sprint 15");
+});
+
+Deno.test("Review plan - should work without milestone", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "plan",
+        params: { title: "Review", body: "body" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assert(calls.length >= 1);
+  assertStringIncludes(calls[0].args.join(" "), "issue create");
+  assertStringIncludes(calls[0].args.join(" "), "--label type:Review");
+});
+
+Deno.test("Review report - should call gh issue edit", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "report",
+        params: { itemId: "42", body: "report body" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "edit");
+  assertEquals(calls[0].args[2], "42");
+});
+
+Deno.test("Review archive - should call gh issue close", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "archive",
+        params: { itemId: "42" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "close");
+  assertEquals(calls[0].args[2], "42");
+});
+
+Deno.test("Review archive - should fail without itemId", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Review", operation: "archive", params: {} },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("Review view - should call gh issue view", async () => {
+  const expected = JSON.stringify({
+    number: 42,
+    title: "Review",
+    body: "body",
+    labels: [{ name: "type:Review" }],
+    id: "node-abc",
+  });
+  const adapter = makeAdapter(fixedRunner(expected));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Review", operation: "view", params: { itemId: "42" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "42");
+});
+
+Deno.test("Review search - should call gh issue list", async () => {
+  const expected = JSON.stringify([
+    { number: 42, title: "Existing Review", labels: [{ name: "type:Review" }] },
+  ]);
+  const adapter = makeAdapter(fixedRunner(expected));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Review", operation: "search", params: { labelType: "Review" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as Array<Record<string, unknown>>;
+  assertEquals(output.length, 1);
+  assertEquals(output[0].number, 42);
+});
+
+Deno.test("Review update with title - should call gh issue edit", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "update",
+        params: { itemId: "42", title: "Updated Title", body: "Updated body" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "edit");
+  assertEquals(calls[0].args[2], "42");
+  assertStringIncludes(calls[0].args.join(" "), "--title Updated Title");
+});
+
+Deno.test("Review update without title - should add comment", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "update",
+        params: { itemId: "42", body: "comment text" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "comment");
+  assertEquals(calls[0].args[2], "42");
+  assertStringIncludes(calls[0].args.join(" "), "--body comment text");
+});
+
+Deno.test("Review plan+update - should inherit itemId for comment", async () => {
+  let callCount = 0;
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: `https://github.com/${OWNER}/${REPO}/issues/99`,
+        stderr: "",
+      });
+    }
+    if (callCount === 2) {
+      return Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "node-99" }), stderr: "" });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "plan then comment",
+    steps: [
+      { entity: "Review", operation: "plan", params: { title: "Sprint Review", body: "body" } },
+      { entity: "Review", operation: "update", params: { body: "comment" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 2);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "99");
+  assertEquals(result.stepResults[1].success, true);
+  assertEquals(result.stepResults[1].itemId, "99");
+});
+
+Deno.test("Review - should return error for unknown operation", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "unknown op",
+    steps: [
+      { entity: "Review", operation: "unknownOp" as never, params: {} },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "Unknown operation");
 });
