@@ -151,6 +151,7 @@ export const reviewUseCase: ReviewUseCase = {
           params: {
             title: identifier.title.value,
             body: formatPlanBody(sprint, planInput),
+            sprint: sprint.title.value,
           },
         },
         {

@@ -93,6 +93,7 @@ Deno.test("reviewUseCase - plan should return Plan with plan + update steps", ()
   assertEquals(plan.summary, "Plan review: Sprint 15 Review");
   assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].operation, "plan");
+  assertEquals(plan.steps[0].params.sprint, "Sprint 15");
   assertEquals(plan.steps[1].operation, "update");
 });
 

@@ -54,6 +54,7 @@ Deno.test("plan-sprint-review - plan should return Plan with plan + update steps
   assertEquals(plan.steps[0].entity, "Review");
   assertEquals(plan.steps[0].operation, "plan");
   assertEquals(plan.steps[0].params.title, "Sprint 15 Review");
+  assertEquals(plan.steps[0].params.sprint, "Sprint 15");
   assertStringIncludes(plan.steps[0].params.body as string, "Sprint 15");
   assertEquals(plan.steps[1].entity, "Review");
   assertEquals(plan.steps[1].operation, "update");
