@@ -432,8 +432,13 @@ Deno.test("Review plan - should work without milestone", async () => {
 });
 
 Deno.test("Review report - should call gh issue edit", async () => {
-  const { runner, calls } = mockRunner();
-  const adapter = makeAdapter(runner);
+  const runner = fixedRunner(JSON.stringify({ body: "existing body" }));
+  const calls: { cmd: string; args: string[] }[] = [];
+  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return runner(cmd, args);
+  };
+  const adapter = makeAdapter(trackingRunner);
   const plan: Plan = {
     summary: "test",
     steps: [
@@ -445,11 +450,15 @@ Deno.test("Review report - should call gh issue edit", async () => {
     ],
   };
   await adapter.execute(plan);
-  assertEquals(calls.length, 1);
+  assertEquals(calls.length, 2);
   assertEquals(calls[0].cmd, "gh");
   assertEquals(calls[0].args[0], "issue");
-  assertEquals(calls[0].args[1], "edit");
-  assertEquals(calls[0].args[2], "42");
+  assertEquals(calls[0].args[1], "view");
+  assertEquals(calls[1].cmd, "gh");
+  assertEquals(calls[1].args[0], "issue");
+  assertEquals(calls[1].args[1], "edit");
+  assertEquals(calls[1].args[2], "42");
+  assertStringIncludes(calls[1].args.join(" "), "--body");
 });
 
 Deno.test("Review archive - should call gh issue close", async () => {
@@ -526,8 +535,13 @@ Deno.test("Review search - should call gh issue list", async () => {
 });
 
 Deno.test("Review update with title - should call gh issue edit", async () => {
-  const { runner, calls } = mockRunner();
-  const adapter = makeAdapter(runner);
+  const runner = fixedRunner(JSON.stringify({ body: "existing body" }));
+  const calls: { cmd: string; args: string[] }[] = [];
+  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return runner(cmd, args);
+  };
+  const adapter = makeAdapter(trackingRunner);
   const plan: Plan = {
     summary: "test",
     steps: [
@@ -539,12 +553,16 @@ Deno.test("Review update with title - should call gh issue edit", async () => {
     ],
   };
   await adapter.execute(plan);
-  assertEquals(calls.length, 1);
+  assertEquals(calls.length, 2);
   assertEquals(calls[0].cmd, "gh");
   assertEquals(calls[0].args[0], "issue");
-  assertEquals(calls[0].args[1], "edit");
-  assertEquals(calls[0].args[2], "42");
-  assertStringIncludes(calls[0].args.join(" "), "--title Updated Title");
+  assertEquals(calls[0].args[1], "view");
+  assertEquals(calls[1].cmd, "gh");
+  assertEquals(calls[1].args[0], "issue");
+  assertEquals(calls[1].args[1], "edit");
+  assertEquals(calls[1].args[2], "42");
+  assertStringIncludes(calls[1].args.join(" "), "--title Updated Title");
+  assertStringIncludes(calls[1].args.join(" "), "--body");
 });
 
 Deno.test("Review update without title - should add comment", async () => {
