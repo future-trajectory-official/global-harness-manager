@@ -1,6 +1,7 @@
 import type { Plan } from "./types.ts";
 import type {
   AcceptanceCriterias,
+  AcGroup,
   ChangeReason,
   ReviewData,
   ReviewIdentifier,
@@ -35,10 +36,6 @@ export interface ReviewPlanAc {
 /** Review Issue の計画本文を生成する。全ACを ❔ 未確認で列挙した検証台帳を作成する。 */
 function formatPlanBody(sprint: SprintIdentifier, planInput: ReviewPlanInput): string {
   const lines: string[] = [];
-  lines.push("## Sprint Review");
-  lines.push("");
-  lines.push(`- **Sprint**: ${sprint.title.value}`);
-  lines.push("");
   lines.push("## 凡例");
   lines.push("");
   lines.push(
@@ -49,7 +46,23 @@ function formatPlanBody(sprint: SprintIdentifier, planInput: ReviewPlanInput): s
   lines.push("- ❌ 不合格");
   lines.push("- ➖ 論理削除（スプリント中の仕様変更等により確認対象外となったもの）");
   lines.push("");
-  lines.push("## 計画時確認項目");
+  lines.push("## 概要");
+  lines.push("");
+  lines.push(`- **対象スプリント**: ${sprint.title.value}`);
+  lines.push("- **実施環境**: ❔");
+  lines.push("- **レビュー実施日**: ❔");
+  lines.push("");
+  lines.push("## 総合判定");
+  lines.push("");
+  lines.push("### 判定結果");
+  lines.push("");
+  lines.push("❔");
+  lines.push("");
+  lines.push("### PO意見");
+  lines.push("");
+  lines.push("❔");
+  lines.push("");
+  lines.push("## スプリント開始時検証計画");
   lines.push("");
   for (const pbi of planInput.pbis) {
     lines.push(`### 📦 PBI: [${pbi.number}] ${pbi.title}`);
@@ -66,11 +79,15 @@ function formatPlanBody(sprint: SprintIdentifier, planInput: ReviewPlanInput): s
       lines.push("");
     }
   }
+  lines.push("## スプリント中追加検証計画");
+  lines.push("");
+  lines.push("<!-- スプリント中に追加されたACがあれば記録 -->");
+  lines.push("");
   return lines.join("\n");
 }
 
 /** Review 改訂時の本文を生成する。削除ACは打ち消し線、追加ACはチェックボックス形式で表示する。 */
-function formatReviewReviseBody(
+function _formatReviewReviseBody(
   removed: AcceptanceCriterias | undefined,
   added: AcceptanceCriterias | undefined,
 ): string {
@@ -122,6 +139,7 @@ export interface ReviewUseCase {
     removed: AcceptanceCriterias | undefined,
     added: AcceptanceCriterias | undefined,
     reason: ChangeReason,
+    addedGroups?: readonly AcGroup[],
   ): Plan;
 
   /** Review の結果（全体判定・AC事後判定）を報告する。 */
@@ -154,19 +172,11 @@ export const reviewUseCase: ReviewUseCase = {
             sprint: sprint.title.value,
           },
         },
-        {
-          entity: "Review",
-          operation: "update",
-          params: {
-            itemId: identifier.code,
-            body: `Review planned for ${sprint.title.value}`,
-          },
-        },
       ],
     };
   },
 
-  revise(identifier, removed, added, reason): Plan {
+  revise(identifier, removed, added, reason, addedGroups?): Plan {
     assertTitleNonEmpty(identifier.title, "Review title");
     assertIdDefined(identifier.id, "revise a review");
     assertStringNonEmpty(reason.description, "ChangeReason description");
@@ -175,19 +185,12 @@ export const reviewUseCase: ReviewUseCase = {
       steps: [
         {
           entity: "Review",
-          operation: "update",
+          operation: "revise",
           params: {
             itemId: identifier.code,
-            title: identifier.title.value,
-            body: formatReviewReviseBody(removed, added),
-          },
-        },
-        {
-          entity: "Review",
-          operation: "update",
-          params: {
-            itemId: identifier.code,
-            body: formatEditComment("Revise", reason.description),
+            removed,
+            added,
+            addedGroups,
           },
         },
       ],
@@ -208,14 +211,6 @@ export const reviewUseCase: ReviewUseCase = {
             body: formatReportBody(data),
             overallResult: data.overallResult,
             postPlanAcGroups: data.postPlanAcGroups,
-          },
-        },
-        {
-          entity: "Review",
-          operation: "update",
-          params: {
-            itemId: data.identifier.code,
-            body: formatEditComment("Report", `Overall: ${data.overallResult?.judgment ?? "N/A"}`),
           },
         },
       ],

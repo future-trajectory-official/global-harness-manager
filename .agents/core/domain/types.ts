@@ -242,7 +242,14 @@ export type SprintOperation =
   | "comment";
 
 /** Review エンティティの操作種別。ReviewValidator.ReviewOperation と対応。 */
-export type ReviewOperation = "plan" | "update" | "report" | "archive" | "view" | "search";
+export type ReviewOperation =
+  | "plan"
+  | "update"
+  | "revise"
+  | "report"
+  | "archive"
+  | "view"
+  | "search";
 
 /** Retrospective エンティティの操作種別。RetrospectiveValidator.RetrospectiveOperation と対応。 */
 export type RetrospectiveOperation = "plan" | "execute" | "archive" | "view" | "search";

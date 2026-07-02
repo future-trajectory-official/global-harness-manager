@@ -161,7 +161,7 @@ export class PlanGatewayAdapter implements PlanGateway {
       case "plan":
         return await this.handleCreateItem(params, entry.entity);
       case "report":
-        return await this.handleUpdateItem(params);
+        return await this.handleReviewReport(params);
       case "archive":
         return await this.handleCloseItem(params);
       case "view":
@@ -170,9 +170,11 @@ export class PlanGatewayAdapter implements PlanGateway {
         return await this.handleSearchItems(params);
       case "update":
         if (params.title) {
-          return await this.handleUpdateItem(params);
+          return await this.handleUpdateItem({ ...params, bodyAppend: params.body });
         }
         return await this.handleAddComment(params, lastItemId);
+      case "revise":
+        return await this.handleReviewRevise(params);
       default:
         return {
           operation,
@@ -305,6 +307,160 @@ export class PlanGatewayAdapter implements PlanGateway {
   }
 
   /**
+   * report 操作を処理する。GitHub Issue の本文内の AC マーカー（❔）を
+   * 合格/不合格/条件付き合格 のマーカーに置き換え、Overall Result を追記する。
+   */
+  private async handleReviewReport(params: Record<string, unknown>): Promise<StepResult> {
+    const itemId = String(params.itemId ?? "");
+    if (!itemId) {
+      return { operation: "report", success: false, error: "itemId is required" };
+    }
+
+    const viewResult = await this.runCommand("gh", [
+      "issue",
+      "view",
+      itemId,
+      "--json",
+      "body",
+      ...this.buildRepoArg(),
+    ]);
+    if (viewResult.code !== 0) {
+      return { operation: "report", success: false, error: viewResult.stderr };
+    }
+    const parsed = JSON.parse(viewResult.stdout) as { body?: string } | undefined;
+    const currentBody = parsed?.body ?? "";
+
+    const postPlanAcGroups = params.postPlanAcGroups as
+      | Array<{ acJudgments: Array<{ number: string; judgment: string }> }>
+      | undefined;
+
+    let newBody = currentBody;
+    if (postPlanAcGroups) {
+      for (const group of postPlanAcGroups) {
+        for (const ac of group.acJudgments) {
+          const marker = ac.judgment === "pass" ? "✅" : ac.judgment === "fail" ? "❌" : "⚠️";
+          const acPattern = new RegExp(`❔\\s*(AC_${ac.number}:)`);
+          newBody = newBody.replace(acPattern, `${marker} $1`);
+        }
+      }
+    }
+
+    if (params.overallResult) {
+      const or = params.overallResult as { judgment: string; reason?: string };
+      const judgmentMap: Record<string, string> = {
+        pass: "✅ 合格",
+        conditional: "⚠️ 条件付き合格",
+        fail: "❌ 不合格",
+      };
+      const judgmentText = judgmentMap[or.judgment] ?? or.judgment;
+      newBody = newBody.replace(/(?<=### 判定結果\n\n).*/, judgmentText);
+      if (or.reason) {
+        newBody = newBody.replace(/(?<=### PO意見\n\n).*/, or.reason);
+      }
+    }
+
+    const editResult = await this.runCommand("gh", [
+      "issue",
+      "edit",
+      itemId,
+      "--body",
+      newBody,
+      ...this.buildRepoArg(),
+    ]);
+    if (editResult.code !== 0) {
+      return { operation: "report", success: false, error: editResult.stderr };
+    }
+
+    return { operation: "report", success: true, itemId };
+  }
+
+  /**
+   * revise 操作を処理する。Issue 本文内の AC マーカーを論理削除（➖）に書き換え、
+   * スプリント中追加検証計画に新規 AC を追記する。
+   */
+  private async handleReviewRevise(params: Record<string, unknown>): Promise<StepResult> {
+    const itemId = String(params.itemId ?? "");
+    if (!itemId) {
+      return { operation: "revise", success: false, error: "itemId is required" };
+    }
+
+    const viewResult = await this.runCommand("gh", [
+      "issue",
+      "view",
+      itemId,
+      "--json",
+      "body",
+      ...this.buildRepoArg(),
+    ]);
+    if (viewResult.code !== 0) {
+      return { operation: "revise", success: false, error: viewResult.stderr };
+    }
+    const parsed = JSON.parse(viewResult.stdout) as { body?: string } | undefined;
+    const currentBody = parsed?.body ?? "";
+
+    let newBody = currentBody;
+    const removed = params.removed as
+      | { items?: Array<{ number: string; description: string }> }
+      | undefined;
+    const addedGroups = params.addedGroups as
+      | Array<
+        {
+          pbiNumber: number;
+          pbiTitle?: string;
+          wpNumber: number;
+          wpTitle?: string;
+          acJudgments: Array<{ number: string; description?: string; judgment?: string }>;
+        }
+      >
+      | undefined;
+
+    if (removed?.items) {
+      for (const item of removed.items) {
+        const acPattern = new RegExp(`-\\s*(❔|✅|⚠️|❌)\\s*AC_${item.number}:\\s*.*`);
+        newBody = newBody.replace(acPattern, `- ➖ AC_${item.number}: ${item.description}`);
+      }
+    }
+
+    if (addedGroups && addedGroups.length > 0) {
+      const planSectionMatch = newBody.match(/^## スプリント中追加検証計画[\s\S]*?(?=^## |$)/m);
+      const planLines: string[] = [];
+      planLines.push("## スプリント中追加検証計画");
+      planLines.push("");
+      for (const group of addedGroups) {
+        planLines.push(`### 📦 PBI: [${group.pbiNumber}] ${group.pbiTitle ?? ""}`);
+        planLines.push("");
+        planLines.push(`#### WP_${group.wpNumber}: ${group.wpTitle ?? ""}`);
+        planLines.push("");
+        for (const ac of group.acJudgments) {
+          const desc = ac.description ?? "";
+          planLines.push(`- ❔ AC_${ac.number}: ${desc}`);
+        }
+        planLines.push("");
+      }
+      const planSection = planLines.join("\n");
+      if (planSectionMatch) {
+        newBody = newBody.replace(planSectionMatch[0], planSection);
+      } else {
+        newBody = newBody + "\n" + planSection;
+      }
+    }
+
+    const editResult = await this.runCommand("gh", [
+      "issue",
+      "edit",
+      itemId,
+      "--body",
+      newBody,
+      ...this.buildRepoArg(),
+    ]);
+    if (editResult.code !== 0) {
+      return { operation: "revise", success: false, error: editResult.stderr };
+    }
+
+    return { operation: "revise", success: true, itemId };
+  }
+
+  /**
    * findItem 操作を処理する。指定された Issue 番号の詳細情報を取得する。
    * @param params.itemId - 取得対象の Issue 番号
    * @returns Issue の詳細情報（number, title, body, labels, comments）を含む StepResult
@@ -364,7 +520,7 @@ export class PlanGatewayAdapter implements PlanGateway {
       "--json",
       "number,title,labels",
       "--state",
-      "all",
+      "open",
       ...this.buildRepoArg(),
     ];
     let result;

@@ -88,13 +88,12 @@ function makeReviewData(overrides?: Partial<ReviewData>): ReviewData {
   };
 }
 
-Deno.test("reviewUseCase - plan should return Plan with plan + update steps", () => {
+Deno.test("reviewUseCase - plan should return Plan with plan step", () => {
   const plan = reviewUseCase.plan(makeIdentifier(), makeSprint(), makePlanInput());
   assertEquals(plan.summary, "Plan review: Sprint 15 Review");
-  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps.length, 1);
   assertEquals(plan.steps[0].operation, "plan");
   assertEquals(plan.steps[0].params.sprint, "Sprint 15");
-  assertEquals(plan.steps[1].operation, "update");
 });
 
 Deno.test("reviewUseCase - plan body should include all ACs as ❔ unchecked", () => {
@@ -144,9 +143,8 @@ Deno.test("reviewUseCase - revise should return Plan with two update steps", () 
     makeReason(),
   );
   assertEquals(plan.summary, "Revise review: Sprint 15 Review");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "update");
-  assertEquals(plan.steps[1].operation, "update");
+  assertEquals(plan.steps.length, 1);
+  assertEquals(plan.steps[0].operation, "revise");
 });
 
 Deno.test("reviewUseCase - revise should throw for undefined id", () => {
@@ -177,7 +175,7 @@ Deno.test("reviewUseCase - revise should throw for empty reason", () => {
   );
 });
 
-Deno.test("reviewUseCase - report should return Plan with report + update steps", () => {
+Deno.test("reviewUseCase - report should return Plan with report step", () => {
   const data = makeReviewData({
     overallResult: { judgment: "pass", reason: "All ACs satisfied" },
     postPlanAcGroups: [{
@@ -188,11 +186,10 @@ Deno.test("reviewUseCase - report should return Plan with report + update steps"
   });
   const plan = reviewUseCase.report(data);
   assertEquals(plan.summary, "Report review: Sprint 15 Review");
-  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps.length, 1);
   assertEquals(plan.steps[0].operation, "report");
   const overallResult = plan.steps[0].params.overallResult as { judgment: string } | undefined;
   assertEquals(overallResult?.judgment, "pass");
-  assertEquals(plan.steps[1].operation, "update");
 });
 
 Deno.test("reviewUseCase - report should throw for undefined id", () => {
