@@ -28,6 +28,7 @@ export class PlanGatewayAdapter implements PlanGateway {
   ) {
     this.handlers = new Map([
       ["Vision", this.handleVisionStep.bind(this)],
+      ["Review", this.handleReviewStep.bind(this)],
     ]);
   }
 
@@ -148,6 +149,62 @@ export class PlanGatewayAdapter implements PlanGateway {
     }
   }
 
+  private async handleReviewStep(
+    step: Step,
+    lastItemId?: string,
+  ): Promise<StepResult> {
+    const entry = step as { entity: string; operation: string; params: Record<string, unknown> };
+    const operation = entry.operation;
+    const params = entry.params;
+
+    switch (operation) {
+      case "plan":
+        return await this.handleCreateItem(params, entry.entity);
+      case "report":
+        return await this.handleUpdateItem(params);
+      case "archive":
+        return await this.handleCloseItem(params);
+      case "view":
+        return await this.handleFindItem(params);
+      case "search":
+        return await this.handleSearchItems(params);
+      case "update":
+        if (params.title) {
+          return await this.handleUpdateItem(params);
+        }
+        return await this.handleAddComment(params, lastItemId);
+      default:
+        return {
+          operation,
+          success: false,
+          error: `Unknown operation: ${operation}`,
+        };
+    }
+  }
+
+  private async handleCloseItem(params: Record<string, unknown>): Promise<StepResult> {
+    const itemId = String(params.itemId ?? "");
+    if (!itemId) {
+      return { operation: "archive", success: false, error: "itemId is required" };
+    }
+    const args = [
+      "issue",
+      "close",
+      itemId,
+      ...this.buildRepoArg(),
+    ];
+    let result;
+    try {
+      result = await this.runCommand("gh", args);
+    } catch (e) {
+      return { operation: "archive", success: false, error: String(e) };
+    }
+    if (result.code !== 0) {
+      return { operation: "archive", success: false, error: result.stderr };
+    }
+    return { operation: "archive", success: true, itemId };
+  }
+
   private buildRepoArg(): string[] {
     return ["--repo", `${this.owner}/${this.repository}`];
   }
@@ -177,6 +234,15 @@ export class PlanGatewayAdapter implements PlanGateway {
       `type:${type}`,
       ...this.buildRepoArg(),
     ];
+    const sprint = params.sprint;
+    if (sprint) {
+      const milestone = typeof sprint === "string"
+        ? sprint
+        : (sprint as { title?: { value?: string } }).title?.value;
+      if (milestone) {
+        args.push("--milestone", milestone);
+      }
+    }
     const result = await this.runCommand("gh", args);
     if (result.code !== 0) {
       return { operation: "create", success: false, error: result.stderr };
