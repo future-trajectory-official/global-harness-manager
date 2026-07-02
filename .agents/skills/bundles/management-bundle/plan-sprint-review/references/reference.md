@@ -1,23 +1,23 @@
 # plan-sprint-review リファレンス
 
-## スプリントレビュー計画の立案手順
+## スプリントレビュー検証計画とは
 
-スプリントレビューは、以下の流れで運用される：
+スプリントレビューは、POが**スプリントゴールに対する各PBIのAC達成状況を確認・承認する**場である。
+本スキルはその準備として、「何を（PBI/WP/AC）」「どのように（検証方法）」「どうなったら合格か（判定基準）」を
+❔ **未確認**の状態で列挙した**検証台帳**を作成する。
 
-1. **計画（本スキル）**: レビューの枠組みを作成し、どのスプリントを対象とするかを記録する
-2. **実施（`execute-sprint-review`）**: 各PBIのAC達成状況を確認し、合否を記録する
-3. **完了（`archive-sprint-review`）**: レビュー結果を確定し、クローズする
-
-本スキルは「1. 計画」フェーズに該当する。
+この検証台帳をもとに、後続の `execute-sprint-review`
+スキルが実際の検証を実行し、各ACの合否を記録する。
 
 ### このスキルがやること
 
-- レビュー対象スプリントの確定と永続化
-- レビュー記録の枠組み（後続のスキルがAC判定を追記するための入れ物）を作成する
+- スプリント内の全PBI/WP/ACを ❔ 未確認で列挙する
+- 各ACに検証方法（どのワークフローを実行し、何を確認するか）を紐付ける
+- 検証台帳を永続化し、レビュー実施時の判断基準とする
 
 ### このスキルがやらないこと
 
-- PBIやWPのACに対する合否判定の記録（`execute-sprint-review`）
+- 各ACの合否判定の実行と記録（`execute-sprint-review`）
 - レビューの完了処理（`archive-sprint-review`）
 
 ## 入力 JSON の形式
@@ -25,70 +25,91 @@
 ```json
 {
   "sprintNumber": 17,
-  "reviewTitle": "Sprint 17 Review"
-}
-```
-
-### 各フィールドの説明
-
-| フィールド     | 必須 | 説明                                                                                          |
-| -------------- | ---- | --------------------------------------------------------------------------------------------- |
-| `sprintNumber` | 必須 | レビューを実施するスプリントの番号（例: 17 → Sprint 17 のレビューを計画する）                 |
-| `reviewTitle`  | 任意 | レビュー計画の名称。省略時は "Sprint {n} Review" となる。カスタム名称を付けたい場合に指定する |
-
-## 実行例
-
-```bash
-# Sprint 17 のレビュー計画を立案する
-echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts --dry-run
-```
-
-### dry-run 出力例
-
-```json
-{
-  "summary": "Plan review: Sprint 17 Review",
-  "steps": [
+  "pbis": [
     {
-      "entity": "Review",
-      "operation": "plan",
-      "params": {
-        "title": "Sprint 17 Review",
-        "body": "## Sprint Review\n\n- **Sprint**: Sprint 17"
-      }
-    },
-    {
-      "entity": "Review",
-      "operation": "update",
-      "params": {
-        "itemId": null,
-        "body": "Review planned for Sprint 17"
-      }
+      "number": 1,
+      "title": "[Sprint17/ReviewSkills]/Create-sprint-review-skill-set",
+      "wps": [
+        {
+          "number": 1,
+          "title": "Gatewayアダプター拡張",
+          "acs": [
+            {
+              "number": "1",
+              "description": "ReviewUseCase.planを呼び出しReview Issueを作成するPlanを生成する",
+              "verificationPlan": "sprint-startワークフローPhase 2を実行し、plan-reviewスキルが正しく呼ばれReview Issueが作成されることを確認する"
+            },
+            {
+              "number": "2",
+              "description": "dry-runモードがPlanをJSONで出力しgh CLI操作を行わない",
+              "verificationPlan": "plan-review --dry-run を実行しPlan表示後にGatewayを呼ばず終了することを確認する"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
 ```
 
-## スプリントレビュー記録の内容
+### 各フィールドの説明
 
-レビュー計画の立案後、レビュー記録は以下のような構成で管理される：
+| フィールム               | 必須 | 説明                                                        |
+| ------------------------ | ---- | ----------------------------------------------------------- |
+| `sprintNumber`           | 必須 | レビュー対象のスプリント番号                                |
+| `pbis`                   | 必須 | レビュー対象のPBI一覧                                       |
+| `pbis[].number`          | 必須 | PBI番号（バックログ上の識別子）                             |
+| `pbis[].title`           | 必須 | PBIタイトル                                                 |
+| `pbis[].wps`             | 必須 | 当該PBIに属するWP一覧                                       |
+| `wps[].number`           | 必須 | WP番号                                                      |
+| `wps[].title`            | 必須 | WPタイトル                                                  |
+| `wps[].acs`              | 必須 | 当該WPに属するAC一覧                                        |
+| `acs[].number`           | 必須 | AC番号                                                      |
+| `acs[].description`      | 必須 | ACの内容                                                    |
+| `acs[].verificationPlan` | 任意 | 「どのワークフロー/スキルを使って」「何を確認するか」を記述 |
 
-### 初期状態（計画立案直後）
+## 実行例
 
-- タイトルに "Sprint {n} Review" と対象スプリントが明記される
-- 本文にスプリント番号が記録される
+```bash
+# Sprint 17 の検証計画を立案（dry-run）
+echo '{"sprintNumber": 17, "pbis": [{"number": 1, "title": "PBI例", "wps": [{"number": 1, "title": "WP例", "acs": [{"number": "1", "description": "AC例", "verificationPlan": "dry-runで確認"}]}]}]}' | deno run -A .agents/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts --dry-run
+```
 
-### レビュー実施後（`execute-sprint-review` により追記される情報）
+## 生成される検証台帳の内容
 
-- **凡例**: 各ACの判定結果の見方（✅合格 / ⚠️条件付き / ❌不合格 / ➖論理削除 / ❔未確認）
-- **実施環境**: レビューを実施した環境（サンドボックス等）
-- **総合判定**: スプリント全体として合格／条件付き合格／不合格
-- **判定理由**: POからのフィードバックコメント
-- **計画時確認項目**: スプリント開始時に計画されたPBI/WPごとのAC判定結果
-- **計画後確認項目**: スプリント中に追加・変更されたPBI/WPごとのAC判定結果
+作成されるIssueには以下の情報が記録される：
+
+- **スプリント番号**: 対象スプリント
+- **凡例**: 各ACの判定結果の見方（❔未確認 / ✅合格 / ⚠️条件付き / ❌不合格 / ➖論理削除）
+- **PBI/WP/ACの一覧**: 全ACが ❔ 未確認で列挙される
+- **検証方法**: 各ACに紐付く検証手順
+
+```
+## Sprint Review
+
+- **Sprint**: Sprint 17
+
+## 凡例
+
+- ❔ 未確認（初期状態）
+- ✅ 合格
+- ⚠️ 条件付き合格
+- ❌ 不合格
+- ➖ 論理削除
+
+## 計画時確認項目
+
+### 📦 PBI: [1] PBIタイトル
+
+#### WP_1: WPタイトル
+
+- ❔ AC_1: ACの説明
+  - **検証方法**: 検証手順の説明
+- ❔ AC_2: ACの説明
+```
 
 ## エラーハンドリング
 
-- `sprintNumber` が指定されていない、またはスプリント番号として不正 →
-  エラーが返され、処理は中断される
-- システム的な接続障害 → エラーが報告され、処理は中断される
+- `sprintNumber` が指定されていない、または不正 → エラーで処理中断
+- `pbIs` が空または不正 → エラーで処理中断
+- システム的な接続障害 → エラーが報告され処理中断
