@@ -187,7 +187,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
           entity: "WorkPackage",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Define", `Defined ${identifier.title.value}`),
           },
         },
@@ -206,7 +206,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
           entity: "WorkPackage",
           operation: "commit",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             stage: "todo",
             state: "open",
             sprint: sprint.title.value,
@@ -216,7 +216,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
           entity: "WorkPackage",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Commit", `Committed to ${sprint.title.value}`),
           },
         },
@@ -240,7 +240,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
           entity: "WorkPackage",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             title: identifier.title.value,
             body: formatWpBody(statement),
           },
@@ -249,7 +249,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
           entity: "WorkPackage",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Revise", reason.description),
           },
         },
@@ -267,7 +267,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
           entity: "WorkPackage",
           operation: "start",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             stage: "inProgress",
             state: "open",
           },
@@ -276,7 +276,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
           entity: "WorkPackage",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Start", `Started work on ${identifier.title.value}`),
           },
         },
@@ -294,7 +294,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
           entity: "WorkPackage",
           operation: "complete",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             stage: "done",
             state: "open",
           },
@@ -303,7 +303,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
           entity: "WorkPackage",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Complete", `Completed ${identifier.title.value}`),
           },
         },
@@ -321,7 +321,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
           entity: "WorkPackage",
           operation: "archive",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             stage: "done",
             state: "closed",
           },
@@ -330,7 +330,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
           entity: "WorkPackage",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Archive", `Archived ${identifier.title.value}`),
           },
         },
@@ -348,7 +348,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
         entity: "WorkPackage",
         operation: "assignToProductBacklogItem",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           parentPbi: pbi.id,
         },
       }],
@@ -364,7 +364,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
         entity: "WorkPackage",
         operation: "unassignFromProductBacklogItem",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           parentPbi: undefined,
         },
       }],
@@ -380,7 +380,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
         entity: "WorkPackage",
         operation: "estimateInitialEffort",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           effortInitial: effort.initialEstimate,
           body: formatEffortBody(effort),
         },
@@ -397,7 +397,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
         entity: "WorkPackage",
         operation: "estimatePlannedEffort",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           effortPlanned: effort.plannedEstimate,
           body: formatEffortBody(effort),
         },
@@ -414,7 +414,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
         entity: "WorkPackage",
         operation: "recordActualEffort",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           effortActual: effort.actual,
           body: formatEffortBody(effort),
         },
@@ -432,7 +432,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
         entity: "WorkPackage",
         operation: "recordAnalysis",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           body: formatAnalysisBody(analysis),
         },
       }],
@@ -448,7 +448,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
         entity: "WorkPackage",
         operation: "recordSessionMetrics",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           body: formatSessionMetricsBody(metrics),
         },
       }],
@@ -464,7 +464,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
         entity: "WorkPackage",
         operation: "view",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
         },
       }],
     };

@@ -37,7 +37,7 @@ export const sprintUseCase: SprintUseCase = {
         entity: "Sprint",
         operation: "endSprint",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           title: toMilestoneName(identifier),
         },
       }],
@@ -53,7 +53,7 @@ export const sprintUseCase: SprintUseCase = {
         entity: "Sprint",
         operation: "setGoal",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           title: toMilestoneName(identifier),
           description: goal.description,
         },
@@ -69,7 +69,7 @@ export const sprintUseCase: SprintUseCase = {
         entity: "Sprint",
         operation: "setDueDate",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           title: toMilestoneName(identifier),
           dueDate: dueDate.toISOString(),
         },
@@ -81,7 +81,7 @@ export const sprintUseCase: SprintUseCase = {
     assertIdDefined(identifier.id, "find a sprint");
     return {
       summary: `Find sprint: ${identifier.title.value}`,
-      steps: [{ entity: "Sprint", operation: "view", params: { itemId: identifier.id } }],
+      steps: [{ entity: "Sprint", operation: "view", params: { itemId: identifier.code } }],
     };
   },
 };

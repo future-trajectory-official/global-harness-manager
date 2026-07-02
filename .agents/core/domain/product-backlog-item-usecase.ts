@@ -145,7 +145,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           entity: "ProductBacklogItem",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             title: identifier.title.value,
             body: formatPbiBody(statement),
           },
@@ -154,7 +154,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           entity: "ProductBacklogItem",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatReviseComment(statement, reason),
           },
         },
@@ -172,7 +172,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           entity: "ProductBacklogItem",
           operation: "commit",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             stage: "todo",
             state: "open",
             sprint: sprint.title.value,
@@ -182,7 +182,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           entity: "ProductBacklogItem",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Commit", `Committed to ${sprint.title.value}`),
           },
         },
@@ -200,7 +200,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           entity: "ProductBacklogItem",
           operation: "start",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             stage: "inProgress",
             state: "open",
           },
@@ -209,7 +209,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           entity: "ProductBacklogItem",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Start", `Started work on ${identifier.title.value}`),
           },
         },
@@ -227,7 +227,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           entity: "ProductBacklogItem",
           operation: "complete",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             stage: "done",
             state: "open",
           },
@@ -236,7 +236,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           entity: "ProductBacklogItem",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Complete", `Completed ${identifier.title.value}`),
           },
         },
@@ -254,7 +254,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           entity: "ProductBacklogItem",
           operation: "archive",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             stage: "done",
             state: "closed",
           },
@@ -263,7 +263,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
           entity: "ProductBacklogItem",
           operation: "update",
           params: {
-            itemId: identifier.id,
+            itemId: identifier.code,
             body: formatEditComment("Archive", `Archived ${identifier.title.value}`),
           },
         },
@@ -301,7 +301,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
         entity: "ProductBacklogItem",
         operation: "assignToFeature",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           parentFeature: feature.id,
         },
       }],
@@ -317,7 +317,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
         entity: "ProductBacklogItem",
         operation: "unassignFromFeature",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           parentFeature: undefined,
         },
       }],
@@ -333,7 +333,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
         entity: "ProductBacklogItem",
         operation: "estimateSize",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           sizeEstimate: variance.estimate?.toString(),
         },
       }],
@@ -349,7 +349,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
         entity: "ProductBacklogItem",
         operation: "confirmSize",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           sizeActual: variance.actual?.toString(),
           sizeVarianceReason: variance.varianceReason,
         },
@@ -381,7 +381,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
         entity: "ProductBacklogItem",
         operation: "recordAnalysis",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
           body: lines.join("\n"),
         },
       }],
@@ -397,7 +397,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
         entity: "ProductBacklogItem",
         operation: "view",
         params: {
-          itemId: identifier.id,
+          itemId: identifier.code,
         },
       }],
     };
