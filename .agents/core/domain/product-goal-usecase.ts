@@ -6,14 +6,14 @@ function formatDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** Body: 変更履歴テーブル */
-export function formatGoalBody(version: number, statement: GoalStatement): string {
+/** Body: 変更履歴テーブル（初版概要は固定文） */
+export function formatGoalBody(version: number, _statement: GoalStatement): string {
   const lines: string[] = [];
   lines.push("## History");
   lines.push("");
   lines.push("| 日付 | バージョン | 概要 |");
   lines.push("| ---- | ---------- | ---- |");
-  lines.push(`| ${formatDate()} | ${version} | ${statement.description.slice(0, 40)}... |`);
+  lines.push(`| ${formatDate()} | ${version} | プロジェクト開始 |`);
   return lines.join("\n");
 }
 

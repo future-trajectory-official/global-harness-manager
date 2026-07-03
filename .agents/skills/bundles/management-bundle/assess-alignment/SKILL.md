@@ -8,7 +8,8 @@ tags:
 
 # assess-alignment
 
-プロジェクトのビジョンと、現在のチーム保有能力（ロール・スキル）のアライメントを評価する。
+プロジェクトのビジョンとプロダクトゴール、現在のチーム保有能力（ロール・スキル）のアライメントを評価する。
+出力JSONには `vision`、`productGoal`（未設定時はnull）、`roles`、`skills` が含まれる。
 
 ## Quick-Start
 

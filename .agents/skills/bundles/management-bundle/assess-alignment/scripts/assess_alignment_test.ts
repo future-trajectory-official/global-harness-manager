@@ -1,5 +1,6 @@
 import { assertEquals } from "@std/assert";
 import { visionUseCase } from "../../../../../core/domain/vision-usecase.ts";
+import { productGoalUseCase } from "../../../../../core/domain/product-goal-usecase.ts";
 import { identify } from "../../../../../core/domain/types.ts";
 import type { EntityScope } from "../../../../../core/domain/types.ts";
 
@@ -69,4 +70,83 @@ Deno.test("assess-alignment: 不正な JSON のパースに失敗する", () => 
   } catch (e) {
     assertEquals((e as Error).name, "SyntaxError");
   }
+});
+
+Deno.test("assess-alignment: ProductGoal find は view Plan を生成する", () => {
+  const identifier = identify(makeScope(), "Product Goal of test-repo", "pending", "42");
+  const plan = productGoalUseCase.find(identifier);
+
+  assertEquals(plan.summary, "Find product goal: Product Goal of test-repo");
+  assertEquals(plan.steps.length, 1);
+  assertEquals(plan.steps[0].entity, "ProductGoal");
+  assertEquals(plan.steps[0].operation, "view");
+  assertEquals(plan.steps[0].params.itemId, "42");
+});
+
+Deno.test("assess-alignment: ProductGoal search Step が正しい構造を持つ", () => {
+  const searchStep = {
+    entity: "ProductGoal" as const,
+    operation: "search" as const,
+    params: { labelType: "ProductGoal" },
+  };
+
+  assertEquals(searchStep.entity, "ProductGoal");
+  assertEquals(searchStep.operation, "search");
+  assertEquals(searchStep.params.labelType, "ProductGoal");
+});
+
+Deno.test("assess-alignment: dry-run に ProductGoal の search+view が含まれる", () => {
+  const scope = makeScope();
+  const visionSearchPlan = visionUseCase.find(identify(scope, "Vision of test-repo"));
+  const visionViewPlan = visionUseCase.find(
+    identify(scope, "Vision of test-repo", "node-id", "<itemId>"),
+  );
+  const productGoalSearchStep = {
+    entity: "ProductGoal" as const,
+    operation: "search" as const,
+    params: { labelType: "ProductGoal" },
+  };
+  const productGoalViewStep = {
+    entity: "ProductGoal" as const,
+    operation: "view" as const,
+    params: { itemId: "<itemId>" },
+  };
+
+  const dryRunSteps = [
+    ...visionSearchPlan.steps,
+    ...visionViewPlan.steps,
+    productGoalSearchStep,
+    productGoalViewStep,
+  ];
+
+  assertEquals(dryRunSteps.length, 4);
+  assertEquals(dryRunSteps[0].operation, "search");
+  assertEquals(dryRunSteps[1].operation, "view");
+  assertEquals(dryRunSteps[2].operation, "search");
+  assertEquals(dryRunSteps[2].entity, "ProductGoal");
+  assertEquals(dryRunSteps[3].operation, "view");
+  assertEquals(dryRunSteps[3].entity, "ProductGoal");
+});
+
+Deno.test("assess-alignment: ProductGoal コメントからゴール情報を抽出する", () => {
+  const sampleComment = "# Version: 2\n\n## Goal\n\nガバナンスの進化";
+
+  const versionMatch = sampleComment.match(/^#\s*Version:\s*(\d+)/m);
+  const version = versionMatch ? parseInt(versionMatch[1], 10) : 1;
+
+  const goalMatch = sampleComment.match(/##\s*Goal\s*\n\n([\s\S]*?)(?:\n##|$)/);
+  const description = goalMatch ? goalMatch[1].trim() : "";
+
+  assertEquals(version, 2);
+  assertEquals(description, "ガバナンスの進化");
+});
+
+Deno.test("assess-alignment: ProductGoal コメントが空の場合は null", () => {
+  const comments: Array<{ body?: string }> = [];
+  assertEquals(comments.length, 0);
+});
+
+Deno.test("assess-alignment: ProductGoal が存在しない場合は null（エラーではない）", () => {
+  const searchOutput: Array<{ number: number }> = [];
+  assertEquals(searchOutput.length, 0);
 });

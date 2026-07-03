@@ -35,7 +35,7 @@ Deno.test("productGoalUseCase - set body should be history table", () => {
   const plan = productGoalUseCase.set(makeIdentifier(), makeStatement());
   const body = plan.steps[0].params.body as string;
   assertStringIncludes(body, "## History");
-  assertStringIncludes(body, "| 1 | Improve developer productivity... |");
+  assertStringIncludes(body, "| 1 | プロジェクト開始 |");
 });
 
 Deno.test("productGoalUseCase - set comment should be versioned", () => {

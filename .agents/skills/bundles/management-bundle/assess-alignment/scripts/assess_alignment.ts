@@ -3,6 +3,7 @@ import { parseArgs } from "@std/cli/parse-args";
 import { identify } from "../../../../../core/domain/types.ts";
 import type { EntityScope } from "../../../../../core/domain/types.ts";
 import { visionUseCase } from "../../../../../core/domain/vision-usecase.ts";
+import { productGoalUseCase } from "../../../../../core/domain/product-goal-usecase.ts";
 import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
 import { ConfigGatewayAdapter } from "../../../../../core/gateway/config-gateway-adapter.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
@@ -175,6 +176,70 @@ async function fetchVisionFromGitHub(
 
 type VisionData = NonNullable<ReturnType<typeof extractVisionFromComments>>;
 
+interface ProductGoalData {
+  description: string;
+  version: number;
+}
+
+/**
+ * ProductGoal Issue のコメントからゴール情報を抽出する。
+ * コメント形式: "# Version: N\n\n## Goal\n\n[description]"
+ */
+function extractProductGoalFromComments(
+  comments: Array<{ body?: string }>,
+): ProductGoalData | null {
+  if (!comments || comments.length === 0) return null;
+  const latest = comments[comments.length - 1];
+  const body = latest.body ?? "";
+
+  const versionMatch = body.match(/^#\s*Version:\s*(\d+)/m);
+  const version = versionMatch ? parseInt(versionMatch[1], 10) : 1;
+
+  const goalMatch = body.match(/##\s*Goal\s*\n\n([\s\S]*?)(?:\n##|$)/);
+  const description = goalMatch ? goalMatch[1].trim() : "";
+
+  if (!description) return null;
+  return { description, version };
+}
+
+/**
+ * GitHub から ProductGoal Issue を検索・取得する。
+ * ProductGoal が存在しない場合は null を返す（エラーにしない）。
+ */
+async function fetchProductGoalFromGitHub(
+  gateway: PlanGatewayAdapter,
+  scope: EntityScope,
+): Promise<ProductGoalData | null> {
+  const searchPlan = {
+    summary: "Search product goal",
+    steps: [{
+      entity: "ProductGoal" as const,
+      operation: "search" as const,
+      params: { labelType: "ProductGoal" },
+    }],
+  };
+  const searchResult = await gateway.execute(searchPlan);
+  const searchOutput = searchResult.stepResults[0]?.output as
+    | Array<{ number: number }>
+    | undefined;
+  const goalNumber = searchOutput?.[0]?.number;
+  if (!goalNumber) {
+    return null;
+  }
+
+  const goalTitle = `Product Goal of ${scope.repository}`;
+  const viewIdentifier = identify(scope, goalTitle, "pending", String(goalNumber));
+  const viewPlan = productGoalUseCase.find(viewIdentifier);
+  const viewResult = await gateway.execute(viewPlan);
+  const viewOutput = viewResult.stepResults[0]?.output as Record<string, unknown> | undefined;
+  if (!viewOutput) {
+    return null;
+  }
+
+  const comments = viewOutput.comments as Array<{ body?: string }> | undefined;
+  return extractProductGoalFromComments(comments ?? []);
+}
+
 async function main(): Promise<void> {
   try {
     const args = parseArgs(Deno.args, {
@@ -190,8 +255,26 @@ async function main(): Promise<void> {
 
     if (args["dry-run"]) {
       const dryViewPlan = visionUseCase.find(identify(scope, repoTitle, "<itemId>"));
+      const productGoalSearchStep = {
+        entity: "ProductGoal" as const,
+        operation: "search" as const,
+        params: { labelType: "ProductGoal" },
+      };
+      const productGoalViewStep = {
+        entity: "ProductGoal" as const,
+        operation: "view" as const,
+        params: { itemId: "<itemId>" },
+      };
       console.log(JSON.stringify(
-        { summary: "assess-alignment", steps: [...searchPlan.steps, ...dryViewPlan.steps] },
+        {
+          summary: "assess-alignment",
+          steps: [
+            ...searchPlan.steps,
+            ...dryViewPlan.steps,
+            productGoalSearchStep,
+            productGoalViewStep,
+          ],
+        },
         null,
         2,
       ));
@@ -200,12 +283,13 @@ async function main(): Promise<void> {
 
     const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
     const vision = await fetchVisionFromGitHub(gateway, scope, repoTitle);
+    const productGoal = await fetchProductGoalFromGitHub(gateway, scope);
 
     const workspaceRoot = Deno.env.get("HARNESS_WORKSPACE_ROOT") ?? Deno.cwd();
     const roles = collectRoles(workspaceRoot);
     const skills = collectSkills(workspaceRoot);
 
-    console.log(JSON.stringify({ vision, roles, skills }, null, 2));
+    console.log(JSON.stringify({ vision, productGoal, roles, skills }, null, 2));
   } catch (e) {
     const err = errorUtil.toError(e);
     errorUtil.log(err);
