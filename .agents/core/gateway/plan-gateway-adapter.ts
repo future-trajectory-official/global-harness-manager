@@ -1,14 +1,16 @@
 import { executeCommand, type ExecuteResult } from "../shared/io/command.ts";
 import { logger } from "../shared/io/logger.ts";
-import type { ExecutionResult, Plan, Step, StepResult } from "../domain/types.ts";
+import type {
+  EntityType,
+  ExecutionResult,
+  Plan,
+  Step,
+  StepOperation,
+  StepResult,
+} from "../domain/types.ts";
 import type { PlanGateway } from "../domain/plan-gateway.ts";
 
 export type CommandRunner = (cmd: string, args: string[]) => Promise<ExecuteResult>;
-
-type EntityHandler = (
-  step: Step,
-  lastItemId?: string,
-) => Promise<StepResult>;
 
 function parseJsonOutput(raw: string): unknown {
   try {
@@ -18,18 +20,105 @@ function parseJsonOutput(raw: string): unknown {
   }
 }
 
+type OperationHandler = (
+  operation: string,
+  params: Record<string, unknown>,
+  lastItemId?: string,
+) => Promise<StepResult>;
+
 export class PlanGatewayAdapter implements PlanGateway {
-  private readonly handlers: Map<string, EntityHandler>;
+  private readonly stepHandlers = new Map<EntityType, Map<StepOperation, OperationHandler>>();
 
   constructor(
     private readonly owner: string,
     private readonly repository: string,
     private readonly runCommand: CommandRunner = (cmd, args) => executeCommand({ cmd, args }),
   ) {
-    this.handlers = new Map([
-      ["Vision", this.handleVisionStep.bind(this)],
-      ["Review", this.handleReviewStep.bind(this)],
-    ]);
+    // === Vision 操作の登録 ===
+    const visionCreate: OperationHandler = async (op, params) => {
+      const existingItems = await this.handleSearchItems({ labelType: "Vision" });
+      if (
+        existingItems.success && Array.isArray(existingItems.output) &&
+        existingItems.output.length > 0
+      ) {
+        const existing = existingItems.output[0] as { number: number };
+        return {
+          operation: op,
+          success: false,
+          error:
+            `A Vision already exists (Issue #${existing.number}). Use pivot to update instead.`,
+        };
+      }
+      return await this.handleCreateItem(params, "Vision");
+    };
+    const visionComment: OperationHandler = (_op, params, lastItemId) =>
+      this.handleAddComment(params, lastItemId);
+    const visionView: OperationHandler = (_op, params) => this.handleFindItem(params);
+    const visionSearch: OperationHandler = (_op, params) => this.handleSearchItems(params);
+    const visionUpdate: OperationHandler = (_op, params) => this.handleUpdateItem(params);
+
+    for (const op of ["create"] as const) {
+      this.register("Vision", op, visionCreate);
+    }
+    for (const op of ["comment"] as const) {
+      this.register("Vision", op, visionComment);
+    }
+    this.register("Vision", "view", visionView);
+    this.register("Vision", "search", visionSearch);
+    for (const op of ["update"] as const) {
+      this.register("Vision", op, visionUpdate);
+    }
+
+    // === Review 操作の登録 ===
+    const reviewCreate: OperationHandler = (_op, params) => this.handleCreateItem(params, "Review");
+    this.register("Review", "plan", reviewCreate);
+    this.register("Review", "report", (_op, params) => this.handleReviewReport(params));
+    this.register("Review", "archive", (_op, params) => this.handleCloseItem(params));
+    this.register("Review", "view", (_op, params) => this.handleFindItem(params));
+    this.register("Review", "search", (_op, params) => this.handleSearchItems(params));
+    this.register("Review", "update", async (_op, params, lastItemId) => {
+      if (params.title) {
+        return await this.handleUpdateItem({ ...params, bodyAppend: params.body });
+      }
+      return await this.handleAddComment(params, lastItemId);
+    });
+    this.register("Review", "revise", (_op, params) => this.handleReviewRevise(params));
+
+    // === ProductGoal 操作の登録 ===
+    const productGoalCreate: OperationHandler = async (op, params) => {
+      const existingItems = await this.handleSearchItems({ labelType: "ProductGoal" });
+      if (
+        existingItems.success && Array.isArray(existingItems.output) &&
+        existingItems.output.length > 0
+      ) {
+        const existing = existingItems.output[0] as { number: number };
+        return {
+          operation: op,
+          success: false,
+          error:
+            `A ProductGoal already exists (Issue #${existing.number}). Use pivot to update instead.`,
+        };
+      }
+      return await this.handleCreateItem(params, "ProductGoal");
+    };
+    this.register("ProductGoal", "create", productGoalCreate);
+    this.register(
+      "ProductGoal",
+      "comment",
+      (_op, params, lastItemId) => this.handleAddComment(params, lastItemId),
+    );
+    this.register("ProductGoal", "view", (_op, params) => this.handleFindItem(params));
+    this.register("ProductGoal", "update", (_op, params) => this.handleUpdateItem(params));
+    this.register("ProductGoal", "search", (_op, params) => this.handleSearchItems(params));
+  }
+
+  private register(entity: EntityType, operation: StepOperation, handler: OperationHandler): void {
+    let entityMap = this.stepHandlers.get(entity);
+    if (!entityMap) {
+      entityMap = new Map<StepOperation, OperationHandler>();
+      this.stepHandlers.set(entity, entityMap);
+    }
+    entityMap.set(operation, handler);
   }
 
   async execute(plan: Plan): Promise<ExecutionResult> {
@@ -55,132 +144,33 @@ export class PlanGatewayAdapter implements PlanGateway {
     step: Step,
     lastItemId?: string,
   ): Promise<StepResult> {
-    const entry = step as { entity: string; operation: string; params: Record<string, unknown> };
+    const entry = step as {
+      entity: EntityType;
+      operation: StepOperation;
+      params: Record<string, unknown>;
+    };
     const entity = entry.entity;
     const operation = entry.operation;
 
-    const handler = this.handlers.get(entity);
+    const entityMap = this.stepHandlers.get(entity);
+    const handler = entityMap?.get(operation);
+
     if (!handler) {
       return {
         operation,
         success: false,
-        error: `No handler registered for entity type: ${entity}`,
+        error: `No handler registered for ${entity}:${operation}`,
       };
     }
 
     try {
-      return await handler(step, lastItemId);
+      return await handler(operation, entry.params, lastItemId);
     } catch (e) {
       return {
         operation,
         success: false,
         error: e instanceof Error ? e.message : String(e),
       };
-    }
-  }
-
-  private async handleVisionStep(
-    step: Step,
-    lastItemId?: string,
-  ): Promise<StepResult> {
-    const entry = step as { entity: string; operation: string; params: Record<string, unknown> };
-    const operation = entry.operation;
-    const params = entry.params;
-
-    switch (operation) {
-      case "create":
-      case "propose":
-      case "define":
-      case "plan":
-      case "set":
-        if (entry.entity === "Vision") {
-          const existingItems = await this.handleSearchItems({ labelType: entry.entity });
-          if (
-            existingItems.success && Array.isArray(existingItems.output) &&
-            existingItems.output.length > 0
-          ) {
-            const existing = existingItems.output[0] as { number: number };
-            return {
-              operation,
-              success: false,
-              error:
-                `A ${entry.entity} already exists (Issue #${existing.number}). Use pivot to update instead.`,
-            };
-          }
-        }
-        return await this.handleCreateItem(params, entry.entity);
-      case "comment":
-      case "execute":
-        return await this.handleAddComment(params, lastItemId);
-      case "view":
-        return await this.handleFindItem(params);
-      case "update":
-      case "pivot":
-      case "revise":
-      case "commit":
-      case "start":
-      case "complete":
-      case "archive":
-      case "endSprint":
-      case "setGoal":
-      case "setDueDate":
-      case "report":
-      case "assignToFeature":
-      case "unassignFromFeature":
-      case "assignToProductBacklogItem":
-      case "unassignFromProductBacklogItem":
-      case "estimateSize":
-      case "confirmSize":
-      case "estimateInitialEffort":
-      case "estimatePlannedEffort":
-      case "recordActualEffort":
-      case "recordAnalysis":
-      case "recordSessionMetrics":
-      case "defineAcceptanceCriteria":
-        return await this.handleUpdateItem(params);
-      case "search":
-        return await this.handleSearchItems(params);
-      default:
-        return {
-          operation,
-          success: false,
-          error: `Unknown operation: ${operation}`,
-        };
-    }
-  }
-
-  private async handleReviewStep(
-    step: Step,
-    lastItemId?: string,
-  ): Promise<StepResult> {
-    const entry = step as { entity: string; operation: string; params: Record<string, unknown> };
-    const operation = entry.operation;
-    const params = entry.params;
-
-    switch (operation) {
-      case "plan":
-        return await this.handleCreateItem(params, entry.entity);
-      case "report":
-        return await this.handleReviewReport(params);
-      case "archive":
-        return await this.handleCloseItem(params);
-      case "view":
-        return await this.handleFindItem(params);
-      case "search":
-        return await this.handleSearchItems(params);
-      case "update":
-        if (params.title) {
-          return await this.handleUpdateItem({ ...params, bodyAppend: params.body });
-        }
-        return await this.handleAddComment(params, lastItemId);
-      case "revise":
-        return await this.handleReviewRevise(params);
-      default:
-        return {
-          operation,
-          success: false,
-          error: `Unknown operation: ${operation}`,
-        };
     }
   }
 
