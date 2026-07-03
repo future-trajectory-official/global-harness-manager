@@ -254,6 +254,18 @@ export type ReviewOperation =
 /** Retrospective エンティティの操作種別。RetrospectiveValidator.RetrospectiveOperation と対応。 */
 export type RetrospectiveOperation = "plan" | "execute" | "archive" | "view" | "search";
 
+/** 全Entityの操作を統合したユニオン型。Gateway層でのハンドラ解決に使用する。 */
+export type StepOperation =
+  | VisionOperation
+  | ProductGoalOperation
+  | FeatureOperation
+  | EpicOperation
+  | ProductBacklogItemOperation
+  | WorkPackageOperation
+  | SprintOperation
+  | ReviewOperation
+  | RetrospectiveOperation;
+
 /**
  * Plan 内の1実行単位。Discriminated Union により entity と operation の組合せを型安全に表現する。
  * entity ごとに許容される operation が異なるため、不正な組合せはコンパイル時に検出される。

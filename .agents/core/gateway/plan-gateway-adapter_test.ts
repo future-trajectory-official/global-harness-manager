@@ -52,7 +52,7 @@ Deno.test("PlanGateway - should return error for unknown operation", async () =>
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, false);
-  assertEquals(result.stepResults[0].error, "Unknown operation: unknownOp");
+  assertEquals(result.stepResults[0].error, "No handler registered for Vision:unknownOp");
 });
 
 /**
@@ -630,5 +630,308 @@ Deno.test("Review - should return error for unknown operation", async () => {
   };
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults[0].success, false);
-  assertStringIncludes(result.stepResults[0].error ?? "", "Unknown operation");
+  assertStringIncludes(result.stepResults[0].error ?? "", "No handler registered");
+});
+
+// ======== ProductGoal Operation Tests ========
+
+/**
+ * ProductGoal create - 重複チェック（search）→ create の順でgh CLIが呼ばれることを検証する。
+ * 正常系: 既存ProductGoalがない場合、gh issue list で空リストが返り、続けて gh issue create が実行される。
+ */
+Deno.test("ProductGoal create - should check duplicate then create", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "ProductGoal",
+        operation: "create",
+        params: { title: "Product Goal", body: "body text" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 2);
+  assertEquals(calls[0].cmd, "gh");
+  assertStringIncludes(calls[0].args.join(" "), "issue list");
+  assertStringIncludes(calls[0].args.join(" "), "--label type:ProductGoal");
+  assertEquals(calls[1].cmd, "gh");
+  assertEquals(calls[1].args[0], "issue");
+  assertEquals(calls[1].args[1], "create");
+  assertStringIncludes(calls[1].args.join(" "), "--title Product Goal");
+  assertStringIncludes(calls[1].args.join(" "), "--label type:ProductGoal");
+});
+
+/**
+ * ProductGoal create - 既存ProductGoalが存在する場合にエラーが返ることを検証する。
+ * 異常系: searchで既存Issueがヒットした場合、success=false とエラーメッセージを返し create は実行されない。
+ */
+Deno.test("ProductGoal create with existing - should return error", async () => {
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify([{ number: 1, title: "Existing", labels: [] }]),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "ProductGoal",
+        operation: "create",
+        params: { title: "Dupe", body: "body" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "already exists");
+  assertStringIncludes(result.stepResults[0].error ?? "", "Issue #1");
+});
+
+/**
+ * ProductGoal view - 指定されたIssue番号の詳細を gh issue view で取得できることを検証する。
+ * 正常系: itemId を引数に gh issue view --json が呼ばれ、パースされた結果が返る。
+ */
+Deno.test("ProductGoal view - should call gh issue view", async () => {
+  const expectedOutput = JSON.stringify({
+    number: 42,
+    title: "Product Goal",
+    body: "body",
+    labels: [{ name: "type:ProductGoal" }],
+    id: "node-abc",
+  });
+  const adapter = makeAdapter(fixedRunner(expectedOutput));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "ProductGoal", operation: "view", params: { itemId: "42" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "42");
+});
+
+/**
+ * ProductGoal view - itemId が未指定の場合にエラーが返ることを検証する。
+ * 異常系: params に itemId がない場合、success=false と error メッセージを返す。
+ */
+Deno.test("ProductGoal view - should fail without itemId", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "ProductGoal", operation: "view", params: {} },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+/**
+ * ProductGoal comment - 指定されたIssueにコメントを追加する gh issue comment が呼ばれることを検証する。
+ * 正常系: itemId と body が正しくgh CLI引数にマッピングされる。
+ */
+Deno.test("ProductGoal comment - should map itemId and body to gh issue comment args", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "ProductGoal",
+        operation: "comment",
+        params: { itemId: "42", body: "comment text" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "comment");
+  assertEquals(calls[0].args[2], "42");
+  assertStringIncludes(calls[0].args.join(" "), "--body comment text");
+});
+
+/**
+ * ProductGoal create+comment - create で生成された itemId が後続の comment に暗黙的に継承されることを検証する。
+ * Step連鎖: 前Stepの作成結果（itemId=99）が次Stepの lastItemId として渡され、commentが正しく動作する。
+ */
+Deno.test("ProductGoal create+comment - should inherit itemId from previous create step", async () => {
+  let callCount = 0;
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({ code: 0, stdout: "[]", stderr: "" });
+    }
+    if (callCount === 2) {
+      return Promise.resolve({
+        code: 0,
+        stdout: `https://github.com/${OWNER}/${REPO}/issues/99`,
+        stderr: "",
+      });
+    }
+    if (callCount === 3) {
+      return Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "node-99" }), stderr: "" });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "create then comment",
+    steps: [
+      { entity: "ProductGoal", operation: "create", params: { title: "PG", body: "b" } },
+      { entity: "ProductGoal", operation: "comment", params: { body: "comment" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 2);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "99");
+  assertEquals(result.stepResults[1].success, true);
+  assertEquals(result.stepResults[1].itemId, "99");
+});
+
+/**
+ * ProductGoal comment - itemId も直前のコンテキストもない場合にエラーが返ることを検証する。
+ * 異常系: create が先行せず、paramsにも itemId がない孤立したcomment操作は失敗する。
+ */
+Deno.test("ProductGoal comment - should fail without any context", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "ProductGoal", operation: "comment", params: { body: "orphan comment" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "No target issue specified");
+});
+
+/**
+ * ProductGoal search - labelType を指定して gh issue list で検索できることを検証する。
+ * 正常系: --label type:ProductGoal でフィルタされ、結果が正しくパースされる。
+ */
+Deno.test("ProductGoal search - should map labelType to gh issue list args", async () => {
+  const expectedOutput = JSON.stringify([
+    { number: 42, title: "Existing ProductGoal", labels: [{ name: "type:ProductGoal" }] },
+  ]);
+  const adapter = makeAdapter(fixedRunner(expectedOutput));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "ProductGoal", operation: "search", params: { labelType: "ProductGoal" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as Array<Record<string, unknown>>;
+  assertEquals(output.length, 1);
+  assertEquals(output[0].number, 42);
+});
+
+/**
+ * ProductGoal search - labelType が未指定の場合にエラーが返ることを検証する。
+ * 異常系: params に type/labelType がない場合、success=false とエラーメッセージを返す。
+ */
+Deno.test("ProductGoal search - should fail without labelType", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "ProductGoal", operation: "search", params: {} },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "type is required");
+});
+
+/**
+ * ProductGoal update - pivot操作で gh issue edit --title が呼ばれることを検証する。
+ * 正常系: ProductGoalUseCase.pivot が生成する update Step が正しくルーティングされる。
+ */
+Deno.test("ProductGoal update - should map pivot operation to gh issue edit", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "pivot",
+    steps: [
+      { entity: "ProductGoal", operation: "update", params: { itemId: "42", title: "New Title" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "edit");
+  assertEquals(calls[0].args[2], "42");
+  assertStringIncludes(calls[0].args.join(" "), "--title New Title");
+});
+
+/**
+ * ProductGoal update - bodyAppend が既存本文を取得し追記する2段階の処理になることを検証する。
+ * 正常系: bodyAppend 指定時は gh issue view → gh issue edit --body の順で2回ghが呼ばれる。
+ */
+Deno.test("ProductGoal update - bodyAppend should fetch body then edit", async () => {
+  let callCount = 0;
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ body: "Existing body content" }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "append body",
+    steps: [
+      {
+        entity: "ProductGoal",
+        operation: "update",
+        params: { itemId: "42", bodyAppend: "Appended text" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(callCount, 2);
+});
+
+/**
+ * ProductGoal - 未登録の操作に対してエラーが返ることを検証する。
+ * 異常系: StepOperation に存在しない操作は success=false となる。
+ */
+Deno.test("ProductGoal - should return error for unknown operation", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "unknown op",
+    steps: [
+      { entity: "ProductGoal", operation: "unknownOp" as never, params: {} },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "No handler registered");
 });
