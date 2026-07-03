@@ -142,10 +142,14 @@ export const visionUseCase: VisionUseCase = {
 
   find(identifier): Plan {
     assertTitleNonEmpty(identifier.title, "Vision title");
-    if (identifier.id) {
+    if (identifier.id || identifier.code) {
       return {
         summary: `Find vision: ${identifier.title.value}`,
-        steps: [{ entity: "Vision", operation: "view", params: { itemId: identifier.code } }],
+        steps: [{
+          entity: "Vision",
+          operation: "view",
+          params: { itemId: identifier.code ?? identifier.id },
+        }],
       };
     }
     return {
