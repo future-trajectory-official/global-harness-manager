@@ -17,6 +17,7 @@ interface SkillInfo {
   name: string;
   description: string;
   tags: string[];
+  bundle: string;
 }
 
 interface AlignmentInput {
@@ -60,10 +61,13 @@ function parseSkillFrontmatter(filePath: string): SkillInfo | null {
   const text = Deno.readTextFileSync(filePath);
   const fm = extractFrontmatter(text);
   if (!fm || !fm.name) return null;
+  const parts = filePath.split("/");
+  const bundle = parts[parts.length - 3] ?? "";
   return {
     name: String(fm.name),
     description: String(fm.description ?? ""),
     tags: Array.isArray(fm.tags) ? fm.tags.map(String) : [],
+    bundle,
   };
 }
 
@@ -130,47 +134,46 @@ function extractVisionFromComments(comments: Array<{ body?: string }>): {
   return { targetAudience, value, differentiator, outcomes };
 }
 
-function generateReport(
-  vision: { targetAudience: string; value: string; differentiator: string },
-  roles: RoleInfo[],
-  skills: SkillInfo[],
-): string {
-  const lines: string[] = [];
-  lines.push("### Vision & Capability Alignment Report");
-  lines.push("");
-  lines.push("#### 1. Vision Statement");
-  lines.push("");
-  lines.push(`**Target Audience**: ${vision.targetAudience}`);
-  lines.push("");
-  lines.push(`**Value**: ${vision.value}`);
-  lines.push("");
-  lines.push(`**Differentiator**: ${vision.differentiator}`);
-  lines.push("");
-  lines.push("#### 2. Available Capabilities");
-  lines.push("");
-  lines.push(`**保有ロール (${roles.length})**:`);
-  for (const role of roles) {
-    lines.push(`  - ${role.name}`);
-  }
-  lines.push("");
-  lines.push(`**主要スキル (${skills.length})**:`);
-  for (const skill of skills) {
-    lines.push(`  - ${skill.name}`);
-  }
-  lines.push("");
-  lines.push("---");
-  lines.push("");
-  lines.push("**Declaration**:");
-  lines.push(
-    "私たちは、上記のビジョンに基づき、保有する専門能力を最大限に活用して本セッションの価値を最大化することを誓約します。",
-  );
-  return lines.join("\n");
-}
-
 async function resolveScope(): Promise<EntityScope> {
   const config = new ConfigGatewayAdapter("", "");
   return await config.resolveScope();
 }
+
+async function fetchVisionFromGitHub(
+  gateway: PlanGatewayAdapter,
+  scope: EntityScope,
+  repoTitle: string,
+): Promise<VisionData> {
+  const searchPlan = visionUseCase.find(identify(scope, repoTitle));
+  const searchResult = await gateway.execute(searchPlan);
+  const searchOutput = searchResult.stepResults[0]?.output as
+    | Array<{ number: number }>
+    | undefined;
+  const visionNumber = searchOutput?.[0]?.number;
+  if (!visionNumber) {
+    console.error("No Vision issue found in repository");
+    Deno.exit(1);
+  }
+
+  const viewIdentifier = identify(scope, repoTitle, undefined, String(visionNumber));
+  const viewPlan = visionUseCase.find(viewIdentifier);
+  const viewResult = await gateway.execute(viewPlan);
+  const viewOutput = viewResult.stepResults[0]?.output as Record<string, unknown> | undefined;
+  if (!viewOutput) {
+    console.error("Failed to fetch Vision issue details");
+    Deno.exit(1);
+  }
+
+  const comments = viewOutput.comments as Array<{ body?: string }> | undefined;
+  const vision = extractVisionFromComments(comments ?? []);
+  if (!vision) {
+    console.error("No Vision data found in issue comments");
+    Deno.exit(1);
+  }
+  return vision;
+}
+
+type VisionData = NonNullable<ReturnType<typeof extractVisionFromComments>>;
 
 async function main(): Promise<void> {
   try {
@@ -183,17 +186,12 @@ async function main(): Promise<void> {
     const scope = input.scope ?? await resolveScope();
     const repoTitle = `Vision of ${scope.repository}`;
 
-    const searchIdentifier = identify(scope, repoTitle);
-    const searchPlan = visionUseCase.find(searchIdentifier);
+    const searchPlan = visionUseCase.find(identify(scope, repoTitle));
 
     if (args["dry-run"]) {
-      const dryViewIdentifier = identify(scope, repoTitle, "<itemId>");
-      const dryViewPlan = visionUseCase.find(dryViewIdentifier);
+      const dryViewPlan = visionUseCase.find(identify(scope, repoTitle, "<itemId>"));
       console.log(JSON.stringify(
-        {
-          summary: "assess-alignment",
-          steps: [...searchPlan.steps, ...dryViewPlan.steps],
-        },
+        { summary: "assess-alignment", steps: [...searchPlan.steps, ...dryViewPlan.steps] },
         null,
         2,
       ));
@@ -201,39 +199,13 @@ async function main(): Promise<void> {
     }
 
     const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
-
-    const searchResult = await gateway.execute(searchPlan);
-    const searchOutput = searchResult.stepResults[0]?.output as
-      | Array<{ number: number }>
-      | undefined;
-    const visionNumber = searchOutput?.[0]?.number;
-    if (!visionNumber) {
-      console.error("No Vision issue found in repository");
-      Deno.exit(1);
-    }
-
-    const viewIdentifier = identify(scope, repoTitle, String(visionNumber));
-    const viewPlan = visionUseCase.find(viewIdentifier);
-    const viewResult = await gateway.execute(viewPlan);
-    const viewOutput = viewResult.stepResults[0]?.output as Record<string, unknown> | undefined;
-    if (!viewOutput) {
-      console.error("Failed to fetch Vision issue details");
-      Deno.exit(1);
-    }
-
-    const comments = viewOutput.comments as Array<{ body?: string }> | undefined;
-    const vision = extractVisionFromComments(comments ?? []);
-    if (!vision) {
-      console.error("No Vision data found in issue comments");
-      Deno.exit(1);
-    }
+    const vision = await fetchVisionFromGitHub(gateway, scope, repoTitle);
 
     const workspaceRoot = Deno.env.get("HARNESS_WORKSPACE_ROOT") ?? Deno.cwd();
     const roles = collectRoles(workspaceRoot);
     const skills = collectSkills(workspaceRoot);
 
-    const report = generateReport(vision, roles, skills);
-    console.log(report);
+    console.log(JSON.stringify({ vision, roles, skills }, null, 2));
   } catch (e) {
     const err = errorUtil.toError(e);
     errorUtil.log(err);
