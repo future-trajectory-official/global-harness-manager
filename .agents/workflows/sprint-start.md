@@ -29,7 +29,7 @@ description: スプリントの開始プロセス（プロダクトゴール確�
   - `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
   `[assess-goal-continuation](/.agents/skills/bundles/management-bundle/assess-goal-continuation/SKILL.md)`
-- **入力（前提条件）**: GitHub Issue として永続化されている最新の Product Goal。
+- **入力（前提条件）**: 永続化されている最新の Product Goal。
 - **手続き**:
   1. `assess-goal-continuation` スキルで現在の Product Goal を取得し、PO に提示する。
   2. PO と対話し、プロダクトゴールを継続するかピボットするかを判断する。
@@ -96,8 +96,8 @@ description: スプリントの開始プロセス（プロダクトゴール確�
 
 ## Phase 3: スプリントレビュー計画 (Review Planning)
 
-スプリント終了時に PO が各 PBI の AC 達成状況を検証するための検証計画を立案し、Review Issue
-を作成します。
+スプリント終了時に PO が各 PBI の AC 達成状況を検証するための検証計画を立案し、Review
+エンティティを作成・永続化します。
 
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
@@ -106,10 +106,11 @@ description: スプリントの開始プロセス（プロダクトゴール確�
   `[plan-sprint-review](/.agents/skills/bundles/management-bundle/plan-sprint-review/SKILL.md)`
 - **入力（前提条件）**: Phase 2 で確定したスプリント対象 PBI/WP/AC 一覧。
 - **手続き**: `plan-sprint-review`
-  スキルの手順に従い、本スプリントのレビュー検証計画を立案し、Review Issue を作成する。
+  スキルの手順に従い、本スプリントのレビュー検証計画を立案し、Review
+  エンティティを作成・永続化する。
 - **期待される結果（終了条件）**:
   1. 本スプリントの全 AC に対する検証方法が決定されていること。
-  2. Review Issue が GitHub 上に作成（または dry-run で確認）されていること。
+  2. Review エンティティが永続化（または dry-run で確認）されていること。
 
 > [!IMPORTANT]
 > 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
