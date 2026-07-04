@@ -8,21 +8,22 @@ tags:
 
 # revise-sprint-review
 
-スプリント中に発生した仕様変更や追加 AC に対し、`plan-sprint-review` で作成した Review Issue
+スプリント中に発生した仕様変更や追加 AC に対し、`plan-sprint-review` で作成した Review
 の検証計画を改訂する。 本スキルは **PO と PBI → WP → AC の階層で逐次対話** し、削除 AC / 追加 AC /
-変更理由を確定した上で、**1回の `revise` 操作で Review Issue を更新する**。
+変更理由を確定した上で、 domain 層の `ReviewUseCase.revise` を呼び出して Plan
+を生成し、永続化層へ反映する。
 
 ## Quick-Start
 
-### Step 1: 対象の Review Issue を取得する
+### Step 1: 対象の Review を取得する
 
-`examine` サブコマンドで現在の Review Issue を特定し、本文を取得する。
+`examine` サブコマンドで永続化された Review を特定し、現在の検証計画を取得する。
 
 ```bash
 echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts examine
 ```
 
-出力された本文をもとに、PO と現在の検証計画を確認する。
+出力された検証計画をもとに、PO と現在の計画内容を確認する。
 
 ### Step 2: PO と対話して変更点を確定する
 
