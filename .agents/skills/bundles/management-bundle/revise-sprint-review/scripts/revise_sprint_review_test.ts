@@ -26,7 +26,7 @@ Deno.test("revise-sprint-review - revise should return Plan with revise step", (
   };
   const addedGroups = [{
     pbiNumber: 1,
-    wpNumber: 2,
+    wpNumber: "2",
     acJudgments: [{ number: "3", description: "追加するAC", judgment: "unchecked" as const }],
   }];
   const plan = reviewUseCase.revise(
@@ -53,7 +53,7 @@ Deno.test("revise-sprint-review - revise params should include removed and added
   };
   const addedGroups = [{
     pbiNumber: 1,
-    wpNumber: 2,
+    wpNumber: "2",
     acJudgments: [{ number: "3", description: "追加AC", judgment: "unchecked" as const }],
   }];
   const plan = reviewUseCase.revise(
@@ -212,7 +212,7 @@ Deno.test("revise-sprint-review - validateReviseInput should accept valid input"
     removed: { items: [{ number: "1", description: "削除AC" }] },
     addedGroups: [{
       pbiNumber: 1,
-      wpNumber: 1,
+      wpNumber: "1",
       acJudgments: [{ number: "2", description: "追加AC" }],
     }],
   });

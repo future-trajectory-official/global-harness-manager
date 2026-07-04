@@ -28,7 +28,7 @@ interface AddedAcJudgment {
 interface AddedGroup {
   pbiNumber: number;
   pbiTitle?: string;
-  wpNumber: number;
+  wpNumber: string;
   wpTitle?: string;
   acJudgments: AddedAcJudgment[];
 }
@@ -185,7 +185,9 @@ function toAcGroups(addedGroups?: AddedGroup[]): AcGroup[] | undefined {
   if (!addedGroups || addedGroups.length === 0) return undefined;
   return addedGroups.map((group) => ({
     pbiNumber: group.pbiNumber,
+    pbiTitle: group.pbiTitle,
     wpNumber: group.wpNumber,
+    wpTitle: group.wpTitle,
     acJudgments: group.acJudgments.map((ac) => ({
       number: ac.number,
       description: ac.description,
