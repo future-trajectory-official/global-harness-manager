@@ -1,5 +1,5 @@
 ---
-description: スプリントの開始プロセス（リファインメント、プランニング、AC定義）を安全に1ステップずつ実行するワークフロー。
+description: スプリントの開始プロセス（プロダクトゴール確認、リファインメント、プランニング、レビュー計画、AC定義）を安全に1ステップずつ実行するワークフロー。
 ---
 
 # Sprint Start Workflow (`/sprint-start`)
@@ -17,6 +17,38 @@ description: スプリントの開始プロセス（リファインメント、�
 - **中断・再開時のルール**: ツールエラーやセッション中断からの復帰時は、必ず `[RECOVERY LOG]`
   において「現在 `/sprint-start` ワークフローの Phase X
   の途中である」と宣言し、文脈を同期してください。
+
+---
+
+## Phase 0: プロダクトゴールの確認・ピボット (Product Goal Alignment)
+
+スプリントの価値判断基準となるプロダクトゴールを確認し、継続またはピボットを判断します。
+
+- **読み込むペルソナ**:
+  - `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ)
+  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
+- **実行するスキル**:
+  `[assess-goal-continuation](/.agents/skills/bundles/management-bundle/assess-goal-continuation/SKILL.md)`
+- **入力（前提条件）**: GitHub Issue として永続化されている最新の Product Goal。
+- **手続き**:
+  1. `assess-goal-continuation` スキルで現在の Product Goal を取得し、PO に提示する。
+  2. PO と対話し、プロダクトゴールを継続するかピボットするかを判断する。
+  3. 継続の場合はそのまま次のフェーズへ進む。
+  4. ピボットの場合は、新しいゴールと変更理由を PO と合意し、dry-run で内容確認 → 本実行の順で pivot
+     する。
+  5. Product Goal が未作成の場合は、本スキルではなく
+     `[set-product-goal](/.agents/skills/bundles/management-bundle/set-product-goal/SKILL.md)`
+     を用いて作成するよう案内する。
+- **期待される結果（終了条件）**:
+  1. 現在の Product Goal が PO に提示されていること。
+  2. 継続またはピボットが確定していること。
+
+> [!IMPORTANT]
+> 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
+> 0が完了しました。よろしければ『次のフェーズ（Phase 1）へ進む』とご指示ください」**
+> と明確にプロンプトしてください。
+
+<!-- STOP -->
 
 ---
 
@@ -62,7 +94,31 @@ description: スプリントの開始プロセス（リファインメント、�
 
 <!-- STOP -->
 
-## Phase 3: 受入基準（AC）とエッジケースの定義 (AC Definition)
+## Phase 3: スプリントレビュー計画 (Review Planning)
+
+スプリント終了時に PO が各 PBI の AC 達成状況を検証するための検証計画を立案し、Review Issue
+を作成します。
+
+- **読み込むペルソナ**:
+  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
+  - `[tester.md](/.agents/rules/tester.md)` (品質検証・客観的エビデンス提示)
+- **実行するスキル**:
+  `[plan-sprint-review](/.agents/skills/bundles/management-bundle/plan-sprint-review/SKILL.md)`
+- **入力（前提条件）**: Phase 2 で確定したスプリント対象 PBI/WP/AC 一覧。
+- **手続き**: `plan-sprint-review`
+  スキルの手順に従い、本スプリントのレビュー検証計画を立案し、Review Issue を作成する。
+- **期待される結果（終了条件）**:
+  1. 本スプリントの全 AC に対する検証方法が決定されていること。
+  2. Review Issue が GitHub 上に作成（または dry-run で確認）されていること。
+
+> [!IMPORTANT]
+> 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
+> 3が完了しました。よろしければ『次のフェーズ（Phase 4）へ進む』とご指示ください」**
+> と明確にプロンプトしてください。
+
+<!-- STOP -->
+
+## Phase 4: 受入基準（AC）とエッジケースの定義 (AC Definition)
 
 開発完了の条件となる明確な受入基準と、想定されるエッジケースを定義します。また、「動くだけのゴミ」を徹底排除し、保守性が極めて高いコード・ドキュメント資産を担保するための品質基準を設けます。
 
