@@ -43,9 +43,9 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 ビジョンを、計測可能な具体的な最初のゴールへと落とし込みます。
 
 - **読み込むペルソナ**: `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ)
-- **実行するスキル**: `define-product-goal`
-- **終了条件**: `[product-backlog.md](/.agents/management/product-backlog.md)`（ゴールセクション）と
-  `[epic-master.md](/.agents/management/epic-master.md)` の骨格が生成されること。
+- **実行するスキル**: `set-product-goal`
+- **終了条件**: プロダクトゴールが永続化されていること。 ※
+  エピック/フィーチャー構造の設計は本フェーズの対象外。別スキルで扱う。
 
 <!-- STOP -->
 

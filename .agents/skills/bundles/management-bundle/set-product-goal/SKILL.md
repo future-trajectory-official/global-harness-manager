@@ -2,14 +2,14 @@
 name: set-product-goal
 description: プロダクトゴールを定義し、永続化する。kickoffワークフローから呼び出される。
 tags:
-  - trigger: set-product-goal, define-goal, kickoff-set-goal
+  - trigger: set-product-goal, define-goal, kickoff-set-goal, kickoff-phase2
   - category: management
 ---
 
 # set-product-goal
 
-プロダクトゴール（いつまでに何を達成するか）を定義し、永続化する。 本スキルは `define-product-goal`
-を置き換え、対話によるゴール定義プロセスは踏襲しつつ、 永続化方式をスクリプト経由に移行する。
+プロダクトゴール（いつまでに何を達成するか）を定義し、永続化する。
+対話によるゴール定義プロセスと、スクリプト経由の永続化を組み合わせる。
 
 > **注意**: エピック/フィーチャー構造の作成は本スキルの対象外。別スキルで扱う。
 
