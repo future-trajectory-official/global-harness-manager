@@ -9,34 +9,38 @@ tags:
 # revise-sprint-review
 
 スプリント中に発生した仕様変更や追加 AC に対し、`plan-sprint-review` で作成した Review
-の検証計画を改訂する。 本スキルは **PO と PBI → WP → AC の階層で逐次対話** し、削除 AC / 追加 AC /
-変更理由を確定した上で、 domain 層の `ReviewUseCase.revise` を呼び出して Plan
-を生成し、永続化層へ反映する。
+の検証計画を改訂する。本スキルは **PO と Review の AC を 1 つずつ確認** し、スプリントゴールおよび
+PBI Body との意味的なカバレッジのずれを確定した上で、domain 層の `ReviewUseCase.revise` を呼び出して
+Plan を生成し、永続化層へ反映する。
 
 ## Quick-Start
 
-### Step 1: 対象の Review を取得する
+### Step 1: 対象の Review を取得する（PO には全文を表示しない）
 
-`examine` サブコマンドで永続化された Review を特定し、現在の検証計画を取得する。
+`examine` サブコマンドで Review Issue を特定し、現在の検証計画を取得する。取得した本文は AI
+が内部で保持し、PO に一気に表示して確認負荷をかけてはいけない。
 
 ```bash
 echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts examine
 ```
 
-出力された検証計画をもとに、PO と現在の計画内容を確認する。
+<!-- STOP -->
 
-### Step 2: PO と対話して変更点を確定する
+### Step 2: Review の AC を 1 つずつ PO と確認する
 
 [references/reference.md](/.agents/skills/bundles/management-bundle/revise-sprint-review/references/reference.md)
-に沿って、PBI → WP → AC の順に PO と対話し、以下を確定する：
+に沿って、以下の流れで PO と対話する：
 
-- 削除する AC（仕様変更や不要になったもの）
-- 追加する AC（スプリント中に発生した追加検証項目）
-- 各変更の理由
+1. スプリントゴールと各 PBI Body（ワークフロー文脈または `.agents/management/product-backlog.md`
+   から取得）を確認材料として保持する。
+2. Review の AC を **1 つずつ** PO に提示し、「この AC はスプリントゴール / PBI Body
+   のどの部分を検証するか」を説明する。
+3. PO と認識のずれやカバレッジ不足がないか確認する。
+4. 不要になった AC、追加が必要な AC、変更理由を確定する。
 
 <!-- STOP -->
 
-### Step 3: 確定した変更点を JSON にまとめ、dry-run で確認 → PO承認 → 本実行
+### Step 3: 確定した変更点を JSON にまとめ、dry-run で確認 → PO 承認 → 本実行
 
 ```bash
 # dry-run

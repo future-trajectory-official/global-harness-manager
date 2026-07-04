@@ -3,8 +3,9 @@
 ## このスキルがやること
 
 - 対象スプリントの Review Issue を `examine` サブコマンドで取得する
-- 現在の Review Issue 本文と `product-backlog.md` を比較し、差分候補を抽出する
-- PO と PBI → WP → AC の階層で対話し、削除 AC / 追加 AC / 変更理由を確定する
+- 取得した Review 本文を AI が内部で保持し、PO には AC を 1 つずつ提示して確認する
+- スプリントゴールおよび PBI Body を対比軸に、Review の AC が意味的にカバーできているかを PO
+  と確定する
 - 確定した変更点を `revise` サブコマンドで Review Issue に一括反映する
 
 ## このスキルがやらないこと
@@ -56,22 +57,24 @@ echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bund
 
 ---
 
-## PO 対話フロー（PBI → WP → AC）
+## PO 対話フロー（AC 1 つずつの意味確認）
 
 ### 対話の進め方
 
-1. **PBI 単位で変更の有無を確認する**
-   - 「PBI `[番号] タイトル` に変更はありますか？」
-   - 変更がなければ次の PBI へ
+1. **文脈を取得する**
+   - スプリントゴールと各 PBI Body を確認材料として保持する（ワークフロー文脈、または
+     `.agents/management/product-backlog.md` 等から取得）
+   - 将来的には `plan-sprint-review` 実行時にこれらを Review Issue 本文内に埋め込む（WP_b で対応）
 
-2. **WP 単位で変更内容を確認する**
-   - 「WP_`N`: `タイトル` で削除・追加する AC はありますか？」
-   - 追加 WP（スプリント中追加）が発生した場合は、`addedGroups` に含める
+2. **Review の AC を 1 つずつ確認する**
+   - 対象の AC を PO に提示する
+   - 「この AC は『スプリントゴール / PBI Body のどの部分』を検証するか」を説明する
+   - PO と認識のずれやカバレッジ不足がないか確認する
+   - 不要になった AC、追加が必要な AC、変更が必要な AC をメモする
 
-3. **AC 単位で変更理由を確認する**
-   - 削除 AC：「なぜこの AC は不要になりましたか？」
-   - 追加 AC：「この AC の検証方法は何ですか？」
-   - 各変更に対する理由を `changeReason` または個別のメモに記録する
+3. **追加 AC が発生した場合**
+   - 追加 AC は「スプリント中追加検証計画」セクションに追記される
+   - 追加 WP の番号は命名規則に従い、アルファベット suffix（例: `WP_a`）を使用する
 
 ### 変更点確定後のサマリー提示
 
@@ -86,7 +89,7 @@ echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bund
 
 ### 追加 AC
 
-- PBI 1 / WP_2 / AC_3: 追加ACの説明
+- PBI 1 / WP_a / AC_1: 追加ACの説明
 
 ### 変更理由（全体）
 
@@ -124,21 +127,21 @@ echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bund
 
 ### 各フィールドの説明
 
-| フィールド                                | 必須                    | 説明                                                        |
-| ----------------------------------------- | ----------------------- | ----------------------------------------------------------- |
-| `sprintNumber`                            | `code` 未指定時         | レビュー対象のスプリント番号。`code` とのどちらか一方が必須 |
-| `code`                                    | `sprintNumber` 未指定時 | Review Issue の番号。既知の場合はこちらを優先               |
-| `changeReason`                            | 必須                    | 変更の理由。空文字は不可                                    |
-| `removed`                                 | 任意                    | 論理削除（➖）する既存 AC の一覧                            |
-| `removed.items[].number`                  | 必須                    | 削除対象 AC の番号                                          |
-| `removed.items[].description`             | 必須                    | 削除対象 AC の説明（Issue 本文置換用）                      |
-| `addedGroups`                             | 任意                    | 「スプリント中追加検証計画」セクションに追記する AC 群      |
-| `addedGroups[].pbiNumber`                 | 必須                    | 追加 AC の属する PBI 番号                                   |
-| `addedGroups[].pbiTitle`                  | 任意                    | PBI タイトル（表示用）                                      |
-| `addedGroups[].wpNumber`                  | 必須                    | 追加 AC の属する WP 番号                                    |
-| `addedGroups[].wpTitle`                   | 任意                    | WP タイトル（表示用）                                       |
-| `addedGroups[].acJudgments[].number`      | 必須                    | 追加 AC の番号                                              |
-| `addedGroups[].acJudgments[].description` | 必須                    | 追加 AC の説明                                              |
+| フィールド                                | 必須                    | 説明                                                                                   |
+| ----------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------- |
+| `sprintNumber`                            | `code` 未指定時         | レビュー対象のスプリント番号。`code` とのどちらか一方が必須                            |
+| `code`                                    | `sprintNumber` 未指定時 | Review Issue の番号。既知の場合はこちらを優先                                          |
+| `changeReason`                            | 必須                    | 変更の理由。空文字は不可                                                               |
+| `removed`                                 | 任意                    | 論理削除（➖）する既存 AC の一覧                                                       |
+| `removed.items[].number`                  | 必須                    | 削除対象 AC の番号                                                                     |
+| `removed.items[].description`             | 必須                    | 削除対象 AC の説明（Issue 本文置換用）                                                 |
+| `addedGroups`                             | 任意                    | 「スプリント中追加検証計画」セクションに追記する AC 群                                 |
+| `addedGroups[].pbiNumber`                 | 必須                    | 追加 AC の属する PBI 番号                                                              |
+| `addedGroups[].pbiTitle`                  | 任意                    | PBI タイトル（表示用）                                                                 |
+| `addedGroups[].wpNumber`                  | 必須                    | 追加 AC の属する WP 番号。途中追加の WP はアルファベット suffix（例: `"a"`）を使用する |
+| `addedGroups[].wpTitle`                   | 任意                    | WP タイトル（表示用）                                                                  |
+| `addedGroups[].acJudgments[].number`      | 必須                    | 追加 AC の番号                                                                         |
+| `addedGroups[].acJudgments[].description` | 必須                    | 追加 AC の説明                                                                         |
 
 ### 実行例
 
