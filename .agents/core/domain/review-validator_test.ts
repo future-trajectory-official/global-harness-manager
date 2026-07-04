@@ -21,7 +21,7 @@ function makeReviewData(overrides?: Partial<ReviewData>): ReviewData {
     plannedAcGroups: [
       {
         pbiNumber: 1,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [{ number: "1", description: "AC1", judgment: "pass" }],
       },
     ],
@@ -53,7 +53,7 @@ Deno.test("ReviewValidator - revise should be VALID when adding new ACs", () => 
     plannedAcGroups: [
       {
         pbiNumber: 1,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [
           { number: "1", description: "AC1", judgment: "pass" },
           { number: "2", description: "AC2", judgment: "unchecked" },
@@ -71,7 +71,7 @@ Deno.test("ReviewValidator - revise should be VALID when logically deleting AC (
     plannedAcGroups: [
       {
         pbiNumber: 1,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [
           { number: "1", description: "AC1", judgment: "removed" },
         ],
@@ -106,7 +106,7 @@ Deno.test("ReviewValidator - revise should be INVALID when AC description is cha
   const to = makeReviewData({
     plannedAcGroups: [{
       pbiNumber: 1,
-      wpNumber: 1,
+      wpNumber: "1",
       acJudgments: [{ number: "1", description: "Modified AC1", judgment: "pass" }],
     }],
   });
@@ -122,14 +122,14 @@ Deno.test("ReviewValidator - report should be VALID when all judgments are set",
     plannedAcGroups: [
       {
         pbiNumber: 1,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [{ number: "1", description: "AC1", judgment: "pass" }],
       },
     ],
     postPlanAcGroups: [
       {
         pbiNumber: 1,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [{ number: "1", description: "AC1", judgment: "pass" }],
       },
     ],
@@ -144,7 +144,7 @@ Deno.test("ReviewValidator - report should be VALID when postPlanAcGroups is nul
     plannedAcGroups: [
       {
         pbiNumber: 1,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [{ number: "1", description: "AC1", judgment: "pass" }],
       },
     ],
@@ -175,7 +175,7 @@ Deno.test("ReviewValidator - report should be INVALID when plannedAcGroups has u
     plannedAcGroups: [
       {
         pbiNumber: 1,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [{ number: "1", description: "AC1", judgment: "unchecked" }],
       },
     ],
@@ -191,7 +191,7 @@ Deno.test("ReviewValidator - report should be INVALID when postPlanAcGroups has 
     postPlanAcGroups: [
       {
         pbiNumber: 1,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [{ number: "1", description: "AC1", judgment: "unchecked" }],
       },
     ],
@@ -205,7 +205,7 @@ Deno.test("ReviewValidator - report should be INVALID when from has postPlanAcGr
     postPlanAcGroups: [
       {
         pbiNumber: 1,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [{ number: "1", description: "AC1", judgment: "pass" }],
       },
     ],

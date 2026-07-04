@@ -79,7 +79,7 @@ function makeReviewData(overrides?: Partial<ReviewData>): ReviewData {
     plannedAcGroups: [
       {
         pbiNumber: 1,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [{ number: "1", description: "AC1", judgment: "pass" }],
       },
     ],
@@ -180,7 +180,7 @@ Deno.test("reviewUseCase - report should return Plan with report step", () => {
     overallResult: { judgment: "pass", reason: "All ACs satisfied" },
     postPlanAcGroups: [{
       pbiNumber: 1,
-      wpNumber: 1,
+      wpNumber: "1",
       acJudgments: [{ number: "1", description: "AC1", judgment: "pass" }],
     }],
   });

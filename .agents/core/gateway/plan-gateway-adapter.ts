@@ -397,7 +397,7 @@ export class PlanGatewayAdapter implements PlanGateway {
         {
           pbiNumber: number;
           pbiTitle?: string;
-          wpNumber: number;
+          wpNumber: string;
           wpTitle?: string;
           acJudgments: Array<{ number: string; description?: string; judgment?: string }>;
         }
