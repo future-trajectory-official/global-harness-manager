@@ -29,7 +29,7 @@ function makeReviewData(overrides?: Partial<ReviewData>): ReviewData {
     postPlanAcGroups: [
       {
         pbiNumber: 1,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [
           { number: "1", description: "AC1 description", judgment: "pass" },
         ],
@@ -77,7 +77,7 @@ Deno.test("execute-sprint-review - report should include multiple AC groups", ()
     postPlanAcGroups: [
       {
         pbiNumber: 1,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [
           { number: "1", description: "AC1", judgment: "pass" },
           { number: "2", description: "AC2", judgment: "fail" },
@@ -85,7 +85,7 @@ Deno.test("execute-sprint-review - report should include multiple AC groups", ()
       },
       {
         pbiNumber: 2,
-        wpNumber: 1,
+        wpNumber: "1",
         acJudgments: [
           { number: "1", description: "AC3", judgment: "conditional" },
         ],

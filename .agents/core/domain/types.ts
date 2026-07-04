@@ -602,7 +602,9 @@ export interface ReviewStatement {
 /** AC のグループ。1PBI/WP 単位の判定結果をまとめる。 */
 export interface AcGroup {
   readonly pbiNumber: number;
-  readonly wpNumber: number;
+  readonly pbiTitle?: string;
+  readonly wpNumber: string;
+  readonly wpTitle?: string;
   readonly acJudgments: readonly AcJudgment[];
 }
 

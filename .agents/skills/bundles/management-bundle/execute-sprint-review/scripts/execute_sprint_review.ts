@@ -16,7 +16,9 @@ interface AcJudgment {
 
 interface AcGroup {
   pbiNumber: number;
-  wpNumber: number;
+  pbiTitle?: string;
+  wpNumber: string;
+  wpTitle?: string;
   acJudgments: AcJudgment[];
 }
 
@@ -121,7 +123,9 @@ async function main(): Promise<void> {
 
     const postPlanAcGroups = input.acGroups.map((ag) => ({
       pbiNumber: ag.pbiNumber,
+      pbiTitle: ag.pbiTitle,
       wpNumber: ag.wpNumber,
+      wpTitle: ag.wpTitle,
       acJudgments: ag.acJudgments.map((acj) => ({
         number: acj.number,
         judgment: acj.judgment,
