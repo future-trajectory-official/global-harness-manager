@@ -1,4 +1,12 @@
 import type { Plan } from "./types.ts";
+
+/** Review Issue 本文の Markdown マーカー定数。formatPlanBody と parseReviewBody で共有する。 */
+export const REVIEW_MARKERS = {
+  sprintGoalHeading: "## スプリントゴール",
+  summaryPrefix: "- **概要**:",
+  pbiMarker: "### 📦 PBI:",
+  wpMarker: "#### WP_",
+} as const;
 import type {
   AcceptanceCriterias,
   AcGroup,
@@ -12,18 +20,21 @@ import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./va
 
 /** スプリントレビュー計画の入力。検証対象となるPBI/WP/ACの一覧と各ACの検証方法を定義する。 */
 export interface ReviewPlanInput {
+  readonly sprintGoal?: string;
   readonly pbis: readonly ReviewPlanPbi[];
 }
 
 export interface ReviewPlanPbi {
   readonly number: number;
   readonly title: string;
+  readonly summary?: string;
   readonly wps: readonly ReviewPlanWp[];
 }
 
 export interface ReviewPlanWp {
   readonly number: number;
   readonly title: string;
+  readonly summary?: string;
   readonly acs: readonly ReviewPlanAc[];
 }
 
@@ -46,6 +57,12 @@ function formatPlanBody(sprint: SprintIdentifier, planInput: ReviewPlanInput): s
   lines.push("- ❌ 不合格");
   lines.push("- ➖ 論理削除（スプリント中の仕様変更等により確認対象外となったもの）");
   lines.push("");
+  if (planInput.sprintGoal != null && planInput.sprintGoal.length > 0) {
+    lines.push(REVIEW_MARKERS.sprintGoalHeading);
+    lines.push("");
+    lines.push(planInput.sprintGoal);
+    lines.push("");
+  }
   lines.push("## 概要");
   lines.push("");
   lines.push(`- **対象スプリント**: ${sprint.title.value}`);
@@ -67,9 +84,17 @@ function formatPlanBody(sprint: SprintIdentifier, planInput: ReviewPlanInput): s
   for (const pbi of planInput.pbis) {
     lines.push(`### 📦 PBI: [${pbi.number}] ${pbi.title}`);
     lines.push("");
+    if (pbi.summary != null && pbi.summary.length > 0) {
+      lines.push(`${REVIEW_MARKERS.summaryPrefix} ${pbi.summary}`);
+      lines.push("");
+    }
     for (const wp of pbi.wps) {
       lines.push(`#### WP_${wp.number}: ${wp.title}`);
       lines.push("");
+      if (wp.summary != null && wp.summary.length > 0) {
+        lines.push(`${REVIEW_MARKERS.summaryPrefix} ${wp.summary}`);
+        lines.push("");
+      }
       for (const ac of wp.acs) {
         lines.push(`- ❔ AC_${ac.number}: ${ac.description}`);
         if (ac.verificationPlan) {
