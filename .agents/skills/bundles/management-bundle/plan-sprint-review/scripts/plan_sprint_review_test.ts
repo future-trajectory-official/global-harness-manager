@@ -2,6 +2,7 @@ import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
 import type { ReviewPlanInput } from "../../../../../core/domain/review-usecase.ts";
 import type { ReviewIdentifier, SprintIdentifier } from "../../../../../core/domain/types.ts";
+import { toPlanInput } from "./plan_sprint_review.ts";
 
 function makeIdentifier(overrides?: Partial<ReviewIdentifier>): ReviewIdentifier {
   return {
@@ -110,4 +111,51 @@ Deno.test("plan-sprint-review - dry-run output should contain Plan structure", (
   assertStringIncludes(output, "Plan review:");
   assertStringIncludes(output, "Review");
   assertStringIncludes(output, "plan");
+});
+
+/**
+ * toPlanInput: sprintGoal / summary を透過的にマッピングする。
+ */
+Deno.test("plan-sprint-review - toPlanInput should preserve sprintGoal and summaries", () => {
+  const input = {
+    sprintNumber: 17,
+    sprintGoal: "ゴール",
+    pbis: [{
+      number: 1,
+      title: "PBI",
+      summary: "PBI概要",
+      wps: [{
+        number: 1,
+        title: "WP",
+        summary: "WP概要",
+        acs: [{ number: "1", description: "AC1" }],
+      }],
+    }],
+  };
+  const result = toPlanInput(input);
+  assertEquals(result.sprintGoal, "ゴール");
+  assertEquals(result.pbis[0].summary, "PBI概要");
+  assertEquals(result.pbis[0].wps[0].summary, "WP概要");
+});
+
+/**
+ * toPlanInput: 新フィールドを省略してもエラーにならない。
+ */
+Deno.test("plan-sprint-review - toPlanInput should accept input without optional fields", () => {
+  const input = {
+    sprintNumber: 17,
+    pbis: [{
+      number: 1,
+      title: "PBI",
+      wps: [{
+        number: 1,
+        title: "WP",
+        acs: [{ number: "1", description: "AC1" }],
+      }],
+    }],
+  };
+  const result = toPlanInput(input);
+  assertEquals(result.sprintGoal, undefined);
+  assertEquals(result.pbis[0].summary, undefined);
+  assertEquals(result.pbis[0].wps[0].summary, undefined);
 });
