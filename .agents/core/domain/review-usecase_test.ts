@@ -117,6 +117,45 @@ Deno.test("reviewUseCase - plan body should include legend", () => {
   assertStringIncludes(body, "➖ 論理削除");
 });
 
+Deno.test("reviewUseCase - plan body should include sprintGoal when provided", () => {
+  const planInput = makePlanInput({ sprintGoal: "ゴール内容" });
+  const plan = reviewUseCase.plan(makeIdentifier(), makeSprint(), planInput);
+  const body = plan.steps[0].params.body as string;
+  assertStringIncludes(body, "## スプリントゴール");
+  assertStringIncludes(body, "ゴール内容");
+});
+
+Deno.test("reviewUseCase - plan body should include PBI/WP summary when provided", () => {
+  const planInput = makePlanInput({
+    pbis: [
+      {
+        number: 1,
+        title: "PBIタイトル",
+        summary: "PBI概要",
+        wps: [
+          {
+            number: 1,
+            title: "WPタイトル",
+            summary: "WP概要",
+            acs: [{ number: "1", description: "AC1" }],
+          },
+        ],
+      },
+    ],
+  });
+  const plan = reviewUseCase.plan(makeIdentifier(), makeSprint(), planInput);
+  const body = plan.steps[0].params.body as string;
+  assertStringIncludes(body, "PBI概要");
+  assertStringIncludes(body, "WP概要");
+});
+
+Deno.test("reviewUseCase - plan body should not include sprint goal / summary when absent", () => {
+  const plan = reviewUseCase.plan(makeIdentifier(), makeSprint(), makePlanInput());
+  const body = plan.steps[0].params.body as string;
+  assertEquals(body.includes("## スプリントゴール"), false);
+  assertEquals(body.includes("**概要**"), false);
+});
+
 Deno.test("reviewUseCase - plan should throw for empty title", () => {
   assertThrows(
     () =>

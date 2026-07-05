@@ -9,7 +9,7 @@ import type {
   ReviewSearchCondition,
   Step,
 } from "../../../../../core/domain/types.ts";
-import { reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
+import { REVIEW_MARKERS, reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
 import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
 import { ConfigGatewayAdapter } from "../../../../../core/gateway/config-gateway-adapter.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
@@ -148,6 +148,84 @@ async function findReviewIssue(
   return findOutput ?? {};
 }
 
+export interface ParsedReviewContent {
+  sprintGoal?: string;
+  pbis: Array<{
+    number: number;
+    title: string;
+    summary?: string;
+    wps: Array<{ number: string; title: string; summary?: string }>;
+  }>;
+}
+
+const SUMMARY_RE = new RegExp(`^${escapeRegex(REVIEW_MARKERS.summaryPrefix)}\\s*(.+)$`, "m");
+const PBI_RE = new RegExp(
+  `^${escapeRegex(REVIEW_MARKERS.pbiMarker)}\\s*\\[(\\d+)\\]\\s*(.+)$`,
+  "gm",
+);
+const WP_RE = new RegExp(`^${escapeRegex(REVIEW_MARKERS.wpMarker)}([a-zA-Z0-9]+):\\s*(.+)$`, "gm");
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Review Issue 本文から sprint goal / PBI/WP summary を抽出する。セクションがない場合は undefined を返す。 */
+export function parseReviewBody(body: string | undefined): ParsedReviewContent {
+  const result: ParsedReviewContent = { pbis: [] };
+  if (!body) return result;
+
+  const sprintGoalHeading = escapeRegex(REVIEW_MARKERS.sprintGoalHeading);
+  const sprintGoalRe = new RegExp(`^${sprintGoalHeading}\\s*\\n\\n([\\s\\S]*?)(?:\\n## |$)`, "m");
+  const sprintGoalMatch = body.match(sprintGoalRe);
+  if (sprintGoalMatch) {
+    const trimmed = sprintGoalMatch[1].trim();
+    if (trimmed.length > 0) result.sprintGoal = trimmed;
+  }
+
+  const pbiMatches = Array.from(body.matchAll(PBI_RE));
+  const pbiEntries: ParsedReviewContent["pbis"] = [];
+
+  for (let i = 0; i < pbiMatches.length; i++) {
+    const pbiMatch = pbiMatches[i];
+    const pbiNumber = parseInt(pbiMatch[1], 10);
+    const pbiTitle = pbiMatch[2].trim();
+
+    const pbiStart = pbiMatch.index + pbiMatch[0].length;
+    const nextPbiMatch = pbiMatches[i + 1];
+    const pbiSection = body.slice(pbiStart, nextPbiMatch ? nextPbiMatch.index : body.length);
+
+    const pbiSummary = pbiSection.match(SUMMARY_RE)?.[1]?.trim() || undefined;
+
+    const wpMatches = Array.from(pbiSection.matchAll(WP_RE));
+    const wpEntries: Array<{ number: string; title: string; summary?: string }> = [];
+
+    for (let j = 0; j < wpMatches.length; j++) {
+      const wpMatch = wpMatches[j];
+      const wpNumber = wpMatch[1];
+      const wpTitle = wpMatch[2].trim();
+      const wpStart = wpMatch.index + wpMatch[0].length;
+      const nextWpMatch = wpMatches[j + 1];
+      const wpSection = pbiSection.slice(
+        wpStart,
+        nextWpMatch ? nextWpMatch.index : pbiSection.length,
+      );
+
+      const wpSummary = wpSection.match(SUMMARY_RE)?.[1]?.trim() || undefined;
+      wpEntries.push({ number: wpNumber, title: wpTitle, summary: wpSummary });
+    }
+
+    pbiEntries.push({
+      number: pbiNumber,
+      title: pbiTitle,
+      summary: pbiSummary,
+      wps: wpEntries,
+    });
+  }
+
+  result.pbis = pbiEntries;
+  return result;
+}
+
 async function handleExamine(
   input: ReviseSprintReviewInput,
   scope: EntityScope,
@@ -160,11 +238,15 @@ async function handleExamine(
     : await searchReviewIssue(scope, sprintNumber);
   const issue = await findReviewIssue(scope, code, title);
 
-  const output = {
+  const parsed = parseReviewBody(issue.body);
+
+  const output: Record<string, unknown> = {
     sprintNumber,
     reviewTitle: title,
     issueNumber: Number(code),
     body: issue.body,
+    sprintGoal: parsed.sprintGoal,
+    pbis: parsed.pbis,
   };
 
   console.log(JSON.stringify(output, null, 2));

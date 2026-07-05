@@ -3,7 +3,7 @@ import { parseArgs } from "@std/cli/parse-args";
 import { identify, sprintId } from "../../../../../core/domain/types.ts";
 import type { EntityScope } from "../../../../../core/domain/types.ts";
 import { reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
-import type { ReviewPlanInput } from "../../../../../core/domain/review-usecase.ts";
+import type { ReviewPlanInput, ReviewPlanPbi } from "../../../../../core/domain/review-usecase.ts";
 import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
 import { ConfigGatewayAdapter } from "../../../../../core/gateway/config-gateway-adapter.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
@@ -13,25 +13,8 @@ interface PlanSprintReviewInput {
   scope?: EntityScope;
   sprintNumber: number;
   reviewTitle?: string;
+  sprintGoal?: string;
   pbis: ReviewPlanPbi[];
-}
-
-interface ReviewPlanPbi {
-  number: number;
-  title: string;
-  wps: ReviewPlanWp[];
-}
-
-interface ReviewPlanWp {
-  number: number;
-  title: string;
-  acs: ReviewPlanAc[];
-}
-
-interface ReviewPlanAc {
-  number: string;
-  description: string;
-  verificationPlan?: string;
 }
 
 function validateInput(input: PlanSprintReviewInput): void {
@@ -42,8 +25,11 @@ function validateInput(input: PlanSprintReviewInput): void {
   }
 }
 
-function toPlanInput(input: PlanSprintReviewInput): ReviewPlanInput {
-  return { pbis: input.pbis };
+export function toPlanInput(input: PlanSprintReviewInput): ReviewPlanInput {
+  return {
+    sprintGoal: input.sprintGoal,
+    pbis: input.pbis,
+  };
 }
 
 async function resolveScope(): Promise<EntityScope> {

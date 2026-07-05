@@ -1,7 +1,12 @@
 import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
-import type { ReviewIdentifier } from "../../../../../core/domain/types.ts";
-import { validateCommonInput, validateReviseInput } from "./revise_sprint_review.ts";
+import type { ReviewPlanInput } from "../../../../../core/domain/review-usecase.ts";
+import type { ReviewIdentifier, SprintIdentifier } from "../../../../../core/domain/types.ts";
+import {
+  parseReviewBody,
+  validateCommonInput,
+  validateReviseInput,
+} from "./revise_sprint_review.ts";
 
 /**
  * テスト用の ReviewIdentifier を生成する。
@@ -216,4 +221,181 @@ Deno.test("revise-sprint-review - validateReviseInput should accept valid input"
       acJudgments: [{ number: "2", description: "追加AC" }],
     }],
   });
+});
+
+/**
+ * parseReviewBody: sprint goal / PBI/WP summary を含む本文から正しく抽出できる。
+ */
+Deno.test("revise-sprint-review - parseReviewBody should extract sprintGoal and summaries", () => {
+  const body = [
+    "## 凡例",
+    "",
+    "- ❔ 未確認",
+    "",
+    "## スプリントゴール",
+    "",
+    "Sprint 17 の目標",
+    "",
+    "## 概要",
+    "",
+    "- **対象スプリント**: Sprint 17",
+    "",
+    "## 総合判定",
+    "",
+    "❔",
+    "",
+    "## スプリント開始時検証計画",
+    "",
+    "### 📦 PBI: [1] PBIタイトル",
+    "",
+    "- **概要**: PBIの概要です",
+    "",
+    "#### WP_1: WP1タイトル",
+    "",
+    "- **概要**: WP1の概要です",
+    "",
+    "- ❔ AC_1: AC1の説明",
+    "",
+    "#### WP_2: WP2タイトル",
+    "",
+    "- ❔ AC_2: AC2の説明",
+    "",
+    "## スプリント中追加検証計画",
+    "",
+  ].join("\n");
+
+  const parsed = parseReviewBody(body);
+  assertEquals(parsed.sprintGoal, "Sprint 17 の目標");
+  assertEquals(parsed.pbis.length, 1);
+  assertEquals(parsed.pbis[0].number, 1);
+  assertEquals(parsed.pbis[0].title, "PBIタイトル");
+  assertEquals(parsed.pbis[0].summary, "PBIの概要です");
+  assertEquals(parsed.pbis[0].wps.length, 2);
+  assertEquals(parsed.pbis[0].wps[0].title, "WP1タイトル");
+  assertEquals(parsed.pbis[0].wps[0].summary, "WP1の概要です");
+  assertEquals(parsed.pbis[0].wps[1].title, "WP2タイトル");
+  assertEquals(parsed.pbis[0].wps[1].summary, undefined);
+});
+
+/**
+ * parseReviewBody: 概要やゴールがない本文でも安全に最低限の構造を返す。
+ */
+Deno.test("revise-sprint-review - parseReviewBody should handle body without summaries", () => {
+  const body = [
+    "## 凡例",
+    "",
+    "## 概要",
+    "",
+    "- **対象スプリント**: Sprint 17",
+    "",
+    "## スプリント開始時検証計画",
+    "",
+    "### 📦 PBI: [1] タイトル",
+    "",
+    "#### WP_1: WPタイトル",
+    "",
+    "- ❔ AC_1: AC1",
+    "",
+  ].join("\n");
+
+  const parsed = parseReviewBody(body);
+  assertEquals(parsed.sprintGoal, undefined);
+  assertEquals(parsed.pbis.length, 1);
+  assertEquals(parsed.pbis[0].summary, undefined);
+  assertEquals(parsed.pbis[0].wps[0].summary, undefined);
+});
+
+/**
+ * parseReviewBody: undefined / 空文字でもエラーにならない。
+ */
+Deno.test("revise-sprint-review - parseReviewBody should handle undefined body", () => {
+  const parsed = parseReviewBody(undefined);
+  assertEquals(parsed.sprintGoal, undefined);
+  assertEquals(parsed.pbis.length, 0);
+});
+
+/**
+ * round-trip: formatPlanBody の出力を parseReviewBody で正しく再パースできる。
+ */
+Deno.test("revise-sprint-review - round-trip formatPlanBody -> parseReviewBody", () => {
+  const identifier: ReviewIdentifier = {
+    scope: { owner: "my-org", repository: "my-repo" },
+    title: { value: "Sprint 17 Review" },
+    id: "review-1",
+    code: "42",
+    describe: () => ({ summary: "describe", steps: [] }),
+  };
+  const sprint: SprintIdentifier = {
+    scope: { owner: "my-org", repository: "my-repo" },
+    title: { value: "Sprint 17" },
+    id: "sprint-17",
+    code: "17",
+    describe: () => ({ summary: "describe", steps: [] }),
+  };
+  const planInput: ReviewPlanInput = {
+    sprintGoal: "Sprint 17 の目標",
+    pbis: [{
+      number: 1,
+      title: "PBIタイトル",
+      summary: "PBIの概要",
+      wps: [{
+        number: 1,
+        title: "WPタイトル",
+        summary: "WPの概要",
+        acs: [{ number: "1", description: "AC1" }],
+      }],
+    }],
+  };
+
+  const plan = reviewUseCase.plan(identifier, sprint, planInput);
+  const body = plan.steps[0].params.body as string;
+
+  const parsed = parseReviewBody(body);
+  assertEquals(parsed.sprintGoal, "Sprint 17 の目標");
+  assertEquals(parsed.pbis.length, 1);
+  assertEquals(parsed.pbis[0].summary, "PBIの概要");
+  assertEquals(parsed.pbis[0].wps[0].summary, "WPの概要");
+  assertEquals(parsed.pbis[0].number, 1);
+  assertEquals(parsed.pbis[0].title, "PBIタイトル");
+  assertEquals(parsed.pbis[0].wps[0].number, "1");
+  assertEquals(parsed.pbis[0].wps[0].title, "WPタイトル");
+});
+
+/**
+ * round-trip: 概要なしの場合も往復が成立する。
+ */
+Deno.test("revise-sprint-review - round-trip without summaries", () => {
+  const identifier: ReviewIdentifier = {
+    scope: { owner: "my-org", repository: "my-repo" },
+    title: { value: "Sprint 17 Review" },
+    id: "review-1",
+    code: "42",
+    describe: () => ({ summary: "describe", steps: [] }),
+  };
+  const sprint: SprintIdentifier = {
+    scope: { owner: "my-org", repository: "my-repo" },
+    title: { value: "Sprint 17" },
+    id: "sprint-17",
+    code: "17",
+    describe: () => ({ summary: "describe", steps: [] }),
+  };
+  const planInput: ReviewPlanInput = {
+    pbis: [{
+      number: 1,
+      title: "PBIタイトル",
+      wps: [{
+        number: 1,
+        title: "WPタイトル",
+        acs: [{ number: "1", description: "AC1" }],
+      }],
+    }],
+  };
+
+  const plan = reviewUseCase.plan(identifier, sprint, planInput);
+  const body = plan.steps[0].params.body as string;
+
+  const parsed = parseReviewBody(body);
+  assertEquals(parsed.sprintGoal, undefined);
+  assertEquals(parsed.pbis[0].summary, undefined);
+  assertEquals(parsed.pbis[0].wps[0].summary, undefined);
 });
