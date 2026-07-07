@@ -20,23 +20,16 @@ description: スプリントの終了プロセス（レビュー、アーカイ�
 
 ---
 
-## Phase 1: スプリントレビュー (Sprint Review)
-
-スプリントゴールに対する最終的な達成状況を検証し、動くプロダクトのデモ検証と成果サマリーをPOに提示します。
+## Phase 1: スプリントレビューのアーカイブ (Archive Sprint Review)
 
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
-  - `[tester.md](/.agents/rules/tester.md)` (品質検証・客観的エビデンス提示)
 - **実行するスキル**:
-  `[sprint-outcome-review](/.agents/skills/bundles/management-bundle/sprint-outcome-review/SKILL.md)`
-- **入力（前提条件）**: スプリント対象PBIが完了した最新の
-  `[product-backlog.md](/.agents/management/product-backlog.md)`。
-- **手続き**:
-  完了したPBIに対するテスト合格ログや実機動作ログ等の客観的なエビデンスを提示し、デモ可能なインクリメントの動作確認をPOに求めます。
+  `[archive-sprint-review](/.agents/skills/bundles/management-bundle/archive-sprint-review/SKILL.md)`
+- **入力（前提条件）**: 本スプリントのレビュー検証が完了済みであること。
 - **期待される結果（終了条件）**:
-  1. 「Sprint Review
-     Report」のフォーマットに沿ってゴール達成度評価およびPBI完了・未完了状況が提示されていること。
-  2. PO（ユーザー）がデモ内容および成果物を承認していること。
+  1. `archive-sprint-review` スキルが正常に終了したこと。
+  2. PO が結果を確認し、承認していること。
 
 > [!IMPORTANT]
 > 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
