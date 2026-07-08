@@ -1,12 +1,13 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify } from "../../../../../core/domain/types.ts";
+import { identify, sprintId } from "../../../../../core/domain/types.ts";
 import type {
   AcceptanceCriterias,
   AcGroup,
   ChangeReason,
   EntityScope,
   ReviewSearchCondition,
+  SprintIdentifier,
   Step,
 } from "../../../../../core/domain/types.ts";
 import { REVIEW_MARKERS, reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
@@ -14,6 +15,7 @@ import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-ada
 import { ConfigGatewayAdapter } from "../../../../../core/gateway/config-gateway-adapter.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
+import { detectCurrentSprint, sprintNumberFrom } from "../../../../../core/shared/sprint-utils.ts";
 
 interface RemovedAc {
   number: string;
@@ -76,27 +78,12 @@ async function resolveScope(): Promise<EntityScope> {
   return await config.resolveScope();
 }
 
-async function detectCurrentSprint(): Promise<number> {
-  const cmd = new Deno.Command("gh", {
-    args: ["milestone", "list", "--state", "open", "--json", "number,title", "--limit", "1"],
-  });
-  const result = await cmd.output();
-  if (!result.success) {
-    throw new Error("Failed to detect current sprint from milestones: gh command failed");
-  }
-  const milestones = JSON.parse(new TextDecoder().decode(result.stdout)) as Array<{
-    number: number;
-    title: string;
-  }>;
-  if (milestones.length === 0) {
-    throw new Error("No open milestones found. Cannot detect current sprint.");
-  }
-  return milestones[0].number;
-}
-
-async function resolveSprintNumber(input: ReviseSprintReviewInput): Promise<number> {
-  if (input.sprintNumber) return input.sprintNumber;
-  return await detectCurrentSprint();
+async function resolveSprintIdentifier(
+  input: ReviseSprintReviewInput,
+  scope: EntityScope,
+): Promise<SprintIdentifier> {
+  if (input.sprintNumber != null) return sprintId(scope, input.sprintNumber);
+  return await detectCurrentSprint(scope);
 }
 
 async function searchReviewIssue(
@@ -234,7 +221,8 @@ async function handleExamine(
 ): Promise<void> {
   validateCommonInput(input);
 
-  const sprintNumber = await resolveSprintNumber(input);
+  const sprintIdentifier = await resolveSprintIdentifier(input, scope);
+  const sprintNumber = sprintNumberFrom(sprintIdentifier);
   const { code, title } = input.code
     ? { code: input.code, title: `Sprint ${sprintNumber} Review` }
     : await searchReviewIssue(scope, sprintNumber);
@@ -287,7 +275,8 @@ async function handleRevise(
 ): Promise<void> {
   validateReviseInput(input);
 
-  const sprintNumber = await resolveSprintNumber(input);
+  const sprintIdentifier = await resolveSprintIdentifier(input, scope);
+  const sprintNumber = sprintNumberFrom(sprintIdentifier);
   const { code, title } = input.code
     ? { code: input.code, title: `Sprint ${sprintNumber} Review` }
     : await searchReviewIssue(scope, sprintNumber);

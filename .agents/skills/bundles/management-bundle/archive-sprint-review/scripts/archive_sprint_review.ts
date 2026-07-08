@@ -1,12 +1,18 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify } from "../../../../../core/domain/types.ts";
-import type { EntityScope, ReviewSearchCondition, Step } from "../../../../../core/domain/types.ts";
+import { identify, sprintId } from "../../../../../core/domain/types.ts";
+import type {
+  EntityScope,
+  ReviewSearchCondition,
+  SprintIdentifier,
+  Step,
+} from "../../../../../core/domain/types.ts";
 import { reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
 import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
 import { ConfigGatewayAdapter } from "../../../../../core/gateway/config-gateway-adapter.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
+import { detectCurrentSprint, sprintNumberFrom } from "../../../../../core/shared/sprint-utils.ts";
 
 interface ArchiveSprintReviewInput {
   scope?: EntityScope;
@@ -28,24 +34,6 @@ function validateInput(input: ArchiveSprintReviewInput): void {
 async function resolveScope(): Promise<EntityScope> {
   const config = new ConfigGatewayAdapter("", "");
   return await config.resolveScope();
-}
-
-async function detectCurrentSprint(): Promise<number> {
-  const cmd = new Deno.Command("gh", {
-    args: ["milestone", "list", "--state", "open", "--json", "number,title", "--limit", "1"],
-  });
-  const result = await cmd.output();
-  if (!result.success) {
-    throw new Error("Failed to detect current sprint from milestones: gh command failed");
-  }
-  const milestones = JSON.parse(new TextDecoder().decode(result.stdout)) as Array<{
-    number: number;
-    title: string;
-  }>;
-  if (milestones.length === 0) {
-    throw new Error("No open milestones found. Cannot detect current sprint.");
-  }
-  return milestones[0].number;
 }
 
 async function searchReviewIssue(
@@ -122,16 +110,20 @@ function parseOverallResultFromBody(body?: string): { judgment?: string; reason?
   };
 }
 
-async function resolveSprintNumber(input: ArchiveSprintReviewInput): Promise<number> {
-  if (input.sprintNumber) return input.sprintNumber;
-  return await detectCurrentSprint();
+async function resolveSprintIdentifier(
+  input: ArchiveSprintReviewInput,
+  scope: EntityScope,
+): Promise<SprintIdentifier> {
+  if (input.sprintNumber != null) return sprintId(scope, input.sprintNumber);
+  return await detectCurrentSprint(scope);
 }
 
 async function handleExamine(
   input: ArchiveSprintReviewInput,
   scope: EntityScope,
 ): Promise<void> {
-  const sprintNumber = await resolveSprintNumber(input);
+  const sprintIdentifier = await resolveSprintIdentifier(input, scope);
+  const sprintNumber = sprintNumberFrom(sprintIdentifier);
   const { code, title } = await searchReviewIssue(scope, sprintNumber);
   const issue = await findReviewIssue(scope, code, title);
 
@@ -152,7 +144,8 @@ async function handleArchive(
   scope: EntityScope,
   dryRun: boolean,
 ): Promise<void> {
-  const sprintNumber = await resolveSprintNumber(input);
+  const sprintIdentifier = await resolveSprintIdentifier(input, scope);
+  const sprintNumber = sprintNumberFrom(sprintIdentifier);
   const { code, title } = await searchReviewIssue(scope, sprintNumber);
 
   const nodeId = code;
