@@ -2,7 +2,10 @@
 name: set-product-goal
 description: プロダクトゴールを定義し、永続化する。kickoffワークフローから呼び出される。
 tags:
-  - trigger: set-product-goal, define-goal, kickoff-set-goal, kickoff-phase2
+  - trigger: set-product-goal
+  - trigger: define-goal
+  - trigger: kickoff-set-goal
+  - trigger: kickoff-phase2
   - category: management
 ---
 

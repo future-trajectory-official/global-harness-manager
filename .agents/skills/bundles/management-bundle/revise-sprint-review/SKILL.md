@@ -2,7 +2,10 @@
 name: revise-sprint-review
 description: スプリントレビュー計画と現在のバックログの差分を PO と確認しながら改訂する
 tags:
-  - trigger: revise-sprint-review, revise-review, update-review, amend-review
+  - trigger: revise-sprint-review
+  - trigger: revise-review
+  - trigger: update-review
+  - trigger: amend-review
   - category: management
 ---
 

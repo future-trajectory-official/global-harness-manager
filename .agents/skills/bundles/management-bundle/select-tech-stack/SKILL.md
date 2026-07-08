@@ -2,7 +2,9 @@
 name: select-tech-stack
 description: プロダクトゴールを達成するために最適な技術スタックを選定し、その選定理由と却下理由を文書化する。
 tags:
-  - trigger: select-tech, tech-stack, kickoff-phase3
+  - trigger: select-tech
+  - trigger: tech-stack
+  - trigger: kickoff-phase3
   - category: management
 ---
 

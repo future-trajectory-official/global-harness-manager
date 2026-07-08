@@ -2,7 +2,9 @@
 name: assess-alignment
 description: プロジェクトのビジョンと、現在行使可能な能力（ロール・スキル）を確認し、セッションの価値判断基準を整える。
 tags:
-  - trigger: assess-alignment, alignment-check, capability-check
+  - trigger: assess-alignment
+  - trigger: alignment-check
+  - trigger: capability-check
   - category: management
 ---
 

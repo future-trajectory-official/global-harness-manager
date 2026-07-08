@@ -2,7 +2,10 @@
 name: initialize-branch
 description: 新機能開発やバグ修正等のWork Package着手時に、作業用のGitブランチを準備します。
 tags:
-  - trigger: create-branch, start-work-package, start-development, switch-branch
+  - trigger: create-branch
+  - trigger: start-work-package
+  - trigger: start-development
+  - trigger: switch-branch
   - category: git
   - constraints: requires-git-repo
 ---

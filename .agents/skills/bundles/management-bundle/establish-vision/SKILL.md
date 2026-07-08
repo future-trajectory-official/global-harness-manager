@@ -2,7 +2,9 @@
 name: establish-vision
 description: リポジトリで開発するプロダクトのビジョンを掲げ、常に確認できる状態にする。
 tags:
-  - trigger: establish-vision, create-vision, define-vision
+  - trigger: establish-vision
+  - trigger: create-vision
+  - trigger: define-vision
   - category: management
 ---
 
