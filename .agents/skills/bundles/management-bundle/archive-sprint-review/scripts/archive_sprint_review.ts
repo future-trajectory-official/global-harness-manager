@@ -90,19 +90,24 @@ async function findReviewIssue(
 function parseOverallResultFromBody(body?: string): { judgment?: string; reason?: string } {
   if (!body) return {};
 
-  const judgmentMatch = body.match(/##\s*総合判定\s*\n\s*(.+)/);
-  const reasonMatch = body.match(/##\s*判定理由\s*\n\s*(.+)/);
+  const judgmentMatch = body.match(/###\s*判定結果\s*\n+\s*(.+?)(?=\n###|\n##|\n---|\Z)/s);
+  const reasonMatch = body.match(/###\s*PO意見\s*\n+\s*(.+?)(?=\n###|\n##|\n---|\Z)/s);
 
   const judgment = judgmentMatch?.[1]?.trim();
   const reason = reasonMatch?.[1]?.trim();
 
   if (!judgment) return {};
 
+  const stripped = judgment.replace(/^[✅⚠️❌➖\s]+/, "").trim();
   const judgmentMap: Record<string, string> = {
     "合格": "pass",
     "条件付き合格": "conditional",
     "不合格": "fail",
   };
+
+  if (judgmentMap[stripped]) {
+    return { judgment: judgmentMap[stripped], reason };
+  }
 
   return {
     judgment: judgmentMap[judgment] ?? judgment,
