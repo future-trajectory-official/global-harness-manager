@@ -108,7 +108,7 @@ echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bund
   "changeReason": "スプリント中の仕様変更により AC2 が不要になり、新規 WP_a の AC を追加",
   "removed": {
     "items": [
-      { "number": "2", "description": "旧ACの説明" }
+      { "pbiNumber": 1, "wpNumber": "1", "number": "2", "description": "旧ACの説明" }
     ]
   },
   "addedGroups": [
@@ -133,6 +133,8 @@ echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bund
 | `code`                                    | `sprintNumber` 未指定時 | Review Issue の番号。既知の場合はこちらを優先                                          |
 | `changeReason`                            | 必須                    | 変更の理由。空文字は不可                                                               |
 | `removed`                                 | 任意                    | 論理削除（➖）する既存 AC の一覧                                                       |
+| `removed.items[].pbiNumber`               | 推奨                    | AC が属する PBI 番号。指定しない場合は全 PBI から最初にマッチした AC を削除            |
+| `removed.items[].wpNumber`                | 推奨                    | AC が属する WP 番号。指定しない場合は全 WP から最初にマッチした AC を削除              |
 | `removed.items[].number`                  | 必須                    | 削除対象 AC の番号                                                                     |
 | `removed.items[].description`             | 必須                    | 削除対象 AC の説明（Issue 本文置換用）                                                 |
 | `addedGroups`                             | 任意                    | 「スプリント中追加検証計画」セクションに追記する AC 群                                 |

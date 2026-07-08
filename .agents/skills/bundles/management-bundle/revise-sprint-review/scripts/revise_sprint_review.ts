@@ -18,6 +18,8 @@ import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 interface RemovedAc {
   number: string;
   description: string;
+  pbiNumber?: number;
+  wpNumber?: string;
 }
 
 interface AddedAcJudgment {
@@ -312,6 +314,14 @@ async function handleRevise(
     reason,
     addedGroups,
   );
+
+  const scopedRemovals = input.removed?.items?.filter(
+    (i): i is RemovedAc & { pbiNumber: number; wpNumber: string } =>
+      i.pbiNumber != null && i.wpNumber != null,
+  );
+  if (scopedRemovals && scopedRemovals.length > 0) {
+    (plan.steps[0].params as Record<string, unknown>).removedScoped = scopedRemovals;
+  }
 
   if (dryRun) {
     console.log(JSON.stringify({ summary: plan.summary, steps: plan.steps }, null, 2));

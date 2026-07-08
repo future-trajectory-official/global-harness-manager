@@ -12,6 +12,10 @@ import type { PlanGateway } from "../domain/plan-gateway.ts";
 
 export type CommandRunner = (cmd: string, args: string[]) => Promise<ExecuteResult>;
 
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function parseJsonOutput(raw: string): unknown {
   try {
     return JSON.parse(raw);
@@ -392,6 +396,9 @@ export class PlanGatewayAdapter implements PlanGateway {
     const removed = params.removed as
       | { items?: Array<{ number: string; description: string }> }
       | undefined;
+    const removedScoped = params.removedScoped as
+      | Array<{ pbiNumber: number; wpNumber: string; number: string; description: string }>
+      | undefined;
     const addedGroups = params.addedGroups as
       | Array<
         {
@@ -404,15 +411,29 @@ export class PlanGatewayAdapter implements PlanGateway {
       >
       | undefined;
 
-    if (removed?.items) {
+    if (removedScoped?.length) {
+      for (const item of removedScoped) {
+        const acNum = String(item.number);
+        const pbiMarker = `### 📦 PBI: [${item.pbiNumber}]`;
+        const wpMarker = `#### WP_${item.wpNumber}:`;
+        const re = new RegExp(
+          `(${escapeRegex(pbiMarker)}[\\s\\S]*?${escapeRegex(wpMarker)}[\\s\\S]*?)- [❔✅⚠️❌] AC_${
+            escapeRegex(acNum)
+          }:.*`,
+        );
+        newBody = newBody.replace(re, `$1- ➖ AC_${acNum}: ${item.description}`);
+      }
+    } else if (removed?.items) {
       for (const item of removed.items) {
-        const acPattern = new RegExp(`-\\s*(❔|✅|⚠️|❌)\\s*AC_${item.number}:\\s*.*`);
-        newBody = newBody.replace(acPattern, `- ➖ AC_${item.number}: ${item.description}`);
+        const acNum = String(item.number);
+        const acPattern = new RegExp(`-\\s*[❔✅⚠️❌]\\s*AC_${escapeRegex(acNum)}:.*`);
+        newBody = newBody.replace(acPattern, `- ➖ AC_${acNum}: ${item.description}`);
       }
     }
 
     if (addedGroups && addedGroups.length > 0) {
-      const planSectionMatch = newBody.match(/^## スプリント中追加検証計画[\s\S]*?(?=^## |$)/m);
+      const planSectionMatch = newBody.match(/^## スプリント中追加検証計画[\s\S]*?(?=\n## )/m) ??
+        newBody.match(/^## スプリント中追加検証計画[\s\S]*$/m);
       const planLines: string[] = [];
       planLines.push("## スプリント中追加検証計画");
       planLines.push("");
