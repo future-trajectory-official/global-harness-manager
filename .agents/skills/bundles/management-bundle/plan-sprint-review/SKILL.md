@@ -2,7 +2,10 @@
 name: plan-sprint-review
 description: スプリントレビューの検証計画を立案し、永続化する
 tags:
-  - trigger: plan-sprint-review, plan-review, create-review, schedule-review
+  - trigger: plan-sprint-review
+  - trigger: plan-review
+  - trigger: create-review
+  - trigger: schedule-review
   - category: management
 ---
 

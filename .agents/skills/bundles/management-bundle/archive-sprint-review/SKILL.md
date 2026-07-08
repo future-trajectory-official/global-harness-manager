@@ -2,7 +2,10 @@
 name: archive-sprint-review
 description: スプリントレビューの結果確認とアーカイブ
 tags:
-  - trigger: archive-sprint-review, close-review, archive-review, finish-review
+  - trigger: archive-sprint-review
+  - trigger: close-review
+  - trigger: archive-review
+  - trigger: finish-review
   - category: management
 ---
 

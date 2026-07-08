@@ -2,7 +2,10 @@
 name: execute-sprint-review
 description: スプリントレビューの検証を実行し、結果をReview Issueに報告する
 tags:
-  - trigger: execute-sprint-review, run-review, perform-review, verify-sprint
+  - trigger: execute-sprint-review
+  - trigger: run-review
+  - trigger: perform-review
+  - trigger: verify-sprint
   - category: management
 ---
 

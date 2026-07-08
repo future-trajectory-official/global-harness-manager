@@ -2,7 +2,10 @@
 name: assess-goal-continuation
 description: プロダクトゴールの継続性を評価する。9割は確認のみで終了し、1割でピボットを実行する。sprint-startワークフローから呼び出される。
 tags:
-  - trigger: assess-goal-continuation, review-goal, pivot-goal, goal-check
+  - trigger: assess-goal-continuation
+  - trigger: review-goal
+  - trigger: pivot-goal
+  - trigger: goal-check
   - category: management
 ---
 
