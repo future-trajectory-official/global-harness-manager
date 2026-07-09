@@ -31,6 +31,7 @@ export const sprintUseCase: SprintUseCase = {
 
   end(identifier): Plan {
     assertIdDefined(identifier.id, "end a sprint");
+    assertIdDefined(identifier.code, "end a sprint");
     return {
       summary: `End sprint: ${identifier.title.value}`,
       steps: [{
@@ -47,6 +48,7 @@ export const sprintUseCase: SprintUseCase = {
   setGoal(identifier, goal): Plan {
     assertStringNonEmpty(goal.description, "GoalStatement description");
     assertIdDefined(identifier.id, "set goal for a sprint");
+    assertIdDefined(identifier.code, "set goal for a sprint");
     return {
       summary: `Set goal for sprint: ${identifier.title.value}`,
       steps: [{
@@ -63,6 +65,7 @@ export const sprintUseCase: SprintUseCase = {
 
   setDueDate(identifier, dueDate): Plan {
     assertIdDefined(identifier.id, "set due date for a sprint");
+    assertIdDefined(identifier.code, "set due date for a sprint");
     return {
       summary: `Set due date for sprint: ${identifier.title.value}`,
       steps: [{
@@ -79,6 +82,7 @@ export const sprintUseCase: SprintUseCase = {
 
   find(identifier): Plan {
     assertIdDefined(identifier.id, "find a sprint");
+    assertIdDefined(identifier.code, "find a sprint");
     return {
       summary: `Find sprint: ${identifier.title.value}`,
       steps: [{ entity: "Sprint", operation: "view", params: { itemId: identifier.code } }],

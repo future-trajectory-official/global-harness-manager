@@ -116,89 +116,11 @@ export class PlanGatewayAdapter implements PlanGateway {
     this.register("ProductGoal", "search", (_op, params) => this.handleSearchItems(params));
 
     // === Sprint (Milestone) 操作の登録 ===
-    this.register("Sprint", "create", async (_op, params) => {
-      const milestoneName = String(params.title ?? "");
-      const description = String(params.description ?? "");
-      const result = await this.runCommand("gh", [
-        "api",
-        "-X",
-        "POST",
-        `repos/${this.owner}/${this.repository}/milestones`,
-        "-f",
-        `title=${milestoneName}`,
-        "-f",
-        `description=${description}`,
-      ]);
-      if (result.code !== 0) {
-        return { operation: "create", success: false, error: result.stderr };
-      }
-      const output = parseJsonOutput(result.stdout) as { number?: number } | undefined;
-      return {
-        operation: "create",
-        success: true,
-        itemId: String(output?.number ?? ""),
-        output,
-      };
-    });
-    this.register("Sprint", "endSprint", async (_op, params) => {
-      const itemId = String(params.itemId ?? "");
-      if (!itemId) return { operation: "endSprint", success: false, error: "itemId is required" };
-      const result = await this.runCommand("gh", [
-        "api",
-        "-X",
-        "PATCH",
-        `repos/${this.owner}/${this.repository}/milestones/${itemId}`,
-        "-f",
-        "state=closed",
-      ]);
-      if (result.code !== 0) {
-        return { operation: "endSprint", success: false, error: result.stderr };
-      }
-      return { operation: "endSprint", success: true, itemId };
-    });
-    this.register("Sprint", "setGoal", async (_op, params) => {
-      const itemId = String(params.itemId ?? "");
-      if (!itemId) return { operation: "setGoal", success: false, error: "itemId is required" };
-      const description = String(params.description ?? "");
-      const result = await this.runCommand("gh", [
-        "api",
-        "-X",
-        "PATCH",
-        `repos/${this.owner}/${this.repository}/milestones/${itemId}`,
-        "-f",
-        `description=${description}`,
-      ]);
-      if (result.code !== 0) return { operation: "setGoal", success: false, error: result.stderr };
-      return { operation: "setGoal", success: true, itemId };
-    });
-    this.register("Sprint", "setDueDate", async (_op, params) => {
-      const itemId = String(params.itemId ?? "");
-      if (!itemId) return { operation: "setDueDate", success: false, error: "itemId is required" };
-      const dueDate = String(params.dueDate ?? "");
-      const result = await this.runCommand("gh", [
-        "api",
-        "-X",
-        "PATCH",
-        `repos/${this.owner}/${this.repository}/milestones/${itemId}`,
-        "-f",
-        `due_on=${dueDate}`,
-      ]);
-      if (result.code !== 0) {
-        return { operation: "setDueDate", success: false, error: result.stderr };
-      }
-      return { operation: "setDueDate", success: true, itemId };
-    });
-    this.register("Sprint", "view", async (_op, params) => {
-      const itemId = String(params.itemId ?? "");
-      if (!itemId) return { operation: "view", success: false, error: "itemId is required" };
-      const result = await this.runCommand("gh", [
-        "api",
-        `repos/${this.owner}/${this.repository}/milestones/${itemId}`,
-      ]);
-      if (result.code !== 0) return { operation: "view", success: false, error: result.stderr };
-      const output = parseJsonOutput(result.stdout) as Record<string, unknown> | undefined;
-      return { operation: "view", success: true, itemId, output };
-    });
+    this.register("Sprint", "create", (op, params) => this.#handleSprintCreate(op, params));
+    this.register("Sprint", "endSprint", (op, params) => this.#handleSprintEnd(op, params));
+    this.register("Sprint", "setGoal", (op, params) => this.#handleSprintSetGoal(op, params));
+    this.register("Sprint", "setDueDate", (op, params) => this.#handleSprintSetDueDate(op, params));
+    this.register("Sprint", "view", (op, params) => this.#handleSprintView(op, params));
   }
 
   private register(entity: EntityType, operation: StepOperation, handler: OperationHandler): void {
@@ -695,5 +617,131 @@ export class PlanGatewayAdapter implements PlanGateway {
       return { operation: "update", success: false, error: result.stderr };
     }
     return { operation: "update", success: true, itemId };
+  }
+
+  #milestoneUrl(itemId?: string): string {
+    const base = `repos/${this.owner}/${this.repository}/milestones`;
+    return itemId ? `${base}/${itemId}` : base;
+  }
+
+  async #handleSprintCreate(
+    operation: string,
+    params: Record<string, unknown>,
+  ): Promise<StepResult> {
+    const title = String(params.title ?? "");
+    const description = String(params.description ?? "");
+    if (!title) {
+      return { operation, success: false, error: "Milestone title is required" };
+    }
+    const result = await this.runCommand("gh", [
+      "api",
+      "-X",
+      "POST",
+      this.#milestoneUrl(),
+      "-f",
+      `title=${title}`,
+      "-f",
+      `description=${description}`,
+    ]);
+    if (result.code !== 0) {
+      return { operation, success: false, error: result.stderr };
+    }
+    const output = parseJsonOutput(result.stdout) as { number?: number } | undefined;
+    return {
+      operation,
+      success: true,
+      itemId: String(output?.number ?? ""),
+      output,
+    };
+  }
+
+  async #handleSprintEnd(
+    operation: string,
+    params: Record<string, unknown>,
+  ): Promise<StepResult> {
+    const itemId = String(params.itemId ?? "");
+    if (!itemId) {
+      return { operation, success: false, error: "itemId is required" };
+    }
+    const result = await this.runCommand("gh", [
+      "api",
+      "-X",
+      "PATCH",
+      this.#milestoneUrl(itemId),
+      "-f",
+      "state=closed",
+    ]);
+    if (result.code !== 0) {
+      return { operation, success: false, error: result.stderr };
+    }
+    return { operation, success: true, itemId };
+  }
+
+  async #handleSprintSetGoal(
+    operation: string,
+    params: Record<string, unknown>,
+  ): Promise<StepResult> {
+    const itemId = String(params.itemId ?? "");
+    if (!itemId) {
+      return { operation, success: false, error: "itemId is required" };
+    }
+    const description = String(params.description ?? "");
+    const result = await this.runCommand("gh", [
+      "api",
+      "-X",
+      "PATCH",
+      this.#milestoneUrl(itemId),
+      "-f",
+      `description=${description}`,
+    ]);
+    if (result.code !== 0) {
+      return { operation, success: false, error: result.stderr };
+    }
+    return { operation, success: true, itemId };
+  }
+
+  async #handleSprintSetDueDate(
+    operation: string,
+    params: Record<string, unknown>,
+  ): Promise<StepResult> {
+    const itemId = String(params.itemId ?? "");
+    if (!itemId) {
+      return { operation, success: false, error: "itemId is required" };
+    }
+    const dueDate = String(params.dueDate ?? "");
+    if (!dueDate) {
+      return { operation, success: false, error: "dueDate is required" };
+    }
+    const result = await this.runCommand("gh", [
+      "api",
+      "-X",
+      "PATCH",
+      this.#milestoneUrl(itemId),
+      "-f",
+      `due_on=${dueDate}`,
+    ]);
+    if (result.code !== 0) {
+      return { operation, success: false, error: result.stderr };
+    }
+    return { operation, success: true, itemId };
+  }
+
+  async #handleSprintView(
+    operation: string,
+    params: Record<string, unknown>,
+  ): Promise<StepResult> {
+    const itemId = String(params.itemId ?? "");
+    if (!itemId) {
+      return { operation, success: false, error: "itemId is required" };
+    }
+    const result = await this.runCommand("gh", [
+      "api",
+      this.#milestoneUrl(itemId),
+    ]);
+    if (result.code !== 0) {
+      return { operation, success: false, error: result.stderr };
+    }
+    const output = parseJsonOutput(result.stdout) as Record<string, unknown> | undefined;
+    return { operation, success: true, itemId, output };
   }
 }

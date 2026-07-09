@@ -6,7 +6,7 @@ import { sprintUseCase } from "./sprint-usecase.ts";
 const scope = { owner: "my-org", repository: "my-repo" };
 
 function makeId(): SprintIdentifier {
-  return sprintId(scope, 16, "sprint-16");
+  return sprintId(scope, 16, "sprint-16", "16");
 }
 
 function makeGoal(description = "Complete Domain layer implementation"): GoalStatement {

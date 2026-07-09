@@ -936,6 +936,146 @@ Deno.test("ProductGoal - should return error for unknown operation", async () =>
   assertStringIncludes(result.stepResults[0].error ?? "", "No handler registered");
 });
 
+// ======== Sprint Additional Tests (Review Findings) ========
+
+/**
+ * Sprint create - 空titleでエラーを返すことを検証する。
+ */
+Deno.test("Sprint create - should fail without title", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "start sprint",
+    steps: [
+      { entity: "Sprint", operation: "create", params: { title: "", description: "desc" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "title is required");
+});
+
+/**
+ * Sprint create - gh APIエラーレスポンスを正しく伝播することを検証する。
+ */
+Deno.test("Sprint create - should propagate gh api error", async () => {
+  const errorRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({ code: 1, stdout: "", stderr: "HTTP 422: Unprocessable Entity" });
+  };
+  const adapter = makeAdapter(errorRunner);
+  const plan: Plan = {
+    summary: "start sprint",
+    steps: [
+      {
+        entity: "Sprint",
+        operation: "create",
+        params: { title: "Sprint 18", description: "Sprint 18" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "HTTP 422");
+});
+
+/**
+ * Sprint create - レスポンスからitemIdが正しく抽出されることを検証する。
+ */
+Deno.test("Sprint create - should extract itemId from response", async () => {
+  const outputRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ number: 42, title: "Sprint 18" }),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(outputRunner);
+  const plan: Plan = {
+    summary: "start sprint",
+    steps: [
+      {
+        entity: "Sprint",
+        operation: "create",
+        params: { title: "Sprint 18", description: "Sprint 18" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "42");
+});
+
+/**
+ * Sprint setGoal - itemId 未指定でエラーを返すことを検証する。
+ */
+Deno.test("Sprint setGoal - should fail without itemId", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "set sprint goal",
+    steps: [
+      { entity: "Sprint", operation: "setGoal", params: { description: "goal" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+/**
+ * Sprint setDueDate - itemId 未指定でエラーを返すことを検証する。
+ */
+Deno.test("Sprint setDueDate - should fail without itemId", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "set sprint due date",
+    steps: [
+      { entity: "Sprint", operation: "setDueDate", params: { dueDate: "2026-07-20T00:00:00Z" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+/**
+ * Sprint setDueDate - dueDate 未指定でエラーを返すことを検証する。
+ */
+Deno.test("Sprint setDueDate - should fail without dueDate", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "set sprint due date",
+    steps: [
+      { entity: "Sprint", operation: "setDueDate", params: { itemId: "5" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "dueDate is required");
+});
+
+/**
+ * Sprint endSprint - gh APIエラーを正しく伝播することを検証する。
+ */
+Deno.test("Sprint endSprint - should propagate gh api error", async () => {
+  const errorRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({ code: 1, stdout: "", stderr: "HTTP 404: Not Found" });
+  };
+  const adapter = makeAdapter(errorRunner);
+  const plan: Plan = {
+    summary: "end sprint",
+    steps: [
+      { entity: "Sprint", operation: "endSprint", params: { itemId: "999", title: "Sprint 18" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "HTTP 404");
+});
+
 // ======== Sprint (Milestone) Operation Tests ========
 
 /**
