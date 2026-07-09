@@ -955,6 +955,78 @@ Deno.test("Sprint create - should fail without title", async () => {
   assertStringIncludes(result.stepResults[0].error ?? "", "title is required");
 });
 
+// ======== Sprint search (findLatestOpen) Tests ========
+
+/**
+ * Sprint search - gh api milestones?state=open が呼ばれ、最新マイルストーンのitemIdが返ることを検証する。
+ */
+Deno.test("Sprint search - should call gh api milestones and return latest itemId", async () => {
+  const milestones = [
+    { number: 17, title: "Sprint 18", state: "open" },
+    { number: 15, title: "Sprint 17", state: "open" },
+  ];
+  const adapter = makeAdapter(fixedRunner(JSON.stringify(milestones)));
+  const plan: Plan = {
+    summary: "find latest sprint",
+    steps: [
+      { entity: "Sprint", operation: "search", params: { state: "open" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "17");
+});
+
+/**
+ * Sprint search - 空リストの場合にエラーを返すことを検証する。
+ */
+Deno.test("Sprint search - should fail when no milestones found", async () => {
+  const adapter = makeAdapter(fixedRunner("[]"));
+  const plan: Plan = {
+    summary: "find latest sprint",
+    steps: [
+      { entity: "Sprint", operation: "search", params: { state: "open" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "No open milestones found");
+});
+
+/**
+ * Sprint search + view - itemId連鎖でsearch結果がviewに継承されることを検証する。
+ */
+Deno.test("Sprint search+view - should chain itemId from search to view", async () => {
+  const milestones = [{ number: 17, title: "Sprint 18" }];
+  const milestoneDetail = { number: 17, title: "Sprint 18", state: "open", description: "test" };
+  let callCount = 0;
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({ code: 0, stdout: JSON.stringify(milestones), stderr: "" });
+    }
+    return Promise.resolve({ code: 0, stdout: JSON.stringify(milestoneDetail), stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "find latest open sprint",
+    steps: [
+      { entity: "Sprint", operation: "search", params: { state: "open" } },
+      { entity: "Sprint", operation: "view", params: {} },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 2);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "17");
+  assertEquals(result.stepResults[1].success, true);
+  assertEquals(result.stepResults[1].itemId, "17");
+  const output = result.stepResults[1].output as { title?: string };
+  assertEquals(output?.title, "Sprint 18");
+  assertEquals(callCount, 2);
+});
+
 /**
  * Sprint create - gh APIエラーレスポンスを正しく伝播することを検証する。
  */

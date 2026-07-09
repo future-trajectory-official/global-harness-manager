@@ -12,6 +12,8 @@ export interface SprintUseCase {
   setGoal(identifier: SprintIdentifier, goal: GoalStatement): Plan;
   setDueDate(identifier: SprintIdentifier, dueDate: Date): Plan;
   find(identifier: SprintIdentifier): Plan;
+  /** 引数なし: 最新のオープンマイルストーンを検索してviewするPlanを返す */
+  find(): Plan;
 }
 
 export const sprintUseCase: SprintUseCase = {
@@ -80,7 +82,16 @@ export const sprintUseCase: SprintUseCase = {
     };
   },
 
-  find(identifier): Plan {
+  find(identifier?: SprintIdentifier): Plan {
+    if (!identifier) {
+      return {
+        summary: "Find latest open sprint",
+        steps: [
+          { entity: "Sprint", operation: "search", params: { state: "open" } },
+          { entity: "Sprint", operation: "view", params: {} },
+        ],
+      };
+    }
     assertIdDefined(identifier.id, "find a sprint");
     assertIdDefined(identifier.code, "find a sprint");
     return {

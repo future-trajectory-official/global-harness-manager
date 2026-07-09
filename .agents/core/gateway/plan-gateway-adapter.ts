@@ -120,7 +120,12 @@ export class PlanGatewayAdapter implements PlanGateway {
     this.register("Sprint", "endSprint", (op, params) => this.#handleSprintEnd(op, params));
     this.register("Sprint", "setGoal", (op, params) => this.#handleSprintSetGoal(op, params));
     this.register("Sprint", "setDueDate", (op, params) => this.#handleSprintSetDueDate(op, params));
-    this.register("Sprint", "view", (op, params) => this.#handleSprintView(op, params));
+    this.register("Sprint", "search", (op, params) => this.#handleSprintSearch(op, params));
+    this.register(
+      "Sprint",
+      "view",
+      (op, params, lastItemId) => this.#handleSprintView(op, params, lastItemId),
+    );
   }
 
   private register(entity: EntityType, operation: StepOperation, handler: OperationHandler): void {
@@ -726,11 +731,37 @@ export class PlanGatewayAdapter implements PlanGateway {
     return { operation, success: true, itemId };
   }
 
-  async #handleSprintView(
+  async #handleSprintSearch(
     operation: string,
     params: Record<string, unknown>,
   ): Promise<StepResult> {
-    const itemId = String(params.itemId ?? "");
+    const state = String(params.state ?? "open");
+    const result = await this.runCommand("gh", [
+      "api",
+      `repos/${this.owner}/${this.repository}/milestones?state=${state}&per_page=1&direction=desc`,
+    ]);
+    if (result.code !== 0) {
+      return { operation, success: false, error: result.stderr };
+    }
+    const milestones = parseJsonOutput(result.stdout) as Array<{ number: number }> | undefined;
+    if (!milestones || milestones.length === 0) {
+      return { operation, success: false, error: "No open milestones found" };
+    }
+    const latest = milestones[0];
+    return {
+      operation,
+      success: true,
+      itemId: String(latest.number),
+      output: milestones,
+    };
+  }
+
+  async #handleSprintView(
+    operation: string,
+    params: Record<string, unknown>,
+    lastItemId?: string,
+  ): Promise<StepResult> {
+    const itemId = String(params.itemId ?? lastItemId ?? "");
     if (!itemId) {
       return { operation, success: false, error: "itemId is required" };
     }
