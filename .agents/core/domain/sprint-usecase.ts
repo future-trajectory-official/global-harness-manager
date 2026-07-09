@@ -12,6 +12,8 @@ export interface SprintUseCase {
   setGoal(identifier: SprintIdentifier, goal: GoalStatement): Plan;
   setDueDate(identifier: SprintIdentifier, dueDate: Date): Plan;
   find(identifier: SprintIdentifier): Plan;
+  /** 引数なし: 最新のオープンマイルストーンを検索してviewするPlanを返す */
+  find(): Plan;
 }
 
 export const sprintUseCase: SprintUseCase = {
@@ -31,6 +33,7 @@ export const sprintUseCase: SprintUseCase = {
 
   end(identifier): Plan {
     assertIdDefined(identifier.id, "end a sprint");
+    assertIdDefined(identifier.code, "end a sprint");
     return {
       summary: `End sprint: ${identifier.title.value}`,
       steps: [{
@@ -47,6 +50,7 @@ export const sprintUseCase: SprintUseCase = {
   setGoal(identifier, goal): Plan {
     assertStringNonEmpty(goal.description, "GoalStatement description");
     assertIdDefined(identifier.id, "set goal for a sprint");
+    assertIdDefined(identifier.code, "set goal for a sprint");
     return {
       summary: `Set goal for sprint: ${identifier.title.value}`,
       steps: [{
@@ -63,6 +67,7 @@ export const sprintUseCase: SprintUseCase = {
 
   setDueDate(identifier, dueDate): Plan {
     assertIdDefined(identifier.id, "set due date for a sprint");
+    assertIdDefined(identifier.code, "set due date for a sprint");
     return {
       summary: `Set due date for sprint: ${identifier.title.value}`,
       steps: [{
@@ -77,8 +82,18 @@ export const sprintUseCase: SprintUseCase = {
     };
   },
 
-  find(identifier): Plan {
+  find(identifier?: SprintIdentifier): Plan {
+    if (!identifier) {
+      return {
+        summary: "Find latest open sprint",
+        steps: [
+          { entity: "Sprint", operation: "search", params: { state: "open" } },
+          { entity: "Sprint", operation: "view", params: {} },
+        ],
+      };
+    }
     assertIdDefined(identifier.id, "find a sprint");
+    assertIdDefined(identifier.code, "find a sprint");
     return {
       summary: `Find sprint: ${identifier.title.value}`,
       steps: [{ entity: "Sprint", operation: "view", params: { itemId: identifier.code } }],
