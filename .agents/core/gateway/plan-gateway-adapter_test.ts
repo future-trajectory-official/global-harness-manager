@@ -935,3 +935,176 @@ Deno.test("ProductGoal - should return error for unknown operation", async () =>
   assertEquals(result.stepResults[0].success, false);
   assertStringIncludes(result.stepResults[0].error ?? "", "No handler registered");
 });
+
+// ======== Sprint (Milestone) Operation Tests ========
+
+/**
+ * Sprint create - gh api -X POST milestones が呼ばれることを検証する。
+ */
+Deno.test("Sprint create - should call gh api POST milestones", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "start sprint",
+    steps: [
+      {
+        entity: "Sprint",
+        operation: "create",
+        params: { title: "Sprint 18", description: "Sprint 18" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "api");
+  assertEquals(calls[0].args[1], "-X");
+  assertEquals(calls[0].args[2], "POST");
+  assertStringIncludes(calls[0].args.join(" "), "/milestones");
+  assertStringIncludes(calls[0].args.join(" "), "-f title=Sprint 18");
+});
+
+/**
+ * Sprint endSprint - gh api -X PATCH milestones/:number with state=closed が呼ばれることを検証する。
+ */
+Deno.test("Sprint endSprint - should call gh api PATCH milestones with state=closed", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "end sprint",
+    steps: [
+      {
+        entity: "Sprint",
+        operation: "endSprint",
+        params: { itemId: "5", title: "Sprint 18" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "api");
+  assertEquals(calls[0].args[1], "-X");
+  assertEquals(calls[0].args[2], "PATCH");
+  assertStringIncludes(calls[0].args.join(" "), "/milestones/5");
+  assertStringIncludes(calls[0].args.join(" "), "-f state=closed");
+});
+
+/**
+ * Sprint endSprint - itemId 未指定でエラーを返すことを検証する。
+ */
+Deno.test("Sprint endSprint - should fail without itemId", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "end sprint",
+    steps: [
+      { entity: "Sprint", operation: "endSprint", params: {} },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+/**
+ * Sprint setGoal - gh api -X PATCH milestones/:number with description が呼ばれることを検証する。
+ */
+Deno.test("Sprint setGoal - should call gh api PATCH milestones with description", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "set sprint goal",
+    steps: [
+      {
+        entity: "Sprint",
+        operation: "setGoal",
+        params: { itemId: "5", title: "Sprint 18", description: "Complete all PBIs" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "api");
+  assertStringIncludes(calls[0].args.join(" "), "/milestones/5");
+  assertStringIncludes(calls[0].args.join(" "), "-f description=Complete all PBIs");
+});
+
+/**
+ * Sprint setDueDate - gh api -X PATCH milestones/:number with due_on が呼ばれることを検証する。
+ */
+Deno.test("Sprint setDueDate - should call gh api PATCH milestones with due_on", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "set sprint due date",
+    steps: [
+      {
+        entity: "Sprint",
+        operation: "setDueDate",
+        params: { itemId: "5", title: "Sprint 18", dueDate: "2026-07-20T00:00:00Z" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "api");
+  assertStringIncludes(calls[0].args.join(" "), "/milestones/5");
+  assertStringIncludes(calls[0].args.join(" "), "-f due_on=2026-07-20T00:00:00Z");
+});
+
+/**
+ * Sprint view - gh api GET milestones/:number が呼ばれることを検証する。
+ */
+Deno.test("Sprint view - should call gh api GET milestones", async () => {
+  const expectedOutput = JSON.stringify({ number: 5, title: "Sprint 18", state: "open" });
+  const adapter = makeAdapter(fixedRunner(expectedOutput));
+  const plan: Plan = {
+    summary: "view sprint",
+    steps: [
+      { entity: "Sprint", operation: "view", params: { itemId: "5" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "5");
+  const output = result.stepResults[0].output as { number?: number };
+  assertEquals(output?.number, 5);
+});
+
+/**
+ * Sprint view - itemId 未指定でエラーを返すことを検証する。
+ */
+Deno.test("Sprint view - should fail without itemId", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "view sprint",
+    steps: [
+      { entity: "Sprint", operation: "view", params: {} },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+/**
+ * Sprint - 未登録の操作に対してエラーが返ることを検証する。
+ */
+Deno.test("Sprint - should return error for unknown operation", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "unknown op",
+    steps: [
+      { entity: "Sprint", operation: "unknownOp" as never, params: {} },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "No handler registered");
+});
