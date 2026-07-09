@@ -6,7 +6,7 @@ import { sprintUseCase } from "./sprint-usecase.ts";
 const scope = { owner: "my-org", repository: "my-repo" };
 
 function makeId(): SprintIdentifier {
-  return sprintId(scope, 16, "sprint-16");
+  return sprintId(scope, 16, "sprint-16", "16");
 }
 
 function makeGoal(description = "Complete Domain layer implementation"): GoalStatement {
@@ -88,6 +88,18 @@ Deno.test("sprintUseCase - find should throw for undefined id", () => {
     Error,
     "INVALID_INPUT",
   );
+});
+
+Deno.test("sprintUseCase - find without args should return Plan with search+view operations", () => {
+  const plan = sprintUseCase.find();
+  assertEquals(plan.summary, "Find latest open sprint");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Sprint");
+  assertEquals(plan.steps[0].operation, "search");
+  assertEquals(plan.steps[0].params.state, "open");
+  assertEquals(plan.steps[1].entity, "Sprint");
+  assertEquals(plan.steps[1].operation, "view");
+  assertEquals(plan.steps[1].params, {});
 });
 
 // ====== sprintId factory tests ======
