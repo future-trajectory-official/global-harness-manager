@@ -18,6 +18,9 @@ export interface EntityScope {
   readonly repository: string;
 }
 
+/** 未設定時のフォールバック値。Gateway層が実行時に実際の値を解決する。 */
+export const UNKNOWN_SCOPE: EntityScope = { owner: "unknown", repository: "unknown" };
+
 /**
  * Domain層のエンティティを一意に識別する。
  * id が undefined の場合は未作成（createItem が必要）。
