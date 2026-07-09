@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify, sprintId } from "../../../../../core/domain/types.ts";
+import { identify, sprintId, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
 import type {
   AcceptanceCriterias,
   AcGroup,
@@ -12,7 +12,6 @@ import type {
 } from "../../../../../core/domain/types.ts";
 import { REVIEW_MARKERS, reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
 import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
-import { ConfigGatewayAdapter } from "../../../../../core/gateway/config-gateway-adapter.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 import { detectCurrentSprint, sprintNumberFrom } from "../../../../../core/shared/sprint-utils.ts";
@@ -38,7 +37,6 @@ interface AddedGroup {
 }
 
 interface ReviseSprintReviewInput {
-  scope?: EntityScope;
   sprintNumber?: number;
   code?: string;
   changeReason?: string;
@@ -46,6 +44,7 @@ interface ReviseSprintReviewInput {
     items: RemovedAc[];
   };
   addedGroups?: AddedGroup[];
+  scope?: EntityScope;
 }
 
 export function validateCommonInput(input: ReviseSprintReviewInput): void {
@@ -71,11 +70,6 @@ export function validateReviseInput(input: ReviseSprintReviewInput): void {
   if (input.changeReason.trim() === "") {
     throw new Error("INVALID_INPUT: changeReason must not be empty");
   }
-}
-
-async function resolveScope(): Promise<EntityScope> {
-  const config = new ConfigGatewayAdapter("", "");
-  return await config.resolveScope();
 }
 
 async function resolveSprintIdentifier(
@@ -334,7 +328,7 @@ async function main(): Promise<void> {
     }
 
     const input = await readJsonFromStdin<ReviseSprintReviewInput>();
-    const scope = input.scope ?? await resolveScope();
+    const scope = input.scope ?? UNKNOWN_SCOPE;
 
     if (subcommand === "examine") {
       await handleExamine(input, scope);

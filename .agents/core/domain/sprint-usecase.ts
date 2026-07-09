@@ -1,4 +1,4 @@
-import type { Plan, SprintIdentifier } from "./types.ts";
+import type { ExecutionResult, Plan, SprintIdentifier } from "./types.ts";
 import type { GoalStatement } from "./types.ts";
 import { assertIdDefined, assertStringNonEmpty } from "./validation.ts";
 
@@ -6,19 +6,58 @@ function toMilestoneName(identifier: SprintIdentifier): string {
   return identifier.title.value;
 }
 
+export interface SprintUseCaseOptions {
+  dryRun?: boolean;
+  owner?: string;
+  repository?: string;
+}
+
+async function execute(
+  plan: Plan,
+  owner: string,
+  repository: string,
+): Promise<ExecutionResult> {
+  const { PlanGatewayAdapter } = await import("../gateway/plan-gateway-adapter.ts");
+  const gateway = new PlanGatewayAdapter(owner, repository);
+  return await gateway.execute(plan);
+}
+
+async function planOrExecute(
+  plan: Plan,
+  options?: SprintUseCaseOptions,
+): Promise<Plan | ExecutionResult> {
+  if (options?.dryRun || !options?.owner || !options?.repository) return plan;
+  return await execute(plan, options.owner, options.repository);
+}
+
 export interface SprintUseCase {
-  start(identifier: SprintIdentifier): Plan;
-  end(identifier: SprintIdentifier): Plan;
-  setGoal(identifier: SprintIdentifier, goal: GoalStatement): Plan;
-  setDueDate(identifier: SprintIdentifier, dueDate: Date): Plan;
-  find(identifier: SprintIdentifier): Plan;
-  /** 引数なし: 最新のオープンマイルストーンを検索してviewするPlanを返す */
-  find(): Plan;
+  start(
+    identifier: SprintIdentifier,
+    options?: SprintUseCaseOptions,
+  ): Promise<Plan | ExecutionResult>;
+  end(
+    identifier: SprintIdentifier,
+    options?: SprintUseCaseOptions,
+  ): Promise<Plan | ExecutionResult>;
+  setGoal(
+    identifier: SprintIdentifier,
+    goal: GoalStatement,
+    options?: SprintUseCaseOptions,
+  ): Promise<Plan | ExecutionResult>;
+  setDueDate(
+    identifier: SprintIdentifier,
+    dueDate: Date,
+    options?: SprintUseCaseOptions,
+  ): Promise<Plan | ExecutionResult>;
+  find(
+    identifier?: SprintIdentifier,
+    options?: SprintUseCaseOptions,
+  ): Promise<Plan | ExecutionResult>;
 }
 
 export const sprintUseCase: SprintUseCase = {
-  start(identifier): Plan {
-    return {
+  async start(identifier, options) {
+    return await planOrExecute({
       summary: `Start sprint: ${identifier.title.value}`,
       steps: [{
         entity: "Sprint",
@@ -28,13 +67,13 @@ export const sprintUseCase: SprintUseCase = {
           description: toMilestoneName(identifier),
         },
       }],
-    };
+    }, options);
   },
 
-  end(identifier): Plan {
+  async end(identifier, options) {
     assertIdDefined(identifier.id, "end a sprint");
     assertIdDefined(identifier.code, "end a sprint");
-    return {
+    return await planOrExecute({
       summary: `End sprint: ${identifier.title.value}`,
       steps: [{
         entity: "Sprint",
@@ -44,14 +83,14 @@ export const sprintUseCase: SprintUseCase = {
           title: toMilestoneName(identifier),
         },
       }],
-    };
+    }, options);
   },
 
-  setGoal(identifier, goal): Plan {
+  async setGoal(identifier, goal, options) {
     assertStringNonEmpty(goal.description, "GoalStatement description");
     assertIdDefined(identifier.id, "set goal for a sprint");
     assertIdDefined(identifier.code, "set goal for a sprint");
-    return {
+    return await planOrExecute({
       summary: `Set goal for sprint: ${identifier.title.value}`,
       steps: [{
         entity: "Sprint",
@@ -62,13 +101,13 @@ export const sprintUseCase: SprintUseCase = {
           description: goal.description,
         },
       }],
-    };
+    }, options);
   },
 
-  setDueDate(identifier, dueDate): Plan {
+  async setDueDate(identifier, dueDate, options) {
     assertIdDefined(identifier.id, "set due date for a sprint");
     assertIdDefined(identifier.code, "set due date for a sprint");
-    return {
+    return await planOrExecute({
       summary: `Set due date for sprint: ${identifier.title.value}`,
       steps: [{
         entity: "Sprint",
@@ -79,10 +118,10 @@ export const sprintUseCase: SprintUseCase = {
           dueDate: dueDate.toISOString(),
         },
       }],
-    };
+    }, options);
   },
 
-  find(identifier?: SprintIdentifier): Plan {
+  async find(identifier?: SprintIdentifier, options?) {
     if (!identifier) {
       return {
         summary: "Find latest open sprint",
@@ -94,9 +133,9 @@ export const sprintUseCase: SprintUseCase = {
     }
     assertIdDefined(identifier.id, "find a sprint");
     assertIdDefined(identifier.code, "find a sprint");
-    return {
+    return await planOrExecute({
       summary: `Find sprint: ${identifier.title.value}`,
       steps: [{ entity: "Sprint", operation: "view", params: { itemId: identifier.code } }],
-    };
+    }, options);
   },
 };

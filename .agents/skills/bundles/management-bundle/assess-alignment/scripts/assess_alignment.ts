@@ -1,13 +1,11 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify } from "../../../../../core/domain/types.ts";
+import { identify, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
 import type { EntityScope } from "../../../../../core/domain/types.ts";
 import { visionUseCase } from "../../../../../core/domain/vision-usecase.ts";
 import { productGoalUseCase } from "../../../../../core/domain/product-goal-usecase.ts";
 import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
-import { ConfigGatewayAdapter } from "../../../../../core/gateway/config-gateway-adapter.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
-import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
 interface RoleInfo {
   name: string;
@@ -19,10 +17,6 @@ interface SkillInfo {
   description: string;
   tags: string[];
   bundle: string;
-}
-
-interface AlignmentInput {
-  scope?: EntityScope;
 }
 
 function extractFrontmatter(text: string): Record<string, unknown> | null {
@@ -135,11 +129,6 @@ function extractVisionFromComments(comments: Array<{ body?: string }>): {
   return { targetAudience, value, differentiator, outcomes };
 }
 
-async function resolveScope(): Promise<EntityScope> {
-  const config = new ConfigGatewayAdapter("", "");
-  return await config.resolveScope();
-}
-
 async function fetchVisionFromGitHub(
   gateway: PlanGatewayAdapter,
   scope: EntityScope,
@@ -247,8 +236,7 @@ async function main(): Promise<void> {
       alias: { "dry-run": "d" },
     });
 
-    const input = await readJsonFromStdin<AlignmentInput>();
-    const scope = input.scope ?? await resolveScope();
+    const scope: EntityScope = UNKNOWN_SCOPE;
     const repoTitle = `Vision of ${scope.repository}`;
 
     const searchPlan = visionUseCase.find(identify(scope, repoTitle));

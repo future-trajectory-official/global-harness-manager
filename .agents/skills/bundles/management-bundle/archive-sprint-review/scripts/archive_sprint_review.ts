@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify, sprintId } from "../../../../../core/domain/types.ts";
+import { identify, sprintId, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
 import type {
   EntityScope,
   ReviewSearchCondition,
@@ -9,15 +9,14 @@ import type {
 } from "../../../../../core/domain/types.ts";
 import { reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
 import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
-import { ConfigGatewayAdapter } from "../../../../../core/gateway/config-gateway-adapter.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 import { detectCurrentSprint, sprintNumberFrom } from "../../../../../core/shared/sprint-utils.ts";
 
 interface ArchiveSprintReviewInput {
-  scope?: EntityScope;
   sprintNumber?: number;
   code?: string;
+  scope?: EntityScope;
 }
 
 function validateInput(input: ArchiveSprintReviewInput): void {
@@ -29,11 +28,6 @@ function validateInput(input: ArchiveSprintReviewInput): void {
   if (input.code != null && typeof input.code !== "string") {
     throw new Error("INVALID_INPUT: code must be a string");
   }
-}
-
-async function resolveScope(): Promise<EntityScope> {
-  const config = new ConfigGatewayAdapter("", "");
-  return await config.resolveScope();
 }
 
 async function searchReviewIssue(
@@ -182,7 +176,7 @@ async function main(): Promise<void> {
     const input = await readJsonFromStdin<ArchiveSprintReviewInput>();
     validateInput(input);
 
-    const scope = input.scope ?? await resolveScope();
+    const scope = input.scope ?? UNKNOWN_SCOPE;
 
     if (subcommand === "examine") {
       await handleExamine(input, scope);
