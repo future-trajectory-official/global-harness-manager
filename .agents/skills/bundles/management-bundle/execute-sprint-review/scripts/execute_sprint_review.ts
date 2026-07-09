@@ -1,10 +1,9 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify, sprintId } from "../../../../../core/domain/types.ts";
+import { identify, sprintId, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
 import type { EntityScope, ReviewSearchCondition, Step } from "../../../../../core/domain/types.ts";
 import { reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
 import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
-import { ConfigGatewayAdapter } from "../../../../../core/gateway/config-gateway-adapter.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
@@ -23,13 +22,13 @@ interface AcGroup {
 }
 
 interface ExecuteSprintReviewInput {
-  scope?: EntityScope;
   sprintNumber: number;
   overallResult: {
     judgment: "pass" | "conditional" | "fail";
     reason: string;
   };
   acGroups: AcGroup[];
+  scope?: EntityScope;
 }
 
 export function validateInput(input: ExecuteSprintReviewInput): void {
@@ -49,11 +48,6 @@ export function validateInput(input: ExecuteSprintReviewInput): void {
   }
 }
 
-async function resolveScope(): Promise<EntityScope> {
-  const config = new ConfigGatewayAdapter("", "");
-  return await config.resolveScope();
-}
-
 async function main(): Promise<void> {
   try {
     const args = parseArgs(Deno.args, {
@@ -64,7 +58,7 @@ async function main(): Promise<void> {
     const input = await readJsonFromStdin<ExecuteSprintReviewInput>();
     validateInput(input);
 
-    const scope = input.scope ?? await resolveScope();
+    const scope = input.scope ?? UNKNOWN_SCOPE;
     const sprint = sprintId(scope, input.sprintNumber);
     const reviewTitle = `Sprint ${input.sprintNumber} Review`;
 

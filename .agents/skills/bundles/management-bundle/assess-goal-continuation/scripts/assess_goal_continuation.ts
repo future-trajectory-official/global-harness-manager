@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify } from "../../../../../core/domain/types.ts";
+import { identify, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
 import type {
   ChangeReason,
   EntityScope,
@@ -9,7 +9,6 @@ import type {
 } from "../../../../../core/domain/types.ts";
 import { productGoalUseCase } from "../../../../../core/domain/product-goal-usecase.ts";
 import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
-import { ConfigGatewayAdapter } from "../../../../../core/gateway/config-gateway-adapter.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
@@ -20,9 +19,9 @@ interface PivotInput {
 }
 
 interface AssessGoalContinuationInput {
-  scope?: EntityScope;
   title?: string;
   pivot?: PivotInput;
+  scope?: EntityScope;
 }
 
 /**
@@ -41,11 +40,6 @@ export function validateInput(input: AssessGoalContinuationInput): void {
       throw new Error("INVALID_INPUT: pivot.code is required");
     }
   }
-}
-
-async function resolveScope(): Promise<EntityScope> {
-  const config = new ConfigGatewayAdapter("", "");
-  return await config.resolveScope();
 }
 
 /**
@@ -140,7 +134,7 @@ async function main(): Promise<void> {
     const input = await readJsonFromStdin<AssessGoalContinuationInput>();
     validateInput(input);
 
-    const scope = input.scope ?? await resolveScope();
+    const scope = input.scope ?? UNKNOWN_SCOPE;
     const goalTitle = input.title ?? `Product Goal of ${scope.repository}`;
 
     if (!input.pivot) {
