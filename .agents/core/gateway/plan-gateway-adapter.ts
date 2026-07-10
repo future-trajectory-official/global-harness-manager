@@ -119,6 +119,40 @@ export class PlanGatewayAdapter implements PlanGateway {
     this.register("ProductGoal", "update", (_op, params) => this.handleUpdateItem(params));
     this.register("ProductGoal", "search", (_op, params) => this.handleSearchItems(params));
 
+    // === Epic 操作の登録 ===
+    this.register("Epic", "create", (_op, params) => this.handleCreateItem(params, "Epic"));
+    this.register(
+      "Epic",
+      "comment",
+      (_op, params, lastItemId) => this.handleAddComment(params, lastItemId),
+    );
+    this.register("Epic", "view", (_op, params) => this.handleFindItem(params));
+    this.register("Epic", "search", (_op, params) => this.handleSearchItems(params));
+    this.register("Epic", "update", (_op, params) => this.handleUpdateItem(params));
+
+    // === Feature 操作の登録 ===
+    this.register("Feature", "create", (_op, params) => this.handleCreateItem(params, "Feature"));
+    this.register(
+      "Feature",
+      "comment",
+      (_op, params, lastItemId) => this.handleAddComment(params, lastItemId),
+    );
+    this.register("Feature", "view", (_op, params) => this.handleFindItem(params));
+    this.register("Feature", "search", (_op, params) => this.handleSearchItems(params));
+    this.register("Feature", "update", async (_op, params) => {
+      const itemId = String(params.itemId ?? "");
+      if (!itemId) {
+        return { operation: "update", success: false, error: "itemId is required" };
+      }
+      if (params.parentEpic) {
+        return await this.#handleSetParent(itemId, String(params.parentEpic));
+      }
+      if (params.title || params.bodyAppend) {
+        return await this.handleUpdateItem(params);
+      }
+      return await this.handleUpdateItem(params);
+    });
+
     // === Sprint (Milestone) 操作の登録 ===
     this.register("Sprint", "create", (op, params) => this.#handleSprintCreate(op, params));
     this.register("Sprint", "endSprint", (op, params) => this.#handleSprintEnd(op, params));
@@ -864,5 +898,32 @@ export class PlanGatewayAdapter implements PlanGateway {
     }
     const output = parseJsonOutput(result.stdout) as Record<string, unknown> | undefined;
     return { operation, success: true, itemId, output };
+  }
+
+  async #handleSetParent(
+    itemId: string,
+    parentId: string,
+  ): Promise<StepResult> {
+    const viewResult = await this.runCommand(
+      "gh",
+      ["issue", "view", itemId, "--json", "body", ...this.buildRepoArg()],
+    );
+    if (viewResult.code !== 0) {
+      return { operation: "update", success: false, error: viewResult.stderr };
+    }
+    const parsed = parseJsonOutput(viewResult.stdout) as { body?: string } | undefined;
+    const currentBody = parsed?.body ?? "";
+    const parentLine = `**Parent Epic**: #${parentId}`;
+    const newBody = currentBody.includes("**Parent Epic**")
+      ? currentBody.replace(/\*\*Parent Epic\*\*:.*/, parentLine)
+      : currentBody + `\n\n${parentLine}`;
+    const editResult = await this.runCommand(
+      "gh",
+      ["issue", "edit", itemId, "--body", newBody, ...this.buildRepoArg()],
+    );
+    if (editResult.code !== 0) {
+      return { operation: "update", success: false, error: editResult.stderr };
+    }
+    return { operation: "update", success: true, itemId };
   }
 }
