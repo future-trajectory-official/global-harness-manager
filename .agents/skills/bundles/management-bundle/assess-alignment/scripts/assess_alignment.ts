@@ -136,7 +136,7 @@ async function fetchVisionFromGitHub(
 ): Promise<VisionData> {
   const searchPlan = visionUseCase.find(identify(scope, repoTitle));
   const searchResult = await gateway.execute(searchPlan);
-  const searchOutput = searchResult.stepResults[0]?.output as
+  const searchOutput = searchResult.getStep("Vision", "search")?.output as
     | Array<{ number: number }>
     | undefined;
   const visionNumber = searchOutput?.[0]?.number;
@@ -148,7 +148,9 @@ async function fetchVisionFromGitHub(
   const viewIdentifier = identify(scope, repoTitle, undefined, String(visionNumber));
   const viewPlan = visionUseCase.find(viewIdentifier);
   const viewResult = await gateway.execute(viewPlan);
-  const viewOutput = viewResult.stepResults[0]?.output as Record<string, unknown> | undefined;
+  const viewOutput = viewResult.getStep("Vision", "view")?.output as
+    | Record<string, unknown>
+    | undefined;
   if (!viewOutput) {
     console.error("Failed to fetch Vision issue details");
     Deno.exit(1);
@@ -208,7 +210,7 @@ async function fetchProductGoalFromGitHub(
     }],
   };
   const searchResult = await gateway.execute(searchPlan);
-  const searchOutput = searchResult.stepResults[0]?.output as
+  const searchOutput = searchResult.getStep("ProductGoal", "search")?.output as
     | Array<{ number: number }>
     | undefined;
   const goalNumber = searchOutput?.[0]?.number;
@@ -220,7 +222,9 @@ async function fetchProductGoalFromGitHub(
   const viewIdentifier = identify(scope, goalTitle, "pending", String(goalNumber));
   const viewPlan = productGoalUseCase.find(viewIdentifier);
   const viewResult = await gateway.execute(viewPlan);
-  const viewOutput = viewResult.stepResults[0]?.output as Record<string, unknown> | undefined;
+  const viewOutput = viewResult.getStep("ProductGoal", "view")?.output as
+    | Record<string, unknown>
+    | undefined;
   if (!viewOutput) {
     return null;
   }

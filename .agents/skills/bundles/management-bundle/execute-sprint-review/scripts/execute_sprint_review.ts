@@ -92,7 +92,7 @@ async function main(): Promise<void> {
 
     const searchPlan = reviewUseCase.search(searchCondition);
     const searchResult = await gateway.execute(searchPlan);
-    const searchOutput = searchResult.stepResults[0]?.output as
+    const searchOutput = searchResult.getStep("Review", "search")?.output as
       | Array<{ number: number; title: string }>
       | undefined;
 
@@ -108,7 +108,7 @@ async function main(): Promise<void> {
     const tempIdentifier = identify(scope, reviewTitle, "pending", String(targetNumber));
     const findPlan = reviewUseCase.find(tempIdentifier);
     const findResult = await gateway.execute(findPlan);
-    const findOutput = findResult.stepResults[0]?.output as
+    const findOutput = findResult.getStep("Review", "view")?.output as
       | { id?: string; number?: number }
       | undefined;
 

@@ -60,7 +60,7 @@ async function findProductGoal(
     }],
   };
   const searchResult = await gateway.execute(searchPlan);
-  const searchOutput = searchResult.stepResults[0]?.output as
+  const searchOutput = searchResult.getStep("ProductGoal", "search")?.output as
     | Array<{ number: number }>
     | undefined;
   const goalNumber = searchOutput?.[0]?.number;
@@ -77,7 +77,7 @@ async function findProductGoal(
   );
   const viewPlan = productGoalUseCase.find(tempIdentifier);
   const viewResult = await gateway.execute(viewPlan);
-  const viewOutput = viewResult.stepResults[0]?.output as
+  const viewOutput = viewResult.getStep("ProductGoal", "view")?.output as
     | Record<string, unknown>
     | undefined;
   if (!viewOutput) {
@@ -106,7 +106,7 @@ async function pivotProductGoal(
   );
   const viewPlan = productGoalUseCase.find(tempIdentifier);
   const viewResult = await gateway.execute(viewPlan);
-  const viewOutput = viewResult.stepResults[0]?.output as
+  const viewOutput = viewResult.getStep("ProductGoal", "view")?.output as
     | { id?: string; number?: number }
     | undefined;
   const nodeId = viewOutput?.id ?? pivot.code;

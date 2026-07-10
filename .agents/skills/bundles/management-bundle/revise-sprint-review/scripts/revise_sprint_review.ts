@@ -99,7 +99,7 @@ async function searchReviewIssue(
   const gateway = new PlanGatewayAdapter();
   const searchPlan = reviewUseCase.search(searchCondition);
   const searchResult = await gateway.execute(searchPlan);
-  const searchOutput = searchResult.stepResults[0]?.output as
+  const searchOutput = searchResult.getStep("Review", "search")?.output as
     | Array<{ number: number; title: string }>
     | undefined;
 
@@ -124,7 +124,7 @@ async function findReviewIssue(
   const gateway = new PlanGatewayAdapter();
   const findPlan = reviewUseCase.find(tempIdentifier);
   const findResult = await gateway.execute(findPlan);
-  const findOutput = findResult.stepResults[0]?.output as
+  const findOutput = findResult.getStep("Review", "view")?.output as
     | { body?: string }
     | undefined;
 
@@ -279,7 +279,7 @@ async function handleRevise(
   const findPlan = reviewUseCase.find(tempIdentifier);
   const gateway = new PlanGatewayAdapter();
   const findResult = await gateway.execute(findPlan);
-  const findOutput = findResult.stepResults[0]?.output as
+  const findOutput = findResult.getStep("Review", "view")?.output as
     | { id?: string; number?: number }
     | undefined;
 
