@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { sprintId, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
+import { sprintId } from "../../../../../core/domain/types.ts";
 import type { EntityScope, Plan } from "../../../../../core/domain/types.ts";
 import { sprintUseCase } from "../../../../../core/domain/sprint-usecase.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
@@ -22,23 +22,15 @@ async function main(): Promise<void> {
     });
 
     const input = await readJsonFromStdin<BeginSprintInput>();
-    const scope = input.scope ?? UNKNOWN_SCOPE;
+    const scope = input.scope ?? { owner: "unknown", repository: "unknown" };
 
     const identifier = input.goal
       ? sprintId(scope, input.sprintNumber, input.milestoneNodeId, input.milestoneNumber)
       : sprintId(scope, input.sprintNumber);
 
     const result = input.goal
-      ? await sprintUseCase.setGoal(identifier, { description: input.goal }, {
-        dryRun: args["dry-run"],
-        owner: scope.owner,
-        repository: scope.repository,
-      })
-      : await sprintUseCase.start(identifier, {
-        dryRun: args["dry-run"],
-        owner: scope.owner,
-        repository: scope.repository,
-      });
+      ? sprintUseCase.setGoal(identifier, { description: input.goal })
+      : sprintUseCase.start(identifier);
 
     if (args["dry-run"]) {
       console.log(

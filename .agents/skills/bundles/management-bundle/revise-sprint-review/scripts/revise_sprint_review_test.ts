@@ -43,10 +43,12 @@ Deno.test("revise-sprint-review - revise should return Plan with revise step", (
   );
 
   assertEquals(plan.summary, "Revise review: Sprint 15 Review");
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].entity, "Review");
-  assertEquals(plan.steps[0].operation, "revise");
-  assertEquals(plan.steps[0].params.itemId, "42");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].entity, "Review");
+  assertEquals(plan.steps[1].operation, "revise");
+  assertEquals(plan.steps[1].params.itemId, "42");
 });
 
 /**
@@ -69,7 +71,7 @@ Deno.test("revise-sprint-review - revise params should include removed and added
     addedGroups,
   );
 
-  const params = plan.steps[0].params;
+  const params = plan.steps[1].params;
   assertEquals(params.removed, removed);
   assertEquals(params.addedGroups, addedGroups);
 });
@@ -348,7 +350,7 @@ Deno.test("revise-sprint-review - round-trip formatPlanBody -> parseReviewBody",
   };
 
   const plan = reviewUseCase.plan(identifier, sprint, planInput);
-  const body = plan.steps[0].params.body as string;
+  const body = plan.steps[1].params.body as string;
 
   const parsed = parseReviewBody(body);
   assertEquals(parsed.sprintGoal, "Sprint 17 の目標");
@@ -392,7 +394,7 @@ Deno.test("revise-sprint-review - round-trip without summaries", () => {
   };
 
   const plan = reviewUseCase.plan(identifier, sprint, planInput);
-  const body = plan.steps[0].params.body as string;
+  const body = plan.steps[1].params.body as string;
 
   const parsed = parseReviewBody(body);
   assertEquals(parsed.sprintGoal, undefined);

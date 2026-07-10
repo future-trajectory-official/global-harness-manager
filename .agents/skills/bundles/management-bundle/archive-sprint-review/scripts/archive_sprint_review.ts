@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify, sprintId, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
+import { identify, sprintId } from "../../../../../core/domain/types.ts";
 import type {
   EntityScope,
   ReviewSearchCondition,
@@ -31,7 +31,7 @@ function validateInput(input: ArchiveSprintReviewInput): void {
 }
 
 async function searchReviewIssue(
-  scope: EntityScope,
+  _scope: EntityScope,
   sprintNumber: number,
 ): Promise<{ code: string; title: string }> {
   const searchCondition: ReviewSearchCondition = {
@@ -46,7 +46,7 @@ async function searchReviewIssue(
     }),
   };
 
-  const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
+  const gateway = new PlanGatewayAdapter();
   const searchPlan = reviewUseCase.search(searchCondition);
   const searchResult = await gateway.execute(searchPlan);
   const searchOutput = searchResult.stepResults[0]?.output as
@@ -71,7 +71,7 @@ async function findReviewIssue(
 ): Promise<{ overallResult?: { judgment: string; reason: string }; body?: string }> {
   const tempIdentifier = identify(scope, title, "pending", code);
 
-  const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
+  const gateway = new PlanGatewayAdapter();
   const findPlan = reviewUseCase.find(tempIdentifier);
   const findResult = await gateway.execute(findPlan);
   const findOutput = findResult.stepResults[0]?.output as
@@ -156,7 +156,7 @@ async function handleArchive(
     return;
   }
 
-  const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
+  const gateway = new PlanGatewayAdapter();
   const result = await gateway.execute(plan);
   console.log(JSON.stringify(result, null, 2));
 }
@@ -176,7 +176,7 @@ async function main(): Promise<void> {
     const input = await readJsonFromStdin<ArchiveSprintReviewInput>();
     validateInput(input);
 
-    const scope = input.scope ?? UNKNOWN_SCOPE;
+    const scope = input.scope ?? { owner: "unknown", repository: "unknown" };
 
     if (subcommand === "examine") {
       await handleExamine(input, scope);

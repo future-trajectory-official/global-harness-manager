@@ -31,13 +31,15 @@ Deno.test("establish-vision: establish が正しい Plan を生成する", () =>
   const plan = visionUseCase.establish(identifier, makeStatement(), makeOutcomes());
 
   assertEquals(plan.summary, "Establish vision: Test Vision");
-  assertEquals(plan.steps.length, 3);
-  assertEquals(plan.steps[0].operation, "search");
-  assertEquals(plan.steps[1].entity, "Vision");
-  assertEquals(plan.steps[1].operation, "create");
-  assertEquals(plan.steps[1].params.title, "Test Vision");
+  assertEquals(plan.steps.length, 4);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "search");
   assertEquals(plan.steps[2].entity, "Vision");
-  assertEquals(plan.steps[2].operation, "comment");
+  assertEquals(plan.steps[2].operation, "create");
+  assertEquals(plan.steps[2].params.title, "Test Vision");
+  assertEquals(plan.steps[3].entity, "Vision");
+  assertEquals(plan.steps[3].operation, "comment");
 });
 
 /**
@@ -51,10 +53,12 @@ Deno.test("establish-vision: dry-run モードは Plan を実行せず表示す�
 
   const dryRunOutput = { summary: plan.summary, steps: plan.steps };
   assertEquals(dryRunOutput.summary, "Establish vision: Test Vision");
-  assertEquals(dryRunOutput.steps.length, 3);
-  assertEquals(dryRunOutput.steps[0].operation, "search");
-  assertEquals(dryRunOutput.steps[1].operation, "create");
-  assertEquals(dryRunOutput.steps[2].operation, "comment");
+  assertEquals(dryRunOutput.steps.length, 4);
+  assertEquals(dryRunOutput.steps[0].entity, "Scope");
+  assertEquals(dryRunOutput.steps[0].operation, "resolve");
+  assertEquals(dryRunOutput.steps[1].operation, "search");
+  assertEquals(dryRunOutput.steps[2].operation, "create");
+  assertEquals(dryRunOutput.steps[3].operation, "comment");
 });
 
 /**

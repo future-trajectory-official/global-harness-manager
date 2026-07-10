@@ -51,17 +51,19 @@ function makePlanInput(overrides?: Partial<ReviewPlanInput>): ReviewPlanInput {
 Deno.test("plan-sprint-review - plan should return Plan with plan step", () => {
   const plan = reviewUseCase.plan(makeIdentifier(), makeSprint(), makePlanInput());
   assertEquals(plan.summary, "Plan review: Sprint 15 Review");
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].entity, "Review");
-  assertEquals(plan.steps[0].operation, "plan");
-  assertEquals(plan.steps[0].params.title, "Sprint 15 Review");
-  assertEquals(plan.steps[0].params.sprint, "Sprint 15");
-  assertStringIncludes(plan.steps[0].params.body as string, "Sprint 15");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].entity, "Review");
+  assertEquals(plan.steps[1].operation, "plan");
+  assertEquals(plan.steps[1].params.title, "Sprint 15 Review");
+  assertEquals(plan.steps[1].params.sprint, "Sprint 15");
+  assertStringIncludes(plan.steps[1].params.body as string, "Sprint 15");
 });
 
 Deno.test("plan-sprint-review - plan body should list all ACs as unchecked", () => {
   const plan = reviewUseCase.plan(makeIdentifier(), makeSprint(), makePlanInput());
-  const body = plan.steps[0].params.body as string;
+  const body = plan.steps[1].params.body as string;
   assertStringIncludes(body, "❔");
   assertStringIncludes(body, "AC_1: AC1の説明");
   assertStringIncludes(body, "AC_2: AC2の説明");
@@ -75,7 +77,7 @@ Deno.test("plan-sprint-review - plan body should list all ACs as unchecked", () 
 Deno.test("plan-sprint-review - plan should include sprint info in body", () => {
   const sprint = makeSprint({ title: { value: "Sprint 17" } });
   const plan = reviewUseCase.plan(makeIdentifier(), sprint, makePlanInput());
-  assertStringIncludes(plan.steps[0].params.body as string, "Sprint 17");
+  assertStringIncludes(plan.steps[1].params.body as string, "Sprint 17");
 });
 
 Deno.test("plan-sprint-review - plan should throw for empty review title", () => {
