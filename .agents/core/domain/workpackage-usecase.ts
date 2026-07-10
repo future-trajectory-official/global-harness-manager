@@ -1,4 +1,4 @@
-import type { Plan } from "./types.ts";
+import type { EntityScope, Plan, Step } from "./types.ts";
 import type {
   ChangeReason,
   EffortRecord,
@@ -10,6 +10,14 @@ import type {
   WorkPackageSearchCondition,
   WorkPackageStatement,
 } from "./types.ts";
+
+function scopeStep(identifier: { scope: EntityScope }): Step {
+  return {
+    entity: "Scope" as const,
+    operation: "resolve" as const,
+    params: { ...identifier.scope },
+  };
+}
 import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
 
 function formatWpBody(statement: WorkPackageStatement): string {
@@ -174,6 +182,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Define WP: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "WorkPackage",
           operation: "define",
@@ -202,6 +211,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Commit WP ${identifier.title.value} to ${sprint.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "WorkPackage",
           operation: "commit",
@@ -236,6 +246,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Revise WP: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "WorkPackage",
           operation: "update",
@@ -263,6 +274,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Start WP: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "WorkPackage",
           operation: "start",
@@ -290,6 +302,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Complete WP: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "WorkPackage",
           operation: "complete",
@@ -317,6 +330,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     return {
       summary: `Archive WP: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "WorkPackage",
           operation: "archive",
@@ -344,7 +358,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     assertIdDefined(pbi.id, "assign a WP to a PBI without id");
     return {
       summary: `Assign WP ${identifier.title.value} to PBI ${pbi.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "WorkPackage",
         operation: "assignToProductBacklogItem",
         params: {
@@ -360,7 +374,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     assertIdDefined(identifier.id, "unassign a WP from a PBI");
     return {
       summary: `Unassign WP ${identifier.title.value} from PBI`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "WorkPackage",
         operation: "unassignFromProductBacklogItem",
         params: {
@@ -376,7 +390,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     assertIdDefined(identifier.id, "estimate initial effort for a WP");
     return {
       summary: `Estimate initial effort for WP: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "WorkPackage",
         operation: "estimateInitialEffort",
         params: {
@@ -393,7 +407,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     assertIdDefined(identifier.id, "estimate planned effort for a WP");
     return {
       summary: `Estimate planned effort for WP: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "WorkPackage",
         operation: "estimatePlannedEffort",
         params: {
@@ -410,7 +424,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     assertIdDefined(identifier.id, "record actual effort for a WP");
     return {
       summary: `Record actual effort for WP: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "WorkPackage",
         operation: "recordActualEffort",
         params: {
@@ -428,7 +442,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     assertStringNonEmpty(analysis.planningReview, "planningReview");
     return {
       summary: `Record analysis for WP: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "WorkPackage",
         operation: "recordAnalysis",
         params: {
@@ -444,7 +458,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     assertIdDefined(identifier.id, "record session metrics for a WP");
     return {
       summary: `Record session metrics for WP: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "WorkPackage",
         operation: "recordSessionMetrics",
         params: {
@@ -460,7 +474,7 @@ export const workPackageUseCase: WorkPackageUseCase = {
     assertIdDefined(identifier.id, "find a WP");
     return {
       summary: `Find WP: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "WorkPackage",
         operation: "view",
         params: {
@@ -473,7 +487,11 @@ export const workPackageUseCase: WorkPackageUseCase = {
   search(condition): Plan {
     return {
       summary: condition.describe().summary,
-      steps: condition.describe().steps,
+      steps: [{
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      }, ...condition.describe().steps],
     };
   },
 };

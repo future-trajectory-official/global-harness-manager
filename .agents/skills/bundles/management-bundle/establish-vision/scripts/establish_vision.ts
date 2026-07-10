@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
+import { identify } from "../../../../../core/domain/types.ts";
 import type { EntityScope, Outcomes, VisionStatement } from "../../../../../core/domain/types.ts";
 import { visionUseCase } from "../../../../../core/domain/vision-usecase.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
@@ -24,7 +24,7 @@ async function main(): Promise<void> {
     });
 
     const input = await readJsonFromStdin<EstablishVisionInput>();
-    const scope = input.scope ?? UNKNOWN_SCOPE;
+    const scope = input.scope ?? { owner: "unknown", repository: "unknown" };
     const identifier = identify(scope, `Vision of ${scope.repository}`);
     const statement: VisionStatement = {
       elevatorPitch: input.elevatorPitch,
@@ -45,7 +45,7 @@ async function main(): Promise<void> {
     const { PlanGatewayAdapter } = await import(
       "../../../../../core/gateway/plan-gateway-adapter.ts"
     );
-    const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
+    const gateway = new PlanGatewayAdapter();
     const result = await gateway.execute(plan);
     console.log(JSON.stringify(result, null, 2));
   } catch (e) {

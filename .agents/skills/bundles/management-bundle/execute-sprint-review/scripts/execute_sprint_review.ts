@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify, sprintId, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
+import { identify, sprintId } from "../../../../../core/domain/types.ts";
 import type { EntityScope, ReviewSearchCondition, Step } from "../../../../../core/domain/types.ts";
 import { reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
 import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
@@ -58,7 +58,7 @@ async function main(): Promise<void> {
     const input = await readJsonFromStdin<ExecuteSprintReviewInput>();
     validateInput(input);
 
-    const scope = input.scope ?? UNKNOWN_SCOPE;
+    const scope = input.scope ?? { owner: "unknown", repository: "unknown" };
     const sprint = sprintId(scope, input.sprintNumber);
     const reviewTitle = `Sprint ${input.sprintNumber} Review`;
 
@@ -88,7 +88,7 @@ async function main(): Promise<void> {
       return;
     }
 
-    const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
+    const gateway = new PlanGatewayAdapter();
 
     const searchPlan = reviewUseCase.search(searchCondition);
     const searchResult = await gateway.execute(searchPlan);

@@ -24,27 +24,29 @@ Deno.test("set-product-goal - set が create と comment の2 Step を持つ Pla
   const plan = productGoalUseCase.set(identifier, makeStatement("Goal description"));
 
   assertEquals(plan.summary, "Set product goal: Product Goal");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].entity, "ProductGoal");
-  assertEquals(plan.steps[0].operation, "create");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].entity, "ProductGoal");
-  assertEquals(plan.steps[1].operation, "comment");
+  assertEquals(plan.steps[1].operation, "create");
+  assertEquals(plan.steps[2].entity, "ProductGoal");
+  assertEquals(plan.steps[2].operation, "comment");
 });
 
 Deno.test("set-product-goal - set の create Step に title と body が含まれる", () => {
   const identifier = makeIdentifier();
   const plan = productGoalUseCase.set(identifier, makeStatement("Goal description"));
 
-  assertEquals(plan.steps[0].params.title, "Product Goal");
-  assertStringIncludes(plan.steps[0].params.body as string, "## History");
+  assertEquals(plan.steps[1].params.title, "Product Goal");
+  assertStringIncludes(plan.steps[1].params.body as string, "## History");
 });
 
 Deno.test("set-product-goal - set の comment Step に GoalStatement が含まれる", () => {
   const identifier = makeIdentifier();
   const plan = productGoalUseCase.set(identifier, makeStatement("Goal description"));
 
-  assertStringIncludes(plan.steps[1].params.body as string, "## Goal");
-  assertStringIncludes(plan.steps[1].params.body as string, "Goal description");
+  assertStringIncludes(plan.steps[2].params.body as string, "## Goal");
+  assertStringIncludes(plan.steps[2].params.body as string, "Goal description");
 });
 
 Deno.test("set-product-goal - title が空文字の場合エラーを投げる", () => {

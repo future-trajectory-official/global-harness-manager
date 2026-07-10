@@ -1,4 +1,4 @@
-import type { Plan } from "./types.ts";
+import type { EntityScope, Plan, Step } from "./types.ts";
 import type {
   ChangeReason,
   EpicIdentifier,
@@ -6,6 +6,14 @@ import type {
   FeatureSearchCondition,
   FeatureStatement,
 } from "./types.ts";
+
+function scopeStep(identifier: { scope: EntityScope }): Step {
+  return {
+    entity: "Scope" as const,
+    operation: "resolve" as const,
+    params: { ...identifier.scope },
+  };
+}
 import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
 
 /**
@@ -98,7 +106,7 @@ export const featureUseCase: FeatureUseCase = {
     }
     return {
       summary: `Define feature: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "Feature",
         operation: "create",
         params: {
@@ -118,6 +126,7 @@ export const featureUseCase: FeatureUseCase = {
     return {
       summary: `Revise feature: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "Feature",
           operation: "update",
@@ -143,7 +152,7 @@ export const featureUseCase: FeatureUseCase = {
     assertIdDefined(epic.id, "assign a feature to an epic without id");
     return {
       summary: `Assign feature ${identifier.title.value} to epic ${epic.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "Feature",
         operation: "update",
         params: {
@@ -158,7 +167,7 @@ export const featureUseCase: FeatureUseCase = {
     assertIdDefined(identifier.id, "unassign a feature from an epic");
     return {
       summary: `Unassign feature ${identifier.title.value} from epic`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "Feature",
         operation: "update",
         params: {
@@ -174,14 +183,22 @@ export const featureUseCase: FeatureUseCase = {
     assertIdDefined(identifier.id, "find a feature");
     return {
       summary: `Find feature: ${identifier.title.value}`,
-      steps: [{ entity: "Feature", operation: "view", params: { itemId: identifier.code } }],
+      steps: [scopeStep(identifier), {
+        entity: "Feature",
+        operation: "view",
+        params: { itemId: identifier.code },
+      }],
     };
   },
 
   search(condition: FeatureSearchCondition): Plan {
     return {
       summary: condition.describe().summary,
-      steps: condition.describe().steps,
+      steps: [{
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      }, ...condition.describe().steps],
     };
   },
 };

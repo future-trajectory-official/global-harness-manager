@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify, sprintId, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
+import { identify, sprintId } from "../../../../../core/domain/types.ts";
 import type {
   AcceptanceCriterias,
   AcGroup,
@@ -81,7 +81,7 @@ async function resolveSprintIdentifier(
 }
 
 async function searchReviewIssue(
-  scope: EntityScope,
+  _scope: EntityScope,
   sprintNumber: number,
 ): Promise<{ code: string; title: string }> {
   const searchCondition: ReviewSearchCondition = {
@@ -96,7 +96,7 @@ async function searchReviewIssue(
     }),
   };
 
-  const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
+  const gateway = new PlanGatewayAdapter();
   const searchPlan = reviewUseCase.search(searchCondition);
   const searchResult = await gateway.execute(searchPlan);
   const searchOutput = searchResult.stepResults[0]?.output as
@@ -121,7 +121,7 @@ async function findReviewIssue(
 ): Promise<{ body?: string }> {
   const tempIdentifier = identify(scope, title, "pending", code);
 
-  const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
+  const gateway = new PlanGatewayAdapter();
   const findPlan = reviewUseCase.find(tempIdentifier);
   const findResult = await gateway.execute(findPlan);
   const findOutput = findResult.stepResults[0]?.output as
@@ -277,7 +277,7 @@ async function handleRevise(
 
   const tempIdentifier = identify(scope, title, "pending", code);
   const findPlan = reviewUseCase.find(tempIdentifier);
-  const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
+  const gateway = new PlanGatewayAdapter();
   const findResult = await gateway.execute(findPlan);
   const findOutput = findResult.stepResults[0]?.output as
     | { id?: string; number?: number }
@@ -328,7 +328,7 @@ async function main(): Promise<void> {
     }
 
     const input = await readJsonFromStdin<ReviseSprintReviewInput>();
-    const scope = input.scope ?? UNKNOWN_SCOPE;
+    const scope = input.scope ?? { owner: "unknown", repository: "unknown" };
 
     if (subcommand === "examine") {
       await handleExamine(input, scope);

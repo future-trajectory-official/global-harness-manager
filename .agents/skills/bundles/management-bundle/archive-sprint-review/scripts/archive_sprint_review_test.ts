@@ -16,22 +16,24 @@ function makeIdentifier(overrides?: Partial<ReviewIdentifier>): ReviewIdentifier
 Deno.test("archive-sprint-review - archive should return Plan with archive + update steps", () => {
   const plan = reviewUseCase.archive(makeIdentifier());
   assertEquals(plan.summary, "Archive review: Sprint 15 Review");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].entity, "Review");
-  assertEquals(plan.steps[0].operation, "archive");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].entity, "Review");
-  assertEquals(plan.steps[1].operation, "update");
+  assertEquals(plan.steps[1].operation, "archive");
+  assertEquals(plan.steps[2].entity, "Review");
+  assertEquals(plan.steps[2].operation, "update");
 });
 
 Deno.test("archive-sprint-review - archive should close with correct params", () => {
   const plan = reviewUseCase.archive(makeIdentifier());
-  assertEquals(plan.steps[0].params.itemId, "42");
-  assertEquals(plan.steps[0].params.state, "closed");
+  assertEquals(plan.steps[1].params.itemId, "42");
+  assertEquals(plan.steps[1].params.state, "closed");
 });
 
 Deno.test("archive-sprint-review - archive should add archive comment via update step", () => {
   const plan = reviewUseCase.archive(makeIdentifier());
-  const body = plan.steps[1].params.body as string;
+  const body = plan.steps[2].params.body as string;
   assertStringIncludes(body, "Archived");
   assertStringIncludes(body, "Sprint 15 Review");
 });

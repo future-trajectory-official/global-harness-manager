@@ -27,24 +27,29 @@ Deno.test("assess-goal-continuation - 確認フェーズ: find が view Plan を
   const plan = productGoalUseCase.find(identifier);
 
   assertEquals(plan.summary, "Find product goal: Product Goal");
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].entity, "ProductGoal");
-  assertEquals(plan.steps[0].operation, "view");
-  assertEquals(plan.steps[0].params.itemId, "42");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].entity, "ProductGoal");
+  assertEquals(plan.steps[1].operation, "view");
+  assertEquals(plan.steps[1].params.itemId, "42");
 });
 
 Deno.test("assess-goal-continuation - 確認フェーズ: dry-run が search+view の2 Step を持つ", () => {
   const combinedPlan = {
     summary: "Assess goal continuation: Product Goal",
     steps: [
+      { entity: "Scope", operation: "resolve", params: {} },
       { entity: "ProductGoal", operation: "search", params: { labelType: "ProductGoal" } },
       { entity: "ProductGoal", operation: "view", params: { itemId: "<issue-number>" } },
     ],
   };
 
-  assertEquals(combinedPlan.steps.length, 2);
-  assertEquals(combinedPlan.steps[0].operation, "search");
-  assertEquals(combinedPlan.steps[1].operation, "view");
+  assertEquals(combinedPlan.steps.length, 3);
+  assertEquals(combinedPlan.steps[0].entity, "Scope");
+  assertEquals(combinedPlan.steps[0].operation, "resolve");
+  assertEquals(combinedPlan.steps[1].operation, "search");
+  assertEquals(combinedPlan.steps[2].operation, "view");
   assertStringIncludes(JSON.stringify(combinedPlan), "Assess goal continuation");
 });
 
@@ -55,11 +60,13 @@ Deno.test("assess-goal-continuation - 更新フェーズ: pivot が update+comme
   const plan = productGoalUseCase.pivot(identifier, statement, reason);
 
   assertEquals(plan.summary, "Pivot product goal: Product Goal");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].entity, "ProductGoal");
-  assertEquals(plan.steps[0].operation, "update");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].entity, "ProductGoal");
-  assertEquals(plan.steps[1].operation, "comment");
+  assertEquals(plan.steps[1].operation, "update");
+  assertEquals(plan.steps[2].entity, "ProductGoal");
+  assertEquals(plan.steps[2].operation, "comment");
 });
 
 Deno.test("assess-goal-continuation - 更新フェーズ: pivot の itemId に code が設定される", () => {
@@ -68,7 +75,7 @@ Deno.test("assess-goal-continuation - 更新フェーズ: pivot の itemId に c
   const reason: ChangeReason = { description: "Reason" };
   const plan = productGoalUseCase.pivot(identifier, statement, reason);
 
-  assertEquals(plan.steps[0].params.itemId, "99");
+  assertEquals(plan.steps[1].params.itemId, "99");
 });
 
 Deno.test("assess-goal-continuation - 更新フェーズ: dry-run が pivot Plan を JSON 出力する", () => {

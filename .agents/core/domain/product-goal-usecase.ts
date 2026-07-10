@@ -1,6 +1,10 @@
-import type { Plan } from "./types.ts";
+import type { Plan, Step } from "./types.ts";
 import type { ChangeReason, GoalStatement, ProductGoalIdentifier } from "./types.ts";
 import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
+
+function scopeStep(identifier: ProductGoalIdentifier): Step {
+  return { entity: "Scope", operation: "resolve", params: { ...identifier.scope } };
+}
 
 function formatDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -46,6 +50,7 @@ export const productGoalUseCase: ProductGoalUseCase = {
     return {
       summary: `Set product goal: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "ProductGoal",
           operation: "create",
@@ -73,6 +78,7 @@ export const productGoalUseCase: ProductGoalUseCase = {
     return {
       summary: `Pivot product goal: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "ProductGoal",
           operation: "update",
@@ -98,7 +104,10 @@ export const productGoalUseCase: ProductGoalUseCase = {
     assertIdDefined(identifier.id, "find a product goal");
     return {
       summary: `Find product goal: ${identifier.title.value}`,
-      steps: [{ entity: "ProductGoal", operation: "view", params: { itemId: identifier.code } }],
+      steps: [
+        scopeStep(identifier),
+        { entity: "ProductGoal", operation: "view", params: { itemId: identifier.code } },
+      ],
     };
   },
 };

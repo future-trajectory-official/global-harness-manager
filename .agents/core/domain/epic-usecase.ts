@@ -1,5 +1,13 @@
-import type { Plan } from "./types.ts";
+import type { EntityScope, Plan, Step } from "./types.ts";
 import type { ChangeReason, EpicIdentifier, EpicSearchCondition, EpicStatement } from "./types.ts";
+
+function scopeStep(identifier: { scope: EntityScope }): Step {
+  return {
+    entity: "Scope" as const,
+    operation: "resolve" as const,
+    params: { ...identifier.scope },
+  };
+}
 import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
 
 /**
@@ -61,7 +69,7 @@ export const epicUseCase: EpicUseCase = {
     assertStringNonEmpty(statement.description, "EpicStatement description");
     return {
       summary: `Define epic: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "Epic",
         operation: "create",
         params: {
@@ -80,6 +88,7 @@ export const epicUseCase: EpicUseCase = {
     return {
       summary: `Revise epic: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "Epic",
           operation: "update",
@@ -105,14 +114,22 @@ export const epicUseCase: EpicUseCase = {
     assertIdDefined(identifier.id, "find an epic");
     return {
       summary: `Find epic: ${identifier.title.value}`,
-      steps: [{ entity: "Epic", operation: "view", params: { itemId: identifier.code } }],
+      steps: [scopeStep(identifier), {
+        entity: "Epic",
+        operation: "view",
+        params: { itemId: identifier.code },
+      }],
     };
   },
 
   search(condition: EpicSearchCondition): Plan {
     return {
       summary: condition.describe().summary,
-      steps: condition.describe().steps,
+      steps: [{
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      }, ...condition.describe().steps],
     };
   },
 };

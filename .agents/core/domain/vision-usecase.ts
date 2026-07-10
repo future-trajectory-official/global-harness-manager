@@ -1,4 +1,15 @@
-import type { ChangeReason, Outcomes, Plan, VisionIdentifier, VisionStatement } from "./types.ts";
+import type {
+  ChangeReason,
+  Outcomes,
+  Plan,
+  Step,
+  VisionIdentifier,
+  VisionStatement,
+} from "./types.ts";
+
+function scopeStep(identifier: VisionIdentifier): Step {
+  return { entity: "Scope", operation: "resolve", params: { ...identifier.scope } };
+}
 import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
 
 function formatDate(): string {
@@ -86,6 +97,7 @@ export const visionUseCase: VisionUseCase = {
     return {
       summary: `Establish vision: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "Vision",
           operation: "search",
@@ -120,6 +132,7 @@ export const visionUseCase: VisionUseCase = {
     return {
       summary: `Pivot vision: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "Vision",
           operation: "update",
@@ -145,16 +158,22 @@ export const visionUseCase: VisionUseCase = {
     if (identifier.id || identifier.code) {
       return {
         summary: `Find vision: ${identifier.title.value}`,
-        steps: [{
-          entity: "Vision",
-          operation: "view",
-          params: { itemId: identifier.code ?? identifier.id },
-        }],
+        steps: [
+          scopeStep(identifier),
+          {
+            entity: "Vision",
+            operation: "view",
+            params: { itemId: identifier.code ?? identifier.id },
+          },
+        ],
       };
     }
     return {
       summary: `Find vision: ${identifier.title.value}`,
-      steps: [{ entity: "Vision", operation: "search", params: { labelType: "Vision" } }],
+      steps: [
+        scopeStep(identifier),
+        { entity: "Vision", operation: "search", params: { labelType: "Vision" } },
+      ],
     };
   },
 };

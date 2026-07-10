@@ -1,4 +1,4 @@
-import type { Plan } from "./types.ts";
+import type { EntityScope, Plan, Step } from "./types.ts";
 import type {
   ChangeReason,
   KeepProblemTryAdvice,
@@ -7,6 +7,14 @@ import type {
   SprintIdentifier,
   SprintMetrics,
 } from "./types.ts";
+
+function scopeStep(identifier: { scope: EntityScope }): Step {
+  return {
+    entity: "Scope" as const,
+    operation: "resolve" as const,
+    params: { ...identifier.scope },
+  };
+}
 import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
 
 /** Retrospective Issue の初期本文を生成する。スプリント情報をヘッダーとして記述する。 */
@@ -81,6 +89,7 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
     return {
       summary: `Plan retrospective: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "Retrospective",
           operation: "plan",
@@ -112,6 +121,7 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
     return {
       summary: `Execute retrospective: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "Retrospective",
           operation: "execute",
@@ -140,6 +150,7 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
     return {
       summary: `Archive retrospective: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "Retrospective",
           operation: "archive",
@@ -165,7 +176,7 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
     assertIdDefined(identifier.id, "find a retrospective");
     return {
       summary: `Find retrospective: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "Retrospective",
         operation: "view",
         params: {
@@ -178,7 +189,11 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
   search(condition): Plan {
     return {
       summary: condition.describe().summary,
-      steps: condition.describe().steps,
+      steps: [{
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      }, ...condition.describe().steps],
     };
   },
 };

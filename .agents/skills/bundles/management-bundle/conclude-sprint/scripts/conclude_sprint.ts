@@ -1,9 +1,10 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { sprintId, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
+import { sprintId } from "../../../../../core/domain/types.ts";
 import type { EntityScope, Plan, SprintIdentifier } from "../../../../../core/domain/types.ts";
 import { sprintUseCase } from "../../../../../core/domain/sprint-usecase.ts";
 import type { ExecutionResult } from "../../../../../core/domain/types.ts";
+import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
@@ -23,14 +24,13 @@ async function resolveSprintIdentifier(
   if (milestoneNodeId && milestoneNumber) {
     return sprintId(scope, sprintNumber, milestoneNodeId, milestoneNumber);
   }
-  const findResult = await sprintUseCase.find(
-    undefined,
-    { owner: scope.owner, repository: scope.repository },
-  ) as ExecutionResult;
-  const milestones = findResult.stepResults?.[0]?.output as
+  const gateway = new PlanGatewayAdapter();
+  const findPlan = sprintUseCase.find();
+  const findResult = await gateway.execute(findPlan) as ExecutionResult;
+  const milestones = findResult.stepResults?.[1]?.output as
     | Array<{ number: number; id?: string }>
     | undefined;
-  const milestoneInfo = findResult.stepResults?.[1]?.output as
+  const milestoneInfo = findResult.stepResults?.[2]?.output as
     | { id?: string; number?: number }
     | undefined;
   const id = milestoneInfo?.id ?? milestones?.[0]?.id;
@@ -46,13 +46,13 @@ async function main(): Promise<void> {
     });
 
     const input = await readJsonFromStdin<ConcludeSprintInput>();
-    const scope = input.scope ?? UNKNOWN_SCOPE;
+    const scope = input.scope ?? { owner: "unknown", repository: "unknown" };
 
     if (args["dry-run"]) {
       const identifier = input.milestoneNodeId && input.milestoneNumber
         ? sprintId(scope, input.sprintNumber, input.milestoneNodeId, input.milestoneNumber)
         : sprintId(scope, input.sprintNumber);
-      const plan = await sprintUseCase.end(identifier, { dryRun: true }) as Plan;
+      const plan = sprintUseCase.end(identifier) as Plan;
       console.log(JSON.stringify({ summary: plan.summary, steps: plan.steps }, null, 2));
       return;
     }
@@ -63,10 +63,7 @@ async function main(): Promise<void> {
       input.milestoneNodeId,
       input.milestoneNumber,
     );
-    const result = await sprintUseCase.end(identifier, {
-      owner: scope.owner,
-      repository: scope.repository,
-    });
+    const result = sprintUseCase.end(identifier);
     console.log(JSON.stringify(result, null, 2));
   } catch (e) {
     const err = errorUtil.toError(e);

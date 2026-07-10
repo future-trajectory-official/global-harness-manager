@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
+import { identify } from "../../../../../core/domain/types.ts";
 import type { EntityScope } from "../../../../../core/domain/types.ts";
 import { visionUseCase } from "../../../../../core/domain/vision-usecase.ts";
 import { productGoalUseCase } from "../../../../../core/domain/product-goal-usecase.ts";
@@ -236,7 +236,7 @@ async function main(): Promise<void> {
       alias: { "dry-run": "d" },
     });
 
-    const scope: EntityScope = UNKNOWN_SCOPE;
+    const scope: EntityScope = { owner: "unknown", repository: "unknown" };
     const repoTitle = `Vision of ${scope.repository}`;
 
     const searchPlan = visionUseCase.find(identify(scope, repoTitle));
@@ -269,7 +269,7 @@ async function main(): Promise<void> {
       return;
     }
 
-    const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
+    const gateway = new PlanGatewayAdapter();
     const vision = await fetchVisionFromGitHub(gateway, scope, repoTitle);
     const productGoal = await fetchProductGoalFromGitHub(gateway, scope);
 

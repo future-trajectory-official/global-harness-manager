@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify, sprintId, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
+import { identify, sprintId } from "../../../../../core/domain/types.ts";
 import type { EntityScope } from "../../../../../core/domain/types.ts";
 import { reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
 import type { ReviewPlanInput, ReviewPlanPbi } from "../../../../../core/domain/review-usecase.ts";
@@ -36,7 +36,7 @@ async function main(): Promise<void> {
       throw new Error("INVALID_INPUT: sprintNumber must be a positive integer");
     }
 
-    const scope = input.scope ?? UNKNOWN_SCOPE;
+    const scope = input.scope ?? { owner: "unknown", repository: "unknown" };
     const sprint = sprintId(scope, input.sprintNumber);
     const reviewTitle = input.reviewTitle ?? `Sprint ${input.sprintNumber} Review`;
     const identifier = identify(scope, reviewTitle);
@@ -52,7 +52,7 @@ async function main(): Promise<void> {
     const { PlanGatewayAdapter } = await import(
       "../../../../../core/gateway/plan-gateway-adapter.ts"
     );
-    const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
+    const gateway = new PlanGatewayAdapter();
     const result = await gateway.execute(plan);
     console.log(JSON.stringify(result, null, 2));
   } catch (e) {

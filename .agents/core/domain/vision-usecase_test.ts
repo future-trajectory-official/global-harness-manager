@@ -33,20 +33,22 @@ function makeReason(description = "Strategy change"): ChangeReason {
 Deno.test("visionUseCase - establish should return Plan with search + create + comment", () => {
   const plan = visionUseCase.establish(makeIdentifier(), makeStatement(), makeOutcomes());
   assertEquals(plan.summary, "Establish vision: Test Vision");
-  assertEquals(plan.steps.length, 3);
-  assertEquals(plan.steps[0].entity, "Vision");
-  assertEquals(plan.steps[0].operation, "search");
-  assertEquals(plan.steps[0].params.labelType, "Vision");
+  assertEquals(plan.steps.length, 4);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].entity, "Vision");
-  assertEquals(plan.steps[1].operation, "create");
-  assertEquals(plan.steps[1].params.title, "Test Vision");
+  assertEquals(plan.steps[1].operation, "search");
+  assertEquals(plan.steps[1].params.labelType, "Vision");
   assertEquals(plan.steps[2].entity, "Vision");
-  assertEquals(plan.steps[2].operation, "comment");
+  assertEquals(plan.steps[2].operation, "create");
+  assertEquals(plan.steps[2].params.title, "Test Vision");
+  assertEquals(plan.steps[3].entity, "Vision");
+  assertEquals(plan.steps[3].operation, "comment");
 });
 
 Deno.test("visionUseCase - establish body should be history table (L2 spec)", () => {
   const plan = visionUseCase.establish(makeIdentifier(), makeStatement(), makeOutcomes());
-  const body = plan.steps[1].params.body as string;
+  const body = plan.steps[2].params.body as string;
   assertStringIncludes(body, "## History");
   assertStringIncludes(body, "| 日付 | バージョン | 概要 |");
   assertStringIncludes(body, "| 1 |");
@@ -54,7 +56,7 @@ Deno.test("visionUseCase - establish body should be history table (L2 spec)", ()
 
 Deno.test("visionUseCase - establish comment should be versioned content (L2 spec)", () => {
   const plan = visionUseCase.establish(makeIdentifier(), makeStatement(), makeOutcomes());
-  const comment = plan.steps[2].params.body as string;
+  const comment = plan.steps[3].params.body as string;
   assertStringIncludes(comment, "# Version: 1");
   assertStringIncludes(comment, "## Statement");
   assertStringIncludes(comment, "### Target");
@@ -93,17 +95,19 @@ Deno.test("visionUseCase - establish should throw for missing statement fields",
 Deno.test("visionUseCase - pivot should return Plan with update + comment", () => {
   const plan = visionUseCase.pivot(makeIdentifier(), makeStatement(), makeOutcomes(), makeReason());
   assertEquals(plan.summary, "Pivot vision: Test Vision");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].entity, "Vision");
-  assertEquals(plan.steps[0].operation, "update");
-  assertStringIncludes(plan.steps[0].params.bodyAppend as string, "| 2 | Strategy change |");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].entity, "Vision");
-  assertEquals(plan.steps[1].operation, "comment");
+  assertEquals(plan.steps[1].operation, "update");
+  assertStringIncludes(plan.steps[1].params.bodyAppend as string, "| 2 | Strategy change |");
+  assertEquals(plan.steps[2].entity, "Vision");
+  assertEquals(plan.steps[2].operation, "comment");
 });
 
 Deno.test("visionUseCase - pivot comment should have version 2", () => {
   const plan = visionUseCase.pivot(makeIdentifier(), makeStatement(), makeOutcomes(), makeReason());
-  const comment = plan.steps[1].params.body as string;
+  const comment = plan.steps[2].params.body as string;
   assertStringIncludes(comment, "# Version: 2");
 });
 
@@ -132,16 +136,20 @@ Deno.test("visionUseCase - pivot should throw for undefined id", () => {
 Deno.test("visionUseCase - find should return Plan with view step", () => {
   const plan = visionUseCase.find(makeIdentifier());
   assertEquals(plan.summary, "Find vision: Test Vision");
-  assertEquals(plan.steps[0].entity, "Vision");
-  assertEquals(plan.steps[0].operation, "view");
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].entity, "Vision");
+  assertEquals(plan.steps[1].operation, "view");
 });
 
 Deno.test("visionUseCase - find should return search step when id is undefined", () => {
   const plan = visionUseCase.find(makeIdentifier({ id: undefined }));
   assertEquals(plan.summary, "Find vision: Test Vision");
-  assertEquals(plan.steps[0].entity, "Vision");
-  assertEquals(plan.steps[0].operation, "search");
-  assertEquals(plan.steps[0].params.labelType, "Vision");
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].entity, "Vision");
+  assertEquals(plan.steps[1].operation, "search");
+  assertEquals(plan.steps[1].params.labelType, "Vision");
 });
 
 Deno.test("visionUseCase - find should throw for empty title", () => {

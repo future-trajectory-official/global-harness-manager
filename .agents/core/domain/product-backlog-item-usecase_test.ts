@@ -126,9 +126,11 @@ function makeSearchCondition(): ProductBacklogItemSearchCondition {
 Deno.test("propose should return Plan with propose operation", () => {
   const plan = productBacklogItemUseCase.propose(makePbiId({ id: undefined }), makeStatement());
   assertEquals(plan.summary, "Propose PBI: User Authentication");
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "propose");
-  assertEquals(plan.steps[0].params.title, "User Authentication");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "propose");
+  assertEquals(plan.steps[1].params.title, "User Authentication");
 });
 
 /**
@@ -173,7 +175,7 @@ Deno.test("propose with parentFeature should include parent feature id", () => {
     makeStatement(),
     feature,
   );
-  assertEquals(plan.steps[0].params.parentFeature, "feature-1");
+  assertEquals(plan.steps[1].params.parentFeature, "feature-1");
 });
 
 /**
@@ -200,9 +202,11 @@ Deno.test("propose should throw for parentFeature with undefined id", () => {
 Deno.test("revise should return Plan with 2 update operations", () => {
   const plan = productBacklogItemUseCase.revise(makePbiId(), makeStatement(), makeReason());
   assertEquals(plan.summary, "Revise PBI: User Authentication");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "update");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "update");
+  assertEquals(plan.steps[2].operation, "update");
 });
 
 /**
@@ -242,10 +246,12 @@ Deno.test("revise should throw for empty reason", () => {
 Deno.test("commit should return Plan with commit + update", () => {
   const plan = productBacklogItemUseCase.commit(makePbiId(), makeSprintId());
   assertEquals(plan.summary, "Commit PBI User Authentication to Sprint 15");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "commit");
-  assertEquals(plan.steps[0].params.sprint, "Sprint 15");
-  assertEquals(plan.steps[1].operation, "update");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "commit");
+  assertEquals(plan.steps[1].params.sprint, "Sprint 15");
+  assertEquals(plan.steps[2].operation, "update");
 });
 
 /**
@@ -271,9 +277,11 @@ Deno.test("commit should throw for undefined id", () => {
 Deno.test("start should return Plan with start + update", () => {
   const plan = productBacklogItemUseCase.start(makePbiId());
   assertEquals(plan.summary, "Start PBI: User Authentication");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "start");
-  assertEquals(plan.steps[1].operation, "update");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "start");
+  assertEquals(plan.steps[2].operation, "update");
 });
 
 /**
@@ -299,9 +307,11 @@ Deno.test("start should throw for undefined id", () => {
 Deno.test("complete should return Plan with complete + update", () => {
   const plan = productBacklogItemUseCase.complete(makePbiId());
   assertEquals(plan.summary, "Complete PBI: User Authentication");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "complete");
-  assertEquals(plan.steps[1].operation, "update");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "complete");
+  assertEquals(plan.steps[2].operation, "update");
 });
 
 // ===== archive =====
@@ -314,9 +324,11 @@ Deno.test("complete should return Plan with complete + update", () => {
 Deno.test("archive should return Plan with archive + update", () => {
   const plan = productBacklogItemUseCase.archive(makePbiId());
   assertEquals(plan.summary, "Archive PBI: User Authentication");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "archive");
-  assertEquals(plan.steps[1].operation, "update");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "archive");
+  assertEquals(plan.steps[2].operation, "update");
 });
 
 // ===== defineAcceptanceCriteria =====
@@ -329,8 +341,10 @@ Deno.test("archive should return Plan with archive + update", () => {
 Deno.test("defineAcceptanceCriteria should return Plan with defineAcceptanceCriteria", () => {
   const wps = makeWorkPackageData();
   const plan = productBacklogItemUseCase.defineAcceptanceCriteria(makePbiId(), wps);
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "defineAcceptanceCriteria");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "defineAcceptanceCriteria");
 });
 
 /**
@@ -356,9 +370,11 @@ Deno.test("defineAcceptanceCriteria should throw for empty WP list", () => {
 Deno.test("assignToFeature should return Plan with assignToFeature", () => {
   const plan = productBacklogItemUseCase.assignToFeature(makePbiId(), makeFeatureId());
   assertEquals(plan.summary, "Assign PBI User Authentication to feature Authentication");
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "assignToFeature");
-  assertEquals(plan.steps[0].params.parentFeature, "feature-1");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "assignToFeature");
+  assertEquals(plan.steps[1].params.parentFeature, "feature-1");
 });
 
 // ===== unassignFromFeature =====
@@ -371,8 +387,10 @@ Deno.test("assignToFeature should return Plan with assignToFeature", () => {
 Deno.test("unassignFromFeature should return Plan with unassignFromFeature", () => {
   const plan = productBacklogItemUseCase.unassignFromFeature(makePbiId());
   assertEquals(plan.summary, "Unassign PBI User Authentication from feature");
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "unassignFromFeature");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "unassignFromFeature");
 });
 
 // ===== estimateSize =====
@@ -385,8 +403,10 @@ Deno.test("unassignFromFeature should return Plan with unassignFromFeature", () 
 Deno.test("estimateSize should return Plan with estimateSize", () => {
   const plan = productBacklogItemUseCase.estimateSize(makePbiId(), makeSizeVariance());
   assertEquals(plan.summary, "Estimate size for PBI: User Authentication");
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "estimateSize");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "estimateSize");
 });
 
 // ===== confirmSize =====
@@ -399,8 +419,10 @@ Deno.test("estimateSize should return Plan with estimateSize", () => {
 Deno.test("confirmSize should return Plan with confirmSize", () => {
   const plan = productBacklogItemUseCase.confirmSize(makePbiId(), makeSizeVariance());
   assertEquals(plan.summary, "Confirm size for PBI: User Authentication");
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "confirmSize");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "confirmSize");
 });
 
 // ===== recordAnalysis =====
@@ -413,8 +435,10 @@ Deno.test("confirmSize should return Plan with confirmSize", () => {
 Deno.test("recordAnalysis should return Plan with recordAnalysis", () => {
   const plan = productBacklogItemUseCase.recordAnalysis(makePbiId(), makeProcessAnalysis());
   assertEquals(plan.summary, "Record analysis for PBI: User Authentication");
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "recordAnalysis");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "recordAnalysis");
 });
 
 /**
@@ -444,7 +468,9 @@ Deno.test("recordAnalysis should throw for empty planningReview", () => {
 Deno.test("find should return Plan with view step", () => {
   const plan = productBacklogItemUseCase.find(makePbiId());
   assertEquals(plan.summary, "Find PBI: User Authentication");
-  assertEquals(plan.steps[0].operation, "view");
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "view");
 });
 
 /**
@@ -470,5 +496,7 @@ Deno.test("find should throw for undefined id", () => {
 Deno.test("search should return Plan with search step", () => {
   const condition = makeSearchCondition();
   const plan = productBacklogItemUseCase.search(condition);
-  assertEquals(plan.steps[0].operation, "search");
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "search");
 });

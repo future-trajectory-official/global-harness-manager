@@ -1,4 +1,4 @@
-import type { Plan } from "./types.ts";
+import type { EntityScope, Plan, Step } from "./types.ts";
 import type {
   ChangeReason,
   FeatureIdentifier,
@@ -10,6 +10,14 @@ import type {
   SprintIdentifier,
   WorkPackageData,
 } from "./types.ts";
+
+function scopeStep(identifier: { scope: EntityScope }): Step {
+  return {
+    entity: "Scope" as const,
+    operation: "resolve" as const,
+    params: { ...identifier.scope },
+  };
+}
 import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
 
 function assertWpDataNonEmpty(wps: WorkPackageData[] | undefined): void {
@@ -121,7 +129,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     }
     return {
       summary: `Propose PBI: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "ProductBacklogItem",
         operation: "propose",
         params: {
@@ -141,6 +149,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Revise PBI: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "ProductBacklogItem",
           operation: "update",
@@ -168,6 +177,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Commit PBI ${identifier.title.value} to ${sprint.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "ProductBacklogItem",
           operation: "commit",
@@ -196,6 +206,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Start PBI: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "ProductBacklogItem",
           operation: "start",
@@ -223,6 +234,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Complete PBI: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "ProductBacklogItem",
           operation: "complete",
@@ -250,6 +262,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     return {
       summary: `Archive PBI: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "ProductBacklogItem",
           operation: "archive",
@@ -277,17 +290,20 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     assertWpDataNonEmpty(workPackages);
     return {
       summary: `Define acceptance criteria for: ${identifier.title.value}`,
-      steps: workPackages.map((wp) => ({
-        entity: "ProductBacklogItem",
-        operation: "defineAcceptanceCriteria",
-        params: {
-          title: wp.identifier.title.value,
-          parentPbi: identifier.id,
-          body: wp.statement.acceptanceCriteria.items.map((ac) =>
-            `- [ ] AC${ac.number}: ${ac.description}`
-          ).join("\n"),
-        },
-      })),
+      steps: [
+        scopeStep(identifier),
+        ...workPackages.map((wp) => ({
+          entity: "ProductBacklogItem" as const,
+          operation: "defineAcceptanceCriteria" as const,
+          params: {
+            title: wp.identifier.title.value,
+            parentPbi: identifier.id,
+            body: wp.statement.acceptanceCriteria.items.map((ac) =>
+              `- [ ] AC${ac.number}: ${ac.description}`
+            ).join("\n"),
+          },
+        })),
+      ],
     };
   },
 
@@ -297,7 +313,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     assertIdDefined(feature.id, "assign a PBI to a feature without id");
     return {
       summary: `Assign PBI ${identifier.title.value} to feature ${feature.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "ProductBacklogItem",
         operation: "assignToFeature",
         params: {
@@ -313,7 +329,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     assertIdDefined(identifier.id, "unassign a PBI from a feature");
     return {
       summary: `Unassign PBI ${identifier.title.value} from feature`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "ProductBacklogItem",
         operation: "unassignFromFeature",
         params: {
@@ -329,7 +345,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     assertIdDefined(identifier.id, "estimate size of a PBI");
     return {
       summary: `Estimate size for PBI: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "ProductBacklogItem",
         operation: "estimateSize",
         params: {
@@ -345,7 +361,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     assertIdDefined(identifier.id, "confirm size of a PBI");
     return {
       summary: `Confirm size for PBI: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "ProductBacklogItem",
         operation: "confirmSize",
         params: {
@@ -377,7 +393,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     lines.push(analysis.improvementSuggestions);
     return {
       summary: `Record analysis for PBI: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "ProductBacklogItem",
         operation: "recordAnalysis",
         params: {
@@ -393,7 +409,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
     assertIdDefined(identifier.id, "find a PBI");
     return {
       summary: `Find PBI: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "ProductBacklogItem",
         operation: "view",
         params: {
@@ -406,7 +422,11 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
   search(condition): Plan {
     return {
       summary: condition.describe().summary,
-      steps: condition.describe().steps,
+      steps: [{
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      }, ...condition.describe().steps],
     };
   },
 };

@@ -13,20 +13,24 @@ Deno.test("assess-alignment: find without id は search Plan を生成する", (
   const plan = visionUseCase.find(identifier);
 
   assertEquals(plan.summary, "Find vision: Vision of test-repo");
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "search");
-  assertEquals(plan.steps[0].entity, "Vision");
-  assertEquals(plan.steps[0].params.labelType, "Vision");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "search");
+  assertEquals(plan.steps[1].entity, "Vision");
+  assertEquals(plan.steps[1].params.labelType, "Vision");
 });
 
 Deno.test("assess-alignment: find with id は view Plan を生成する", () => {
   const identifier = identify(makeScope(), "Vision of test-repo", "node-id", "42");
   const plan = visionUseCase.find(identifier);
 
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "view");
-  assertEquals(plan.steps[0].entity, "Vision");
-  assertEquals(plan.steps[0].params.itemId, "42");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "view");
+  assertEquals(plan.steps[1].entity, "Vision");
+  assertEquals(plan.steps[1].params.itemId, "42");
 });
 
 Deno.test("assess-alignment: dry-run は search + view の 2 Plan 構造を持つ", () => {
@@ -36,9 +40,9 @@ Deno.test("assess-alignment: dry-run は search + view の 2 Plan 構造を持�
   const searchPlan = visionUseCase.find(searchIdentifier);
   const viewPlan = visionUseCase.find(viewIdentifier);
 
-  assertEquals(searchPlan.steps[0].operation, "search");
-  assertEquals(viewPlan.steps[0].operation, "view");
-  assertEquals(viewPlan.steps[0].params.itemId, "<itemId>");
+  assertEquals(searchPlan.steps[1].operation, "search");
+  assertEquals(viewPlan.steps[1].operation, "view");
+  assertEquals(viewPlan.steps[1].params.itemId, "<itemId>");
 });
 
 Deno.test("assess-alignment: YAML frontmatter 抽出が正しい形式を返す", () => {
@@ -77,10 +81,12 @@ Deno.test("assess-alignment: ProductGoal find は view Plan を生成する", ()
   const plan = productGoalUseCase.find(identifier);
 
   assertEquals(plan.summary, "Find product goal: Product Goal of test-repo");
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].entity, "ProductGoal");
-  assertEquals(plan.steps[0].operation, "view");
-  assertEquals(plan.steps[0].params.itemId, "42");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].entity, "ProductGoal");
+  assertEquals(plan.steps[1].operation, "view");
+  assertEquals(plan.steps[1].params.itemId, "42");
 });
 
 Deno.test("assess-alignment: ProductGoal search Step が正しい構造を持つ", () => {
@@ -119,13 +125,17 @@ Deno.test("assess-alignment: dry-run に ProductGoal の search+view が含ま�
     productGoalViewStep,
   ];
 
-  assertEquals(dryRunSteps.length, 4);
-  assertEquals(dryRunSteps[0].operation, "search");
-  assertEquals(dryRunSteps[1].operation, "view");
-  assertEquals(dryRunSteps[2].operation, "search");
-  assertEquals(dryRunSteps[2].entity, "ProductGoal");
+  assertEquals(dryRunSteps.length, 6);
+  assertEquals(dryRunSteps[0].entity, "Scope");
+  assertEquals(dryRunSteps[0].operation, "resolve");
+  assertEquals(dryRunSteps[1].operation, "search");
+  assertEquals(dryRunSteps[2].entity, "Scope");
+  assertEquals(dryRunSteps[2].operation, "resolve");
   assertEquals(dryRunSteps[3].operation, "view");
-  assertEquals(dryRunSteps[3].entity, "ProductGoal");
+  assertEquals(dryRunSteps[4].operation, "search");
+  assertEquals(dryRunSteps[4].entity, "ProductGoal");
+  assertEquals(dryRunSteps[5].operation, "view");
+  assertEquals(dryRunSteps[5].entity, "ProductGoal");
 });
 
 Deno.test("assess-alignment: ProductGoal コメントからゴール情報を抽出する", () => {

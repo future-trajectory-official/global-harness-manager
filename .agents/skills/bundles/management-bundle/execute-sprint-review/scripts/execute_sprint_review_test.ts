@@ -45,16 +45,18 @@ Deno.test("execute-sprint-review - report should return Plan with report step", 
   const data = makeReviewData();
   const plan = reviewUseCase.report(data);
   assertEquals(plan.summary, "Report review: Sprint 17 Review");
-  assertEquals(plan.steps.length, 1);
-  assertEquals(plan.steps[0].operation, "report");
-  const overallResult = plan.steps[0].params.overallResult as { judgment: string };
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "report");
+  const overallResult = plan.steps[1].params.overallResult as { judgment: string };
   assertEquals(overallResult.judgment, "pass");
 });
 
 Deno.test("execute-sprint-review - report body should include AC judgments", () => {
   const data = makeReviewData();
   const plan = reviewUseCase.report(data);
-  const body = plan.steps[0].params.body as string;
+  const body = plan.steps[1].params.body as string;
   assertStringIncludes(body, "Overall Result");
   assertStringIncludes(body, "pass");
   assertStringIncludes(body, "Post-Plan AC Results");
@@ -93,7 +95,7 @@ Deno.test("execute-sprint-review - report should include multiple AC groups", ()
     ],
   });
   const plan = reviewUseCase.report(data);
-  const body = plan.steps[0].params.body as string;
+  const body = plan.steps[1].params.body as string;
   assertStringIncludes(body, "AC1");
   assertStringIncludes(body, "AC2");
 });
@@ -121,7 +123,7 @@ Deno.test("execute-sprint-review - report should handle conditional judgment", (
     overallResult: { judgment: "conditional", reason: "Minor issues found" },
   });
   const plan = reviewUseCase.report(data);
-  const result = plan.steps[0].params.overallResult as { judgment: string; reason: string };
+  const result = plan.steps[1].params.overallResult as { judgment: string; reason: string };
   assertEquals(result.judgment, "conditional");
   assertEquals(result.reason, "Minor issues found");
 });
@@ -130,7 +132,10 @@ Deno.test("execute-sprint-review - find should return Plan with view step", () =
   const identifier = makeReviewData().identifier;
   const plan = reviewUseCase.find(identifier);
   assertEquals(plan.summary, "Find review: Sprint 17 Review");
-  assertEquals(plan.steps[0].operation, "view");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "view");
 });
 
 Deno.test("execute-sprint-review - validateInput should throw for missing sprintNumber", () => {

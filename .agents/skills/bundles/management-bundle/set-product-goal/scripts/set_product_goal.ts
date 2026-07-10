@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { identify, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
+import { identify } from "../../../../../core/domain/types.ts";
 import type {
   EntityScope,
   GoalStatement,
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
     const input = await readJsonFromStdin<SetProductGoalInput>();
     validateInput(input);
 
-    const scope = input.scope ?? UNKNOWN_SCOPE;
+    const scope = input.scope ?? { owner: "unknown", repository: "unknown" };
     const goalTitle = `Product Goal of ${scope.repository}`;
     const identifier: ProductGoalIdentifier = identify(scope, goalTitle);
     const statement: GoalStatement = { description: input.description };
@@ -46,7 +46,7 @@ async function main(): Promise<void> {
     const { PlanGatewayAdapter } = await import(
       "../../../../../core/gateway/plan-gateway-adapter.ts"
     );
-    const gateway = new PlanGatewayAdapter(scope.owner, scope.repository);
+    const gateway = new PlanGatewayAdapter();
     const result = await gateway.execute(plan);
     console.log(JSON.stringify(result, null, 2));
   } catch (e) {
