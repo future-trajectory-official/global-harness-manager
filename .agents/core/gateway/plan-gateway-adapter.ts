@@ -31,6 +31,10 @@ type OperationHandler = (
   lastItemId?: string,
 ) => Promise<StepResult>;
 
+export interface PlanResult extends ExecutionResult {
+  getStep(entity: string, operation: string): StepResult | undefined;
+}
+
 export class PlanGatewayAdapter implements PlanGateway {
   private readonly stepHandlers = new Map<EntityType, Map<StepOperation, OperationHandler>>();
   private resolvedScope: EntityScope | null = null;
@@ -204,9 +208,12 @@ export class PlanGatewayAdapter implements PlanGateway {
     entityMap.set(operation, handler);
   }
 
-  async execute(plan: Plan): Promise<ExecutionResult> {
+  async execute(plan: Plan): Promise<PlanResult> {
     if (plan.steps.length === 0) {
-      return { stepResults: [] };
+      return {
+        stepResults: [],
+        getStep: () => undefined,
+      };
     }
 
     const stepResults: StepResult[] = [];
@@ -220,7 +227,17 @@ export class PlanGatewayAdapter implements PlanGateway {
       }
     }
 
-    return { stepResults };
+    const planSteps = plan.steps;
+
+    return {
+      stepResults,
+      getStep(entity: string, operation: string): StepResult | undefined {
+        const idx = planSteps.findIndex(
+          (s) => s.entity === entity && s.operation === operation,
+        );
+        return idx >= 0 ? stepResults[idx] : undefined;
+      },
+    };
   }
 
   private async executeStep(
