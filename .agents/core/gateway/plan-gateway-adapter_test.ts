@@ -1396,3 +1396,239 @@ Deno.test("Sprint - should return error for unknown operation", async () => {
   assertEquals(result.stepResults[0].success, false);
   assertStringIncludes(result.stepResults[0].error ?? "", "No handler registered");
 });
+
+// ======== Epic Operation Tests ========
+
+Deno.test("Epic create - should map params to gh issue create args", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Epic",
+        operation: "create",
+        params: { title: "Test Epic", body: "body text" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "create");
+  assertStringIncludes(calls[0].args.join(" "), "--title Test Epic");
+  assertStringIncludes(calls[0].args.join(" "), "--body body text");
+  assertStringIncludes(calls[0].args.join(" "), "--label type:Epic");
+});
+
+Deno.test("Epic view - should map itemId to gh issue view args", async () => {
+  const expectedOutput = JSON.stringify({
+    number: 42,
+    title: "Test Epic",
+    body: "body",
+    labels: [{ name: "type:Epic" }],
+    id: "node-abc",
+  });
+  const adapter = makeAdapter(fixedRunner(expectedOutput));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Epic", operation: "view", params: { itemId: "42" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "42");
+});
+
+Deno.test("Epic search - should map labelType to gh issue list args", async () => {
+  const expectedOutput = JSON.stringify([
+    { number: 42, title: "Existing Epic", labels: [{ name: "type:Epic" }] },
+  ]);
+  const adapter = makeAdapter(fixedRunner(expectedOutput));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Epic", operation: "search", params: { labelType: "Epic" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as Array<Record<string, unknown>>;
+  assertEquals(output.length, 1);
+  assertEquals(output[0].number, 42);
+});
+
+Deno.test("Epic comment - should map itemId and body to gh issue comment args", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Epic", operation: "comment", params: { itemId: "42", body: "comment text" } },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "comment");
+  assertEquals(calls[0].args[2], "42");
+  assertStringIncludes(calls[0].args.join(" "), "--body comment text");
+});
+
+Deno.test("Epic update - should map params to gh issue edit args", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Epic", operation: "update", params: { itemId: "42", title: "New Title" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "edit");
+  assertEquals(calls[0].args[2], "42");
+  assertStringIncludes(calls[0].args.join(" "), "--title New Title");
+});
+
+// ======== Feature Operation Tests ========
+
+Deno.test("Feature create - should map params to gh issue create args", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Feature",
+        operation: "create",
+        params: { title: "Test Feature", body: "body text" },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "create");
+  assertStringIncludes(calls[0].args.join(" "), "--title Test Feature");
+  assertStringIncludes(calls[0].args.join(" "), "--body body text");
+  assertStringIncludes(calls[0].args.join(" "), "--label type:Feature");
+});
+
+Deno.test("Feature view - should map itemId to gh issue view args", async () => {
+  const expectedOutput = JSON.stringify({
+    number: 42,
+    title: "Test Feature",
+    body: "body",
+    labels: [{ name: "type:Feature" }],
+    id: "node-abc",
+  });
+  const adapter = makeAdapter(fixedRunner(expectedOutput));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Feature", operation: "view", params: { itemId: "42" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "42");
+});
+
+Deno.test("Feature search - should map labelType to gh issue list args", async () => {
+  const expectedOutput = JSON.stringify([
+    { number: 42, title: "Existing Feature", labels: [{ name: "type:Feature" }] },
+  ]);
+  const adapter = makeAdapter(fixedRunner(expectedOutput));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Feature", operation: "search", params: { labelType: "Feature" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as Array<Record<string, unknown>>;
+  assertEquals(output.length, 1);
+  assertEquals(output[0].number, 42);
+});
+
+Deno.test("Feature comment - should map itemId and body to gh issue comment args", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Feature", operation: "comment", params: { itemId: "42", body: "comment text" } },
+    ],
+  };
+  await adapter.execute(plan);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "comment");
+  assertEquals(calls[0].args[2], "42");
+  assertStringIncludes(calls[0].args.join(" "), "--body comment text");
+});
+
+Deno.test("Feature update - should map params to gh issue edit args", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Feature", operation: "update", params: { itemId: "42", title: "New Title" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertEquals(calls[0].args[0], "issue");
+  assertEquals(calls[0].args[1], "edit");
+  assertEquals(calls[0].args[2], "42");
+  assertStringIncludes(calls[0].args.join(" "), "--title New Title");
+});
+
+Deno.test("Feature update with parentEpic - should append parent reference to body", async () => {
+  let callCount = 0;
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ body: "Existing body content" }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "assign to epic",
+    steps: [
+      {
+        entity: "Feature",
+        operation: "update",
+        params: { itemId: "42", parentEpic: "7" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(callCount, 2);
+});
