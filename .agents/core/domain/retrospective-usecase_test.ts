@@ -56,10 +56,12 @@ function makeReason(description = "Completed retrospective"): ChangeReason {
 Deno.test("retrospectiveUseCase - plan should return Plan with plan + execute", () => {
   const plan = retrospectiveUseCase.plan(makeIdentifier(), makeSprint());
   assertEquals(plan.summary, "Plan retrospective: Sprint 15 Retrospective");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "plan");
-  assertEquals(plan.steps[0].params.body, "## Sprint Retrospective\n\n- **Sprint**: Sprint 15");
-  assertEquals(plan.steps[1].operation, "execute");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "plan");
+  assertEquals(plan.steps[1].params.body, "## Sprint Retrospective\n\n- **Sprint**: Sprint 15");
+  assertEquals(plan.steps[2].operation, "execute");
 });
 
 Deno.test("retrospectiveUseCase - plan should throw for empty title", () => {
@@ -78,9 +80,11 @@ Deno.test("retrospectiveUseCase - execute should return Plan with execute + exec
     makeReason(),
   );
   assertEquals(plan.summary, "Execute retrospective: Sprint 15 Retrospective");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "execute");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "execute");
+  assertEquals(plan.steps[2].operation, "execute");
 });
 
 Deno.test("retrospectiveUseCase - execute should throw for undefined id", () => {
@@ -156,9 +160,11 @@ Deno.test("retrospectiveUseCase - execute should throw for empty kpta advise", (
 Deno.test("retrospectiveUseCase - archive should return Plan with archive + archive", () => {
   const plan = retrospectiveUseCase.archive(makeIdentifier());
   assertEquals(plan.summary, "Archive retrospective: Sprint 15 Retrospective");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "archive");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "archive");
+  assertEquals(plan.steps[2].operation, "archive");
 });
 
 Deno.test("retrospectiveUseCase - archive should throw for undefined id", () => {
@@ -172,7 +178,9 @@ Deno.test("retrospectiveUseCase - archive should throw for undefined id", () => 
 Deno.test("retrospectiveUseCase - find should return Plan with view step", () => {
   const plan = retrospectiveUseCase.find(makeIdentifier());
   assertEquals(plan.summary, "Find retrospective: Sprint 15 Retrospective");
-  assertEquals(plan.steps[0].operation, "view");
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "view");
 });
 
 Deno.test("retrospectiveUseCase - find should throw for undefined id", () => {

@@ -26,21 +26,23 @@ function makeReason(description = "Strategy change"): ChangeReason {
 Deno.test("productGoalUseCase - set should return Plan with create + comment", () => {
   const plan = productGoalUseCase.set(makeIdentifier(), makeStatement());
   assertEquals(plan.summary, "Set product goal: Product Goal");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "create");
-  assertEquals(plan.steps[1].operation, "comment");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "create");
+  assertEquals(plan.steps[2].operation, "comment");
 });
 
 Deno.test("productGoalUseCase - set body should be history table", () => {
   const plan = productGoalUseCase.set(makeIdentifier(), makeStatement());
-  const body = plan.steps[0].params.body as string;
+  const body = plan.steps[1].params.body as string;
   assertStringIncludes(body, "## History");
   assertStringIncludes(body, "| 1 | プロジェクト開始 |");
 });
 
 Deno.test("productGoalUseCase - set comment should be versioned", () => {
   const plan = productGoalUseCase.set(makeIdentifier(), makeStatement());
-  const comment = plan.steps[1].params.body as string;
+  const comment = plan.steps[2].params.body as string;
   assertStringIncludes(comment, "# Version: 1");
   assertStringIncludes(comment, "## Goal");
 });
@@ -64,9 +66,11 @@ Deno.test("productGoalUseCase - set should throw for empty description", () => {
 Deno.test("productGoalUseCase - pivot should return Plan with update + comment", () => {
   const plan = productGoalUseCase.pivot(makeIdentifier(), makeStatement(), makeReason());
   assertEquals(plan.summary, "Pivot product goal: Product Goal");
-  assertEquals(plan.steps.length, 2);
-  assertEquals(plan.steps[0].operation, "update");
-  assertEquals(plan.steps[1].operation, "comment");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "update");
+  assertEquals(plan.steps[2].operation, "comment");
 });
 
 Deno.test("productGoalUseCase - pivot should throw for empty reason", () => {
@@ -89,7 +93,9 @@ Deno.test("productGoalUseCase - pivot should throw for undefined id", () => {
 Deno.test("productGoalUseCase - find should return Plan with view step", () => {
   const plan = productGoalUseCase.find(makeIdentifier());
   assertEquals(plan.summary, "Find product goal: Product Goal");
-  assertEquals(plan.steps[0].operation, "view");
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "view");
 });
 
 Deno.test("productGoalUseCase - find should throw for undefined id", () => {
