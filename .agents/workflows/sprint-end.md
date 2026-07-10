@@ -201,7 +201,32 @@ archive-backlog の結果をもとに record-velocity を実行する連携Phase
 
 ---
 
-## Phase 8: ステートレスリセットの検討 (Stateless Reset)
+## Phase 8: スプリント終了 (Sprint Conclusion)
+
+すべてのスプリント後処理が完了したことを確認し、スプリントを終了状態にします。
+
+- **読み込むペルソナ**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
+- **実行するスキル**:
+  `[conclude-sprint](/.agents/skills/bundles/management-bundle/conclude-sprint/SKILL.md)`
+- **入力（前提条件）**: Phase 1〜7
+  の全後処理（レビュー検証・アーカイブ・ベロシティ記録・メトリクス評価・レトロスペクティブ・スキル最適化）が完了し、POがスプリント終了を承認していること。
+- **手続き**:
+  1. `conclude-sprint` スキルの Quick-Start に従い、対象スプリント番号を確定する。
+  2. dry-run で終了される Plan を PO に提示し、承認を得る。
+  3. 本実行でスプリントを終了する。
+- **期待される結果（終了条件）**:
+  1. 対象スプリント（Milestone）が終了状態（closed）になっていること。
+
+> [!IMPORTANT]
+> 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
+> 8が完了しました。よろしければ『次のフェーズ（Phase 9）へ進む』とご指示ください」**
+> と明確にプロンプトして停止してください。
+
+<!-- STOP -->
+
+---
+
+## Phase 9: ステートレスリセットの検討 (Stateless Reset)
 
 スプリントの完了を宣言し、次回スプリントに向けてキャッシュ、一時ファイル、記憶フォルダの退避を行い、環境をステートレスにクリアします。
 
