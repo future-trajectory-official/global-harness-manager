@@ -238,20 +238,22 @@ async function main() {
   const base = args.base;
   const lang = args.lang;
 
-  if (!command || !name) {
+  if (!command) {
     console.log(
-      "Usage: manage-sandbox [create|destroy] --name <name> [--mode directory|container] [--lang deno|node|python]",
+      "Usage: manage-sandbox [create|destroy] [--name <name>] [--mode directory|container] [--lang deno|node|python]",
     );
     Deno.exit(1);
   }
 
+  const resolvedName = name || Deno.cwd().split("/").pop() || "sandbox";
+
   try {
     switch (command) {
       case "create":
-        await createSandbox(name, mode, base, lang);
+        await createSandbox(resolvedName, mode, base, lang);
         break;
       case "destroy":
-        await destroySandbox(name, base);
+        await destroySandbox(resolvedName, base);
         break;
       default:
         console.error(`Unknown command: ${command}`);
