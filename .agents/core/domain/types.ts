@@ -173,7 +173,7 @@ export interface Plan {
 
 // ======== Entity + Operation 型（Discriminated Step 用） ========
 
-/** エンティティ種別。全9種のDomainエンティティを識別する。 */
+/** エンティティ種別。全10種のDomainエンティティを識別する。 */
 export type EntityType =
   | "Vision"
   | "ProductGoal"
@@ -183,7 +183,8 @@ export type EntityType =
   | "WorkPackage"
   | "Sprint"
   | "Review"
-  | "Retrospective";
+  | "Retrospective"
+  | "Scope";
 
 // ---- Entity-specific OperationType ----
 
@@ -257,6 +258,9 @@ export type ReviewOperation =
 /** Retrospective エンティティの操作種別。RetrospectiveValidator.RetrospectiveOperation と対応。 */
 export type RetrospectiveOperation = "plan" | "execute" | "archive" | "view" | "search";
 
+/** Scope エンティティの操作種別。スコープ解決を表す。 */
+export type ScopeOperation = "resolve";
+
 /** 全Entityの操作を統合したユニオン型。Gateway層でのハンドラ解決に使用する。 */
 export type StepOperation =
   | VisionOperation
@@ -267,7 +271,8 @@ export type StepOperation =
   | WorkPackageOperation
   | SprintOperation
   | ReviewOperation
-  | RetrospectiveOperation;
+  | RetrospectiveOperation
+  | ScopeOperation;
 
 /**
  * Plan 内の1実行単位。Discriminated Union により entity と operation の組合せを型安全に表現する。
@@ -308,6 +313,10 @@ export type Step = {
 } | {
   readonly entity: "Retrospective";
   readonly operation: RetrospectiveOperation;
+  readonly params: Record<string, unknown>;
+} | {
+  readonly entity: "Scope";
+  readonly operation: ScopeOperation;
   readonly params: Record<string, unknown>;
 };
 

@@ -1,4 +1,4 @@
-import type { BoardOutput, ConfigContent, EntityScope, LabelDefinition, List } from "./types.ts";
+import type { BoardOutput, ConfigContent, LabelDefinition, List } from "./types.ts";
 
 /**
  * 環境設定の管理を担当するGatewayのポート（インターフェース）。
@@ -14,16 +14,6 @@ import type { BoardOutput, ConfigContent, EntityScope, LabelDefinition, List } f
  * - Domain層はGateway層の具象実装を知らない
  */
 export interface ConfigGateway {
-  /**
-   * 現在のGitHubリポジトリのスコープを解決する。
-   *
-   * `gh repo view --json owner,name` を実行し、owner と repository を取得する。
-   *
-   * @returns 解決されたスコープ（owner, repository）。
-   * @throws {Error} GATEWAY_ERROR - gh CLI の実行に失敗した場合。
-   */
-  resolveScope(): Promise<EntityScope>;
-
   /**
    * 設定情報を読み込む。
    *
