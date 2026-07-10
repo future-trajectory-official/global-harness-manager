@@ -24,8 +24,84 @@ const REPO = "my-repo";
 function makeAdapter(
   runner: ReturnType<typeof mockRunner>["runner"] = mockRunner().runner,
 ): PlanGatewayAdapter {
-  return new PlanGatewayAdapter(OWNER, REPO, runner);
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  return adapter;
 }
+
+/** ラップなしのPlanGatewayAdapter。Scope.resolveの直接テスト用。 */
+function makeRawAdapter(
+  runner: ReturnType<typeof mockRunner>["runner"] = mockRunner().runner,
+): PlanGatewayAdapter {
+  return new PlanGatewayAdapter(runner);
+}
+
+/**
+ * Scope.resolve - 既知scopeが params に含まれる場合、そのままキャッシュされ gh が呼ばれないことを検証する。
+ */
+Deno.test("Scope.resolve - should store known scope without calling gh", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeRawAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Scope", operation: "resolve", params: { owner: "my-org", repository: "my-repo" } },
+      { entity: "Vision", operation: "search", params: { labelType: "Vision" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 2);
+  assertEquals(result.stepResults[0].success, true);
+  // Scope.resolve with known scope should NOT trigger gh commands
+  // Only the Vision.search step should trigger a gh call
+  assertEquals(calls.length, 1);
+  assertEquals(calls[0].cmd, "gh");
+  assertStringIncludes(calls[0].args.join(" "), "--repo my-org/my-repo");
+});
+
+/**
+ * Scope.resolve - unknown scope が params に含まれる場合、git remote + gh で解決されることを検証する。
+ */
+Deno.test("Scope.resolve - should resolve unknown scope via git + gh", async () => {
+  let callCount = 0;
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({ code: 0, stdout: "git@github.com:my-org/my-repo.git", stderr: "" });
+    }
+    if (callCount === 2) {
+      return Promise.resolve({ code: 0, stdout: "Logged in to gh as my-user ", stderr: "" });
+    }
+    if (callCount === 3) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ owner: { login: "my-org" }, name: "my-repo" }),
+        stderr: "",
+      });
+    }
+    if (callCount === 4) {
+      return Promise.resolve({ code: 0, stdout: JSON.stringify([]), stderr: "" });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeRawAdapter(runner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      },
+      { entity: "Vision", operation: "search", params: { labelType: "Vision" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 2);
+  assertEquals(result.stepResults[0].success, true);
+  // Verify the chain: git remote → gh auth status → gh repo view → [Vision search]
+  assertEquals(callCount, 4);
+});
 
 /**
  * PlanGateway - execute が空の Plan.steps に対して空の ExecutionResult を返すことを検証する。

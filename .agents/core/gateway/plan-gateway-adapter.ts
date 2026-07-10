@@ -1,6 +1,7 @@
 import { executeCommand, type ExecuteResult } from "../shared/io/command.ts";
 import { logger } from "../shared/io/logger.ts";
 import type {
+  EntityScope,
   EntityType,
   ExecutionResult,
   Plan,
@@ -32,10 +33,9 @@ type OperationHandler = (
 
 export class PlanGatewayAdapter implements PlanGateway {
   private readonly stepHandlers = new Map<EntityType, Map<StepOperation, OperationHandler>>();
+  private resolvedScope: EntityScope | null = null;
 
   constructor(
-    private readonly owner: string,
-    private readonly repository: string,
     private readonly runCommand: CommandRunner = (cmd, args) => executeCommand({ cmd, args }),
   ) {
     // === Vision 操作の登録 ===
@@ -126,6 +126,73 @@ export class PlanGatewayAdapter implements PlanGateway {
       "view",
       (op, params, lastItemId) => this.#handleSprintView(op, params, lastItemId),
     );
+    this.register("Scope", "resolve", (_op, params) => this.handleScopeResolve(params));
+  }
+
+  /** テスト用にscopeを直接設定する。通常はScope.resolve Stepで設定される。 */
+  setScope(owner: string, repository: string): void {
+    this.resolvedScope = { owner, repository };
+  }
+
+  private async handleScopeResolve(params: Record<string, unknown>): Promise<StepResult> {
+    const owner = String(params.owner ?? "");
+    const repository = String(params.repository ?? "");
+
+    if (owner && repository && owner !== "unknown" && repository !== "unknown") {
+      this.resolvedScope = { owner, repository };
+      return { operation: "resolve", success: true };
+    }
+
+    const remoteResult = await this.runCommand("git", ["remote", "get-url", "origin"]);
+    if (remoteResult.code !== 0) {
+      return {
+        operation: "resolve",
+        success: false,
+        error: `Failed to resolve scope: ${remoteResult.stderr}`,
+      };
+    }
+
+    const remoteUrl = remoteResult.stdout.trim();
+    const remoteOwner = remoteUrl.match(/(?:github\.com[/:])([\w.-]+)\//)?.[1];
+    const remoteRepo = remoteUrl.match(/(?:github\.com[/:][\w.-]+\/)([\w.-]+?)(?:\.git)?$/)?.[1];
+    if (!remoteOwner || !remoteRepo) {
+      return {
+        operation: "resolve",
+        success: false,
+        error: `Could not parse owner/repo from git remote: ${remoteUrl}`,
+      };
+    }
+
+    const authResult = await this.runCommand("gh", ["auth", "status"]);
+    if (authResult.code !== 0) {
+      return {
+        operation: "resolve",
+        success: false,
+        error: `Not authenticated with gh. Run \`gh auth login\` first.`,
+      };
+    }
+
+    const repoResult = await this.runCommand("gh", ["repo", "view", "--json", "owner,name"]);
+    if (repoResult.code !== 0) {
+      return {
+        operation: "resolve",
+        success: false,
+        error:
+          `Repository '${remoteOwner}/${remoteRepo}' not found or no access. Check your gh auth with \`gh auth status\` and switch account with \`gh auth switch\` if needed.`,
+      };
+    }
+
+    try {
+      const data = JSON.parse(repoResult.stdout);
+      this.resolvedScope = { owner: data.owner.login, repository: data.name };
+      return { operation: "resolve", success: true };
+    } catch {
+      return {
+        operation: "resolve",
+        success: false,
+        error: `Failed to parse gh repo view output: ${repoResult.stdout}`,
+      };
+    }
   }
 
   private register(entity: EntityType, operation: StepOperation, handler: OperationHandler): void {
@@ -214,7 +281,10 @@ export class PlanGatewayAdapter implements PlanGateway {
   }
 
   private buildRepoArg(): string[] {
-    return ["--repo", `${this.owner}/${this.repository}`];
+    if (!this.resolvedScope) {
+      return [];
+    }
+    return ["--repo", `${this.resolvedScope.owner}/${this.resolvedScope.repository}`];
   }
 
   /**
@@ -625,7 +695,8 @@ export class PlanGatewayAdapter implements PlanGateway {
   }
 
   #milestoneUrl(itemId?: string): string {
-    const base = `repos/${this.owner}/${this.repository}/milestones`;
+    if (!this.resolvedScope) return "";
+    const base = `repos/${this.resolvedScope.owner}/${this.resolvedScope.repository}/milestones`;
     return itemId ? `${base}/${itemId}` : base;
   }
 
@@ -738,7 +809,9 @@ export class PlanGatewayAdapter implements PlanGateway {
     const state = String(params.state ?? "open");
     const result = await this.runCommand("gh", [
       "api",
-      `repos/${this.owner}/${this.repository}/milestones?state=${state}&per_page=1&direction=desc`,
+      `repos/${this.resolvedScope?.owner ?? "unknown"}/${
+        this.resolvedScope?.repository ?? "unknown"
+      }/milestones?state=${state}&per_page=1&direction=desc`,
     ]);
     if (result.code !== 0) {
       return { operation, success: false, error: result.stderr };
