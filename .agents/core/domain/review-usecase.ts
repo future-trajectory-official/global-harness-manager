@@ -1,4 +1,4 @@
-import type { Plan } from "./types.ts";
+import type { EntityScope, Plan, Step } from "./types.ts";
 
 /** Review Issue 本文の Markdown マーカー定数。formatPlanBody と parseReviewBody で共有する。 */
 export const REVIEW_MARKERS = {
@@ -17,6 +17,14 @@ import type {
   SprintIdentifier,
 } from "./types.ts";
 import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
+
+function scopeStep(identifier: { scope: EntityScope }): Step {
+  return {
+    entity: "Scope" as const,
+    operation: "resolve" as const,
+    params: { ...identifier.scope },
+  };
+}
 
 /** スプリントレビュー計画の入力。検証対象となるPBI/WP/ACの一覧と各ACの検証方法を定義する。 */
 export interface ReviewPlanInput {
@@ -188,6 +196,7 @@ export const reviewUseCase: ReviewUseCase = {
     return {
       summary: `Plan review: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "Review",
           operation: "plan",
@@ -208,6 +217,7 @@ export const reviewUseCase: ReviewUseCase = {
     return {
       summary: `Revise review: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "Review",
           operation: "revise",
@@ -228,6 +238,7 @@ export const reviewUseCase: ReviewUseCase = {
     return {
       summary: `Report review: ${data.identifier.title.value}`,
       steps: [
+        scopeStep(data.identifier),
         {
           entity: "Review",
           operation: "report",
@@ -248,6 +259,7 @@ export const reviewUseCase: ReviewUseCase = {
     return {
       summary: `Archive review: ${identifier.title.value}`,
       steps: [
+        scopeStep(identifier),
         {
           entity: "Review",
           operation: "archive",
@@ -273,7 +285,7 @@ export const reviewUseCase: ReviewUseCase = {
     assertIdDefined(identifier.id, "find a review");
     return {
       summary: `Find review: ${identifier.title.value}`,
-      steps: [{
+      steps: [scopeStep(identifier), {
         entity: "Review",
         operation: "view",
         params: {
@@ -286,7 +298,11 @@ export const reviewUseCase: ReviewUseCase = {
   search(condition): Plan {
     return {
       summary: condition.describe().summary,
-      steps: condition.describe().steps,
+      steps: [{
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      }, ...condition.describe().steps],
     };
   },
 };
