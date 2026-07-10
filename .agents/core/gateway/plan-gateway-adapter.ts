@@ -119,6 +119,52 @@ export class PlanGatewayAdapter implements PlanGateway {
     this.register("ProductGoal", "update", (_op, params) => this.handleUpdateItem(params));
     this.register("ProductGoal", "search", (_op, params) => this.handleSearchItems(params));
 
+    // === Epic 操作の登録 ===
+    this.register("Epic", "create", (_op, params) => this.handleCreateItem(params, "Epic"));
+    this.register(
+      "Epic",
+      "comment",
+      (_op, params, lastItemId) => this.handleAddComment(params, lastItemId),
+    );
+    this.register("Epic", "view", (_op, params) => this.handleFindItem(params));
+    this.register("Epic", "search", (_op, params) => this.handleSearchItems(params));
+    this.register("Epic", "update", (_op, params) => this.handleUpdateItem(params));
+
+    // === Feature 操作の登録 ===
+    this.register("Feature", "create", async (_op, params) => {
+      const result = await this.handleCreateItem(params, "Feature");
+      if (result.success && params.parentEpic && result.itemId) {
+        const parentResult = await this.#handleSetParent(result.itemId, String(params.parentEpic));
+        if (!parentResult.success) {
+          return parentResult;
+        }
+      }
+      return result;
+    });
+    this.register(
+      "Feature",
+      "comment",
+      (_op, params, lastItemId) => this.handleAddComment(params, lastItemId),
+    );
+    this.register("Feature", "view", (_op, params) => this.handleFindItem(params));
+    this.register("Feature", "search", (_op, params) => this.handleSearchItems(params));
+    this.register("Feature", "update", async (_op, params) => {
+      const itemId = String(params.itemId ?? "");
+      if (!itemId) {
+        return { operation: "update", success: false, error: "itemId is required" };
+      }
+      if (params.parentEpic) {
+        return await this.#handleSetParent(itemId, String(params.parentEpic));
+      }
+      if ("parentEpic" in params) {
+        return await this.#handleRemoveParent(itemId);
+      }
+      if (params.title || params.bodyAppend) {
+        return await this.handleUpdateItem(params);
+      }
+      return await this.handleUpdateItem(params);
+    });
+
     // === Sprint (Milestone) 操作の登録 ===
     this.register("Sprint", "create", (op, params) => this.#handleSprintCreate(op, params));
     this.register("Sprint", "endSprint", (op, params) => this.#handleSprintEnd(op, params));
@@ -864,5 +910,90 @@ export class PlanGatewayAdapter implements PlanGateway {
     }
     const output = parseJsonOutput(result.stdout) as Record<string, unknown> | undefined;
     return { operation, success: true, itemId, output };
+  }
+
+  async #handleSetParent(
+    itemId: string,
+    parentId: string,
+  ): Promise<StepResult> {
+    const epicNode = await this.runCommand(
+      "gh",
+      ["issue", "view", parentId, "--json", "id", ...this.buildRepoArg()],
+    );
+    if (epicNode.code !== 0) {
+      return { operation: "update", success: false, error: epicNode.stderr };
+    }
+    const featureNode = await this.runCommand(
+      "gh",
+      ["issue", "view", itemId, "--json", "id", ...this.buildRepoArg()],
+    );
+    if (featureNode.code !== 0) {
+      return { operation: "update", success: false, error: featureNode.stderr };
+    }
+    const epicNodeId = (JSON.parse(epicNode.stdout) as { id: string }).id;
+    const featureNodeId = (JSON.parse(featureNode.stdout) as { id: string }).id;
+    const mutation =
+      `mutation($epic: ID!, $feature: ID!) { addSubIssue(input: {issueId: $epic, subIssueId: $feature, replaceParent: true}) { issue { id } } }`;
+    const result = await this.runCommand("gh", [
+      "api",
+      "graphql",
+      "-f",
+      `query=${mutation}`,
+      "-f",
+      `epic=${epicNodeId}`,
+      "-f",
+      `feature=${featureNodeId}`,
+    ]);
+    if (result.code !== 0) {
+      return { operation: "update", success: false, error: result.stderr };
+    }
+    return { operation: "update", success: true, itemId };
+  }
+
+  async #handleRemoveParent(
+    itemId: string,
+  ): Promise<StepResult> {
+    const featureNode = await this.runCommand(
+      "gh",
+      ["issue", "view", itemId, "--json", "id", ...this.buildRepoArg()],
+    );
+    if (featureNode.code !== 0) {
+      return { operation: "update", success: false, error: featureNode.stderr };
+    }
+    const featureNodeId = (JSON.parse(featureNode.stdout) as { id: string }).id;
+    const parentQuery =
+      `query { node(id: "${featureNodeId}") { ... on Issue { parent { ... on Issue { id } } } } }`;
+    const parentResult = await this.runCommand("gh", [
+      "api",
+      "graphql",
+      "-f",
+      `query=${parentQuery}`,
+    ]);
+    if (parentResult.code !== 0) {
+      return { operation: "update", success: false, error: parentResult.stderr };
+    }
+    const parentData = JSON.parse(parentResult.stdout) as {
+      data?: { node?: { parent?: { id: string } | null } };
+    };
+    const parentNodeId = parentData?.data?.node?.parent?.id;
+    if (!parentNodeId) {
+      return { operation: "update", success: true, itemId };
+    }
+    const mutation =
+      `mutation($parent: ID!, $feature: ID!) { removeSubIssue(input: {issueId: $parent, subIssueId: $feature}) { issue { id } } }`;
+    const result = await this.runCommand("gh", [
+      "api",
+      "graphql",
+      "-f",
+      `query=${mutation}`,
+      "-f",
+      `parent=${parentNodeId}`,
+      "-f",
+      `feature=${featureNodeId}`,
+    ]);
+    if (result.code !== 0) {
+      return { operation: "update", success: false, error: result.stderr };
+    }
+    return { operation: "update", success: true, itemId };
   }
 }
