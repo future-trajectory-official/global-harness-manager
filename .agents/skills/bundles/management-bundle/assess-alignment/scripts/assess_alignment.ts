@@ -4,8 +4,22 @@ import { identify } from "../../../../../core/domain/types.ts";
 import type { EntityScope } from "../../../../../core/domain/types.ts";
 import { visionUseCase } from "../../../../../core/domain/vision-usecase.ts";
 import { productGoalUseCase } from "../../../../../core/domain/product-goal-usecase.ts";
-import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
+import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
+import { executePlan } from "../../../../../core/domain/plan-executor.ts";
+import type { ExecutionResult, Plan, StepResult } from "../../../../../core/domain/types.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
+
+function getStepResult(
+  plan: Plan,
+  result: ExecutionResult,
+  entity: string,
+  operation: string,
+): StepResult | undefined {
+  const idx = plan.steps.findIndex(
+    (s) => s.entity === entity && s.operation === operation,
+  );
+  return idx >= 0 ? result.stepResults[idx] : undefined;
+}
 
 interface RoleInfo {
   name: string;
@@ -130,13 +144,13 @@ function extractVisionFromComments(comments: Array<{ body?: string }>): {
 }
 
 async function fetchVisionFromGitHub(
-  gateway: PlanGatewayAdapter,
+  gateway: PlanGateway,
   scope: EntityScope,
   repoTitle: string,
 ): Promise<VisionData> {
   const searchPlan = visionUseCase.find(identify(scope, repoTitle));
-  const searchResult = await gateway.execute(searchPlan);
-  const searchOutput = searchResult.getStep("Vision", "search")?.output as
+  const searchResult = await executePlan(searchPlan, gateway);
+  const searchOutput = getStepResult(searchPlan, searchResult, "Vision", "search")?.output as
     | Array<{ number: number }>
     | undefined;
   const visionNumber = searchOutput?.[0]?.number;
@@ -147,8 +161,8 @@ async function fetchVisionFromGitHub(
 
   const viewIdentifier = identify(scope, repoTitle, undefined, String(visionNumber));
   const viewPlan = visionUseCase.find(viewIdentifier);
-  const viewResult = await gateway.execute(viewPlan);
-  const viewOutput = viewResult.getStep("Vision", "view")?.output as
+  const viewResult = await executePlan(viewPlan, gateway);
+  const viewOutput = getStepResult(viewPlan, viewResult, "Vision", "view")?.output as
     | Record<string, unknown>
     | undefined;
   if (!viewOutput) {
@@ -198,7 +212,7 @@ function extractProductGoalFromComments(
  * ProductGoal が存在しない場合は null を返す（エラーにしない）。
  */
 async function fetchProductGoalFromGitHub(
-  gateway: PlanGatewayAdapter,
+  gateway: PlanGateway,
   scope: EntityScope,
 ): Promise<ProductGoalData | null> {
   const searchPlan = {
@@ -209,8 +223,8 @@ async function fetchProductGoalFromGitHub(
       params: { labelType: "ProductGoal" },
     }],
   };
-  const searchResult = await gateway.execute(searchPlan);
-  const searchOutput = searchResult.getStep("ProductGoal", "search")?.output as
+  const searchResult = await executePlan(searchPlan, gateway);
+  const searchOutput = getStepResult(searchPlan, searchResult, "ProductGoal", "search")?.output as
     | Array<{ number: number }>
     | undefined;
   const goalNumber = searchOutput?.[0]?.number;
@@ -221,8 +235,8 @@ async function fetchProductGoalFromGitHub(
   const goalTitle = `Product Goal of ${scope.repository}`;
   const viewIdentifier = identify(scope, goalTitle, "pending", String(goalNumber));
   const viewPlan = productGoalUseCase.find(viewIdentifier);
-  const viewResult = await gateway.execute(viewPlan);
-  const viewOutput = viewResult.getStep("ProductGoal", "view")?.output as
+  const viewResult = await executePlan(viewPlan, gateway);
+  const viewOutput = getStepResult(viewPlan, viewResult, "ProductGoal", "view")?.output as
     | Record<string, unknown>
     | undefined;
   if (!viewOutput) {
@@ -273,7 +287,10 @@ async function main(): Promise<void> {
       return;
     }
 
-    const gateway = new PlanGatewayAdapter();
+    const { PlanGatewayAdapter } = await import(
+      "../../../../../core/gateway/plan-gateway-adapter.ts"
+    );
+    const gateway: PlanGateway = new PlanGatewayAdapter();
     const vision = await fetchVisionFromGitHub(gateway, scope, repoTitle);
     const productGoal = await fetchProductGoalFromGitHub(gateway, scope);
 

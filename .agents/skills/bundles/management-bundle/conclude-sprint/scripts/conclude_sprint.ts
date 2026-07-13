@@ -4,7 +4,8 @@ import { sprintId } from "../../../../../core/domain/types.ts";
 import type { EntityScope, Plan, SprintIdentifier } from "../../../../../core/domain/types.ts";
 import { sprintUseCase } from "../../../../../core/domain/sprint-usecase.ts";
 import type { ExecutionResult } from "../../../../../core/domain/types.ts";
-import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
+import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
+import { executePlan } from "../../../../../core/domain/plan-executor.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
@@ -24,9 +25,12 @@ async function resolveSprintIdentifier(
   if (milestoneNodeId && milestoneNumber) {
     return sprintId(scope, sprintNumber, milestoneNodeId, milestoneNumber);
   }
-  const gateway = new PlanGatewayAdapter();
+  const { PlanGatewayAdapter } = await import(
+    "../../../../../core/gateway/plan-gateway-adapter.ts"
+  );
+  const gateway: PlanGateway = new PlanGatewayAdapter();
   const findPlan = sprintUseCase.find();
-  const findResult = await gateway.execute(findPlan) as ExecutionResult;
+  const findResult = await executePlan(findPlan, gateway) as ExecutionResult;
   const milestones = findResult.stepResults?.[1]?.output as
     | Array<{ number: number; id?: string }>
     | undefined;

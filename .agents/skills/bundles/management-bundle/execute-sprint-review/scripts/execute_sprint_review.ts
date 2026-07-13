@@ -3,7 +3,9 @@ import { parseArgs } from "@std/cli/parse-args";
 import { identify, sprintId } from "../../../../../core/domain/types.ts";
 import type { EntityScope, ReviewSearchCondition, Step } from "../../../../../core/domain/types.ts";
 import { reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
-import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
+import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
+import { executePlan } from "../../../../../core/domain/plan-executor.ts";
+import type { PlanResult } from "../../../../../core/gateway/plan-gateway-adapter.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
@@ -88,10 +90,13 @@ async function main(): Promise<void> {
       return;
     }
 
-    const gateway = new PlanGatewayAdapter();
+    const { PlanGatewayAdapter } = await import(
+      "../../../../../core/gateway/plan-gateway-adapter.ts"
+    );
+    const gateway: PlanGateway = new PlanGatewayAdapter();
 
     const searchPlan = reviewUseCase.search(searchCondition);
-    const searchResult = await gateway.execute(searchPlan);
+    const searchResult = await executePlan(searchPlan, gateway) as unknown as PlanResult;
     const searchOutput = searchResult.getStep("Review", "search")?.output as
       | Array<{ number: number; title: string }>
       | undefined;
@@ -107,7 +112,7 @@ async function main(): Promise<void> {
 
     const tempIdentifier = identify(scope, reviewTitle, "pending", String(targetNumber));
     const findPlan = reviewUseCase.find(tempIdentifier);
-    const findResult = await gateway.execute(findPlan);
+    const findResult = await executePlan(findPlan, gateway) as unknown as PlanResult;
     const findOutput = findResult.getStep("Review", "view")?.output as
       | { id?: string; number?: number }
       | undefined;
@@ -138,7 +143,7 @@ async function main(): Promise<void> {
     };
 
     const reportPlan = reviewUseCase.report(reviewData);
-    const reportResult = await gateway.execute(reportPlan);
+    const reportResult = await executePlan(reportPlan, gateway);
     console.log(JSON.stringify(reportResult, null, 2));
   } catch (e) {
     const err = errorUtil.toError(e);
