@@ -61,6 +61,12 @@ export interface EpicUseCase {
    * searchItems を含む Plan を返す。実際の検索は Gateway 層が実行する。
    */
   search(condition: EpicSearchCondition): Plan;
+  /**
+   * Epic とその子フィーチャーの分類階層を表示する。
+   * showHierarchy を含む Plan を返す。実際の取得は Gateway 層が GraphQL で実行する。
+   * identifier.id が undefined の場合はエラー。
+   */
+  showHierarchy(identifier: EpicIdentifier): Plan;
 }
 
 export const epicUseCase: EpicUseCase = {
@@ -130,6 +136,19 @@ export const epicUseCase: EpicUseCase = {
         operation: "resolve",
         params: { owner: "unknown", repository: "unknown" },
       }, ...condition.describe().steps],
+    };
+  },
+
+  showHierarchy(identifier): Plan {
+    assertTitleNonEmpty(identifier.title, "Epic title");
+    assertIdDefined(identifier.id, "show hierarchy of an epic");
+    return {
+      summary: `Show hierarchy: ${identifier.title.value}`,
+      steps: [scopeStep(identifier), {
+        entity: "Epic",
+        operation: "showHierarchy",
+        params: { itemId: identifier.code },
+      }],
     };
   },
 };

@@ -198,7 +198,7 @@ export type ProductGoalOperation = "create" | "update" | "view" | "search" | "co
 export type FeatureOperation = "create" | "update" | "view" | "search" | "comment";
 
 /** Epic エンティティの操作種別。 */
-export type EpicOperation = "create" | "update" | "view" | "search" | "comment";
+export type EpicOperation = "create" | "update" | "view" | "search" | "comment" | "showHierarchy";
 
 /** ProductBacklogItem エンティティの操作種別。PbiValidator.PbiOperation と対応。 */
 export type ProductBacklogItemOperation =

@@ -129,6 +129,9 @@ export class PlanGatewayAdapter implements PlanGateway {
     this.register("Epic", "view", (_op, params) => this.handleFindItem(params));
     this.register("Epic", "search", (_op, params) => this.handleSearchItems(params));
     this.register("Epic", "update", (_op, params) => this.handleUpdateItem(params));
+    this.register("Epic", "showHierarchy", async (_op, params) => {
+      return await this.#handleShowHierarchy(params);
+    });
 
     // === Feature 操作の登録 ===
     this.register("Feature", "create", async (_op, params) => {
@@ -206,6 +209,16 @@ export class PlanGatewayAdapter implements PlanGateway {
     const remoteOwner = remoteUrl.match(/(?:github\.com[/:])([\w.-]+)\//)?.[1];
     const remoteRepo = remoteUrl.match(/(?:github\.com[/:][\w.-]+\/)([\w.-]+?)(?:\.git)?$/)?.[1];
     if (!remoteOwner || !remoteRepo) {
+      const sshMatch = remoteUrl.match(/^git@[^:]+:([\w.-]+)\/([\w.-]+?)(?:\.git)?$/);
+      if (sshMatch) {
+        this.resolvedScope = { owner: sshMatch[1], repository: sshMatch[2] };
+        return {
+          operation: "resolve",
+          success: true,
+          itemId: `${sshMatch[1]}/${sshMatch[2]}`,
+          output: { owner: sshMatch[1], repository: sshMatch[2] },
+        };
+      }
       return {
         operation: "resolve",
         success: false,
@@ -695,6 +708,119 @@ export class PlanGatewayAdapter implements PlanGateway {
     }
 
     return { operation: "search", success: true, output };
+  }
+
+  async #handleShowHierarchy(params: Record<string, unknown>): Promise<StepResult> {
+    const itemId = String(params.itemId ?? "");
+    if (!itemId) {
+      return { operation: "showHierarchy", success: false, error: "itemId is required" };
+    }
+    if (!this.resolvedScope) {
+      return { operation: "showHierarchy", success: false, error: "Scope not resolved" };
+    }
+
+    const query = `query($owner: String!, $repo: String!, $number: Int!) {
+      repository(owner: $owner, name: $repo) {
+        issue(number: $number) {
+          number
+          title
+          body
+          subIssues(first: 100) {
+            nodes {
+              ... on Issue {
+                number
+                title
+                body
+                labels(first: 10) { nodes { name } }
+              }
+            }
+          }
+        }
+      }
+    }`;
+
+    let graphqlResult;
+    try {
+      graphqlResult = await this.runCommand("gh", [
+        "api",
+        "graphql",
+        "-f",
+        `query=${query}`,
+        "-f",
+        `owner=${this.resolvedScope.owner}`,
+        "-f",
+        `repo=${this.resolvedScope.repository}`,
+        "-F",
+        `number=${parseInt(itemId, 10)}`,
+      ]);
+    } catch (e) {
+      return { operation: "showHierarchy", success: false, error: String(e) };
+    }
+    if (graphqlResult.code !== 0) {
+      return { operation: "showHierarchy", success: false, error: graphqlResult.stderr };
+    }
+
+    const parsed = parseJsonOutput(graphqlResult.stdout);
+    if (parsed === undefined) {
+      return {
+        operation: "showHierarchy",
+        success: false,
+        error: "Invalid response from GitHub API",
+      };
+    }
+
+    const data = parsed as {
+      errors?: Array<{ message: string }>;
+      data?: {
+        repository?: {
+          issue: {
+            number: number;
+            title: string;
+            body: string;
+            subIssues: {
+              nodes:
+                | Array<{
+                  number: number;
+                  title: string;
+                  body: string;
+                  labels: { nodes: Array<{ name: string }> };
+                }>
+                | null;
+            };
+          } | null;
+        };
+      };
+    };
+
+    if (data.errors && data.errors.length > 0) {
+      return {
+        operation: "showHierarchy",
+        success: false,
+        error: `GraphQL error: ${data.errors.map((e) => e.message).join("; ")}`,
+      };
+    }
+
+    const issue = data?.data?.repository?.issue;
+    if (!issue) {
+      return { operation: "showHierarchy", success: false, error: "Epic not found" };
+    }
+
+    const features = (issue.subIssues?.nodes ?? []).map((node) => ({
+      number: node.number,
+      title: node.title,
+      body: node.body,
+      labels: node.labels?.nodes?.map((l) => l.name) ?? [],
+    }));
+
+    return {
+      operation: "showHierarchy",
+      success: true,
+      itemId,
+      output: {
+        epic: { number: issue.number, title: issue.title, body: issue.body },
+        features,
+      },
+    };
   }
 
   /**

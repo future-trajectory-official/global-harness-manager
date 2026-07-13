@@ -10,6 +10,7 @@ function makeId(overrides?: Partial<EpicIdentifier>): EpicIdentifier {
     scope,
     title: { value: "Authentication" },
     id: "epic-1",
+    code: "42",
     describe() {
       return { summary: "describe", steps: [] };
     },
@@ -129,4 +130,30 @@ Deno.test("epicUseCase - search without keyword should return Plan with search s
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "search");
+});
+
+Deno.test("epicUseCase - showHierarchy should return Plan with showHierarchy step", () => {
+  const plan = epicUseCase.showHierarchy(makeId());
+  assertEquals(plan.summary, "Show hierarchy: Authentication");
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].entity, "Epic");
+  assertEquals(plan.steps[1].operation, "showHierarchy");
+  assertEquals(plan.steps[1].params.itemId, "42");
+});
+
+Deno.test("epicUseCase - showHierarchy should throw for undefined id", () => {
+  assertThrows(
+    () => epicUseCase.showHierarchy(makeId({ id: undefined })),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
+Deno.test("epicUseCase - showHierarchy should throw for empty title", () => {
+  assertThrows(
+    () => epicUseCase.showHierarchy(makeId({ title: { value: "" } })),
+    Error,
+    "INVALID_INPUT",
+  );
 });
