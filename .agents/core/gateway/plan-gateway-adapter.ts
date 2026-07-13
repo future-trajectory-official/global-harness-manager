@@ -6,7 +6,6 @@ import type {
   EpicData,
   ExecutionResult,
   FeatureData,
-  List,
   Plan,
   Step,
   StepOperation,
