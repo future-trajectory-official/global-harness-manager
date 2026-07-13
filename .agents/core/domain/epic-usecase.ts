@@ -1,5 +1,11 @@
 import type { EntityScope, Plan, Step } from "./types.ts";
-import type { ChangeReason, EpicIdentifier, EpicSearchCondition, EpicStatement } from "./types.ts";
+import type {
+  ChangeReason,
+  EpicData,
+  EpicIdentifier,
+  EpicSearchCondition,
+  EpicStatement,
+} from "./types.ts";
 
 function scopeStep(identifier: { scope: EntityScope }): Step {
   return {
@@ -67,6 +73,11 @@ export interface EpicUseCase {
    * identifier.id が undefined の場合はエラー。
    */
   showHierarchy(identifier: EpicIdentifier): Plan;
+  /**
+   * 全Epicの分類階層を表示する。
+   * 検索条件なしで全Epicを一覧し、各Epicの子フィーチャーを取得する Plan を返す。
+   */
+  showHierarchyAll(): Plan;
 }
 
 export const epicUseCase: EpicUseCase = {
@@ -151,4 +162,43 @@ export const epicUseCase: EpicUseCase = {
       }],
     };
   },
+
+  showHierarchyAll(): Plan {
+    return {
+      summary: "Show hierarchy of all epics",
+      steps: [{
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      }, {
+        entity: "Epic",
+        operation: "showHierarchyAll",
+        params: {},
+      }],
+    };
+  },
 };
+
+/**
+ * Epic の分類階層をツリー形式で整形する。
+ * EpicData.features に子Featureが設定されていることを前提とする。
+ */
+export function formatEpicHierarchy(epic: EpicData): string {
+  const lines: string[] = [];
+  lines.push(`Epic #${epic.identifier.code ?? "?"}: ${epic.identifier.title.value}`);
+  for (const feature of epic.features.items) {
+    const featureId = feature.identifier.code ?? "?";
+    lines.push(`  └── Feature #${featureId}: ${feature.identifier.title.value}`);
+  }
+  if (epic.features.items.length === 0) {
+    lines.push("  （子Featureなし）");
+  }
+  return lines.join("\n");
+}
+
+/**
+ * 全Epicの分類階層をツリー形式で整形する。
+ */
+export function formatAllEpicHierarchies(epics: EpicData[]): string {
+  return epics.map((epic) => formatEpicHierarchy(epic)).join("\n\n");
+}

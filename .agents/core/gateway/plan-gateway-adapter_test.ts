@@ -1668,13 +1668,14 @@ Deno.test("Epic showHierarchy - should return epic with features", async () => {
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
-  const output = result.stepResults[0].output as Record<string, unknown>;
-  const epic = (output as { epic: Record<string, unknown> }).epic;
-  assertEquals(epic.number, 42);
-  assertEquals(epic.title, "Auth Epic");
-  const features = (output as { features: Array<Record<string, unknown>> }).features;
-  assertEquals(features.length, 1);
-  assertEquals(features[0].title, "Login Feature");
+  const output = result.stepResults[0].output as {
+    identifier: { title: { value: string }; code?: string };
+    features: { items: Array<{ identifier: { title: { value: string } } }> };
+  };
+  assertEquals(output.identifier.code, "42");
+  assertEquals(output.identifier.title.value, "Auth Epic");
+  assertEquals(output.features.items.length, 1);
+  assertEquals(output.features.items[0].identifier.title.value, "Login Feature");
 });
 
 Deno.test("Epic showHierarchy - should handle no sub-issues", async () => {
@@ -1700,9 +1701,8 @@ Deno.test("Epic showHierarchy - should handle no sub-issues", async () => {
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
-  const output = result.stepResults[0].output as Record<string, unknown>;
-  const features = (output as { features: Array<Record<string, unknown>> }).features;
-  assertEquals(features.length, 0);
+  const output = result.stepResults[0].output as { features: { items: Array<unknown> } };
+  assertEquals(output.features.items.length, 0);
 });
 
 Deno.test("Epic showHierarchy - should fail without itemId", async () => {
@@ -1795,4 +1795,156 @@ Deno.test("Epic showHierarchy - should fail when epic not found", async () => {
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, false);
   assertStringIncludes(result.stepResults[0].error ?? "", "Epic not found");
+});
+
+Deno.test("ProductBacklogItem assignToFeature - should set parent via GraphQL addSubIssue", async () => {
+  let callCount = 0;
+  const responses: Record<number, ExecuteResult> = {
+    1: { code: 0, stdout: JSON.stringify({ id: "node-feature-45" }), stderr: "" },
+    2: { code: 0, stdout: JSON.stringify({ id: "node-pbi-50" }), stderr: "" },
+    3: {
+      code: 0,
+      stdout: JSON.stringify({ data: { addSubIssue: { issue: { id: "node-feature-45" } } } }),
+      stderr: "",
+    },
+  };
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    return Promise.resolve(responses[callCount] ?? { code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "assign to feature",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "assignToFeature",
+        params: { itemId: "50", parentFeature: "45" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(callCount, 3);
+});
+
+Deno.test("ProductBacklogItem assignToFeature - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "assignToFeature",
+        params: { parentFeature: "45" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("ProductBacklogItem assignToFeature - should fail without parentFeature", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "assignToFeature",
+        params: { itemId: "50" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "parentFeature is required");
+});
+
+Deno.test("ProductBacklogItem unassignFromFeature - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "unassignFromFeature",
+        params: {},
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("ProductBacklogItem unassignFromFeature - should succeed when PBI has no parent", async () => {
+  const noParentResponse = JSON.stringify({
+    data: { node: { parent: null } },
+  });
+  let callCount = 0;
+  const responses: Record<number, ExecuteResult> = {
+    1: { code: 0, stdout: JSON.stringify({ id: "node-pbi-50" }), stderr: "" },
+    2: { code: 0, stdout: noParentResponse, stderr: "" },
+  };
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    return Promise.resolve(responses[callCount] ?? { code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "unassign from feature",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "unassignFromFeature",
+        params: { itemId: "50" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(callCount, 2);
+});
+
+Deno.test("ProductBacklogItem unassignFromFeature - should remove parent via GraphQL", async () => {
+  let callCount = 0;
+  const responses: Record<number, ExecuteResult> = {
+    1: { code: 0, stdout: JSON.stringify({ id: "node-pbi-50" }), stderr: "" },
+    2: {
+      code: 0,
+      stdout: JSON.stringify({ data: { node: { parent: { id: "node-feature-45" } } } }),
+      stderr: "",
+    },
+    3: {
+      code: 0,
+      stdout: JSON.stringify({ data: { removeSubIssue: { issue: { id: "node-feature-45" } } } }),
+      stderr: "",
+    },
+  };
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    return Promise.resolve(responses[callCount] ?? { code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "unassign from feature",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "unassignFromFeature",
+        params: { itemId: "50" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(callCount, 3);
 });
