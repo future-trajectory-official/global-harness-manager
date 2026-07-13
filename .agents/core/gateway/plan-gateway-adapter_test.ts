@@ -1634,3 +1634,165 @@ Deno.test("Feature update with parentEpic - should set parent via GraphQL addSub
   assertEquals(result.stepResults[0].success, true);
   assertEquals(callCount, 3);
 });
+
+const hierarchyResponse = JSON.stringify({
+  data: {
+    repository: {
+      issue: {
+        number: 42,
+        title: "Auth Epic",
+        body: "## Description\n\nAuth features",
+        subIssues: {
+          nodes: [
+            {
+              number: 43,
+              title: "Login Feature",
+              body: "## Description\n\nLogin",
+              labels: { nodes: [{ name: "type:Feature" }] },
+            },
+          ],
+        },
+      },
+    },
+  },
+});
+
+Deno.test("Epic showHierarchy - should return epic with features", async () => {
+  const adapter = makeAdapter(fixedRunner(hierarchyResponse));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Epic", operation: "showHierarchy", params: { itemId: "42" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as Record<string, unknown>;
+  const epic = (output as { epic: Record<string, unknown> }).epic;
+  assertEquals(epic.number, 42);
+  assertEquals(epic.title, "Auth Epic");
+  const features = (output as { features: Array<Record<string, unknown>> }).features;
+  assertEquals(features.length, 1);
+  assertEquals(features[0].title, "Login Feature");
+});
+
+Deno.test("Epic showHierarchy - should handle no sub-issues", async () => {
+  const noSubIssues = JSON.stringify({
+    data: {
+      repository: {
+        issue: {
+          number: 42,
+          title: "Empty Epic",
+          body: "## Description\n\nNo features yet",
+          subIssues: { nodes: null },
+        },
+      },
+    },
+  });
+  const adapter = makeAdapter(fixedRunner(noSubIssues));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Epic", operation: "showHierarchy", params: { itemId: "42" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as Record<string, unknown>;
+  const features = (output as { features: Array<Record<string, unknown>> }).features;
+  assertEquals(features.length, 0);
+});
+
+Deno.test("Epic showHierarchy - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Epic", operation: "showHierarchy", params: {} },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("Epic showHierarchy - should fail when scope not resolved", async () => {
+  const adapter = makeRawAdapter();
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Epic", operation: "showHierarchy", params: { itemId: "42" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "Scope not resolved");
+});
+
+Deno.test("Epic showHierarchy - should fail on gh api error", async () => {
+  const errorRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({ code: 1, stdout: "", stderr: "rate limit exceeded" });
+  };
+  const adapter = makeAdapter(errorRunner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Epic", operation: "showHierarchy", params: { itemId: "42" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "rate limit exceeded");
+});
+
+Deno.test("Epic showHierarchy - should fail on GraphQL errors in body", async () => {
+  const gqlError = JSON.stringify({
+    errors: [{ message: "Not enough tokens" }],
+  });
+  const adapter = makeAdapter(fixedRunner(gqlError));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Epic", operation: "showHierarchy", params: { itemId: "42" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "Not enough tokens");
+});
+
+Deno.test("Epic showHierarchy - should fail on invalid JSON response", async () => {
+  const adapter = makeAdapter(fixedRunner("not json"));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Epic", operation: "showHierarchy", params: { itemId: "42" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+});
+
+Deno.test("Epic showHierarchy - should fail when epic not found", async () => {
+  const notFound = JSON.stringify({
+    data: { repository: { issue: null } },
+  });
+  const adapter = makeAdapter(fixedRunner(notFound));
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      { entity: "Epic", operation: "showHierarchy", params: { itemId: "999" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "Epic not found");
+});
