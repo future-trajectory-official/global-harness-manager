@@ -26,8 +26,9 @@ tags:
 1. **現状把握 (Assess)**
    - **プロダクトバックログ** ([product-backlog.md](/.agents/management/product-backlog.md))
      を読み込み、これまでの完了済みPBIと現在の課題を把握する。
-   - **Epic Master** ([epic-master.md](/.agents/management/epic-master.md))
-     を読み込み、プロジェクトにおける各エピックやフィーチャーの進捗状況を把握する。
+   - **Epic/Feature 分類階層**（`design-classification-hierarchy` /
+     `refine-classification-hierarchy`
+     スキルで管理）を確認し、プロジェクトにおける各エピックやフィーチャーの進捗状況を把握する。
    - **運用ガイドライン** ([backlog-guidelines.md](/guides/backlog-guidelines.md))
      を読み込み、見積り基準（T シャツサイズ）やステータス管理ルールを確認する。
 
