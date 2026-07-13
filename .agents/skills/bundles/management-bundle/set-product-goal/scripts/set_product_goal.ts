@@ -7,6 +7,8 @@ import type {
   ProductGoalIdentifier,
 } from "../../../../../core/domain/types.ts";
 import { productGoalUseCase } from "../../../../../core/domain/product-goal-usecase.ts";
+import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
+import { executePlan } from "../../../../../core/domain/plan-executor.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
@@ -46,8 +48,8 @@ async function main(): Promise<void> {
     const { PlanGatewayAdapter } = await import(
       "../../../../../core/gateway/plan-gateway-adapter.ts"
     );
-    const gateway = new PlanGatewayAdapter();
-    const result = await gateway.execute(plan);
+    const gateway: PlanGateway = new PlanGatewayAdapter();
+    const result = await executePlan(plan, gateway);
     console.log(JSON.stringify(result, null, 2));
   } catch (e) {
     const err = errorUtil.toError(e);

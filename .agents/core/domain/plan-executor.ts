@@ -1,4 +1,4 @@
-import type { ExecutionResult, Plan } from "./types.ts";
+import type { ExecutionResult, Plan, StepResult } from "./types.ts";
 import type { PlanGateway } from "./plan-gateway.ts";
 
 /**
@@ -13,6 +13,11 @@ import type { PlanGateway } from "./plan-gateway.ts";
  * @param gateway - PlanGateway インターフェースの実装
  * @returns 全 Step の実行結果
  */
-export async function executePlan(plan: Plan, gateway: PlanGateway): Promise<ExecutionResult> {
+export async function executePlan(
+  plan: Plan,
+  gateway: PlanGateway,
+): Promise<
+  ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+> {
   return await gateway.execute(plan);
 }

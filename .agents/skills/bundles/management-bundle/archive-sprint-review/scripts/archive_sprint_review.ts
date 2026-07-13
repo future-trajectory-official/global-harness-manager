@@ -8,7 +8,8 @@ import type {
   Step,
 } from "../../../../../core/domain/types.ts";
 import { reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
-import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
+import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
+import { executePlan } from "../../../../../core/domain/plan-executor.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 import { detectCurrentSprint, sprintNumberFrom } from "../../../../../core/shared/sprint-utils.ts";
@@ -46,9 +47,12 @@ async function searchReviewIssue(
     }),
   };
 
-  const gateway = new PlanGatewayAdapter();
+  const { PlanGatewayAdapter } = await import(
+    "../../../../../core/gateway/plan-gateway-adapter.ts"
+  );
+  const gateway: PlanGateway = new PlanGatewayAdapter();
   const searchPlan = reviewUseCase.search(searchCondition);
-  const searchResult = await gateway.execute(searchPlan);
+  const searchResult = await executePlan(searchPlan, gateway);
   const searchOutput = searchResult.getStep("Review", "search")?.output as
     | Array<{ number: number; title: string }>
     | undefined;
@@ -71,9 +75,12 @@ async function findReviewIssue(
 ): Promise<{ overallResult?: { judgment: string; reason: string }; body?: string }> {
   const tempIdentifier = identify(scope, title, "pending", code);
 
-  const gateway = new PlanGatewayAdapter();
+  const { PlanGatewayAdapter } = await import(
+    "../../../../../core/gateway/plan-gateway-adapter.ts"
+  );
+  const gateway: PlanGateway = new PlanGatewayAdapter();
   const findPlan = reviewUseCase.find(tempIdentifier);
-  const findResult = await gateway.execute(findPlan);
+  const findResult = await executePlan(findPlan, gateway);
   const findOutput = findResult.getStep("Review", "view")?.output as
     | { body?: string; overallResult?: { judgment: string; reason: string } }
     | undefined;
@@ -156,8 +163,11 @@ async function handleArchive(
     return;
   }
 
-  const gateway = new PlanGatewayAdapter();
-  const result = await gateway.execute(plan);
+  const { PlanGatewayAdapter } = await import(
+    "../../../../../core/gateway/plan-gateway-adapter.ts"
+  );
+  const gateway: PlanGateway = new PlanGatewayAdapter();
+  const result = await executePlan(plan, gateway);
   console.log(JSON.stringify(result, null, 2));
 }
 

@@ -8,8 +8,22 @@ import type {
   ProductGoalIdentifier,
 } from "../../../../../core/domain/types.ts";
 import { productGoalUseCase } from "../../../../../core/domain/product-goal-usecase.ts";
-import { PlanGatewayAdapter } from "../../../../../core/gateway/plan-gateway-adapter.ts";
+import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
+import { executePlan } from "../../../../../core/domain/plan-executor.ts";
+import type { ExecutionResult, Plan, StepResult } from "../../../../../core/domain/types.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
+
+function getStepResult(
+  plan: Plan,
+  result: ExecutionResult,
+  entity: string,
+  operation: string,
+): StepResult | undefined {
+  const idx = plan.steps.findIndex(
+    (s) => s.entity === entity && s.operation === operation,
+  );
+  return idx >= 0 ? result.stepResults[idx] : undefined;
+}
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
 interface PivotInput {
@@ -47,7 +61,7 @@ export function validateInput(input: AssessGoalContinuationInput): void {
  * 戻り値の code は後続の更新フェーズで使用される。
  */
 async function findProductGoal(
-  gateway: PlanGatewayAdapter,
+  gateway: PlanGateway,
   scope: EntityScope,
   title: string,
 ): Promise<{ code: string; details: Record<string, unknown> }> {
@@ -59,8 +73,8 @@ async function findProductGoal(
       params: { labelType: "ProductGoal" },
     }],
   };
-  const searchResult = await gateway.execute(searchPlan);
-  const searchOutput = searchResult.getStep("ProductGoal", "search")?.output as
+  const searchResult = await executePlan(searchPlan, gateway);
+  const searchOutput = getStepResult(searchPlan, searchResult, "ProductGoal", "search")?.output as
     | Array<{ number: number }>
     | undefined;
   const goalNumber = searchOutput?.[0]?.number;
@@ -76,8 +90,8 @@ async function findProductGoal(
     String(goalNumber),
   );
   const viewPlan = productGoalUseCase.find(tempIdentifier);
-  const viewResult = await gateway.execute(viewPlan);
-  const viewOutput = viewResult.getStep("ProductGoal", "view")?.output as
+  const viewResult = await executePlan(viewPlan, gateway);
+  const viewOutput = getStepResult(viewPlan, viewResult, "ProductGoal", "view")?.output as
     | Record<string, unknown>
     | undefined;
   if (!viewOutput) {
@@ -93,7 +107,7 @@ async function findProductGoal(
  * code から node-id を解決してから pivot を実行する。
  */
 async function pivotProductGoal(
-  gateway: PlanGatewayAdapter,
+  gateway: PlanGateway,
   scope: EntityScope,
   title: string,
   pivot: PivotInput,
@@ -105,8 +119,8 @@ async function pivotProductGoal(
     pivot.code,
   );
   const viewPlan = productGoalUseCase.find(tempIdentifier);
-  const viewResult = await gateway.execute(viewPlan);
-  const viewOutput = viewResult.getStep("ProductGoal", "view")?.output as
+  const viewResult = await executePlan(viewPlan, gateway);
+  const viewOutput = getStepResult(viewPlan, viewResult, "ProductGoal", "view")?.output as
     | { id?: string; number?: number }
     | undefined;
   const nodeId = viewOutput?.id ?? pivot.code;
@@ -121,7 +135,7 @@ async function pivotProductGoal(
   const reason: ChangeReason = { description: pivot.reason };
 
   const pivotPlan = productGoalUseCase.pivot(resolvedIdentifier, statement, reason);
-  return await gateway.execute(pivotPlan);
+  return await executePlan(pivotPlan, gateway);
 }
 
 async function main(): Promise<void> {
@@ -151,7 +165,10 @@ async function main(): Promise<void> {
         return;
       }
 
-      const gateway = new PlanGatewayAdapter();
+      const { PlanGatewayAdapter } = await import(
+        "../../../../../core/gateway/plan-gateway-adapter.ts"
+      );
+      const gateway: PlanGateway = new PlanGatewayAdapter();
       const result = await findProductGoal(gateway, scope, goalTitle);
       console.log(JSON.stringify(result, null, 2));
     } else {
@@ -170,7 +187,10 @@ async function main(): Promise<void> {
         return;
       }
 
-      const gateway = new PlanGatewayAdapter();
+      const { PlanGatewayAdapter } = await import(
+        "../../../../../core/gateway/plan-gateway-adapter.ts"
+      );
+      const gateway: PlanGateway = new PlanGatewayAdapter();
       const result = await pivotProductGoal(gateway, scope, goalTitle, input.pivot);
       console.log(JSON.stringify(result, null, 2));
     }
