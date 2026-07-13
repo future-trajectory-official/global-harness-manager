@@ -449,6 +449,8 @@ export interface EpicData {
   readonly identifier: EpicIdentifier;
   readonly statement: EpicStatement;
   readonly state: EntityState;
+  /** 子Feature。showHierarchy等で使用。空リストの場合は未設定。 */
+  readonly features: List<FeatureData>;
 }
 
 /** Epic の検索条件。キーワードで部分一致検索可能。 */
