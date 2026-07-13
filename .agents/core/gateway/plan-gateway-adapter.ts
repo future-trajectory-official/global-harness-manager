@@ -3,12 +3,15 @@ import { logger } from "../shared/io/logger.ts";
 import type {
   EntityScope,
   EntityType,
+  EpicData,
   ExecutionResult,
+  FeatureData,
   Plan,
   Step,
   StepOperation,
   StepResult,
 } from "../domain/types.ts";
+import { identify } from "../domain/types.ts";
 import type { PlanGateway } from "../domain/plan-gateway.ts";
 
 export type CommandRunner = (cmd: string, args: string[]) => Promise<ExecuteResult>;
@@ -166,6 +169,26 @@ export class PlanGatewayAdapter implements PlanGateway {
         return await this.handleUpdateItem(params);
       }
       return await this.handleUpdateItem(params);
+    });
+
+    // === ProductBacklogItem 操作の登録 ===
+    this.register("ProductBacklogItem", "assignToFeature", async (_op, params) => {
+      const itemId = String(params.itemId ?? "");
+      if (!itemId) {
+        return { operation: "assignToFeature", success: false, error: "itemId is required" };
+      }
+      const parentFeature = String(params.parentFeature ?? "");
+      if (!parentFeature) {
+        return { operation: "assignToFeature", success: false, error: "parentFeature is required" };
+      }
+      return await this.#handleSetParent(itemId, parentFeature);
+    });
+    this.register("ProductBacklogItem", "unassignFromFeature", async (_op, params) => {
+      const itemId = String(params.itemId ?? "");
+      if (!itemId) {
+        return { operation: "unassignFromFeature", success: false, error: "itemId is required" };
+      }
+      return await this.#handleRemoveParent(itemId);
     });
 
     // === Sprint (Milestone) 操作の登録 ===
@@ -805,29 +828,45 @@ export class PlanGatewayAdapter implements PlanGateway {
       return { operation: "showHierarchy", success: false, error: "Epic not found" };
     }
 
-    const features = (issue.subIssues?.nodes ?? []).map((node) => ({
-      number: node.number,
-      title: node.title,
-      body: node.body,
-      labels: node.labels?.nodes?.map((l) => l.name) ?? [],
+    const featureList: FeatureData[] = (issue.subIssues?.nodes ?? []).map((node) => ({
+      identifier: identify(
+        this.resolvedScope!,
+        node.title,
+        undefined,
+        String(node.number),
+      ),
+      statement: { description: node.body ?? "" },
+      state: "open" as const,
     }));
+
+    const epicData: EpicData = {
+      identifier: identify(
+        this.resolvedScope!,
+        issue.title,
+        undefined,
+        String(issue.number),
+      ),
+      statement: { description: issue.body ?? "" },
+      state: "open" as const,
+      features: { items: featureList, totalCount: featureList.length },
+    };
 
     return {
       operation: "showHierarchy",
       success: true,
       itemId,
-      output: {
-        epic: { number: issue.number, title: issue.title, body: issue.body },
-        features,
-      },
+      output: epicData,
     };
   }
 
   /**
-   * updateItem 操作を処理する。GitHub Issue のタイトル更新および本文追記を行う。
+   * updateItem 操作を処理する。GitHub Issue のタイトル更新および本文操作を行う。
    * @param params.itemId - 更新対象の Issue 番号
    * @param params.title - 新しいタイトル（省略時は変更なし）
-   * @param params.bodyAppend - 既存本文に追記する内容（省略時は追記なし）
+   * @param params.body - 既存本文を全文置換する内容（省略時は置換なし）。
+   *                       bodyAppend と同時指定された場合は bodyAppend が優先される。
+   * @param params.bodyAppend - 既存本文に追記する内容（省略時は追記なし）。
+   *                            body より優先される。
    * @returns 更新結果の StepResult
    */
   private async handleUpdateItem(params: Record<string, unknown>): Promise<StepResult> {
@@ -836,10 +875,15 @@ export class PlanGatewayAdapter implements PlanGateway {
       return { operation: "update", success: false, error: "itemId is required" };
     }
     const title = params.title ? String(params.title) : undefined;
+    const body = params.body ? String(params.body) : undefined;
     const bodyAppend = params.bodyAppend ? String(params.bodyAppend) : undefined;
 
     if (bodyAppend) {
       return await this.updateItemWithBodyAppend(itemId, title, bodyAppend);
+    }
+
+    if (body) {
+      return await this.updateItemWithFullBody(itemId, title, body);
     }
 
     const args = ["issue", "edit", itemId, ...this.buildRepoArg()];
@@ -875,6 +919,20 @@ export class PlanGatewayAdapter implements PlanGateway {
     const currentBody = parsed.body ?? "";
     const newBody = currentBody + "\n" + bodyAppend;
     const args = ["issue", "edit", itemId, "--body", newBody, ...this.buildRepoArg()];
+    if (title) args.push("--title", title);
+    const result = await this.runCommand("gh", args);
+    if (result.code !== 0) {
+      return { operation: "update", success: false, error: result.stderr };
+    }
+    return { operation: "update", success: true, itemId };
+  }
+
+  private async updateItemWithFullBody(
+    itemId: string,
+    title: string | undefined,
+    body: string,
+  ): Promise<StepResult> {
+    const args = ["issue", "edit", itemId, "--body", body, ...this.buildRepoArg()];
     if (title) args.push("--title", title);
     const result = await this.runCommand("gh", args);
     if (result.code !== 0) {
