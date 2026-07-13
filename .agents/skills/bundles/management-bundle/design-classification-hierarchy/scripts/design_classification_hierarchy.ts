@@ -1,9 +1,9 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { epicUseCase } from "../../../../../core/domain/epic-usecase.ts";
+import { epicUseCase, formatEpicHierarchy } from "../../../../../core/domain/epic-usecase.ts";
 import { featureUseCase } from "../../../../../core/domain/feature-usecase.ts";
 import { identify } from "../../../../../core/domain/types.ts";
-import type { EntityScope, Plan } from "../../../../../core/domain/types.ts";
+import type { EntityScope, EpicData, Plan } from "../../../../../core/domain/types.ts";
 import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
 import { executePlan } from "../../../../../core/domain/plan-executor.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
@@ -81,7 +81,17 @@ async function main(): Promise<void> {
     );
     const gateway: PlanGateway = new PlanGatewayAdapter();
     const result = await executePlan(plan, gateway);
-    console.log(JSON.stringify(result, null, 2));
+    if (input.operation === "show-hierarchy") {
+      const epicsResult = result.getStep("Epic", "showHierarchy");
+      const epicData = epicsResult?.output as EpicData | undefined;
+      if (epicData) {
+        console.log(formatEpicHierarchy(epicData));
+      } else {
+        console.log(JSON.stringify(result, null, 2));
+      }
+    } else {
+      console.log(JSON.stringify(result, null, 2));
+    }
   } catch (e) {
     const err = errorUtil.toError(e);
     errorUtil.log(err);
