@@ -57,8 +57,8 @@ async function main(): Promise<void> {
           const epicId = identify(
             scope,
             input.title ?? "",
-            input.epicId ?? input.epicNumber,
-            input.epicNumber,
+            (input.epicId ?? input.epicNumber) as string | undefined,
+            input.epicNumber ?? input.epicId,
           );
           plan = epicUseCase.showHierarchy(epicId);
         } else {

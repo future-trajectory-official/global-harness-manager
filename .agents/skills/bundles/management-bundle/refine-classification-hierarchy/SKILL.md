@@ -40,11 +40,11 @@ echo '{"operation":"show-hierarchy"}' | deno run -A .agents/skills/bundles/manag
 決定した変更内容に応じて、以下のいずれかの操作を実行する：
 
 ```bash
-# エピックの再定義
-echo '{"operation":"revise-epic","title":"<タイトル>","epicId":"<Issue番号>","description":"<新しい説明>","reason":"<変更理由>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
+# エピックの再定義 (epicNumber: Issue番号)
+echo '{"operation":"revise-epic","title":"<タイトル>","epicNumber":"<Issue番号>","description":"<新しい説明>","reason":"<変更理由>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
 
-# フィーチャーの再定義
-echo '{"operation":"revise-feature","title":"<タイトル>","featureId":"<Issue番号>","description":"<新しい説明>","reason":"<変更理由>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
+# フィーチャーの再定義 (featureNumber: Issue番号)
+echo '{"operation":"revise-feature","title":"<タイトル>","featureNumber":"<Issue番号>","description":"<新しい説明>","reason":"<変更理由>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
 ```
 
 dry-runでPlanを確認し、PO承認後に `--dry-run` を外して本実行する。
@@ -56,11 +56,11 @@ dry-runでPlanを確認し、PO承認後に `--dry-run` を外して本実行す
 エピックとフィーチャーの親子関係を変更する。
 
 ```bash
-# FeatureをEpicに所属させる
-echo '{"operation":"assign-feature-to-epic","title":"<Featureタイトル>","featureId":"<FeatureのIssue番号>","parentEpicId":"<EpicのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
+# FeatureをEpicに所属させる (featureNumber: FeatureのIssue番号, parentEpicId: EpicのIssue番号)
+echo '{"operation":"assign-feature-to-epic","title":"<Featureタイトル>","featureNumber":"<FeatureのIssue番号>","parentEpicId":"<EpicのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
 
-# FeatureのEpic所属を解除する
-echo '{"operation":"unassign-feature-from-epic","title":"<Featureタイトル>","featureId":"<FeatureのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
+# FeatureのEpic所属を解除する (featureNumber: FeatureのIssue番号)
+echo '{"operation":"unassign-feature-from-epic","title":"<Featureタイトル>","featureNumber":"<FeatureのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
 ```
 
 dry-runでPlanを確認し、PO承認後に本実行する。
@@ -72,11 +72,11 @@ dry-runでPlanを確認し、PO承認後に本実行する。
 PBIをFeatureに紐付ける（または紐付けを解除する）。
 
 ```bash
-# PBIをFeatureに所属させる
-echo '{"operation":"assign-pbi-to-feature","title":"<PBIタイトル>","pbiId":"<PBIのIssue番号>","parentFeatureId":"<FeatureのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
+# PBIをFeatureに所属させる (pbiNumber: PBIのIssue番号, parentFeatureId: FeatureのIssue番号)
+echo '{"operation":"assign-pbi-to-feature","title":"<PBIタイトル>","pbiNumber":"<PBIのIssue番号>","parentFeatureId":"<FeatureのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
 
 # PBIのFeature所属を解除する（Feature未所属のPBIも許容）
-echo '{"operation":"unassign-pbi-from-feature","title":"<PBIタイトル>","pbiId":"<PBIのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
+echo '{"operation":"unassign-pbi-from-feature","title":"<PBIタイトル>","pbiNumber":"<PBIのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
 ```
 
 dry-runでPlanを確認し、PO承認後に本実行する。
