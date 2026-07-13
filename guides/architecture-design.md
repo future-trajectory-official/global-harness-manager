@@ -396,12 +396,13 @@ Domain層が `SprintIdentifier.number` を "Sprint N"
 
 **EpicUseCase** — Epicの管理
 
-| L2操作名   | 公開操作名(英) | 入力                                              | 出力   |
-| ---------- | -------------- | ------------------------------------------------- | ------ |
-| 定義する   | `define`       | `EpicIdentifier`, `EpicStatement`                 | `Plan` |
-| 再定義する | `revise`       | `EpicIdentifier`, `EpicStatement`, `ChangeReason` | `Plan` |
-| 特定する   | `find`         | `EpicIdentifier`                                  | `Plan` |
-| 探す       | `search`       | `EpicSearchCondition`                             | `Plan` |
+| L2操作名       | 公開操作名(英)  | 入力                                              | 出力   |
+| -------------- | --------------- | ------------------------------------------------- | ------ |
+| 定義する       | `define`        | `EpicIdentifier`, `EpicStatement`                 | `Plan` |
+| 再定義する     | `revise`        | `EpicIdentifier`, `EpicStatement`, `ChangeReason` | `Plan` |
+| 特定する       | `find`          | `EpicIdentifier`                                  | `Plan` |
+| 探す           | `search`        | `EpicSearchCondition`                             | `Plan` |
+| 階層を表示する | `showHierarchy` | `EpicIdentifier`                                  | `Plan` |
 
 **FeatureUseCase** — Featureの管理
 
