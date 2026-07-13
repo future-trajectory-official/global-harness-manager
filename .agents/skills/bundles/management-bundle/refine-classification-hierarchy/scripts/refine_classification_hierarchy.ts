@@ -34,7 +34,9 @@ interface RefineHierarchyInput {
   pbiId?: string;
   pbiNumber?: string;
   parentEpicId?: string;
+  parentEpicNumber?: string;
   parentFeatureId?: string;
+  parentFeatureNumber?: string;
   reason?: string;
   scope?: EntityScope;
 }
@@ -96,12 +98,13 @@ async function main(): Promise<void> {
           input.featureId ?? input.featureNumber,
           input.featureNumber,
         );
-        const parentEpic = input.parentEpicId
-          ? identify(scope, input.parentEpicId, input.parentEpicId)
-          : undefined;
-        if (!parentEpic) {
-          throw new Error("INVALID_INPUT: parentEpicId is required for assign-feature-to-epic");
+        const parentEpicNumber = input.parentEpicNumber ?? input.parentEpicId;
+        if (!parentEpicNumber) {
+          throw new Error(
+            "INVALID_INPUT: parentEpicNumber is required for assign-feature-to-epic",
+          );
         }
+        const parentEpic = identify(scope, parentEpicNumber, parentEpicNumber);
         plan = featureUseCase.assignToEpic(featureId, parentEpic);
         break;
       }
@@ -122,12 +125,13 @@ async function main(): Promise<void> {
           input.pbiId ?? input.pbiNumber,
           input.pbiNumber,
         );
-        const parentFeature = input.parentFeatureId
-          ? identify(scope, input.parentFeatureId, input.parentFeatureId)
-          : undefined;
-        if (!parentFeature) {
-          throw new Error("INVALID_INPUT: parentFeatureId is required for assign-pbi-to-feature");
+        const parentFeatureNumber = input.parentFeatureNumber ?? input.parentFeatureId;
+        if (!parentFeatureNumber) {
+          throw new Error(
+            "INVALID_INPUT: parentFeatureNumber is required for assign-pbi-to-feature",
+          );
         }
+        const parentFeature = identify(scope, parentFeatureNumber, parentFeatureNumber);
         plan = productBacklogItemUseCase.assignToFeature(pbiId, parentFeature);
         break;
       }

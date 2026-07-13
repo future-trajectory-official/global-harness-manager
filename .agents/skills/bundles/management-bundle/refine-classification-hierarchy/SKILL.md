@@ -56,8 +56,8 @@ dry-runでPlanを確認し、PO承認後に `--dry-run` を外して本実行す
 エピックとフィーチャーの親子関係を変更する。
 
 ```bash
-# FeatureをEpicに所属させる (featureNumber: FeatureのIssue番号, parentEpicId: EpicのIssue番号)
-echo '{"operation":"assign-feature-to-epic","title":"<Featureタイトル>","featureNumber":"<FeatureのIssue番号>","parentEpicId":"<EpicのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
+# FeatureをEpicに所属させる (featureNumber: FeatureのIssue番号, parentEpicNumber: EpicのIssue番号)
+echo '{"operation":"assign-feature-to-epic","title":"<Featureタイトル>","featureNumber":"<FeatureのIssue番号>","parentEpicNumber":"<EpicのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
 
 # FeatureのEpic所属を解除する (featureNumber: FeatureのIssue番号)
 echo '{"operation":"unassign-feature-from-epic","title":"<Featureタイトル>","featureNumber":"<FeatureのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
@@ -72,8 +72,8 @@ dry-runでPlanを確認し、PO承認後に本実行する。
 PBIをFeatureに紐付ける（または紐付けを解除する）。
 
 ```bash
-# PBIをFeatureに所属させる (pbiNumber: PBIのIssue番号, parentFeatureId: FeatureのIssue番号)
-echo '{"operation":"assign-pbi-to-feature","title":"<PBIタイトル>","pbiNumber":"<PBIのIssue番号>","parentFeatureId":"<FeatureのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
+# PBIをFeatureに所属させる (pbiNumber: PBIのIssue番号, parentFeatureNumber: FeatureのIssue番号)
+echo '{"operation":"assign-pbi-to-feature","title":"<PBIタイトル>","pbiNumber":"<PBIのIssue番号>","parentFeatureNumber":"<FeatureのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
 
 # PBIのFeature所属を解除する（Feature未所属のPBIも許容）
 echo '{"operation":"unassign-pbi-from-feature","title":"<PBIタイトル>","pbiNumber":"<PBIのIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
