@@ -59,8 +59,7 @@ description: スプリントの開始プロセス（プロダクトゴール確�
 - **読み込むペルソナ**: `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ) および
   `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**: `product-backlog-refinement`
-- **入力（前提条件）**: 最新の `[product-backlog.md](/.agents/management/product-backlog.md)` および
-  `[epic-master.md](/.agents/management/epic-master.md)`。
+- **入力（前提条件）**: 最新の `[product-backlog.md](/.agents/management/product-backlog.md)`。
 - **手続き**:
   POに対してヒアリングを行い、機能要件の壁打ちとスプリントゴールの定義をファシリテートする。
 - **期待される結果（終了条件）**:
