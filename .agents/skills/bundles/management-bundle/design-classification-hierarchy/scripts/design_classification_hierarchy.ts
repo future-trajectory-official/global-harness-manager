@@ -1,9 +1,13 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
-import { epicUseCase, formatEpicHierarchy } from "../../../../../core/domain/epic-usecase.ts";
+import {
+  epicUseCase,
+  formatAllEpicHierarchies,
+  formatEpicHierarchy,
+} from "../../../../../core/domain/epic-usecase.ts";
 import { featureUseCase } from "../../../../../core/domain/feature-usecase.ts";
 import { identify } from "../../../../../core/domain/types.ts";
-import type { EntityScope, EpicData, Plan } from "../../../../../core/domain/types.ts";
+import type { EntityScope, EpicData, List, Plan } from "../../../../../core/domain/types.ts";
 import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
 import { executePlan } from "../../../../../core/domain/plan-executor.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
@@ -53,13 +57,17 @@ async function main(): Promise<void> {
         break;
       }
       case "show-hierarchy": {
-        const epicId = identify(
-          scope,
-          input.title ?? "",
-          input.epicId ?? input.epicNumber,
-          input.epicNumber,
-        );
-        plan = epicUseCase.showHierarchy(epicId);
+        if (input.epicId || input.epicNumber) {
+          const epicId = identify(
+            scope,
+            input.title ?? "",
+            input.epicId ?? input.epicNumber,
+            input.epicNumber,
+          );
+          plan = epicUseCase.showHierarchy(epicId);
+        } else {
+          plan = epicUseCase.showHierarchyAll();
+        }
         break;
       }
       default:
@@ -82,12 +90,23 @@ async function main(): Promise<void> {
     const gateway: PlanGateway = new PlanGatewayAdapter();
     const result = await executePlan(plan, gateway);
     if (input.operation === "show-hierarchy") {
-      const epicsResult = result.getStep("Epic", "showHierarchy");
-      const epicData = epicsResult?.output as EpicData | undefined;
-      if (epicData) {
-        console.log(formatEpicHierarchy(epicData));
+      const isAll = !input.epicId && !input.epicNumber;
+      if (isAll) {
+        const epicsResult = result.getStep("Epic", "showHierarchyAll");
+        const allData = epicsResult?.output as List<EpicData> | undefined;
+        if (allData) {
+          console.log(formatAllEpicHierarchies([...allData.items]));
+        } else {
+          console.log(JSON.stringify(result, null, 2));
+        }
       } else {
-        console.log(JSON.stringify(result, null, 2));
+        const epicsResult = result.getStep("Epic", "showHierarchy");
+        const epicData = epicsResult?.output as EpicData | undefined;
+        if (epicData) {
+          console.log(formatEpicHierarchy(epicData));
+        } else {
+          console.log(JSON.stringify(result, null, 2));
+        }
       }
     } else {
       console.log(JSON.stringify(result, null, 2));

@@ -6,6 +6,7 @@ import type {
   EpicData,
   ExecutionResult,
   FeatureData,
+  List,
   Plan,
   Step,
   StepOperation,
@@ -134,6 +135,9 @@ export class PlanGatewayAdapter implements PlanGateway {
     this.register("Epic", "update", (_op, params) => this.handleUpdateItem(params));
     this.register("Epic", "showHierarchy", async (_op, params) => {
       return await this.#handleShowHierarchy(params);
+    });
+    this.register("Epic", "showHierarchyAll", async (_op, _params) => {
+      return await this.#handleShowHierarchyAll();
     });
 
     // === Feature 操作の登録 ===
@@ -856,6 +860,125 @@ export class PlanGatewayAdapter implements PlanGateway {
       success: true,
       itemId,
       output: epicData,
+    };
+  }
+
+  async #handleShowHierarchyAll(): Promise<StepResult> {
+    if (!this.resolvedScope) {
+      return { operation: "showHierarchyAll", success: false, error: "Scope not resolved" };
+    }
+
+    const listResult = await this.runCommand("gh", [
+      "issue",
+      "list",
+      "--label",
+      "type:Epic",
+      "--json",
+      "number,title,body",
+      "--state",
+      "open",
+      ...this.buildRepoArg(),
+    ]);
+    if (listResult.code !== 0) {
+      return { operation: "showHierarchyAll", success: false, error: listResult.stderr };
+    }
+
+    const epics = parseJsonOutput(listResult.stdout) as
+      | Array<{ number: number; title: string; body: string }>
+      | undefined;
+    if (!epics || epics.length === 0) {
+      return {
+        operation: "showHierarchyAll",
+        success: true,
+        output: { items: [], totalCount: 0 },
+      };
+    }
+
+    const query = `query($owner: String!, $repo: String!, $number: Int!) {
+      repository(owner: $owner, name: $repo) {
+        issue(number: $number) {
+          number
+          title
+          body
+          subIssues(first: 100) {
+            nodes {
+              ... on Issue {
+                number
+                title
+                body
+                labels(first: 10) { nodes { name } }
+              }
+            }
+          }
+        }
+      }
+    }`;
+
+    const epicDataList: EpicData[] = [];
+    for (const epic of epics) {
+      let graphqlResult;
+      try {
+        graphqlResult = await this.runCommand("gh", [
+          "api",
+          "graphql",
+          "-f",
+          `query=${query}`,
+          "-f",
+          `owner=${this.resolvedScope.owner}`,
+          "-f",
+          `repo=${this.resolvedScope.repository}`,
+          "-F",
+          `number=${epic.number}`,
+        ]);
+      } catch {
+        continue;
+      }
+      if (graphqlResult.code !== 0) continue;
+
+      const parsed = parseJsonOutput(graphqlResult.stdout) as {
+        data?: {
+          repository?: {
+            issue?: {
+              number: number;
+              title: string;
+              body: string;
+              subIssues: {
+                nodes:
+                  | Array<
+                    {
+                      number: number;
+                      title: string;
+                      body: string;
+                      labels: { nodes: Array<{ name: string }> };
+                    }
+                  >
+                  | null;
+              };
+            } | null;
+          };
+        };
+      } | undefined;
+      const issue = parsed?.data?.repository?.issue;
+      if (!issue) continue;
+
+      const featureList: FeatureData[] = (issue.subIssues?.nodes ?? []).map((node) => ({
+        identifier: identify(this.resolvedScope!, node.title, undefined, String(node.number)),
+        statement: { description: node.body ?? "" },
+        state: "open" as const,
+      }));
+
+      epicDataList.push({
+        identifier: identify(this.resolvedScope!, issue.title, undefined, String(issue.number)),
+        statement: { description: issue.body ?? "" },
+        state: "open" as const,
+        features: { items: featureList, totalCount: featureList.length },
+      });
+    }
+
+    return {
+      operation: "showHierarchyAll",
+      success: true,
+      output: { items: epicDataList, totalCount: epicDataList.length },
     };
   }
 

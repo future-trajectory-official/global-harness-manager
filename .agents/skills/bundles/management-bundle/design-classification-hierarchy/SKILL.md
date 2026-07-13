@@ -81,9 +81,9 @@ Issueとして作成され、親子関係が構築されている。完成した
 
 完成したエピックとフィーチャーの親子関係を表示し、POの最終合意を得る。
 
-1. **階層の表示**: エピックのIssue番号を指定し、分類階層を表示する。
+1. **階層の表示**: 分類階層を表示する。
    ```bash
-   echo '{"operation":"show-hierarchy","title":"エピックのタイトル","epicId":"<Issue番号>","epicNumber":"<Issue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/design-classification-hierarchy/scripts/design_classification_hierarchy.ts
+   echo '{"operation":"show-hierarchy"}' | deno run -A .agents/skills/bundles/management-bundle/design-classification-hierarchy/scripts/design_classification_hierarchy.ts
    ```
 2. **PO確認**: 表示されたエピック→フィーチャーの構造をPOに提示し、過不足や分類の妥当性を確認する。
 3. **合意取得**: 必要に応じて修正（再定義・紐づけ変更）を行い、POの最終合意を得る。

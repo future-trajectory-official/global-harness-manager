@@ -21,10 +21,10 @@ tags:
 
 ### Phase 1: 既存階層の表示
 
-改善対象のエピックを指定し、現在の分類階層（Epic → Feature）を表示する。
+現在の全Epicの分類階層（Epic → Feature）を表示する。引数は不要。
 
 ```bash
-echo '{"operation":"show-hierarchy","title":"<Epicタイトル>","epicId":"<Issue番号>","epicNumber":"<Issue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts
+echo '{"operation":"show-hierarchy"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts
 ```
 
 表示結果をPOに提示し、改善点をヒアリングする。

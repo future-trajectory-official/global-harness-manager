@@ -1,6 +1,6 @@
 # 対話ガイドライン
 
-## Phase 1: 階層表示後の確認質問
+## Phase 1: 階層表示後の確認
 
 表示されたエピックとフィーチャーの構造に対し、以下の観点でPOに問いかける：
 
@@ -8,170 +8,77 @@
 - **粒度**: 「Featureの粒度は適切ですか？ 統合すべきもの、分割すべきものはありますか？」
 - **命名**: 「タイトルや説明に違和感はありますか？」
 
-## Phase 2: 再定義時の質問
+### 表示例
 
-- 「このEpic/Featureの説明文（スコープ）をどのように変更しますか？」
-- 「変更理由を教えてください（変更履歴に記録します）」
-
-## Phase 3: 親子関係変更時の質問
-
-- 「このFeatureは別のEpicに所属させるべきですか？ それとも独立させますか？」
-- 「どのEpicに所属させますか？（EpicのIssue番号を確認）」
-
-## Phase 4: PBI配置時の質問
-
-- 「このPBIはどのFeatureに属しますか？（Feature未所属も許容します）」
-- 「このPBIのFeature所属を解除しますか？」
-
-# JSON入力スキーマ
-
-## 共通
-
-全Operationで共通のトップレベル構造：
-
-```typescript
-interface RefineHierarchyInput {
-  operation: Operation;
-  title?: string;
-  description?: string;
-  epicId?: string;
-  epicNumber?: string;
-  featureId?: string;
-  featureNumber?: string;
-  pbiId?: string;
-  pbiNumber?: string;
-  parentEpicId?: string;
-  parentFeatureId?: string;
-  reason?: string;
-  scope?: { owner: string; repository: string };
-}
+```
+Epic #510: 認証基盤
+  └── Feature #512: PAuth連携
+  └── Feature #511: パスワード管理
 ```
 
-`scope` 省略時は自動解決（git remote → gh auth → owner/repository）。
+## Phase 2: 再定義の進め方
 
-## Operation別 必須パラメータ
+POから変更点をヒアリングしたら、以下の順で進める：
 
-| Operation                    | 必須パラメータ                                | 備考                         |
-| ---------------------------- | --------------------------------------------- | ---------------------------- |
-| `show-hierarchy`             | `title`, `epicId`(または`epicNumber`)         | —                            |
-| `revise-epic`                | `title`, `epicId`, `description`, `reason`    | `reason`省略時はデフォルト値 |
-| `revise-feature`             | `title`, `featureId`, `description`, `reason` | `reason`省略時はデフォルト値 |
-| `assign-feature-to-epic`     | `title`, `featureId`, `parentEpicId`          | —                            |
-| `unassign-feature-from-epic` | `title`, `featureId`                          | —                            |
-| `assign-pbi-to-feature`      | `title`, `pbiId`, `parentFeatureId`           | —                            |
-| `unassign-pbi-from-feature`  | `title`, `pbiId`                              | —                            |
+1. 変更内容をPOに復唱して確認する
+2. 対応する操作（revise-epic / revise-feature）を dry-run で実行する
+3. Planの内容（どのIssueをどう更新するか）をPOに説明する
+4. PO承認後に本実行する
 
-## JSON例
+### 変更理由の記録
 
-### show-hierarchy
+再定義操作には `reason`（変更理由）が必要。以下のようにPOからヒアリングする：
 
-```json
-{
-  "operation": "show-hierarchy",
-  "title": "認証基盤",
-  "epicId": "42"
-}
+- 「なぜこの変更が必要ですか？」
+- 「この変更を変更履歴にどう記載しますか？」
+
+`reason` 省略時はデフォルト値 `"Revised during sprint start refinement"` が使用される。
+
+## Phase 3: 親子関係変更の進め方
+
+FeatureとEpicの所属関係を変更する際の質問例：
+
+- **所属させる**: 「このFeatureは現在どのEpicにも属していません。[Epic名]に所属させますか？」
+- **所属を解除する**: 「このFeatureをEpicから外して独立させますか？」
+- **所属先を変更する**: 「このFeatureを別のEpicに移動しますか？」
+
+## Phase 4: PBI配置の進め方
+
+PBIをFeatureに紐付ける（または解除する）際の注意点：
+
+- PBIは必ずしもFeatureに所属する必要はない。所属解除も許容する
+- 既にFeatureに所属しているPBIを別のFeatureに移動する場合、`assign-pbi-to-feature`
+  で新しい親を指定すれば既存の親は自動的に置き換わる
+- 所属を解除したPBIはFeature未所属の状態になる
+
+### 質問例
+
+- 「このPBIはどのFeatureに分類されますか？ それともFeature未所属のままにしますか？」
+- 「別のFeatureに所属を変更しますか？ それとも所属を解除しますか？」
+
+## Phase 5: 完了報告の伝え方
+
+以下のようにPOに伝える：
+
+```
+Epic #510: 認証基盤
+  └── Feature #512: PAuth連携
+        └── PBI #513: パスワード変更画面の実装
 ```
 
-### revise-epic
+「この構造は ProjectV2 のボードでも確認できます。何か追加で変更が必要ですか？」
 
-```json
-{
-  "operation": "revise-epic",
-  "title": "認証基盤",
-  "epicId": "42",
-  "description": "ユーザー認証と認可に関する全機能を管理する。対象: パスワード認証、多要素認証、OAuth連携",
-  "reason": "スコープを明確化。OAuth連携を追加"
-}
-```
+# エラーハンドリング
 
-### revise-feature
+各操作で入力が不足している場合、UseCase層が適切なエラーメッセージを返す。
+入力値のバリデーションはUseCase層に任せ、スクリプトレイヤーでは型変換のみ行う。
 
-```json
-{
-  "operation": "revise-feature",
-  "title": "パスワード管理",
-  "featureId": "45",
-  "description": "パスワードの変更・リセット・ポリシー管理",
-  "reason": "パスワードポリシー管理を本Featureに統合"
-}
-```
+代表的なエラーケース：
 
-### assign-feature-to-epic
+| 状況                             | エラーメッセージ（例）                                                 |
+| -------------------------------- | ---------------------------------------------------------------------- |
+| 必須項目の欠落（parentEpicId等） | `INVALID_INPUT: parentEpicId is required...`                           |
+| 存在しないIssue番号              | `INVALID_INPUT: Cannot revise a feature that has not been created yet` |
+| 空のタイトル                     | 各UseCaseが `assertTitleNonEmpty` でエラー                             |
 
-```json
-{
-  "operation": "assign-feature-to-epic",
-  "title": "OAuth連携",
-  "featureId": "48",
-  "parentEpicId": "42"
-}
-```
-
-### unassign-feature-from-epic
-
-```json
-{
-  "operation": "unassign-feature-from-epic",
-  "title": "OAuth連携",
-  "featureId": "48"
-}
-```
-
-### assign-pbi-to-feature
-
-```json
-{
-  "operation": "assign-pbi-to-feature",
-  "title": "パスワード変更画面の実装",
-  "pbiId": "50",
-  "parentFeatureId": "45"
-}
-```
-
-### unassign-pbi-from-feature
-
-```json
-{
-  "operation": "unassign-pbi-from-feature",
-  "title": "パスワード変更画面の実装",
-  "pbiId": "50"
-}
-```
-
-# 実行例
-
-## dry-run
-
-```bash
-echo '{"operation":"revise-epic","title":"認証基盤","epicId":"42","description":"ユーザー認証と認可に関する全機能","reason":"スコープ明確化"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts --dry-run
-```
-
-出力例:
-
-```json
-{
-  "summary": "Revise epic: 認証基盤",
-  "steps": [
-    {
-      "entity": "Scope",
-      "operation": "resolve",
-      "params": { "owner": "unknown", "repository": "unknown" }
-    },
-    {
-      "entity": "Epic",
-      "operation": "update",
-      "params": { "itemId": "42", "title": "認証基盤", "body": "..." }
-    },
-    { "entity": "Epic", "operation": "comment", "params": { "body": "..." } }
-  ]
-}
-```
-
-## 本実行
-
-`--dry-run` を外して実行する。
-
-```bash
-echo '{"operation":"assign-pbi-to-feature","title":"パスワード変更画面の実装","pbiId":"50","parentFeatureId":"45"}' | deno run -A .agents/skills/bundles/management-bundle/refine-classification-hierarchy/scripts/refine_classification_hierarchy.ts
-```
+エラーが発生した場合、POに状況を説明し、入力を修正して再実行を提案する。

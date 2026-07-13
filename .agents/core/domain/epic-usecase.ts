@@ -73,6 +73,11 @@ export interface EpicUseCase {
    * identifier.id が undefined の場合はエラー。
    */
   showHierarchy(identifier: EpicIdentifier): Plan;
+  /**
+   * 全Epicの分類階層を表示する。
+   * 検索条件なしで全Epicを一覧し、各Epicの子フィーチャーを取得する Plan を返す。
+   */
+  showHierarchyAll(): Plan;
 }
 
 export const epicUseCase: EpicUseCase = {
@@ -157,6 +162,21 @@ export const epicUseCase: EpicUseCase = {
       }],
     };
   },
+
+  showHierarchyAll(): Plan {
+    return {
+      summary: "Show hierarchy of all epics",
+      steps: [{
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      }, {
+        entity: "Epic",
+        operation: "showHierarchyAll",
+        params: {},
+      }],
+    };
+  },
 };
 
 /**
@@ -174,4 +194,11 @@ export function formatEpicHierarchy(epic: EpicData): string {
     lines.push("  （子Featureなし）");
   }
   return lines.join("\n");
+}
+
+/**
+ * 全Epicの分類階層をツリー形式で整形する。
+ */
+export function formatAllEpicHierarchies(epics: EpicData[]): string {
+  return epics.map((epic) => formatEpicHierarchy(epic)).join("\n\n");
 }
