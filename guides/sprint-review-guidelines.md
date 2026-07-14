@@ -1,7 +1,8 @@
-# 📖 スプリントレビュー検証PBIおよび記録の準備ガイドライン
+# 📖 スプリントレビュー検証PBIおよび準備ガイドライン
 
-本リファレンスは、スプリント開始（AC定義）時に、AI開発エージェントが「スプリントレビュー検証PBI」をスプリントバックログへ正しく追加し、実体ファイル
-`sprint-review-n.md` を準備するためのプロセスおよびチェック項目を定義したガイドラインです。
+本リファレンスは、スプリント開始（AC定義）時に、AI開発エージェントが「スプリントレビュー検証PBI」をスプリントバックログへ正しく追加し、
+`plan-sprint-review` スキルによりReview
+Issueとして永続化するためのプロセスおよびチェック項目を定義したガイドラインです。
 
 > [!IMPORTANT]
 > アジャイルのスプリントレビューは、**「動くプロダクト」の実機デモ**が原則です。
@@ -30,35 +31,42 @@ AIは `define-acceptance-criteria`
 - **関連実装計画**: なし (検証プロセスのみ)
 - **受入基準 (AC)**:
   - [ ] `develop-environment-setup` スキルにより、デモ用のサンドボックス環境が準備されていること。
-  - [ ] `sprint-review-n.md` に定義された全 PBI に対する実機デモが、PO
-        立ち合いのもとで完了していること。
+  - [ ] Review Issue に定義された全 PBI に対する実機デモが、PO 立ち合いのもとで完了していること。
   - [ ] 実機デモで確認できない項目（バックエンドロジック等）については、テストパスログまたは実行ログによる客観的証明が提示されていること。
   - [ ] ユーザー（PO）がその証明内容を確認し、レビューが正式に承認（合格）されること。
-  - [ ] `sprint-review-n.md` に PO 承認の証跡が正しく記録されていること。
+  - [ ] PO 承認の証跡が Review Issue に正しく記録されていること。
 ```
 
 > ※ `N` には対象のスプリント番号（例: `1`, `2`…）を記述してください。
 
 ---
 
-### Step 2: 実体記録ファイル（`sprint-review-n.md`）の新規作成
+### Step 2: plan-sprint-review によるReview Issueの作成
 
-共通アセット [sprint-review.md.example](/.agents/management/sprint-review.md.example)
-をコピーして、**`.agents/management/sprint-review-n.md`**（例:
-`sprint-review-1.md`）を新規作成します。
+`plan-sprint-review` スキルを実行し、スプリント内の全PBI/WPのACを ❔ 未確認で列挙した検証台帳を
+Review Issue として永続化する。スキル実行後に返される Issue番号を、Step 1
+の検証PBIに参照として追記する。
 
-- ファイル名は必ず `sprint-review-n.md` 形式（n =
-  スプリント番号）とし、スプリントごとの記録を蓄積します。
-- ファイルを作成したら、スプリントバックログの検証PBI（Step 1
-  で追加したもの）に、このファイルへの相対リンクを追記してください。
+```bash
+# dry-run で確認
+echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts --dry-run
+
+# 本実行
+echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts
+```
+
+詳細な入力JSONの形式は `plan-sprint-review` スキルのリファレンスを参照すること。
 
 ---
 
-### Step 3: 客観的証明方法の事前記述とPO合意
+### Step 3: 検証方法の事前決定とPO合意
 
-作成した `sprint-review-n.md`
-の「個別PBIの客観的証明とデモ記録」セクションに、各PBIのACと、スプリント終盤のレビューでそれらを**「どう客観的に証明するか」（証明方法）**を事前に書き込み、PO
-に合意を得ます。
+`plan-sprint-review`
+スキルの対話フローに従い、ACごとにPOと以下の3点を確認しながら具体的な検証方法を決定する：
+
+1. **「このACは、何を確認すれば合格と言えますか？」**
+2. **「その確認は、どのように行いますか？」**
+3. **「その確認は、誰が（何が）実行しますか？」**
 
 証明方法は以下の優先順で選択してください。
 
@@ -66,7 +74,7 @@ AIは `define-acceptance-criteria`
 | :-------: | :----------------------------------------------------------------- | :----------------------------------------- |
 | 🥇 最優先 | `browser_subagent` による実機操作デモ（WebP 動画）                 | UI・操作フロー・エンドツーエンドの動作確認 |
 |    🥈     | `develop-environment-setup` スキルによるサンドボックス環境での実行 | 環境依存の処理・インフラ系の動作確認       |
-|    🥉     | `npm run test` 等のテストスイートのパスログ                        | バックエンドロジック・ユニットテスト       |
+|    🥉     | テストスイートのパスログ                                           | バックエンドロジック・ユニットテスト       |
 |   補助    | diff（差分）または静的解析ツールの出力                             | Refactor 観点 AC・品質 AC の証明           |
 
 ---
@@ -75,13 +83,11 @@ AIは `define-acceptance-criteria`
 
 - [ ] バックログの最下部にスプリントレビュー検証PBI（`Sprint-N-Review-Verification`）が正しく追加されているか？
 - [ ] 見積りは `S`（PO立会いが必要な検証プロセス）と記載されているか？
-- [ ] バックログ側に重いデモ手順や証明方法が直接記述されておらず、`sprint-review-n.md`
-      への参照リンクのみで軽量化されているか？
-- [ ] `.agents/management/sprint-review-n.md`（n =
-      スプリント番号）が新規作成されているか？（`sprint-review.md` や `sprint-review-sprint-n.md`
-      などの命名は誤りです）
+- [ ] バックログ側に重いデモ手順や証明方法が直接記述されておらず、Review Issue
+      番号のみで軽量化されているか？
+- [ ] `plan-sprint-review` が実行され、Review Issue が作成されているか？
 - [ ] 証明方法の選択において、実機デモ（`browser_subagent`）が最優先として設定されているか？
-- [ ] 各ACとそれに対応する「客観的証明方法」が事前にファイルへ記述され、POに合意を得ているか？
+- [ ] 各ACとそれに対応する「客観的証明方法」が事前に Review Issue へ記述され、POに合意を得ているか？
 
 ---
 
