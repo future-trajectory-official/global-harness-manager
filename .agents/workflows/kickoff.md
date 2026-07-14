@@ -49,7 +49,19 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 
 <!-- STOP -->
 
-## Phase 3: 技術スタックの選定 (Tech Stack Selection)
+## Phase 3: エピック/フィーチャー分類階層の設計 (Classification Hierarchy Design)
+
+プロダクトゴールに基づき、エピックとフィーチャーの分類階層を対話的に設計し、GitHub
+Issueとして永続化します。
+
+- **読み込むペルソナ**: `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ)
+- **実行するスキル**: `design-classification-hierarchy`
+- **終了条件**: エピックとフィーチャーがGitHub
+  Issueとして作成され、親子関係が構築され、POが内容に合意していること。
+
+<!-- STOP -->
+
+## Phase 4: 技術スタックの選定 (Tech Stack Selection)
 
 ゴールを実現するための技術基盤を、トレードオフを比較しながら選定します。
 
@@ -60,7 +72,7 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 
 <!-- STOP -->
 
-## Phase 4: アライメントの最終検証 (Alignment Confirmation)
+## Phase 5: アライメントの最終検証 (Alignment Confirmation)
 
 全フェーズの成果物に矛盾がないか検証し、最終的な開始の決断を行います。
 
