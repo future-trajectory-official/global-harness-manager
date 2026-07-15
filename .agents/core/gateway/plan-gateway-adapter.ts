@@ -509,7 +509,11 @@ export class PlanGatewayAdapter implements PlanGateway {
     const currentBody = parsed?.body ?? "";
 
     const postPlanAcGroups = params.postPlanAcGroups as
-      | Array<{ acJudgments: Array<{ number: string; judgment: string }> }>
+      | Array<{
+        pbiNumber?: number;
+        wpNumber?: string;
+        acJudgments: Array<{ number: string; judgment: string }>;
+      }>
       | undefined;
 
     let newBody = currentBody;
@@ -517,8 +521,26 @@ export class PlanGatewayAdapter implements PlanGateway {
       for (const group of postPlanAcGroups) {
         for (const ac of group.acJudgments) {
           const marker = ac.judgment === "pass" ? "✅" : ac.judgment === "fail" ? "❌" : "⚠️";
-          const acPattern = new RegExp(`❔\\s*(AC_${ac.number}:)`);
-          newBody = newBody.replace(acPattern, `${marker} $1`);
+
+          const pbiNumber = group.pbiNumber;
+          const wpNumber = group.wpNumber;
+          let replaced = false;
+
+          if (pbiNumber !== undefined && wpNumber !== undefined) {
+            const escapedWp = String(wpNumber).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const contextPattern = new RegExp(
+              `(### 📦 PBI: \\[${pbiNumber}\\][\\s\\S]*?#### WP_${escapedWp}:.*?\\n[\\s\\S]*?)([❔✅❌⚠️➖])\\s*(AC_${ac.number}:)`,
+            );
+            if (contextPattern.test(newBody)) {
+              newBody = newBody.replace(contextPattern, `$1${marker} $3`);
+              replaced = true;
+            }
+          }
+
+          if (!replaced) {
+            const acPattern = new RegExp(`([❔✅❌⚠️➖])\\s*(AC_${ac.number}:)`);
+            newBody = newBody.replace(acPattern, `${marker} $2`);
+          }
         }
       }
     }
