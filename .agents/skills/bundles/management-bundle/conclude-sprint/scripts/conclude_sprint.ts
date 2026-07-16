@@ -2,7 +2,7 @@
 import { parseArgs } from "@std/cli/parse-args";
 import "../../../../../core/composition-root.ts";
 import { sprintId } from "../../../../../core/domain/types.ts";
-import type { EntityScope, Plan, SprintIdentifier } from "../../../../../core/domain/types.ts";
+import type { EntityScope, SprintIdentifier } from "../../../../../core/domain/types.ts";
 import { sprintUseCase } from "../../../../../core/domain/sprint-usecase.ts";
 import type { ExecutionResult } from "../../../../../core/domain/types.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
@@ -47,23 +47,20 @@ async function main(): Promise<void> {
     const input = await readJsonFromStdin<ConcludeSprintInput>();
     const scope = input.scope ?? { owner: "unknown", repository: "unknown" };
 
-    if (args["dry-run"]) {
-      const identifier = input.milestoneNodeId && input.milestoneNumber
-        ? sprintId(scope, input.sprintNumber, input.milestoneNodeId, input.milestoneNumber)
-        : sprintId(scope, input.sprintNumber);
-      const plan = sprintUseCase.end(identifier) as Plan;
-      console.log(JSON.stringify({ summary: plan.summary, steps: plan.steps }, null, 2));
-      return;
-    }
-
     const identifier = await resolveSprintIdentifier(
       scope,
       input.sprintNumber,
       input.milestoneNodeId,
       input.milestoneNumber,
     );
-    const endPlan = sprintUseCase.end(identifier);
-    const execResult = await sprintUseCase.executePlan(endPlan);
+
+    const plan = sprintUseCase.end(identifier);
+    if (args["dry-run"]) {
+      console.log(JSON.stringify({ summary: plan.summary, steps: plan.steps }, null, 2));
+      return;
+    }
+
+    const execResult = await sprintUseCase.executePlan(plan);
     console.log(JSON.stringify(execResult, null, 2));
   } catch (e) {
     const err = errorUtil.toError(e);
