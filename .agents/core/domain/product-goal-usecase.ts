@@ -1,6 +1,14 @@
-import type { Plan, Step } from "./types.ts";
+import type { ExecutionResult, Plan, Step, StepResult } from "./types.ts";
 import type { ChangeReason, GoalStatement, ProductGoalIdentifier } from "./types.ts";
+import type { PlanGateway } from "./plan-gateway.ts";
+import { executePlan as _executePlan } from "./plan-executor.ts";
 import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
+
+let _gateway: PlanGateway | undefined;
+
+export function initProductGoalUseCase(gateway: PlanGateway): void {
+  _gateway = gateway;
+}
 
 function scopeStep(identifier: ProductGoalIdentifier): Step {
   return { entity: "Scope", operation: "resolve", params: { ...identifier.scope } };
@@ -43,7 +51,13 @@ export interface ProductGoalUseCase {
   find(identifier: ProductGoalIdentifier): Plan;
 }
 
-export const productGoalUseCase: ProductGoalUseCase = {
+export const productGoalUseCase: ProductGoalUseCase & {
+  executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  >;
+} = {
   set(identifier, statement): Plan {
     assertTitleNonEmpty(identifier.title, "ProductGoal title");
     assertStringNonEmpty(statement.description, "GoalStatement description");
@@ -109,5 +123,16 @@ export const productGoalUseCase: ProductGoalUseCase = {
         { entity: "ProductGoal", operation: "view", params: { itemId: identifier.code } },
       ],
     };
+  },
+
+  async executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  > {
+    if (!_gateway) {
+      throw new Error("ProductGoalUseCase not initialized. Call initProductGoalUseCase first.");
+    }
+    return await _executePlan(plan, _gateway);
   },
 };

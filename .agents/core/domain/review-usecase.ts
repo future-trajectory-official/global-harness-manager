@@ -1,4 +1,4 @@
-import type { EntityScope, Plan, Step } from "./types.ts";
+import type { EntityScope, ExecutionResult, Plan, Step, StepResult } from "./types.ts";
 
 /** Review Issue 本文の Markdown マーカー定数。formatPlanBody と parseReviewBody で共有する。 */
 export const REVIEW_MARKERS = {
@@ -16,7 +16,15 @@ import type {
   ReviewSearchCondition,
   SprintIdentifier,
 } from "./types.ts";
+import type { PlanGateway } from "./plan-gateway.ts";
+import { executePlan as _executePlan } from "./plan-executor.ts";
 import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
+
+let _gateway: PlanGateway | undefined;
+
+export function initReviewUseCase(gateway: PlanGateway): void {
+  _gateway = gateway;
+}
 
 function scopeStep(identifier: { scope: EntityScope }): Step {
   return {
@@ -189,7 +197,13 @@ export interface ReviewUseCase {
 }
 
 /** ReviewUseCase の具象実装。各メソッドは入力バリデーション後に Plan を生成する。 */
-export const reviewUseCase: ReviewUseCase = {
+export const reviewUseCase: ReviewUseCase & {
+  executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  >;
+} = {
   plan(identifier, sprint, planInput): Plan {
     assertTitleNonEmpty(identifier.title, "Review title");
     assertTitleNonEmpty(sprint.title, "Sprint title");
@@ -304,6 +318,15 @@ export const reviewUseCase: ReviewUseCase = {
         params: { owner: "unknown", repository: "unknown" },
       }, ...condition.describe().steps],
     };
+  },
+
+  async executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  > {
+    if (!_gateway) throw new Error("ReviewUseCase not initialized. Call initReviewUseCase first.");
+    return await _executePlan(plan, _gateway);
   },
 };
 

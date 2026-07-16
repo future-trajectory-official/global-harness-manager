@@ -1,4 +1,4 @@
-import type { EntityScope, Plan, Step } from "./types.ts";
+import type { EntityScope, ExecutionResult, Plan, Step, StepResult } from "./types.ts";
 import type {
   ChangeReason,
   FeatureIdentifier,
@@ -10,6 +10,14 @@ import type {
   SprintIdentifier,
   WorkPackageData,
 } from "./types.ts";
+import type { PlanGateway } from "./plan-gateway.ts";
+import { executePlan as _executePlan } from "./plan-executor.ts";
+
+let _gateway: PlanGateway | undefined;
+
+export function initProductBacklogItemUseCase(gateway: PlanGateway): void {
+  _gateway = gateway;
+}
 
 function scopeStep(identifier: { scope: EntityScope }): Step {
   return {
@@ -120,7 +128,13 @@ export interface ProductBacklogItemUseCase {
   search(condition: ProductBacklogItemSearchCondition): Plan;
 }
 
-export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
+export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
+  executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  >;
+} = {
   propose(identifier, statement, parentFeature): Plan {
     assertTitleNonEmpty(identifier.title, "PBI title");
     assertStringNonEmpty(statement.summary, "PBI statement summary");
@@ -428,5 +442,18 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase = {
         params: { owner: "unknown", repository: "unknown" },
       }, ...condition.describe().steps],
     };
+  },
+
+  async executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  > {
+    if (!_gateway) {
+      throw new Error(
+        "ProductBacklogItemUseCase not initialized. Call initProductBacklogItemUseCase first.",
+      );
+    }
+    return await _executePlan(plan, _gateway);
   },
 };

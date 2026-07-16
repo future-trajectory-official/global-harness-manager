@@ -1,4 +1,4 @@
-import type { EntityScope, Plan, Step } from "./types.ts";
+import type { EntityScope, ExecutionResult, Plan, Step, StepResult } from "./types.ts";
 import type {
   ChangeReason,
   EffortRecord,
@@ -10,6 +10,14 @@ import type {
   WorkPackageSearchCondition,
   WorkPackageStatement,
 } from "./types.ts";
+import type { PlanGateway } from "./plan-gateway.ts";
+import { executePlan as _executePlan } from "./plan-executor.ts";
+
+let _gateway: PlanGateway | undefined;
+
+export function initWorkPackageUseCase(gateway: PlanGateway): void {
+  _gateway = gateway;
+}
 
 function scopeStep(identifier: { scope: EntityScope }): Step {
   return {
@@ -172,7 +180,13 @@ export interface WorkPackageUseCase {
   search(condition: WorkPackageSearchCondition): Plan;
 }
 
-export const workPackageUseCase: WorkPackageUseCase = {
+export const workPackageUseCase: WorkPackageUseCase & {
+  executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  >;
+} = {
   define(identifier, statement, parentPbi): Plan {
     assertTitleNonEmpty(identifier.title, "WP title");
     if (statement.acceptanceCriteria.items.length === 0) {
@@ -493,5 +507,16 @@ export const workPackageUseCase: WorkPackageUseCase = {
         params: { owner: "unknown", repository: "unknown" },
       }, ...condition.describe().steps],
     };
+  },
+
+  async executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  > {
+    if (!_gateway) {
+      throw new Error("WorkPackageUseCase not initialized. Call initWorkPackageUseCase first.");
+    }
+    return await _executePlan(plan, _gateway);
   },
 };

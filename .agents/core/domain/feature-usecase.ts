@@ -1,4 +1,4 @@
-import type { EntityScope, Plan, Step } from "./types.ts";
+import type { EntityScope, ExecutionResult, Plan, Step, StepResult } from "./types.ts";
 import type {
   ChangeReason,
   EpicIdentifier,
@@ -6,6 +6,14 @@ import type {
   FeatureSearchCondition,
   FeatureStatement,
 } from "./types.ts";
+import type { PlanGateway } from "./plan-gateway.ts";
+import { executePlan as _executePlan } from "./plan-executor.ts";
+
+let _gateway: PlanGateway | undefined;
+
+export function initFeatureUseCase(gateway: PlanGateway): void {
+  _gateway = gateway;
+}
 
 function scopeStep(identifier: { scope: EntityScope }): Step {
   return {
@@ -97,7 +105,13 @@ export interface FeatureUseCase {
   search(condition: FeatureSearchCondition): Plan;
 }
 
-export const featureUseCase: FeatureUseCase = {
+export const featureUseCase: FeatureUseCase & {
+  executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  >;
+} = {
   define(identifier, statement, parentEpic): Plan {
     assertTitleNonEmpty(identifier.title, "Feature title");
     assertStringNonEmpty(statement.description, "FeatureStatement description");
@@ -200,5 +214,16 @@ export const featureUseCase: FeatureUseCase = {
         params: { owner: "unknown", repository: "unknown" },
       }, ...condition.describe().steps],
     };
+  },
+
+  async executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  > {
+    if (!_gateway) {
+      throw new Error("FeatureUseCase not initialized. Call initFeatureUseCase first.");
+    }
+    return await _executePlan(plan, _gateway);
   },
 };

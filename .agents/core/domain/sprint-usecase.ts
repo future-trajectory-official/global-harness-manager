@@ -1,5 +1,20 @@
-import type { EntityScope, Plan, SprintIdentifier, Step } from "./types.ts";
+import type {
+  EntityScope,
+  ExecutionResult,
+  Plan,
+  SprintIdentifier,
+  Step,
+  StepResult,
+} from "./types.ts";
 import type { GoalStatement } from "./types.ts";
+import type { PlanGateway } from "./plan-gateway.ts";
+import { executePlan as _executePlan } from "./plan-executor.ts";
+
+let _gateway: PlanGateway | undefined;
+
+export function initSprintUseCase(gateway: PlanGateway): void {
+  _gateway = gateway;
+}
 
 function scopeStep(identifier: { scope: EntityScope }): Step {
   return {
@@ -22,7 +37,13 @@ export interface SprintUseCase {
   find(identifier?: SprintIdentifier): Plan;
 }
 
-export const sprintUseCase: SprintUseCase = {
+export const sprintUseCase: SprintUseCase & {
+  executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  >;
+} = {
   start(identifier): Plan {
     return {
       summary: `Start sprint: ${identifier.title.value}`,
@@ -113,5 +134,14 @@ export const sprintUseCase: SprintUseCase = {
         params: { itemId: identifier.code },
       }],
     };
+  },
+
+  async executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  > {
+    if (!_gateway) throw new Error("SprintUseCase not initialized. Call initSprintUseCase first.");
+    return await _executePlan(plan, _gateway);
   },
 };
