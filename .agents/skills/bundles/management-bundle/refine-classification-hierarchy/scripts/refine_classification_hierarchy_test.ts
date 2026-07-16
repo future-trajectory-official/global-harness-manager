@@ -82,19 +82,15 @@ Deno.test("revise-feature should generate correct Plan", () => {
   assertEquals(plan.steps[2].operation, "comment");
 });
 
-Deno.test("revise-feature should throw for undefined id", () => {
-  const identifier = identify(scope, "パスワード管理");
-  try {
-    featureUseCase.revise(
-      identifier,
-      { description: "テスト" },
-      { description: "テスト" },
-    );
-    throw new Error("Should have thrown");
-  } catch (e) {
-    const err = e as Error;
-    assertStringIncludes(err.message, "revise a feature");
-  }
+Deno.test("revise-feature should succeed with code even if id is undefined", () => {
+  const identifier = identify(scope, "パスワード管理", undefined, "99");
+  const plan = featureUseCase.revise(
+    identifier,
+    { description: "テスト" },
+    { description: "テスト" },
+  );
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[1].params.itemId, "99");
 });
 
 // ===== assign-feature-to-epic =====
