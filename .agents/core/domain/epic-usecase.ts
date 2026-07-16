@@ -115,7 +115,6 @@ export const epicUseCase: EpicUseCase & {
     assertTitleNonEmpty(identifier.title, "Epic title");
     assertStringNonEmpty(statement.description, "EpicStatement description");
     assertStringNonEmpty(reason.description, "ChangeReason description");
-    assertIdDefined(identifier.id, "revise an epic");
     return {
       summary: `Revise epic: ${identifier.title.value}`,
       steps: [

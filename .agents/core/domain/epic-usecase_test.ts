@@ -92,12 +92,10 @@ Deno.test("epicUseCase - revise should throw for empty reason", () => {
   );
 });
 
-Deno.test("epicUseCase - revise should throw for undefined id", () => {
-  assertThrows(
-    () => epicUseCase.revise(makeId({ id: undefined }), makeStatement(), makeReason()),
-    Error,
-    "INVALID_INPUT",
-  );
+Deno.test("epicUseCase - revise should succeed with code even if id is undefined", () => {
+  const plan = epicUseCase.revise(makeId({ id: undefined }), makeStatement(), makeReason());
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[1].params.itemId, "42");
 });
 
 Deno.test("epicUseCase - find should return Plan with view step", () => {
