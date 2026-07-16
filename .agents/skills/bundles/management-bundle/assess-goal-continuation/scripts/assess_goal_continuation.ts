@@ -1,5 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
+import "../../../../../core/composition-root.ts";
 import { identify } from "../../../../../core/domain/types.ts";
 import type {
   ChangeReason,
@@ -8,8 +9,7 @@ import type {
   ProductGoalIdentifier,
 } from "../../../../../core/domain/types.ts";
 import { productGoalUseCase } from "../../../../../core/domain/product-goal-usecase.ts";
-import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
-import { executePlan } from "../../../../../core/domain/plan-executor.ts";
+import { executeRawPlan } from "../../../../../core/composition-root.ts";
 import type { ExecutionResult, Plan, StepResult } from "../../../../../core/domain/types.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 
@@ -61,7 +61,6 @@ export function validateInput(input: AssessGoalContinuationInput): void {
  * 戻り値の code は後続の更新フェーズで使用される。
  */
 async function findProductGoal(
-  gateway: PlanGateway,
   scope: EntityScope,
   title: string,
 ): Promise<{ code: string; details: Record<string, unknown> }> {
@@ -73,7 +72,7 @@ async function findProductGoal(
       params: { labelType: "ProductGoal" },
     }],
   };
-  const searchResult = await executePlan(searchPlan, gateway);
+  const searchResult = await executeRawPlan(searchPlan);
   const searchOutput = getStepResult(searchPlan, searchResult, "ProductGoal", "search")?.output as
     | Array<{ number: number }>
     | undefined;
@@ -90,7 +89,7 @@ async function findProductGoal(
     String(goalNumber),
   );
   const viewPlan = productGoalUseCase.find(tempIdentifier);
-  const viewResult = await executePlan(viewPlan, gateway);
+  const viewResult = await productGoalUseCase.executePlan(viewPlan);
   const viewOutput = getStepResult(viewPlan, viewResult, "ProductGoal", "view")?.output as
     | Record<string, unknown>
     | undefined;
@@ -107,7 +106,6 @@ async function findProductGoal(
  * code から node-id を解決してから pivot を実行する。
  */
 async function pivotProductGoal(
-  gateway: PlanGateway,
   scope: EntityScope,
   title: string,
   pivot: PivotInput,
@@ -119,7 +117,7 @@ async function pivotProductGoal(
     pivot.code,
   );
   const viewPlan = productGoalUseCase.find(tempIdentifier);
-  const viewResult = await executePlan(viewPlan, gateway);
+  const viewResult = await productGoalUseCase.executePlan(viewPlan);
   const viewOutput = getStepResult(viewPlan, viewResult, "ProductGoal", "view")?.output as
     | { id?: string; number?: number }
     | undefined;
@@ -135,7 +133,7 @@ async function pivotProductGoal(
   const reason: ChangeReason = { description: pivot.reason };
 
   const pivotPlan = productGoalUseCase.pivot(resolvedIdentifier, statement, reason);
-  return await executePlan(pivotPlan, gateway);
+  return await productGoalUseCase.executePlan(pivotPlan);
 }
 
 async function main(): Promise<void> {
@@ -165,11 +163,7 @@ async function main(): Promise<void> {
         return;
       }
 
-      const { PlanGatewayAdapter } = await import(
-        "../../../../../core/gateway/plan-gateway-adapter.ts"
-      );
-      const gateway: PlanGateway = new PlanGatewayAdapter();
-      const result = await findProductGoal(gateway, scope, goalTitle);
+      const result = await findProductGoal(scope, goalTitle);
       console.log(JSON.stringify(result, null, 2));
     } else {
       // 更新フェーズ
@@ -187,11 +181,7 @@ async function main(): Promise<void> {
         return;
       }
 
-      const { PlanGatewayAdapter } = await import(
-        "../../../../../core/gateway/plan-gateway-adapter.ts"
-      );
-      const gateway: PlanGateway = new PlanGatewayAdapter();
-      const result = await pivotProductGoal(gateway, scope, goalTitle, input.pivot);
+      const result = await pivotProductGoal(scope, goalTitle, input.pivot);
       console.log(JSON.stringify(result, null, 2));
     }
   } catch (e) {

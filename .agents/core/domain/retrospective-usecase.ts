@@ -1,4 +1,4 @@
-import type { EntityScope, Plan, Step } from "./types.ts";
+import type { EntityScope, ExecutionResult, Plan, Step, StepResult } from "./types.ts";
 import type {
   ChangeReason,
   KeepProblemTryAdvice,
@@ -7,6 +7,14 @@ import type {
   SprintIdentifier,
   SprintMetrics,
 } from "./types.ts";
+import type { PlanGateway } from "./plan-gateway.ts";
+import { executePlan as _executePlan } from "./plan-executor.ts";
+
+let _gateway: PlanGateway | undefined;
+
+export function initRetrospectiveUseCase(gateway: PlanGateway): void {
+  _gateway = gateway;
+}
 
 function scopeStep(identifier: { scope: EntityScope }): Step {
   return {
@@ -82,7 +90,13 @@ export interface RetrospectiveUseCase {
 }
 
 /** RetrospectiveUseCase の具象実装。各メソッドは入力バリデーション後に Plan を生成する。 */
-export const retrospectiveUseCase: RetrospectiveUseCase = {
+export const retrospectiveUseCase: RetrospectiveUseCase & {
+  executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  >;
+} = {
   plan(identifier, sprint): Plan {
     assertTitleNonEmpty(identifier.title, "Retrospective title");
     assertTitleNonEmpty(sprint.title, "Sprint title");
@@ -195,6 +209,17 @@ export const retrospectiveUseCase: RetrospectiveUseCase = {
         params: { owner: "unknown", repository: "unknown" },
       }, ...condition.describe().steps],
     };
+  },
+
+  async executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  > {
+    if (!_gateway) {
+      throw new Error("RetrospectiveUseCase not initialized. Call initRetrospectiveUseCase first.");
+    }
+    return await _executePlan(plan, _gateway);
   },
 };
 

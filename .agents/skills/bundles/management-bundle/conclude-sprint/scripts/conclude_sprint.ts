@@ -1,11 +1,10 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
+import "../../../../../core/composition-root.ts";
 import { sprintId } from "../../../../../core/domain/types.ts";
 import type { EntityScope, Plan, SprintIdentifier } from "../../../../../core/domain/types.ts";
 import { sprintUseCase } from "../../../../../core/domain/sprint-usecase.ts";
 import type { ExecutionResult } from "../../../../../core/domain/types.ts";
-import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
-import { executePlan } from "../../../../../core/domain/plan-executor.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
@@ -25,12 +24,8 @@ async function resolveSprintIdentifier(
   if (milestoneNodeId && milestoneNumber) {
     return sprintId(scope, sprintNumber, milestoneNodeId, milestoneNumber);
   }
-  const { PlanGatewayAdapter } = await import(
-    "../../../../../core/gateway/plan-gateway-adapter.ts"
-  );
-  const gateway: PlanGateway = new PlanGatewayAdapter();
   const findPlan = sprintUseCase.find();
-  const findResult = await executePlan(findPlan, gateway) as ExecutionResult;
+  const findResult = await sprintUseCase.executePlan(findPlan) as ExecutionResult;
   const milestones = findResult.stepResults?.[1]?.output as
     | Array<{ number: number; id?: string }>
     | undefined;
@@ -67,8 +62,9 @@ async function main(): Promise<void> {
       input.milestoneNodeId,
       input.milestoneNumber,
     );
-    const result = sprintUseCase.end(identifier);
-    console.log(JSON.stringify(result, null, 2));
+    const endPlan = sprintUseCase.end(identifier);
+    const execResult = await sprintUseCase.executePlan(endPlan);
+    console.log(JSON.stringify(execResult, null, 2));
   } catch (e) {
     const err = errorUtil.toError(e);
     errorUtil.log(err);

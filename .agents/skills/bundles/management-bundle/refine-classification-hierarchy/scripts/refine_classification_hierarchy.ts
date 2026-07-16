@@ -1,5 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
+import "../../../../../core/composition-root.ts";
 import {
   epicUseCase,
   formatAllEpicHierarchies,
@@ -9,8 +10,7 @@ import { featureUseCase } from "../../../../../core/domain/feature-usecase.ts";
 import { productBacklogItemUseCase } from "../../../../../core/domain/product-backlog-item-usecase.ts";
 import { identify } from "../../../../../core/domain/types.ts";
 import type { EntityScope, EpicData, List, Plan } from "../../../../../core/domain/types.ts";
-import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
-import { executePlan } from "../../../../../core/domain/plan-executor.ts";
+import { executeRawPlan } from "../../../../../core/composition-root.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
@@ -159,11 +159,7 @@ async function main(): Promise<void> {
       return;
     }
 
-    const { PlanGatewayAdapter } = await import(
-      "../../../../../core/gateway/plan-gateway-adapter.ts"
-    );
-    const gateway: PlanGateway = new PlanGatewayAdapter();
-    const result = await executePlan(plan, gateway);
+    const result = await executeRawPlan(plan);
     if (input.operation === "show-hierarchy") {
       const isAll = !input.epicId && !input.epicNumber;
       if (isAll) {

@@ -1,4 +1,4 @@
-import type { EntityScope, Plan, Step } from "./types.ts";
+import type { EntityScope, ExecutionResult, Plan, Step, StepResult } from "./types.ts";
 import type {
   ChangeReason,
   EpicData,
@@ -6,6 +6,14 @@ import type {
   EpicSearchCondition,
   EpicStatement,
 } from "./types.ts";
+import type { PlanGateway } from "./plan-gateway.ts";
+import { executePlan as _executePlan } from "./plan-executor.ts";
+
+let _gateway: PlanGateway | undefined;
+
+export function initEpicUseCase(gateway: PlanGateway): void {
+  _gateway = gateway;
+}
 
 function scopeStep(identifier: { scope: EntityScope }): Step {
   return {
@@ -80,7 +88,13 @@ export interface EpicUseCase {
   showHierarchyAll(): Plan;
 }
 
-export const epicUseCase: EpicUseCase = {
+export const epicUseCase: EpicUseCase & {
+  executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  >;
+} = {
   define(identifier, statement): Plan {
     assertTitleNonEmpty(identifier.title, "Epic title");
     assertStringNonEmpty(statement.description, "EpicStatement description");
@@ -176,6 +190,15 @@ export const epicUseCase: EpicUseCase = {
         params: {},
       }],
     };
+  },
+
+  async executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  > {
+    if (!_gateway) throw new Error("EpicUseCase not initialized. Call initEpicUseCase first.");
+    return await _executePlan(plan, _gateway);
   },
 };
 

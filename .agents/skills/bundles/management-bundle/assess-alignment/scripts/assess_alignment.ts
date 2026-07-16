@@ -1,11 +1,11 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
+import "../../../../../core/composition-root.ts";
 import { identify } from "../../../../../core/domain/types.ts";
 import type { EntityScope } from "../../../../../core/domain/types.ts";
 import { visionUseCase } from "../../../../../core/domain/vision-usecase.ts";
 import { productGoalUseCase } from "../../../../../core/domain/product-goal-usecase.ts";
-import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
-import { executePlan } from "../../../../../core/domain/plan-executor.ts";
+import { executeRawPlan } from "../../../../../core/composition-root.ts";
 import type { ExecutionResult, Plan, StepResult } from "../../../../../core/domain/types.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 
@@ -144,12 +144,11 @@ function extractVisionFromComments(comments: Array<{ body?: string }>): {
 }
 
 async function fetchVisionFromGitHub(
-  gateway: PlanGateway,
   scope: EntityScope,
   repoTitle: string,
 ): Promise<VisionData> {
   const searchPlan = visionUseCase.find(identify(scope, repoTitle));
-  const searchResult = await executePlan(searchPlan, gateway);
+  const searchResult = await visionUseCase.executePlan(searchPlan);
   const searchOutput = getStepResult(searchPlan, searchResult, "Vision", "search")?.output as
     | Array<{ number: number }>
     | undefined;
@@ -161,7 +160,7 @@ async function fetchVisionFromGitHub(
 
   const viewIdentifier = identify(scope, repoTitle, undefined, String(visionNumber));
   const viewPlan = visionUseCase.find(viewIdentifier);
-  const viewResult = await executePlan(viewPlan, gateway);
+  const viewResult = await visionUseCase.executePlan(viewPlan);
   const viewOutput = getStepResult(viewPlan, viewResult, "Vision", "view")?.output as
     | Record<string, unknown>
     | undefined;
@@ -212,7 +211,6 @@ function extractProductGoalFromComments(
  * ProductGoal が存在しない場合は null を返す（エラーにしない）。
  */
 async function fetchProductGoalFromGitHub(
-  gateway: PlanGateway,
   scope: EntityScope,
 ): Promise<ProductGoalData | null> {
   const searchPlan = {
@@ -223,7 +221,7 @@ async function fetchProductGoalFromGitHub(
       params: { labelType: "ProductGoal" },
     }],
   };
-  const searchResult = await executePlan(searchPlan, gateway);
+  const searchResult = await executeRawPlan(searchPlan);
   const searchOutput = getStepResult(searchPlan, searchResult, "ProductGoal", "search")?.output as
     | Array<{ number: number }>
     | undefined;
@@ -235,7 +233,7 @@ async function fetchProductGoalFromGitHub(
   const goalTitle = `Product Goal of ${scope.repository}`;
   const viewIdentifier = identify(scope, goalTitle, "pending", String(goalNumber));
   const viewPlan = productGoalUseCase.find(viewIdentifier);
-  const viewResult = await executePlan(viewPlan, gateway);
+  const viewResult = await productGoalUseCase.executePlan(viewPlan);
   const viewOutput = getStepResult(viewPlan, viewResult, "ProductGoal", "view")?.output as
     | Record<string, unknown>
     | undefined;
@@ -287,12 +285,8 @@ async function main(): Promise<void> {
       return;
     }
 
-    const { PlanGatewayAdapter } = await import(
-      "../../../../../core/gateway/plan-gateway-adapter.ts"
-    );
-    const gateway: PlanGateway = new PlanGatewayAdapter();
-    const vision = await fetchVisionFromGitHub(gateway, scope, repoTitle);
-    const productGoal = await fetchProductGoalFromGitHub(gateway, scope);
+    const vision = await fetchVisionFromGitHub(scope, repoTitle);
+    const productGoal = await fetchProductGoalFromGitHub(scope);
 
     const workspaceRoot = Deno.env.get("HARNESS_WORKSPACE_ROOT") ?? Deno.cwd();
     const roles = collectRoles(workspaceRoot);

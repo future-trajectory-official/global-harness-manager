@@ -1,11 +1,21 @@
 import type {
   ChangeReason,
+  ExecutionResult,
   Outcomes,
   Plan,
   Step,
+  StepResult,
   VisionIdentifier,
   VisionStatement,
 } from "./types.ts";
+import type { PlanGateway } from "./plan-gateway.ts";
+import { executePlan as _executePlan } from "./plan-executor.ts";
+
+let _gateway: PlanGateway | undefined;
+
+export function initVisionUseCase(gateway: PlanGateway): void {
+  _gateway = gateway;
+}
 
 function scopeStep(identifier: VisionIdentifier): Step {
   return { entity: "Scope", operation: "resolve", params: { ...identifier.scope } };
@@ -88,7 +98,13 @@ export interface VisionUseCase {
   find(identifier: VisionIdentifier): Plan;
 }
 
-export const visionUseCase: VisionUseCase = {
+export const visionUseCase: VisionUseCase & {
+  executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  >;
+} = {
   establish(identifier, statement, outcomes): Plan {
     assertTitleNonEmpty(identifier.title, "Vision title");
     assertStringNonEmpty(statement.targetAudience, "targetAudience");
@@ -175,5 +191,14 @@ export const visionUseCase: VisionUseCase = {
         { entity: "Vision", operation: "search", params: { labelType: "Vision" } },
       ],
     };
+  },
+
+  async executePlan(
+    plan: Plan,
+  ): Promise<
+    ExecutionResult & { getStep(entity: string, operation: string): StepResult | undefined }
+  > {
+    if (!_gateway) throw new Error("VisionUseCase not initialized. Call initVisionUseCase first.");
+    return await _executePlan(plan, _gateway);
   },
 };
