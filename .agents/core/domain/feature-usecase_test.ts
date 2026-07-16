@@ -127,12 +127,14 @@ Deno.test("featureUseCase - revise should throw for empty reason", () => {
   );
 });
 
-Deno.test("featureUseCase - revise should throw for undefined id", () => {
-  assertThrows(
-    () => featureUseCase.revise(makeId({ id: undefined }), makeStatement(), makeReason()),
-    Error,
-    "INVALID_INPUT",
+Deno.test("featureUseCase - revise should succeed with code even if id is undefined", () => {
+  const plan = featureUseCase.revise(
+    makeId({ id: undefined, code: "99" }),
+    makeStatement(),
+    makeReason(),
   );
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[1].params.itemId, "99");
 });
 
 Deno.test("featureUseCase - assignToEpic should return Plan with update", () => {

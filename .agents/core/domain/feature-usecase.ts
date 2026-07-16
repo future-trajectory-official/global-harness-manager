@@ -136,7 +136,6 @@ export const featureUseCase: FeatureUseCase & {
     assertTitleNonEmpty(identifier.title, "Feature title");
     assertStringNonEmpty(statement.description, "FeatureStatement description");
     assertStringNonEmpty(reason.description, "ChangeReason description");
-    assertIdDefined(identifier.id, "revise a feature");
     return {
       summary: `Revise feature: ${identifier.title.value}`,
       steps: [
