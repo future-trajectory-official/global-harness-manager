@@ -1,5 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
+import "../../../../../core/composition-root.ts";
 import { sprintId } from "../../../../../core/domain/types.ts";
 import type { EntityScope, Plan } from "../../../../../core/domain/types.ts";
 import { sprintUseCase } from "../../../../../core/domain/sprint-usecase.ts";
@@ -41,7 +42,8 @@ async function main(): Promise<void> {
         ),
       );
     } else {
-      console.log(JSON.stringify(result, null, 2));
+      const execResult = await sprintUseCase.executePlan(result);
+      console.log(JSON.stringify(execResult, null, 2));
     }
   } catch (e) {
     const err = errorUtil.toError(e);

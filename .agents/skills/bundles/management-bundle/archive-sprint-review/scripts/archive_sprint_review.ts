@@ -1,5 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
+import "../../../../../core/composition-root.ts";
 import { identify, sprintId } from "../../../../../core/domain/types.ts";
 import type {
   EntityScope,
@@ -8,8 +9,6 @@ import type {
   Step,
 } from "../../../../../core/domain/types.ts";
 import { reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
-import type { PlanGateway } from "../../../../../core/domain/plan-gateway.ts";
-import { executePlan } from "../../../../../core/domain/plan-executor.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 import { detectCurrentSprint, sprintNumberFrom } from "../../../../../core/shared/sprint-utils.ts";
@@ -47,12 +46,8 @@ async function searchReviewIssue(
     }),
   };
 
-  const { PlanGatewayAdapter } = await import(
-    "../../../../../core/gateway/plan-gateway-adapter.ts"
-  );
-  const gateway: PlanGateway = new PlanGatewayAdapter();
   const searchPlan = reviewUseCase.search(searchCondition);
-  const searchResult = await executePlan(searchPlan, gateway);
+  const searchResult = await reviewUseCase.executePlan(searchPlan);
   const searchOutput = searchResult.getStep("Review", "search")?.output as
     | Array<{ number: number; title: string }>
     | undefined;
@@ -75,12 +70,8 @@ async function findReviewIssue(
 ): Promise<{ overallResult?: { judgment: string; reason: string }; body?: string }> {
   const tempIdentifier = identify(scope, title, "pending", code);
 
-  const { PlanGatewayAdapter } = await import(
-    "../../../../../core/gateway/plan-gateway-adapter.ts"
-  );
-  const gateway: PlanGateway = new PlanGatewayAdapter();
   const findPlan = reviewUseCase.find(tempIdentifier);
-  const findResult = await executePlan(findPlan, gateway);
+  const findResult = await reviewUseCase.executePlan(findPlan);
   const findOutput = findResult.getStep("Review", "view")?.output as
     | { body?: string; overallResult?: { judgment: string; reason: string } }
     | undefined;
@@ -163,11 +154,7 @@ async function handleArchive(
     return;
   }
 
-  const { PlanGatewayAdapter } = await import(
-    "../../../../../core/gateway/plan-gateway-adapter.ts"
-  );
-  const gateway: PlanGateway = new PlanGatewayAdapter();
-  const result = await executePlan(plan, gateway);
+  const result = await reviewUseCase.executePlan(plan);
   console.log(JSON.stringify(result, null, 2));
 }
 
