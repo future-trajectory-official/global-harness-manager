@@ -9,6 +9,7 @@ import type {
   SizeVariance,
   SprintIdentifier,
   WorkPackageData,
+  WorkPackageIdentifier,
 } from "./types.ts";
 import type { PlanGateway } from "./plan-gateway.ts";
 import { executePlan as _executePlan } from "./plan-executor.ts";
@@ -54,11 +55,11 @@ function formatPbiBody(statement: ProductBacklogItemStatement, parentFeatureId?:
 
 function formatReviseComment(statement: ProductBacklogItemStatement, reason: ChangeReason): string {
   const lines: string[] = [];
-  lines.push("## Revision");
+  lines.push("## History");
   lines.push("");
-  lines.push(`**Reason**: ${reason.description}`);
-  lines.push("");
-  lines.push(statement.summary);
+  lines.push("| # | 変更前 | 変更後 | 変更理由 |");
+  lines.push("| - | ------ | ------ | -------- |");
+  lines.push(`| 1 | — | ${statement.summary} | ${reason.description} |`);
   return lines.join("\n");
 }
 
@@ -86,6 +87,7 @@ export interface ProductBacklogItemUseCase {
   commit(
     identifier: ProductBacklogItemIdentifier,
     sprint: SprintIdentifier,
+    childWorkPackageIdentifiers?: WorkPackageIdentifier[],
   ): Plan;
 
   start(identifier: ProductBacklogItemIdentifier): Plan;
@@ -175,7 +177,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
         },
         {
           entity: "ProductBacklogItem",
-          operation: "update",
+          operation: "comment",
           params: {
             itemId: identifier.code,
             body: formatReviseComment(statement, reason),
@@ -185,11 +187,24 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
     };
   },
 
-  commit(identifier, sprint): Plan {
+  commit(identifier, sprint, childWorkPackageIdentifiers?): Plan {
     assertTitleNonEmpty(identifier.title, "PBI title");
     assertIdDefined(identifier.id, "commit a PBI");
+    const childWpSteps: Step[] = (childWorkPackageIdentifiers ?? []).map((wpId) => ({
+      entity: "WorkPackage" as const,
+      operation: "commit" as const,
+      params: {
+        itemId: wpId.code,
+        stage: "todo",
+        state: "open",
+        sprint: sprint.title.value,
+      },
+    }));
     return {
-      summary: `Commit PBI ${identifier.title.value} to ${sprint.title.value}`,
+      summary: `Commit PBI ${identifier.title.value} to ${sprint.title.value}` +
+        (childWorkPackageIdentifiers?.length
+          ? ` + ${childWorkPackageIdentifiers.length} WP(s)`
+          : ""),
       steps: [
         scopeStep(identifier),
         {
@@ -202,12 +217,13 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
             sprint: sprint.title.value,
           },
         },
+        ...childWpSteps,
         {
           entity: "ProductBacklogItem",
           operation: "update",
           params: {
             itemId: identifier.code,
-            body: formatEditComment("Commit", `Committed to ${sprint.title.value}`),
+            bodyAppend: formatEditComment("Commit", `Committed to ${sprint.title.value}`),
           },
         },
       ],
@@ -235,7 +251,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
           operation: "update",
           params: {
             itemId: identifier.code,
-            body: formatEditComment("Start", `Started work on ${identifier.title.value}`),
+            bodyAppend: formatEditComment("Start", `Started work on ${identifier.title.value}`),
           },
         },
       ],
@@ -263,7 +279,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
           operation: "update",
           params: {
             itemId: identifier.code,
-            body: formatEditComment("Complete", `Completed ${identifier.title.value}`),
+            bodyAppend: formatEditComment("Complete", `Completed ${identifier.title.value}`),
           },
         },
       ],
@@ -291,7 +307,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
           operation: "update",
           params: {
             itemId: identifier.code,
-            body: formatEditComment("Archive", `Archived ${identifier.title.value}`),
+            bodyAppend: formatEditComment("Archive", `Archived ${identifier.title.value}`),
           },
         },
       ],
