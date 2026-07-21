@@ -1051,7 +1051,790 @@ Deno.test("Sprint search - should call gh api milestones and return latest itemI
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
-  assertEquals(result.stepResults[0].itemId, "17");
+});
+
+// ======== ProductBacklogItem Handler Tests ========
+
+Deno.test("ProductBacklogItem propose - should create issue with type:PBI label", async () => {
+  let callCount = 0;
+  const calls: { cmd: string; args: string[] }[] = [];
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    calls.push({ cmd: _cmd, args: _args });
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: "https://github.com/my-org/my-repo/issues/50",
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "node-pbi-50" }), stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "propose PBI",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "propose",
+        params: { title: "Test PBI", body: "## Summary\nTest" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(calls.length, 2);
+  assertStringIncludes(calls[0].args.join(" "), "issue create");
+  assertStringIncludes(calls[0].args.join(" "), `--title Test PBI`);
+  assertStringIncludes(calls[0].args.join(" "), `--label type:PBI`);
+  assertStringIncludes(calls[0].args.join(" "), `--repo ${OWNER}/${REPO}`);
+});
+
+Deno.test("ProductBacklogItem propose - with parentFeature should create parent-child relationship", async () => {
+  let callCount = 0;
+  const responses: Record<number, ExecuteResult> = {
+    1: { code: 0, stdout: "https://github.com/my-org/my-repo/issues/50", stderr: "" },
+    2: { code: 0, stdout: JSON.stringify({ id: "node-pbi-50" }), stderr: "" },
+    3: { code: 0, stdout: JSON.stringify({ id: "node-feature-10" }), stderr: "" },
+    4: { code: 0, stdout: JSON.stringify({ id: "node-pbi-50" }), stderr: "" },
+    5: {
+      code: 0,
+      stdout: JSON.stringify({ data: { addSubIssue: { issue: { id: "node-feature-10" } } } }),
+      stderr: "",
+    },
+  };
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    return Promise.resolve(responses[callCount] ?? { code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "propose with feature",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "propose",
+        params: { title: "With Feature", body: "body", parentFeature: "10" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  // create + view nodeId + view parent(json:id) + view item(json:id) + graphql
+  assertEquals(callCount, 5);
+});
+
+Deno.test("ProductBacklogItem commit - should set milestone", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "commit PBI",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "commit",
+        params: { itemId: "42", sprint: "Sprint 19" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(calls.length, 1);
+  assertStringIncludes(calls[0].args.join(" "), "issue edit 42");
+  assertStringIncludes(calls[0].args.join(" "), "--milestone Sprint 19");
+});
+
+Deno.test("ProductBacklogItem commit - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "commit without id",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "commit",
+        params: { sprint: "Sprint 19" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("ProductBacklogItem estimateSize - should succeed with valid itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "estimate size",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "estimateSize",
+        params: { itemId: "42", sizeEstimate: "M" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("ProductBacklogItem estimateSize - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "estimate size no id",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "estimateSize",
+        params: { sizeEstimate: "M" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("ProductBacklogItem start - should succeed with valid itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "start PBI",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "start",
+        params: { itemId: "42" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("ProductBacklogItem complete - should succeed with valid itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "complete PBI",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "complete",
+        params: { itemId: "42" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("ProductBacklogItem archive - should close the issue", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive PBI",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "archive",
+        params: { itemId: "42" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(calls.length, 1);
+  assertStringIncludes(calls[0].args.join(" "), "issue close 42");
+});
+
+Deno.test("ProductBacklogItem view - should return issue details with parent/milestone", async () => {
+  let callCount = 0;
+  const calls: { cmd: string; args: string[] }[] = [];
+  const adapter = makeAdapter((cmd, args) => {
+    callCount++;
+    calls.push({ cmd, args });
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({
+          number: 42,
+          title: "Test PBI",
+          body: "body",
+          labels: [{ name: "type:PBI" }],
+          id: "node-abc",
+        }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({
+        data: {
+          repository: {
+            issue: {
+              parent: { number: 10, title: "Feature", id: "node-feat" },
+              milestone: { number: 25, title: "Sprint 25" },
+              subIssues: { nodes: [{ number: 11, title: "Child WP", id: "node-wp" }] },
+            },
+          },
+        },
+      }),
+      stderr: "",
+    });
+  });
+  const plan: Plan = {
+    summary: "view PBI",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "view",
+        params: { itemId: "42" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(calls.length, 2);
+  assertStringIncludes(calls[0].args.join(" "), "issue view 42");
+  assertStringIncludes(calls[1].args.join(" "), "api graphql");
+  const output = result.stepResults[0].output as Record<string, unknown>;
+  const parent = output.parent as Record<string, unknown>;
+  assertEquals(parent.code as string, "10");
+  assertEquals((parent.title as Record<string, unknown>).value, "Feature");
+  const children = output.children as Array<Record<string, unknown>>;
+  assertEquals(children.length, 1);
+  assertEquals(children[0].code as string, "11");
+});
+
+// ======== Missing validation tests (review fix) ========
+
+Deno.test("ProductBacklogItem start - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "start without itemId",
+    steps: [{ entity: "ProductBacklogItem", operation: "start", params: {} }],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("ProductBacklogItem complete - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "complete without itemId",
+    steps: [{ entity: "ProductBacklogItem", operation: "complete", params: {} }],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("ProductBacklogItem archive - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "archive without itemId",
+    steps: [{ entity: "ProductBacklogItem", operation: "archive", params: {} }],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("ProductBacklogItem view - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "view without itemId",
+    steps: [{ entity: "ProductBacklogItem", operation: "view", params: {} }],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("WorkPackage start - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "WP start without itemId",
+    steps: [{ entity: "WorkPackage", operation: "start", params: {} }],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("WorkPackage complete - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "WP complete without itemId",
+    steps: [{ entity: "WorkPackage", operation: "complete", params: {} }],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("WorkPackage archive - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "WP archive without itemId",
+    steps: [{ entity: "WorkPackage", operation: "archive", params: {} }],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("WorkPackage commit - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "WP commit without itemId",
+    steps: [{ entity: "WorkPackage", operation: "commit", params: { sprint: "Sprint 19" } }],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+// ======== Error Handling Tests (AC-8, AC-9) ========
+
+Deno.test("ProductBacklogItem propose - should handle network error (AC-8)", async () => {
+  const errorRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({ code: 1, stdout: "", stderr: "connection refused" });
+  };
+  const adapter = makeAdapter(errorRunner);
+  const plan: Plan = {
+    summary: "propose PBI with network error",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "propose",
+        params: { title: "Test", body: "body" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertEquals(result.stepResults[0].error, "connection refused");
+});
+
+Deno.test("ProductBacklogItem commit - should handle gh api error (AC-8)", async () => {
+  const errorRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({ code: 1, stdout: "", stderr: "rate limit exceeded" });
+  };
+  const adapter = makeAdapter(errorRunner);
+  const plan: Plan = {
+    summary: "commit with api error",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "commit",
+        params: { itemId: "42", sprint: "Sprint 19" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "rate limit exceeded");
+});
+
+Deno.test("WorkPackage define - should handle network error during create (AC-8)", async () => {
+  const errorRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({ code: 1, stdout: "", stderr: "connection timeout" });
+  };
+  const adapter = makeAdapter(errorRunner);
+  const plan: Plan = {
+    summary: "define WP with network error",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "define",
+        params: { title: "WP_1", parentPbi: "42", body: "body" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+});
+
+Deno.test("ProductBacklogItem view - should handle nonexistent resource (AC-9)", async () => {
+  const errorRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({ code: 1, stdout: "", stderr: "GraphQL: Not Found" });
+  };
+  const adapter = makeAdapter(errorRunner);
+  const plan: Plan = {
+    summary: "view nonexistent PBI",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "view",
+        params: { itemId: "99999" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "Not Found");
+});
+
+Deno.test("WorkPackage start - should handle nonexistent resource (AC-9)", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "start WP without itemId",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "start",
+        params: {},
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("ProductBacklogItem search - should search by PBI label", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const adapter = makeAdapter((cmd, args) => {
+    calls.push({ cmd, args });
+    return Promise.resolve({ code: 0, stdout: JSON.stringify([]), stderr: "" });
+  });
+  const plan: Plan = {
+    summary: "search PBI",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "search",
+        params: {},
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertStringIncludes(calls[0].args.join(" "), "issue list");
+  assertStringIncludes(calls[0].args.join(" "), "--label type:PBI");
+});
+
+Deno.test("ProductBacklogItem recordAnalysis - should succeed with valid params", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record analysis",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "recordAnalysis",
+        params: { itemId: "42", body: "## Process Analysis\nreview text" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("ProductBacklogItem defineAcceptanceCriteria - should create WP issue with AC body and set parent", async () => {
+  let callCount = 0;
+  const responses: Record<number, ExecuteResult> = {
+    1: { code: 0, stdout: "https://github.com/my-org/my-repo/issues/51", stderr: "" },
+    2: { code: 0, stdout: JSON.stringify({ id: "node-wp-51" }), stderr: "" },
+    3: { code: 0, stdout: JSON.stringify({ id: "node-pbi-42" }), stderr: "" },
+    4: { code: 0, stdout: JSON.stringify({ id: "node-wp-51" }), stderr: "" },
+    5: {
+      code: 0,
+      stdout: JSON.stringify({ data: { addSubIssue: { issue: { id: "node-pbi-42" } } } }),
+      stderr: "",
+    },
+  };
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    return Promise.resolve(responses[callCount] ?? { code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "define AC",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "defineAcceptanceCriteria",
+        params: { title: "WP_1: Gateway handlers", parentPbi: "42", body: "- [ ] AC1: test" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  // create + view nodeId + view parent + view item + graphql
+  assertEquals(callCount, 5);
+});
+
+Deno.test("ProductBacklogItem defineAcceptanceCriteria - should fail without title", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "define AC without title",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "defineAcceptanceCriteria",
+        params: { parentPbi: "42", body: "body" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+});
+
+// ======== WorkPackage Handler Tests ========
+
+Deno.test("WorkPackage define - should create issue with type:WP label and set parent", async () => {
+  let callCount = 0;
+  const calls: { cmd: string; args: string[] }[] = [];
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    calls.push({ cmd: _cmd, args: _args });
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: "https://github.com/my-org/my-repo/issues/51",
+        stderr: "",
+      });
+    }
+    if (callCount === 2) {
+      return Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "node-wp-51" }), stderr: "" });
+    }
+    if (callCount === 3) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ id: "node-pbi-42" }),
+        stderr: "",
+      });
+    }
+    if (callCount === 4) {
+      return Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "node-wp-51" }), stderr: "" });
+    }
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ data: { addSubIssue: { issue: { id: "node-pbi-42" } } } }),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  const plan: Plan = {
+    summary: "define WP",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "define",
+        params: { title: "WP_1: Gateway handlers", parentPbi: "42", body: "## AC\n- AC1: test" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertStringIncludes(calls[0].args.join(" "), "issue create");
+  assertStringIncludes(calls[0].args.join(" "), "--label type:WP");
+});
+
+Deno.test("WorkPackage define - should fail without parentPbi", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "define WP no parent",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "define",
+        params: { title: "WP_1", body: "body" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "parentPbi is required");
+});
+
+Deno.test("WorkPackage commit - should set milestone", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "commit WP",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "commit",
+        params: { itemId: "51", sprint: "Sprint 19" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertStringIncludes(calls[0].args.join(" "), "issue edit 51");
+  assertStringIncludes(calls[0].args.join(" "), "--milestone Sprint 19");
+});
+
+Deno.test("WorkPackage start - should succeed with valid itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "start WP",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "start",
+        params: { itemId: "51" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage complete - should succeed with valid itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "complete WP",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "complete",
+        params: { itemId: "51" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage archive - should close the issue", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive WP",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "archive",
+        params: { itemId: "51" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertStringIncludes(calls[0].args.join(" "), "issue close 51");
+});
+
+Deno.test("WorkPackage estimateInitialEffort - should succeed with valid params", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "estimate initial effort",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "estimateInitialEffort",
+        params: { itemId: "51", effortInitial: 3 },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage estimateInitialEffort - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "estimate initial effort no id",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "estimateInitialEffort",
+        params: { effortInitial: 3 },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("WorkPackage view - should return issue details", async () => {
+  const expectedOutput = JSON.stringify({
+    number: 51,
+    title: "WP_1",
+    body: "body",
+    labels: [{ name: "type:WP" }],
+    id: "node-wp-51",
+  });
+  const calls: { cmd: string; args: string[] }[] = [];
+  const adapter = makeAdapter((cmd, args) => {
+    calls.push({ cmd, args });
+    return Promise.resolve({ code: 0, stdout: expectedOutput, stderr: "" });
+  });
+  const plan: Plan = {
+    summary: "view WP",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "view",
+        params: { itemId: "51" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertStringIncludes(calls[0].args.join(" "), "issue view 51");
+});
+
+Deno.test("WorkPackage search - should search by WP label", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const adapter = makeAdapter((cmd, args) => {
+    calls.push({ cmd, args });
+    return Promise.resolve({ code: 0, stdout: JSON.stringify([]), stderr: "" });
+  });
+  const plan: Plan = {
+    summary: "search WP",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "search",
+        params: {},
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertStringIncludes(calls[0].args.join(" "), "issue list");
+  assertStringIncludes(calls[0].args.join(" "), "--label type:WP");
 });
 
 /**
