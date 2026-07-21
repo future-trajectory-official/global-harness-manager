@@ -2,6 +2,7 @@ import type { EntityScope, ExecutionResult, Plan, Step, StepResult } from "./typ
 import type {
   ChangeReason,
   EffortRecord,
+  KeepProblemTryAdvice,
   ProcessAnalysis,
   ProductBacklogItemIdentifier,
   SessionMetrics,
@@ -43,20 +44,6 @@ function formatEditComment(operation: string, detail: string): string {
   lines.push(`## ${operation}`);
   lines.push("");
   lines.push(detail);
-  return lines.join("\n");
-}
-
-function formatEffortBody(effort: EffortRecord): string {
-  const lines: string[] = [];
-  lines.push("## Effort Record");
-  lines.push("");
-  lines.push(`- **Initial Estimate**: ${effort.initialEstimate}`);
-  if (effort.plannedEstimate !== undefined) {
-    lines.push(`- **Planned Estimate**: ${effort.plannedEstimate}`);
-  }
-  if (effort.actual !== undefined) {
-    lines.push(`- **Actual**: ${effort.actual}`);
-  }
   return lines.join("\n");
 }
 
@@ -173,6 +160,12 @@ export interface WorkPackageUseCase {
     metrics: SessionMetrics,
   ): Plan;
 
+  /** WPのKPT（Keep/Problem/Try/Advise）を記録する。 */
+  recordKpt(
+    identifier: WorkPackageIdentifier,
+    kpt: KeepProblemTryAdvice,
+  ): Plan;
+
   /** WPをID検索する。 */
   find(identifier: WorkPackageIdentifier): Plan;
 
@@ -206,14 +199,6 @@ export const workPackageUseCase: WorkPackageUseCase & {
             body: formatWpBody(statement),
           },
         },
-        {
-          entity: "WorkPackage",
-          operation: "update",
-          params: {
-            itemId: identifier.code,
-            body: formatEditComment("Define", `Defined ${identifier.title.value}`),
-          },
-        },
       ],
     };
   },
@@ -241,7 +226,7 @@ export const workPackageUseCase: WorkPackageUseCase & {
           operation: "update",
           params: {
             itemId: identifier.code,
-            body: formatEditComment("Commit", `Committed to ${sprint.title.value}`),
+            bodyAppend: formatEditComment("Commit", `Committed to ${sprint.title.value}`),
           },
         },
       ],
@@ -272,7 +257,7 @@ export const workPackageUseCase: WorkPackageUseCase & {
         },
         {
           entity: "WorkPackage",
-          operation: "update",
+          operation: "comment",
           params: {
             itemId: identifier.code,
             body: formatEditComment("Revise", reason.description),
@@ -303,7 +288,7 @@ export const workPackageUseCase: WorkPackageUseCase & {
           operation: "update",
           params: {
             itemId: identifier.code,
-            body: formatEditComment("Start", `Started work on ${identifier.title.value}`),
+            bodyAppend: formatEditComment("Start", `Started work on ${identifier.title.value}`),
           },
         },
       ],
@@ -331,7 +316,7 @@ export const workPackageUseCase: WorkPackageUseCase & {
           operation: "update",
           params: {
             itemId: identifier.code,
-            body: formatEditComment("Complete", `Completed ${identifier.title.value}`),
+            bodyAppend: formatEditComment("Complete", `Completed ${identifier.title.value}`),
           },
         },
       ],
@@ -359,7 +344,7 @@ export const workPackageUseCase: WorkPackageUseCase & {
           operation: "update",
           params: {
             itemId: identifier.code,
-            body: formatEditComment("Archive", `Archived ${identifier.title.value}`),
+            bodyAppend: formatEditComment("Archive", `Archived ${identifier.title.value}`),
           },
         },
       ],
@@ -410,7 +395,6 @@ export const workPackageUseCase: WorkPackageUseCase & {
         params: {
           itemId: identifier.code,
           effortInitial: effort.initialEstimate,
-          body: formatEffortBody(effort),
         },
       }],
     };
@@ -427,7 +411,6 @@ export const workPackageUseCase: WorkPackageUseCase & {
         params: {
           itemId: identifier.code,
           effortPlanned: effort.plannedEstimate,
-          body: formatEffortBody(effort),
         },
       }],
     };
@@ -444,7 +427,6 @@ export const workPackageUseCase: WorkPackageUseCase & {
         params: {
           itemId: identifier.code,
           effortActual: effort.actual,
-          body: formatEffortBody(effort),
         },
       }],
     };
@@ -478,6 +460,22 @@ export const workPackageUseCase: WorkPackageUseCase & {
         params: {
           itemId: identifier.code,
           body: formatSessionMetricsBody(metrics),
+        },
+      }],
+    };
+  },
+
+  recordKpt(identifier, kpt): Plan {
+    assertTitleNonEmpty(identifier.title, "WP title");
+    assertIdDefined(identifier.id, "record KPT for a WP");
+    return {
+      summary: `Record KPT for WP: ${identifier.title.value}`,
+      steps: [scopeStep(identifier), {
+        entity: "WorkPackage",
+        operation: "recordKpt",
+        params: {
+          itemId: identifier.code,
+          body: JSON.stringify(kpt),
         },
       }],
     };

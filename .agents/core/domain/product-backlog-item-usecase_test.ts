@@ -199,14 +199,14 @@ Deno.test("propose should throw for parentFeature with undefined id", () => {
  * @description PBI修正時に正しい Plan（update + update）が生成されること
  * @verify Plan.summary、steps の長さ、各 step の operation が期待値と一致すること
  */
-Deno.test("revise should return Plan with 2 update operations", () => {
+Deno.test("revise should return Plan with update and comment", () => {
   const plan = productBacklogItemUseCase.revise(makePbiId(), makeStatement(), makeReason());
   assertEquals(plan.summary, "Revise PBI: User Authentication");
   assertEquals(plan.steps.length, 3);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "update");
-  assertEquals(plan.steps[2].operation, "update");
+  assertEquals(plan.steps[2].operation, "comment");
 });
 
 /**

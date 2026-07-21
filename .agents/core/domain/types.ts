@@ -222,7 +222,8 @@ export type ProductBacklogItemOperation =
   | "assignToFeature"
   | "unassignFromFeature"
   | "view"
-  | "search";
+  | "search"
+  | "comment";
 
 /** WorkPackage エンティティの操作種別。WpValidator.WpOperation と対応。 */
 export type WorkPackageOperation =
@@ -239,8 +240,10 @@ export type WorkPackageOperation =
   | "recordActualEffort"
   | "recordAnalysis"
   | "recordSessionMetrics"
+  | "recordKpt"
   | "view"
-  | "search";
+  | "search"
+  | "comment";
 
 /** Sprint エンティティの操作種別。 */
 export type SprintOperation =
