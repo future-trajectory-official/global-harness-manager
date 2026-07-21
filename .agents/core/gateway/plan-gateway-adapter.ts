@@ -13,6 +13,8 @@ import type {
 } from "../domain/types.ts";
 import { identify } from "../domain/types.ts";
 import type { PlanGateway } from "../domain/plan-gateway.ts";
+import { ProductBacklogItemHandler } from "./product-backlog-item-handler.ts";
+import { WorkPackageHandler } from "./work-package-handler.ts";
 
 export type CommandRunner = (cmd: string, args: string[]) => Promise<ExecuteResult>;
 
@@ -28,7 +30,7 @@ function parseJsonOutput(raw: string): unknown {
   }
 }
 
-type OperationHandler = (
+export type OperationHandler = (
   operation: string,
   params: Record<string, unknown>,
   lastItemId?: string,
@@ -41,9 +43,10 @@ export interface PlanResult extends ExecutionResult {
 export class PlanGatewayAdapter implements PlanGateway {
   private readonly stepHandlers = new Map<EntityType, Map<StepOperation, OperationHandler>>();
   private resolvedScope: EntityScope | null = null;
+  private projectConfig: { productBacklogBoardNumber?: number; sprintBoardNumber?: number } = {};
 
   constructor(
-    private readonly runCommand: CommandRunner = (cmd, args) => executeCommand({ cmd, args }),
+    readonly runCommand: CommandRunner = (cmd, args) => executeCommand({ cmd, args }),
   ) {
     // === Vision 操作の登録 ===
     const visionCreate: OperationHandler = async (op, params) => {
@@ -143,7 +146,7 @@ export class PlanGatewayAdapter implements PlanGateway {
     this.register("Feature", "create", async (_op, params) => {
       const result = await this.handleCreateItem(params, "Feature");
       if (result.success && params.parentEpic && result.itemId) {
-        const parentResult = await this.#handleSetParent(result.itemId, String(params.parentEpic));
+        const parentResult = await this.handleSetParent(result.itemId, String(params.parentEpic));
         if (!parentResult.success) {
           return parentResult;
         }
@@ -163,10 +166,10 @@ export class PlanGatewayAdapter implements PlanGateway {
         return { operation: "update", success: false, error: "itemId is required" };
       }
       if (params.parentEpic) {
-        return await this.#handleSetParent(itemId, String(params.parentEpic));
+        return await this.handleSetParent(itemId, String(params.parentEpic));
       }
       if ("parentEpic" in params) {
-        return await this.#handleRemoveParent(itemId);
+        return await this.handleRemoveParent(itemId);
       }
       if (params.title || params.bodyAppend) {
         return await this.handleUpdateItem(params);
@@ -184,14 +187,14 @@ export class PlanGatewayAdapter implements PlanGateway {
       if (!parentFeature) {
         return { operation: "assignToFeature", success: false, error: "parentFeature is required" };
       }
-      return await this.#handleSetParent(itemId, parentFeature);
+      return await this.handleSetParent(itemId, parentFeature);
     });
     this.register("ProductBacklogItem", "unassignFromFeature", async (_op, params) => {
       const itemId = String(params.itemId ?? "");
       if (!itemId) {
         return { operation: "unassignFromFeature", success: false, error: "itemId is required" };
       }
-      return await this.#handleRemoveParent(itemId);
+      return await this.handleRemoveParent(itemId);
     });
 
     // === Sprint (Milestone) 操作の登録 ===
@@ -206,11 +209,419 @@ export class PlanGatewayAdapter implements PlanGateway {
       (op, params, lastItemId) => this.#handleSprintView(op, params, lastItemId),
     );
     this.register("Scope", "resolve", (_op, params) => this.handleScopeResolve(params));
+
+    // === ProductBacklogItem 操作の登録 ===
+    new ProductBacklogItemHandler(this).register(this.stepHandlers);
+
+    // === WorkPackage 操作の登録 ===
+    new WorkPackageHandler(this).register(this.stepHandlers);
   }
 
   /** テスト用にscopeを直接設定する。通常はScope.resolve Stepで設定される。 */
   setScope(owner: string, repository: string): void {
     this.resolvedScope = { owner, repository };
+  }
+
+  /** Product Backlog Board のプロジェクト番号。Handlerから参照される。 */
+  get productBacklogBoardNumber(): number | undefined {
+    return this.projectConfig.productBacklogBoardNumber;
+  }
+
+  /** Sprint Board のプロジェクト番号。Handlerから参照される。 */
+  get sprintBoardNumber(): number | undefined {
+    return this.projectConfig.sprintBoardNumber;
+  }
+
+  /** Project V2 ボード番号を設定する。テスト用および初期化時に使用する。 */
+  setProjectBoardNumbers(productBacklog?: number, sprint?: number): void {
+    this.projectConfig = {
+      productBacklogBoardNumber: productBacklog,
+      sprintBoardNumber: sprint,
+    };
+  }
+
+  /**
+   * Issue を Project V2 ボードに追加する。
+   * @returns プロジェクト上の item node id
+   */
+  async addItemToProject(
+    issueNodeId: string,
+    projectNumber: number,
+  ): Promise<{ projectItemNodeId: string }> {
+    const getProjectIdQuery =
+      `query($owner: String!, $number: Int!) { organization(login: $owner) { projectV2(number: $number) { id } } }`;
+    const projectResult = await this.runCommand("gh", [
+      "api",
+      "graphql",
+      "-f",
+      `query=${getProjectIdQuery}`,
+      "-f",
+      `owner=${this.resolvedScope?.owner}`,
+      "-F",
+      `number=${projectNumber}`,
+    ]);
+    if (projectResult.code !== 0) {
+      throw new Error(`Failed to get project ID: ${projectResult.stderr}`);
+    }
+    let projectData: { data?: { organization?: { projectV2?: { id: string } } } };
+    try {
+      projectData = JSON.parse(projectResult.stdout);
+      const errors = (projectData as { errors?: Array<{ message: string }> }).errors;
+      if (errors?.length) {
+        throw new Error(`GraphQL error: ${errors.map((e) => e.message).join("; ")}`);
+      }
+    } catch (e) {
+      throw new Error(
+        `Failed to parse project ID response: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+    const projectId = projectData?.data?.organization?.projectV2?.id;
+    if (!projectId) {
+      throw new Error(`Project V2 #${projectNumber} not found`);
+    }
+
+    const addItemMutation =
+      `mutation($project: ID!, $content: ID!) { addProjectV2ItemById(input: {projectId: $project, contentId: $content}) { item { id } } }`;
+    const addResult = await this.runCommand("gh", [
+      "api",
+      "graphql",
+      "-f",
+      `query=${addItemMutation}`,
+      "-f",
+      `project=${projectId}`,
+      "-f",
+      `content=${issueNodeId}`,
+    ]);
+    if (addResult.code !== 0) {
+      throw new Error(`Failed to add item to project: ${addResult.stderr}`);
+    }
+    let addData: {
+      data?: { addProjectV2ItemById?: { item?: { id: string } } };
+      errors?: Array<{ message: string }>;
+    };
+    try {
+      addData = JSON.parse(addResult.stdout);
+    } catch (e) {
+      throw new Error(
+        `Failed to parse add item response: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+    if (addData.errors?.length) {
+      const alreadyOnProject = addData.errors.some((e) =>
+        e.message.includes("already on the project")
+      );
+      if (alreadyOnProject && this.resolvedScope) {
+        const numQuery = `query($id:ID!){node(id:$id){...on Issue{number}}}`;
+        const numResult = await this.runCommand("gh", [
+          "api",
+          "graphql",
+          "-f",
+          `query=${numQuery}`,
+          "-f",
+          `id=${issueNodeId}`,
+        ]);
+        if (numResult.code === 0) {
+          const numData = JSON.parse(numResult.stdout) as { data?: { node?: { number?: number } } };
+          const issueNum = numData?.data?.node?.number;
+          if (issueNum) {
+            const lookupQuery =
+              `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
+            const lookupResult = await this.runCommand("gh", [
+              "api",
+              "graphql",
+              "-f",
+              `query=${lookupQuery}`,
+              "-f",
+              `owner=${this.resolvedScope.owner}`,
+              "-f",
+              `repo=${this.resolvedScope.repository}`,
+              "-F",
+              `num=${issueNum}`,
+            ]);
+            if (lookupResult.code === 0) {
+              const lookupData = JSON.parse(lookupResult.stdout) as {
+                data?: {
+                  repository?: {
+                    issue?: {
+                      projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
+                    };
+                  };
+                };
+              };
+              const matched = lookupData?.data?.repository?.issue?.projectItems?.nodes
+                ?.find((n) => n.project.number === projectNumber);
+              if (matched) return { projectItemNodeId: matched.id };
+            }
+          }
+        }
+      }
+      throw new Error(`GraphQL error: ${addData.errors.map((e) => e.message).join("; ")}`);
+    }
+    const projectItemNodeId = addData?.data?.addProjectV2ItemById?.item?.id;
+    if (!projectItemNodeId) {
+      throw new Error("Failed to get project item node ID");
+    }
+    return { projectItemNodeId };
+  }
+
+  /** プロジェクトV2の単一選択フィールドのオプション名からIDを解決する。 */
+  async resolveSingleSelectOptionId(
+    projectNumber: number,
+    fieldName: string,
+    optionName: string,
+  ): Promise<string | undefined> {
+    const owner = this.resolvedScope?.owner;
+    if (!owner) return undefined;
+    const result = await this.runCommand("gh", [
+      "api",
+      "graphql",
+      "-f",
+      "query=query($owner: String!, $number: Int!, $field: String!) { organization(login: $owner) { projectV2(number: $number) { field(name: $field) { ... on ProjectV2SingleSelectField { options { id name } } } } } }",
+      "-f",
+      `owner=${owner}`,
+      "-F",
+      `number=${projectNumber}`,
+      "-f",
+      `field=${fieldName}`,
+    ]);
+    if (result.code !== 0) return undefined;
+    try {
+      const data = JSON.parse(result.stdout) as {
+        data?: {
+          organization?: {
+            projectV2?: { field?: { options: Array<{ id: string; name: string }> } };
+          };
+        };
+      };
+      return data?.data?.organization?.projectV2?.field?.options
+        ?.find((o) => o.name === optionName)?.id;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** フィールド名からフィールドIDを解決する（内部ヘルパー）。 */
+  private async resolveFieldId(
+    projectNumber: number,
+    fieldName: string,
+  ): Promise<{ fieldId: string } | { error: string }> {
+    const query =
+      `query($owner: String!, $number: Int!, $fieldName: String!) { organization(login: $owner) { projectV2(number: $number) { field(name: $fieldName) { ... on ProjectV2SingleSelectField { id } ... on ProjectV2Field { id } } } } }`;
+    const result = await this.runCommand("gh", [
+      "api",
+      "graphql",
+      "-f",
+      `query=${query}`,
+      "-f",
+      `owner=${this.resolvedScope?.owner}`,
+      "-F",
+      `number=${projectNumber}`,
+      "-f",
+      `fieldName=${fieldName}`,
+    ]);
+    if (result.code !== 0) return { error: result.stderr };
+    try {
+      const data = JSON.parse(result.stdout) as {
+        data?: { organization?: { projectV2?: { field?: { id: string } } } };
+      };
+      const fieldId = data?.data?.organization?.projectV2?.field?.id;
+      if (!fieldId) return { error: `Field "${fieldName}" not found` };
+      return { fieldId };
+    } catch {
+      return { error: "Failed to parse field query response" };
+    }
+  }
+
+  /** Project V2 フィールドに単一選択値を設定する。 */
+  /** プロジェクト番号からプロジェクトノードIDを解決する。 */
+  private async resolveProjectNodeId(
+    projectNumber: number,
+  ): Promise<{ projectId: string } | { error: string }> {
+    const query =
+      `query($owner: String!, $number: Int!) { organization(login: $owner) { projectV2(number: $number) { id } } }`;
+    const result = await this.runCommand("gh", [
+      "api",
+      "graphql",
+      "-f",
+      `query=${query}`,
+      "-f",
+      `owner=${this.resolvedScope?.owner}`,
+      "-F",
+      `number=${projectNumber}`,
+    ]);
+    if (result.code !== 0) return { error: result.stderr };
+    try {
+      const data = JSON.parse(result.stdout) as {
+        data?: { organization?: { projectV2?: { id: string } } };
+      };
+      const projectId = data?.data?.organization?.projectV2?.id;
+      if (!projectId) return { error: "Project not found" };
+      return { projectId };
+    } catch {
+      return { error: "Failed to parse project query response" };
+    }
+  }
+
+  /** Project V2 フィールドに単一選択値を設定する。 */
+  async setSingleSelectFieldValue(
+    projectItemNodeId: string,
+    projectNumber: number,
+    fieldName: string,
+    optionId: string,
+  ): Promise<StepResult> {
+    const [resolved1, resolved2] = await Promise.all([
+      this.resolveFieldId(projectNumber, fieldName),
+      this.resolveProjectNodeId(projectNumber),
+    ]);
+    if ("error" in resolved1) {
+      return { operation: "updateField", success: false, error: resolved1.error };
+    }
+    if ("error" in resolved2) {
+      return { operation: "updateField", success: false, error: resolved2.error };
+    }
+    const result = await this.runCommand("gh", [
+      "project",
+      "item-edit",
+      "--project-id",
+      resolved2.projectId,
+      "--id",
+      projectItemNodeId,
+      "--field-id",
+      resolved1.fieldId,
+      "--single-select-option-id",
+      optionId,
+    ]);
+    if (result.code !== 0) {
+      return { operation: "updateField", success: false, error: result.stderr };
+    }
+    return { operation: "updateField", success: true };
+  }
+
+  /** IssueのV2ボード上のStatusを設定する（stage値→V2 Status名に自動変換）。 */
+  async setBoardStatus(itemId: string, boardNumber: number, stage: string): Promise<void> {
+    const stageToStatus: Record<string, string> = {
+      todo: "Todo",
+      inProgress: "In Progress",
+      done: "Done",
+    };
+    const statusName = stageToStatus[stage];
+    if (!statusName) return;
+    const nodeResult = await this.runCommand("gh", [
+      "issue",
+      "view",
+      itemId,
+      "--json",
+      "id",
+      ...this.buildRepoArg(),
+    ]);
+    if (nodeResult.code !== 0) return;
+    try {
+      const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
+      const { projectItemNodeId } = await this.addItemToProject(nodeData.id, boardNumber);
+      const optionId = await this.resolveSingleSelectOptionId(boardNumber, "Status", statusName);
+      if (optionId) {
+        await this.setSingleSelectFieldValue(projectItemNodeId, boardNumber, "Status", optionId);
+      }
+    } catch {
+      // non-critical
+    }
+  }
+
+  /** Project V2 アイテムのテキストフィールド値を読み取る。 */
+  async readTextFieldValue(
+    projectItemNodeId: string,
+    _projectNumber: number,
+    fieldName: string,
+  ): Promise<string | undefined> {
+    const query =
+      `query($item: ID!) { node(id: $item) { ... on ProjectV2Item { fv: fieldValueByName(name: "${fieldName}") { ... on ProjectV2ItemFieldTextValue { text } } } } }`;
+    const result = await this.runCommand("gh", [
+      "api",
+      "graphql",
+      "-f",
+      `query=${query}`,
+      "-f",
+      `item=${projectItemNodeId}`,
+    ]);
+    if (result.code !== 0) return undefined;
+    try {
+      const data = JSON.parse(result.stdout) as {
+        data?: { node?: { fv?: { text?: string } } };
+      };
+      return data?.data?.node?.fv?.text;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** Project V2 フィールドに数値を設定する。 */
+  async setNumberFieldValue(
+    projectItemNodeId: string,
+    projectNumber: number,
+    fieldName: string,
+    numberValue: number,
+  ): Promise<StepResult> {
+    const [resolved1, resolved2] = await Promise.all([
+      this.resolveFieldId(projectNumber, fieldName),
+      this.resolveProjectNodeId(projectNumber),
+    ]);
+    if ("error" in resolved1) {
+      return { operation: "updateField", success: false, error: resolved1.error };
+    }
+    if ("error" in resolved2) {
+      return { operation: "updateField", success: false, error: resolved2.error };
+    }
+    const result = await this.runCommand("gh", [
+      "project",
+      "item-edit",
+      "--project-id",
+      resolved2.projectId,
+      "--id",
+      projectItemNodeId,
+      "--field-id",
+      resolved1.fieldId,
+      "--number",
+      String(numberValue),
+    ]);
+    if (result.code !== 0) {
+      return { operation: "updateField", success: false, error: result.stderr };
+    }
+    return { operation: "updateField", success: true };
+  }
+
+  /** Project V2 フィールドにテキスト値を設定する。 */
+  async setTextFieldValue(
+    projectItemNodeId: string,
+    projectNumber: number,
+    fieldName: string,
+    text: string,
+  ): Promise<StepResult> {
+    const [resolved1, resolved2] = await Promise.all([
+      this.resolveFieldId(projectNumber, fieldName),
+      this.resolveProjectNodeId(projectNumber),
+    ]);
+    if ("error" in resolved1) {
+      return { operation: "updateField", success: false, error: resolved1.error };
+    }
+    if ("error" in resolved2) {
+      return { operation: "updateField", success: false, error: resolved2.error };
+    }
+    const result = await this.runCommand("gh", [
+      "project",
+      "item-edit",
+      "--project-id",
+      resolved2.projectId,
+      "--id",
+      projectItemNodeId,
+      "--field-id",
+      resolved1.fieldId,
+      "--text",
+      text,
+    ]);
+    if (result.code !== 0) {
+      return { operation: "updateField", success: false, error: result.stderr };
+    }
+    return { operation: "updateField", success: true };
   }
 
   private async handleScopeResolve(params: Record<string, unknown>): Promise<StepResult> {
@@ -359,7 +770,23 @@ export class PlanGatewayAdapter implements PlanGateway {
     }
   }
 
-  private async handleCloseItem(params: Record<string, unknown>): Promise<StepResult> {
+  async handleSetMilestone(itemId: string, sprint: string): Promise<StepResult> {
+    const sprintArgs = [
+      "issue",
+      "edit",
+      itemId,
+      "--milestone",
+      sprint,
+      ...this.buildRepoArg(),
+    ];
+    const result = await this.runCommand("gh", sprintArgs);
+    if (result.code !== 0) {
+      return { operation: "commit", success: false, error: result.stderr };
+    }
+    return { operation: "commit", success: true, itemId };
+  }
+
+  async handleCloseItem(params: Record<string, unknown>): Promise<StepResult> {
     const itemId = String(params.itemId ?? "");
     if (!itemId) {
       return { operation: "archive", success: false, error: "itemId is required" };
@@ -382,7 +809,17 @@ export class PlanGatewayAdapter implements PlanGateway {
     return { operation: "archive", success: true, itemId };
   }
 
-  private buildRepoArg(): string[] {
+  /** 現在のスコープのowner名を返す。Handlerから参照される。 */
+  get scopeOwner(): string | undefined {
+    return this.resolvedScope?.owner;
+  }
+
+  /** 現在のスコープのrepository名を返す。Handlerから参照される。 */
+  get scopeRepository(): string | undefined {
+    return this.resolvedScope?.repository;
+  }
+
+  buildRepoArg(): string[] {
     if (!this.resolvedScope) {
       return [];
     }
@@ -396,7 +833,7 @@ export class PlanGatewayAdapter implements PlanGateway {
    * @param params.type - Issue に付与するラベル種別（デフォルト: PBI）
    * @returns 作成された Issue の itemId, nodeId, url を含む StepResult
    */
-  private async handleCreateItem(
+  async handleCreateItem(
     params: Record<string, unknown>,
     entity?: string,
   ): Promise<StepResult> {
@@ -456,7 +893,7 @@ export class PlanGatewayAdapter implements PlanGateway {
    * @param lastItemId - 前 Step で作成された itemId（連鎖用）
    * @returns コメント追加結果の StepResult
    */
-  private async handleAddComment(
+  async handleAddComment(
     params: Record<string, unknown>,
     lastItemId?: string,
   ): Promise<StepResult> {
@@ -679,10 +1116,11 @@ export class PlanGatewayAdapter implements PlanGateway {
 
   /**
    * findItem 操作を処理する。指定された Issue 番号の詳細情報を取得する。
+   * gh issue view に加え、GraphQL で parent/milestone を追加取得する。
    * @param params.itemId - 取得対象の Issue 番号
-   * @returns Issue の詳細情報（number, title, body, labels, comments）を含む StepResult
+   * @returns Issue の詳細情報（number, title, body, labels, comments, parent, milestone）を含む StepResult
    */
-  private async handleFindItem(params: Record<string, unknown>): Promise<StepResult> {
+  async handleFindItem(params: Record<string, unknown>): Promise<StepResult> {
     const itemId = String(params.itemId ?? "");
     if (!itemId) {
       return { operation: "view", success: false, error: "itemId is required" };
@@ -692,7 +1130,7 @@ export class PlanGatewayAdapter implements PlanGateway {
       "view",
       itemId,
       "--json",
-      "number,title,body,labels,comments",
+      "number,title,body,labels,comments,id",
       ...this.buildRepoArg(),
     ];
     let result;
@@ -710,6 +1148,85 @@ export class PlanGatewayAdapter implements PlanGateway {
       return { operation: "view", success: false, error: "Failed to parse gh output" };
     }
 
+    if (this.resolvedScope) {
+      try {
+        const enrichQuery =
+          `query($owner: String!, $repo: String!, $number: Int!) { repository(owner: $owner, name: $repo) { issue(number: $number) { parent { ... on Issue { number title id } } milestone { number title } subIssues(first: 100) { nodes { ... on Issue { number title id } } } projectItems(first: 10) { nodes { id project { title number } sizeEst: fieldValueByName(name: "harness-size-estimate") { ... on ProjectV2ItemFieldSingleSelectValue { name } } sizeAct: fieldValueByName(name: "harness-size-actual") { ... on ProjectV2ItemFieldSingleSelectValue { name } } status: fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } } } } } } }`;
+        const gqlResult = await this.runCommand("gh", [
+          "api",
+          "graphql",
+          "-f",
+          `query=${enrichQuery}`,
+          "-f",
+          `owner=${this.resolvedScope.owner}`,
+          "-f",
+          `repo=${this.resolvedScope.repository}`,
+          "-F",
+          `number=${parseInt(itemId, 10)}`,
+        ]);
+        if (gqlResult.code === 0) {
+          const gqlData = JSON.parse(gqlResult.stdout) as {
+            data?: {
+              repository?: {
+                issue?: {
+                  parent?: { number: number; title: string; id: string } | null;
+                  milestone?: { number: number; title: string } | null;
+                  subIssues?: {
+                    nodes: Array<{ number: number; title: string; id: string }> | null;
+                  };
+                  projectItems?: {
+                    nodes:
+                      | Array<{
+                        id: string;
+                        project: { title: string; number: number };
+                        sizeEst?: { name: string } | null;
+                        sizeAct?: { name: string } | null;
+                        status?: { name: string } | null;
+                      }>
+                      | null;
+                  };
+                };
+              };
+            };
+          };
+          const issue = gqlData?.data?.repository?.issue;
+          if (issue) {
+            const scope = this.resolvedScope;
+            if (issue.parent) {
+              output.parent = identify(
+                scope,
+                issue.parent.title,
+                issue.parent.id,
+                String(issue.parent.number),
+              );
+            }
+            if (issue.milestone) {
+              output.milestone = identify(
+                scope,
+                issue.milestone.title,
+                String(issue.milestone.number),
+                String(issue.milestone.number),
+              );
+            }
+            if (issue.subIssues?.nodes) {
+              output.children = issue.subIssues.nodes.map((
+                n: { number: number; title: string; id: string },
+              ) => identify(scope, n.title, n.id, String(n.number)));
+            }
+            if (issue.projectItems?.nodes) {
+              output.projectItems = issue.projectItems.nodes.map((item) => ({
+                project: item.project,
+                itemId: item.id,
+                sizeEstimate: item.sizeEst?.name ?? null,
+                sizeActual: item.sizeAct?.name ?? null,
+                status: item.status?.name ?? null,
+              }));
+            }
+          }
+        }
+      } catch { /* enrichment is best-effort */ }
+    }
+
     return {
       operation: "view",
       success: true,
@@ -724,7 +1241,7 @@ export class PlanGatewayAdapter implements PlanGateway {
    * @param params.type - 検索するラベル種別（例: "Vision"）
    * @returns 検索結果（number, title, labels の配列）を含む StepResult
    */
-  private async handleSearchItems(params: Record<string, unknown>): Promise<StepResult> {
+  async handleSearchItems(params: Record<string, unknown>): Promise<StepResult> {
     const type = String(params.type ?? params.labelType ?? "");
     if (!type) {
       return { operation: "search", success: false, error: "type is required" };
@@ -756,6 +1273,64 @@ export class PlanGatewayAdapter implements PlanGateway {
     }
 
     return { operation: "search", success: true, output };
+  }
+
+  /**
+   * Project V2 Board の Status フィールドでアイテムを検索する。
+   * @param params.status - 検索する Status 名（"Todo", "In Progress", "Done" 等）
+   * @param params.labelType - ラベル種別（例: "PBI"）
+   * @param params.boardNumber - Project V2 ボード番号
+   */
+  async handleProjectSearchItems(params: Record<string, unknown>): Promise<StepResult> {
+    const status = String(params.status ?? "");
+    const labelType = String(params.labelType ?? "");
+    const boardNumber = Number(params.boardNumber ?? 0);
+    if (!status || !labelType || !boardNumber) {
+      return {
+        operation: "search",
+        success: false,
+        error: "status, labelType, and boardNumber are required",
+      };
+    }
+    const owner = this.resolvedScope?.owner;
+    if (!owner) return { operation: "search", success: false, error: "Scope not resolved" };
+    const listResult = await this.runCommand("gh", [
+      "project",
+      "item-list",
+      String(boardNumber),
+      "--owner",
+      owner,
+      "--format",
+      "json",
+    ]);
+    if (listResult.code !== 0) {
+      return { operation: "search", success: false, error: listResult.stderr };
+    }
+    try {
+      const data = JSON.parse(listResult.stdout) as {
+        items: Array<{
+          id: string;
+          content?: { number: number; title: string } | null;
+          status?: string | null;
+          labels?: Array<{ name: string }>;
+        }>;
+      };
+      const matched = data.items.filter((item) => {
+        if (!item.content) return false;
+        if ((item.status ?? null) !== status) return false;
+        return true;
+      });
+      return {
+        operation: "search",
+        success: true,
+        output: matched.map((item) => ({
+          number: item.content!.number,
+          title: item.content!.title,
+        })),
+      };
+    } catch (e) {
+      return { operation: "search", success: false, error: `Failed to parse project search: ${e}` };
+    }
   }
 
   async #handleShowHierarchy(params: Record<string, unknown>): Promise<StepResult> {
@@ -1013,7 +1588,7 @@ export class PlanGatewayAdapter implements PlanGateway {
    *                            body より優先される。
    * @returns 更新結果の StepResult
    */
-  private async handleUpdateItem(params: Record<string, unknown>): Promise<StepResult> {
+  async handleUpdateItem(params: Record<string, unknown>): Promise<StepResult> {
     const itemId = String(params.itemId ?? "");
     if (!itemId) {
       return { operation: "update", success: false, error: "itemId is required" };
@@ -1240,7 +1815,7 @@ export class PlanGatewayAdapter implements PlanGateway {
     return { operation, success: true, itemId, output };
   }
 
-  async #handleSetParent(
+  async handleSetParent(
     itemId: string,
     parentId: string,
   ): Promise<StepResult> {
@@ -1278,7 +1853,7 @@ export class PlanGatewayAdapter implements PlanGateway {
     return { operation: "update", success: true, itemId };
   }
 
-  async #handleRemoveParent(
+  async handleRemoveParent(
     itemId: string,
   ): Promise<StepResult> {
     const featureNode = await this.runCommand(
