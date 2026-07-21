@@ -113,20 +113,19 @@ function makeSearchCondition(): WorkPackageSearchCondition {
 
 // ===== define =====
 
-Deno.test("define should return Plan with define and update", () => {
+Deno.test("define should return Plan with define step", () => {
   const plan = workPackageUseCase.define(
     makeWpId({ id: undefined }),
     makeStatement(),
     makeParentPbi(),
   );
   assertEquals(plan.summary, "Define WP: Implement Login");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "define");
   assertEquals(plan.steps[1].params.title, "Implement Login");
   assertEquals(plan.steps[1].params.parentPbi, "pbi-1");
-  assertEquals(plan.steps[2].operation, "update");
 });
 
 Deno.test("define should throw for empty title", () => {
@@ -200,14 +199,14 @@ Deno.test("commit should throw for empty sprint title", () => {
 
 // ===== revise =====
 
-Deno.test("revise should return Plan with update (x2)", () => {
+Deno.test("revise should return Plan with update and comment", () => {
   const plan = workPackageUseCase.revise(makeWpId(), makeStatement(), makeReason());
   assertEquals(plan.summary, "Revise WP: Implement Login");
   assertEquals(plan.steps.length, 3);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "update");
-  assertEquals(plan.steps[2].operation, "update");
+  assertEquals(plan.steps[2].operation, "comment");
 });
 
 Deno.test("revise should throw for empty title", () => {
