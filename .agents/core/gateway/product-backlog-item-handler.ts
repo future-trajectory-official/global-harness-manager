@@ -315,11 +315,6 @@ export class ProductBacklogItemHandler {
       if (!cr.success || !cr.itemId) return cr;
       const pr = await this.adapter.handleSetParent(cr.itemId, parentPbi);
       if (!pr.success) return pr;
-      if (cr.nodeId && this.adapter.productBacklogBoardNumber) {
-        try {
-          await this.adapter.addItemToProject(cr.nodeId, this.adapter.productBacklogBoardNumber);
-        } catch { /* ok */ }
-      }
       return cr;
     });
 

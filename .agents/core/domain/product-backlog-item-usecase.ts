@@ -40,6 +40,17 @@ function formatPbiBody(statement: ProductBacklogItemStatement, parentFeatureId?:
   lines.push("## Summary");
   lines.push("");
   lines.push(statement.summary);
+  if (statement.artifacts) {
+    lines.push("");
+    lines.push("## Artifacts");
+    for (const cat of statement.artifacts.categories) {
+      lines.push("");
+      lines.push(`### ${cat.name}`);
+      for (const item of cat.items) {
+        lines.push(`- ${item.description}`);
+      }
+    }
+  }
   if (statement.proofMethod) {
     lines.push("");
     lines.push("## Proof Method");
