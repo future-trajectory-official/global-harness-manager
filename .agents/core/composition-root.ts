@@ -23,6 +23,23 @@ initWorkPackageUseCase(gateway);
 initReviewUseCase(gateway);
 initRetrospectiveUseCase(gateway);
 
+// Project V2 ボード番号を .harnessrc から読み込んで設定する
+try {
+  const harnessrcPath = `${import.meta.dirname ?? "."}/../../.github/schemas/.harnessrc`;
+  const harnessrcRaw = Deno.readTextFileSync(harnessrcPath);
+  const harnessrc = JSON.parse(harnessrcRaw);
+  const projects = harnessrc?.projects ?? {};
+  const productBacklog = typeof projects.productBacklog === "number"
+    ? projects.productBacklog
+    : undefined;
+  const sprintBoard = typeof projects.sprintBoard === "number" ? projects.sprintBoard : undefined;
+  if (productBacklog !== undefined || sprintBoard !== undefined) {
+    gateway.setProjectBoardNumbers(productBacklog, sprintBoard);
+  }
+} catch {
+  // .harnessrc not found or invalid; board numbers remain unconfigured
+}
+
 export function getPlanGateway(): PlanGateway {
   return gateway;
 }
