@@ -435,6 +435,51 @@ export function sprintId(
   return identify(scope, `Sprint ${number}`, id, code);
 }
 
+/**
+ * PBI の scope-free Identifier を生成する。
+ * スキル層のスクリプトから呼び出すことを想定し、scope は UNKNOWN_SCOPE で固定される。
+ * Gateway 層が実行時に `git remote get-url origin` から実際の値を解決する。
+ */
+export function pbiId(
+  title: string,
+  id?: string,
+  code?: string,
+): ProductBacklogItemIdentifier {
+  return identify(UNKNOWN_SCOPE, title, id, code);
+}
+
+/**
+ * WP の scope-free Identifier を生成する。
+ * スキル層のスクリプトから呼び出すことを想定し、scope は UNKNOWN_SCOPE で固定される。
+ */
+export function wpId(
+  title: string,
+  id?: string,
+  code?: string,
+): WorkPackageIdentifier {
+  return identify(UNKNOWN_SCOPE, title, id, code);
+}
+
+/**
+ * Sprint の scope-free Identifier を生成する。
+ * スキル層のスクリプトから呼び出すことを想定し、scope は UNKNOWN_SCOPE で固定される。
+ */
+export function sprintRef(number: number, id?: string, code?: string): SprintIdentifier {
+  return sprintId(UNKNOWN_SCOPE, number, id, code);
+}
+
+/**
+ * Feature の scope-free Identifier を生成する。
+ * スキル層のスクリプトから呼び出すことを想定し、scope は UNKNOWN_SCOPE で固定される。
+ */
+export function featureId(
+  title: string,
+  id?: string,
+  code?: string,
+): FeatureIdentifier {
+  return identify(UNKNOWN_SCOPE, title, id, code);
+}
+
 /** Sprint の全データ。 */
 export interface SprintData {
   readonly identifier: SprintIdentifier;
@@ -542,6 +587,7 @@ export interface ProductBacklogItemSearchCondition extends SearchCondition {
   readonly keyword?: string;
   readonly sprintNumber?: number;
   readonly status?: string;
+  readonly state?: string;
 }
 
 /**

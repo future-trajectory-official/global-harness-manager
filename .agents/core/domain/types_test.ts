@@ -1,5 +1,5 @@
 import { assertEquals, assertInstanceOf } from "@std/assert";
-import { Size, sprintId } from "./types.ts";
+import { featureId, pbiId, Size, sprintId, sprintRef, UNKNOWN_SCOPE, wpId } from "./types.ts";
 import type {
   AcceptanceCriteria,
   BoardOutput,
@@ -189,6 +189,58 @@ Deno.test("types - sprintId should accept id for persisted entities", () => {
   const id = sprintId({ owner: "org", repository: "repo" }, 15, "MI_kwA...");
   assertEquals(id.title.value, "Sprint 15");
   assertEquals(id.id, "MI_kwA...");
+});
+
+Deno.test("types - pbiId should generate scope-free identifier with UNKNOWN_SCOPE", () => {
+  const id = pbiId("My PBI");
+  assertEquals(id.title.value, "My PBI");
+  assertEquals(id.scope, UNKNOWN_SCOPE);
+  assertEquals(id.id, undefined);
+  assertEquals(id.code, undefined);
+});
+
+Deno.test("types - pbiId should accept id and code", () => {
+  const id = pbiId("My PBI", "node-id-123", "42");
+  assertEquals(id.id, "node-id-123");
+  assertEquals(id.code, "42");
+});
+
+Deno.test("types - wpId should generate scope-free identifier with UNKNOWN_SCOPE", () => {
+  const id = wpId("My WP");
+  assertEquals(id.title.value, "My WP");
+  assertEquals(id.scope, UNKNOWN_SCOPE);
+  assertEquals(id.id, undefined);
+});
+
+Deno.test("types - wpId should accept id and code", () => {
+  const id = wpId("My WP", "node-id-456", "7");
+  assertEquals(id.id, "node-id-456");
+  assertEquals(id.code, "7");
+});
+
+Deno.test("types - sprintRef should generate scope-free Sprint N format", () => {
+  const id = sprintRef(18);
+  assertEquals(id.title.value, "Sprint 18");
+  assertEquals(id.scope, UNKNOWN_SCOPE);
+});
+
+Deno.test("types - sprintRef should accept id and code", () => {
+  const id = sprintRef(19, "MI_kwA...", "19");
+  assertEquals(id.title.value, "Sprint 19");
+  assertEquals(id.id, "MI_kwA...");
+  assertEquals(id.code, "19");
+});
+
+Deno.test("types - featureId should generate scope-free identifier with UNKNOWN_SCOPE", () => {
+  const id = featureId("My Feature");
+  assertEquals(id.title.value, "My Feature");
+  assertEquals(id.scope, UNKNOWN_SCOPE);
+});
+
+Deno.test("types - featureId should accept id and code", () => {
+  const id = featureId("My Feature", "node-id-789", "99");
+  assertEquals(id.id, "node-id-789");
+  assertEquals(id.code, "99");
 });
 
 Deno.test("types - EpicIdentifier should be an Identifier", () => {

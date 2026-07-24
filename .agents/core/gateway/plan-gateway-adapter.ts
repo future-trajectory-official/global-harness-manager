@@ -1246,6 +1246,15 @@ export class PlanGatewayAdapter implements PlanGateway {
     if (!type) {
       return { operation: "search", success: false, error: "type is required" };
     }
+    const keyword = String(params.keyword ?? "");
+    if (keyword) {
+      return {
+        operation: "search",
+        success: false,
+        error: "keyword search is not yet implemented",
+      };
+    }
+    const state = String(params.state ?? "open");
     const args = [
       "issue",
       "list",
@@ -1254,9 +1263,13 @@ export class PlanGatewayAdapter implements PlanGateway {
       "--json",
       "number,title,labels",
       "--state",
-      "open",
+      state,
       ...this.buildRepoArg(),
     ];
+    const sprintNumber = params.sprintNumber;
+    if (sprintNumber !== undefined && sprintNumber !== "") {
+      args.push("--milestone", `Sprint ${sprintNumber}`);
+    }
     let result;
     try {
       result = await this.runCommand("gh", args);
@@ -1292,8 +1305,40 @@ export class PlanGatewayAdapter implements PlanGateway {
         error: "status, labelType, and boardNumber are required",
       };
     }
+    const keyword = String(params.keyword ?? "");
+    if (keyword) {
+      return {
+        operation: "search",
+        success: false,
+        error: "keyword search is not yet implemented",
+      };
+    }
     const owner = this.resolvedScope?.owner;
     if (!owner) return { operation: "search", success: false, error: "Scope not resolved" };
+
+    // sprintNumber が指定されていれば、該当 Sprint に属する Issue 番号一覧を先に取得
+    let sprintIssueNumbers: Set<number> | undefined;
+    const sprintNumber = params.sprintNumber;
+    if (sprintNumber !== undefined && sprintNumber !== "") {
+      const msResult = await this.runCommand("gh", [
+        "issue",
+        "list",
+        "--milestone",
+        `Sprint ${sprintNumber}`,
+        "--json",
+        "number",
+        "--state",
+        "all",
+        ...this.buildRepoArg(),
+      ]);
+      if (msResult.code === 0) {
+        const msData = parseJsonOutput(msResult.stdout);
+        if (Array.isArray(msData)) {
+          sprintIssueNumbers = new Set(msData.map((i: { number: number }) => i.number));
+        }
+      }
+    }
+
     const listResult = await this.runCommand("gh", [
       "project",
       "item-list",
@@ -1318,6 +1363,7 @@ export class PlanGatewayAdapter implements PlanGateway {
       const matched = data.items.filter((item) => {
         if (!item.content) return false;
         if ((item.status ?? null) !== status) return false;
+        if (sprintIssueNumbers && !sprintIssueNumbers.has(item.content!.number)) return false;
         return true;
       });
       return {
