@@ -1,0 +1,24 @@
+labels:
+  - name: "type:Epic"
+    color: "6f42c1"
+    description: "Epic: 機能群を束ねる大項目"
+
+  - name: "type:Feature"
+    color: "0052cc"
+    description: "Feature: Epic配下の機能単位"
+
+  - name: "type:PBI"
+    color: "0366d6"
+    description: "Product Backlog Item"
+
+  - name: "type:WP"
+    color: "28a745"
+    description: "Work Package"
+
+  - name: "type:Review"
+    color: "d73a4a"
+    description: "Review: レビュー用Issue"
+
+  - name: "type:Reflection"
+    color: "e4e669"
+    description: "Reflection: 振り返り用Issue"

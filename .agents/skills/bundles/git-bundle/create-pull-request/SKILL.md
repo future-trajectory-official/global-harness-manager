@@ -2,10 +2,7 @@
 name: create-pull-request
 description: GitHub の Pull Request を作成し、ユーザーへエビデンス付きで解説を行います。
 tags:
-  - trigger: create-pr
-  - trigger: make-pull-request
-  - trigger: submit-pr
-  - trigger: open-pr
+  - trigger: create-pr, make-pull-request, submit-pr, open-pr
   - category: git
   - constraints: requires-gh-cli, requires-pushed-branch
 ---

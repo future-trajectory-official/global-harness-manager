@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { fsUtil } from "../../../../../core/shared/io/fs.ts";
+import { fsUtil } from "../../../../../core/fs.ts";
 import { setupGitHooks } from "./setup-hooks.ts";
 
 /**

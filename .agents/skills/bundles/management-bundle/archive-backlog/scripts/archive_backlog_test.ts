@@ -5,7 +5,7 @@ import {
   loadBacklogSchema,
   updateContents,
   validateWpCompleteness,
-} from "../../../../../core/shared/parse/backlog-schema.ts";
+} from "../../../../../core/backlog-schema.ts";
 
 // --- Tests for transformToArchiveCard ---
 

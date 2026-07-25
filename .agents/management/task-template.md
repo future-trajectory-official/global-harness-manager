@@ -31,9 +31,7 @@ GUARD:REQUIRED_TASKS
 - Phase 2: Foreach (AC[].count) ACベースの開発
   - ac-checkpoint-implementation
   - hybrid-triage-commit
-- Phase 3: コードレビューと品質検証
-  - sub-agent:cross-role-review
-  - レビュー指摘対応
+- Phase 3: リファクタリングと品質検証
   - refactoring-loop
   - quality-verification
   - hybrid-triage-commit
@@ -98,16 +96,9 @@ ACごとに「実装→WIP保存」を1セットとして逐次実行する：
 - [ ] **[skill:hybrid-triage-commit] (wip)**: AC-2完了をWIP保存
 - [ ] ...（以降、AC数に応じて展開）
 
-### Phase 3: コードレビューと品質検証
+### Phase 3: リファクタリングと品質検証
 
-- [ ] **[sub-agent:cross-role-review]**: サブエージェントによるコードレビュー
-  - [ ] `git diff origin/<base>` を取得し、4ロール（Architect / Developer / Tester / Refactor）の
-        Task tool サブエージェントを**独立並列起動**する
-  - [ ] 各エージェントは自ロールのルールファイル（`.agents/rules/*.md`）を読み、コード差分をレビュー
-  - [ ] AI が4件のレビュー報告を取りまとめ、指摘を **Critical / Medium / Minor** に分類してPOに提示
-  - [ ] PO が対応する指摘を選択 → AI が修正を実施
-- [ ] **[対応]**: レビュー指摘の修正（PO選択分を実装）
-- [ ] **[skill:refactoring-loop]**: コード内部構造の改善（挙動不変）
+- [ ] **[skill:refactoring-loop]**: コードの内部構造を改善
 - [ ] **[skill:quality-verification]**: `deno task qa` 完全版品質検証
 - [ ] **[skill:hybrid-triage-commit] (triage)**: WIPコミットの解体とアトミックコミット再構築
 

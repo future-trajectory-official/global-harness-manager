@@ -2,15 +2,14 @@
 name: select-tech-stack
 description: プロダクトゴールを達成するために最適な技術スタックを選定し、その選定理由と却下理由を文書化する。
 tags:
-  - trigger: select-tech
-  - trigger: tech-stack
-  - trigger: kickoff-phase3
+  - trigger: select-tech, tech-stack, kickoff-phase3
   - category: management
 ---
 
 # select-tech-stack
 
-プロダクトゴールを実現するための技術スタック（言語、フレームワーク、インフラ、ツールチェーン等）を選定します。
+`define-product-goal`
+で定義したゴールを実現するための技術スタック（言語、フレームワーク、インフラ、ツールチェーン等）を選定します。
 AI
 は選択肢を整理してトレードオフを提示しますが、**最終的なアーキテクチャの決定は必ず人間（ユーザー）が行います**（Architecture
 by Autocompleteの防止）。

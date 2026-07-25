@@ -1,0 +1,46 @@
+---
+name: verify-vision-capability
+description: プロジェクトのビジョンと、現在行使可能な能力（ロール・スキル）を確認し、セッションの価値判断基準を整える。
+---
+
+# Vision & Capability Verification Skill
+
+セッション開始時に実行し、エージェントが「何を目的とし、何ができるのか」を PO
+に宣言するためのスキルです。
+
+## インストラクション
+
+1. **ビジョンとゴールの読み込み**:
+   - `[VISION.md](.agents/management/VISION.md)` および
+     `[product-backlog.md](.agents/management/product-backlog.md)`
+     の「プロダクトゴール」を読み込みます。
+2. **能力の棚卸し**:
+   - プロジェクトローカルの `.agents/rules/` 内の各ロールファイルや `.agents/skills/`
+     内の各スキルパッケージ、および **グローバル環境で共有されているグローバルスキル** の
+     **YAMLフロントマター（name, description）のみ**
+     を確認し、現在チームがどのような専門性とツールを保有しているかを把握します。
+3. **アライメント報告の出力**:
+   - 以下のフォーマットで報告を出力してください。
+
+```markdown
+### [Vision & Capability Alignment Report]
+
+#### 1. ビジョンのエッセンス
+
+[VISION.md](.agents/management/VISION.md)から、今回のセッションに関連する重要な設計思想や価値観を3行以内で抽出
+
+#### 2. プロダクトゴールの再確認
+
+[product-backlog.md](.agents/management/product-backlog.md) の `## プロダクトゴール`
+に記載されている現在のゴールを再掲
+
+#### 3. 利用可能な能力（チーム構成）
+
+- **保有ロール**: [YAMLから抽出したロール名をリストアップ]
+- **主要スキル**: [YAMLから抽出した、今回重要と思われるスキルをピックアップ]
+
+---
+
+**宣言**:
+「私たちは、上記のビジョンに基づき、保有する専門能力を最大限に活用して本セッションの価値を最大化することを誓約します。」
+```

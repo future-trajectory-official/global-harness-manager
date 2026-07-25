@@ -7,37 +7,43 @@
  */
 
 // 定数とパス解決
-export * from "./shared/types/constants.ts";
+export * from "./constants.ts";
 
 // ファイルシステム操作 (fsUtil, pathUtil)
-export * from "./shared/io/fs.ts";
+export * from "./fs.ts";
 
 // コマンド実行 (executeCommand)
-export * from "./shared/io/command.ts";
+export * from "./command.ts";
 
 // ロガー (logger)
-export * from "./shared/io/logger.ts";
+export * from "./logger.ts";
 
 // Markdown 操作 (mdUtil)
-export * from "./shared/parse/markdown.ts";
+export * from "./markdown.ts";
 
 // エラーハンドリング (errorUtil)
-export * from "./shared/types/error.ts";
+export * from "./error.ts";
 
 // バックログスキーマ解決 (loadBacklogSchema, extractPbiBlock, buildArchiveCard, updateContents)
-export * from "./shared/parse/backlog-schema.ts";
+export * from "./backlog-schema.ts";
 
 // フェーズゲート (phaseGate, extractLinksFromSkillMd, resolveReferencePath, checkReadStatus)
-export * from "./shared/workflow/phase-gate.ts";
+export * from "./phase-gate.ts";
 
 // ターゲット検証 (verifyTarget)
-export * from "./shared/validate/verify-target.ts";
+export * from "./verify-target.ts";
 
 // .harnessrc 設定バリデーション (validateHarnessConfig, ValidationResult, ValidationError)
-export * from "./shared/validate/validate-harnessrc.ts";
+export * from "./validate-harnessrc.ts";
+
+// GitHub CLI 操作 (createIssue, searchIssues, updateIssue, closeIssue, addLabels, addToProject, getProjectFields, setProjectField, createMilestone, listMilestones, uploadAsset, setGhCommand)
+export * from "./github.ts";
+
+// ラベルプレフィックス変換 (label-prefix)
+export * from "./label-prefix.ts";
 
 // スキーマバリデーション (validateInput)
-export * from "./shared/parse/schema.ts";
+export * from "./schema.ts";
 
 /**
  * 共通型定義の再エクスポート (必要に応じて追加)

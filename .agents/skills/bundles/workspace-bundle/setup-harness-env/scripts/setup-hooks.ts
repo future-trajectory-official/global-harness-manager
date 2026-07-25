@@ -1,9 +1,9 @@
 import { join } from "@std/path";
-import { PROJECT_ROOT } from "../../../../../core/shared/types/constants.ts";
-import { fsUtil } from "../../../../../core/shared/io/fs.ts";
-import { executeCommand } from "../../../../../core/shared/io/command.ts";
-import { logger } from "../../../../../core/shared/io/logger.ts";
-import { MESSAGES } from "../../../../../core/shared/types/messages.ts";
+import { PROJECT_ROOT } from "../../../../../core/constants.ts";
+import { fsUtil } from "../../../../../core/fs.ts";
+import { executeCommand } from "../../../../../core/command.ts";
+import { logger } from "../../../../../core/logger.ts";
+import { MESSAGES } from "../../../../../core/messages.ts";
 
 /**
  * Git Hooks をセットアップします
@@ -92,7 +92,7 @@ exit 0
 
 echo "Running commit-msg validation..."
 
-deno run -A .agents/core/shared/validate/validate-commit-message.ts "$1"
+deno run -A .agents/core/validate-commit-message.ts "$1"
 if [ $? -ne 0 ]; then
   echo "❌ Commit message validation failed."
   exit 1

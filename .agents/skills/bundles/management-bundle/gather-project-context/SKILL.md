@@ -2,9 +2,7 @@
 name: gather-project-context
 description: プロジェクトの初期段階で、ユーザーの純粋な動機（情熱）とそれを実現する覚悟（継続意志）を引き出し、プロジェクト化の可否を検証する。
 tags:
-  - trigger: kickoff
-  - trigger: start-project
-  - trigger: gather-context
+  - trigger: kickoff, start-project, gather-context
   - category: management
 ---
 

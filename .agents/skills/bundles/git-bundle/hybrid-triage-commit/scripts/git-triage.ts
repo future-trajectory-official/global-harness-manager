@@ -2,15 +2,9 @@
  * git-triage.ts — ハイブリッドトリアージコミットを制御するDenoスクリプト
  *
  * wipモード: 全変更をWIPコミット（セーブポイント）として保存する。
- * triageモード: 現在の作業ツリー上の変更ファイルを対話的に仕分けし、
- *   Conventional Commits形式のアトミックコミットを順次作成する。
- *   異なる論理役割（feat/docs 等）のファイル混在を検出して警告する。
- *
- * ## 歴史改変禁止
- *
- * 本スクリプトは git reset --soft / amend / rebase を一切使用しない。
- * Triage はベースブランチから新ブランチを作成し、
- * WIPブランチからファイルを checkout してから実行することを前提とする。
+ * triageモード: 変更ファイルを対話的に仕分けし、Conventional Commits形式の
+ *   アトミックコミットを順次作成する。異なる論理役割（feat/docs 等）の
+ *   ファイル混在を検出して警告する論理的境界バリデーションを備える。
  */
 
 import { parseArgs } from "@std/cli";
@@ -105,6 +99,21 @@ function getDefaultBranch(): string {
 }
 
 /**
+ * 現在のブランチのWIPコミット履歴を解除し、ベースブランチの状態まで
+ * ソフトリセットする（全変更がステージング状態になる）。
+ * @param baseBranch - リセット先のベースブランチ名
+ * @returns 成功時 true
+ */
+function softResetToBase(baseBranch: string): boolean {
+  const result = runGit(["reset", "--soft", baseBranch]);
+  if (result.code !== 0) {
+    console.error(`Failed to reset to ${baseBranch}: ${result.stderr}`);
+    return false;
+  }
+  return true;
+}
+
+/**
  * ファイルパスから論理的な役割（カテゴリ）を分類する。
  * @param filePath - リポジトリルートからの相対パス
  * @returns 分類名: "test" / "source" / "docs" / "config" / "other"
@@ -186,23 +195,32 @@ export function validateTypeConsistency(
 
 async function runTriage(): Promise<void> {
   const baseBranch = getDefaultBranch();
-  printHeader(`Triage Mode (base: ${baseBranch})`);
+  printHeader(`Triage Mode: Soft-resetting to ${baseBranch}`);
 
+  const hasWipCommits = runGit(["log", "--oneline", `${baseBranch}..HEAD`]);
   const allChanged = hasUncommittedChanges();
-  if (!allChanged) {
+  if (!allChanged && !hasWipCommits.stdout) {
     console.log("No changes detected. Nothing to triage.");
-    console.log("To bring files from WIP branch, use:");
-    console.log(`  git checkout <wip-branch> -- <file-path>`);
     return;
   }
 
-  console.log("Uncommitted changes detected. Staging all for triage...\n");
-  const result = runGit(["add", "-A"]);
-  if (result.code !== 0) {
-    console.error("Failed to add files:", result.stderr);
-    return;
+  if (hasWipCommits.stdout) {
+    console.log("WIP commits found:\n");
+    console.log(hasWipCommits.stdout);
+    console.log("");
+
+    if (!softResetToBase(baseBranch)) {
+      return;
+    }
+    console.log(`All changes are now staged (reset to ${baseBranch}).\n`);
+  } else {
+    const result = runGit(["add", "-A"]);
+    if (result.code !== 0) {
+      console.error("Failed to add files:", result.stderr);
+      return;
+    }
+    console.log("All changes staged.\n");
   }
-  console.log("All changes staged.\n");
 
   const allFiles = getChangedFiles();
   if (allFiles.length === 0) {
@@ -354,13 +372,9 @@ async function main() {
   if (!mode) {
     console.log("Usage:");
     console.log(
-      '  deno run -A git-triage.ts wip               - Create a WIP savepoint ("wip: セーブポイント")',
+      '  deno run -A git-triage.ts wip      - Create a WIP savepoint ("wip: セーブポイント")',
     );
-    console.log(
-      "  deno run -A git-triage.ts triage [--base <branch>]  - Interactive atomic commit triage",
-    );
-    console.log("");
-    console.log("Note: git reset --soft is NOT used. Triage works with the current working tree.");
+    console.log("  deno run -A git-triage.ts triage   - Interactive atomic commit triage");
     Deno.exit(1);
   }
 

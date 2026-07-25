@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/future-trajectory-official/global-harness-manager/schemas/reflection-issue-payload.schema.json",
+  "title": "ReflectionIssuePayload",
+  "description": "ReflectionIssue 作成のための入力パラメータ",
+  "type": "object",
+  "required": ["title", "milestoneNumber", "keep", "problem", "tryItems"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Issue タイトル"
+    },
+    "body": {
+      "type": "string",
+      "description": "追加本文（任意）"
+    },
+    "milestone": {
+      "type": "string",
+      "description": "マイルストーン名（例: Sprint 12）"
+    },
+    "milestoneNumber": {
+      "type": "integer",
+      "description": "マイルストーン番号"
+    },
+    "keep": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Keep 項目リスト"
+    },
+    "problem": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Problem 項目リスト"
+    },
+    "tryItems": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Try 項目リスト"
+    },
+    "referencedSessionNumbers": {
+      "type": "array",
+      "items": { "type": "integer" },
+      "description": "参照セッション番号のリスト"
+    }
+  }
+}

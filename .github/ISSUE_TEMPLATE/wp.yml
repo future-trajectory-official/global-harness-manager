@@ -1,0 +1,32 @@
+name: WP作成
+description: Work Packageを新規作成
+labels:
+  - type:WP
+  - status:TODO
+body:
+  - type: input
+    id: wp_name
+    attributes:
+      label: WP名
+      description: "Work Packageの名前。Issueタイトルに使用されます。"
+      placeholder: "Issue Template作成"
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: 受入基準（AC）
+      description: "このWPの完了条件を箇条書きで記述してください。各ACはチェックボックス形式で記載すると進捗管理が容易です。"
+      placeholder: |
+        - [ ] `.github/ISSUE_TEMPLATE/pbi.yml` を作成する
+        - [ ] PBIフォーマット（Epic/Feature ID, PBI名, 概要, 見積サイズ, 証明方法）を再現する
+    validations:
+      required: true
+  - type: input
+    id: effort_estimate
+    attributes:
+      label: Effort見積（介入回数）
+      description: "このWPの完了に必要なPO（人間）の介入回数の見積もり。AI開発では介入回数をEffortとして測定します。"
+      placeholder: "2"
+    validations:
+      required: true

@@ -12,8 +12,8 @@
     "qa:cov": "deno fmt --check && deno lint && deno check **/*.ts && deno task validate:jsdoc && rm -rf cov_profile && deno test -A --parallel --coverage=cov_profile && deno coverage cov_profile",
     "setup-hooks": "deno run -A .agents/skills/bundles/workspace-bundle/setup-harness-env/scripts/setup-hooks.ts",
     "validate-task": "deno run -A .agents/skills/bundles/management-bundle/session-planning/scripts/validate-task.ts --template .agents/management/task-template.md",
-    "phase-gate": "deno run -A .agents/core/shared/workflow/phase-gate.ts",
-    "validate:jsdoc": "deno run -A .agents/core/shared/validate/validate-jsdoc.ts"
+    "phase-gate": "deno run -A .agents/core/phase-gate.ts",
+    "validate:jsdoc": "deno run -A .agents/core/validate-jsdoc.ts"
   },
   "fmt": {
     "useTabs": false,

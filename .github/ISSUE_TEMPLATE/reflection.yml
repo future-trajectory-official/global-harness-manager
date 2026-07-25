@@ -1,0 +1,58 @@
+name: Reflection作成
+description: スプリント振り返り（KPT）記録用のIssueを新規作成
+labels:
+  - type:Reflection
+body:
+  - type: input
+    id: target_sprint
+    attributes:
+      label: 対象スプリント
+      description: "振り返り対象のスプリント番号を入力してください。"
+      placeholder: "Sprint 12"
+    validations:
+      required: true
+
+  - type: textarea
+    id: focus
+    attributes:
+      label: 今スプリントのフォーカス
+      description: "前回のTryを基に、今スプリントで取り組むフォーカスを記述してください。"
+      placeholder: "- 推奨上限6を守る意識付け\n- 既存資料の事前確認を徹底"
+    validations:
+      required: false
+
+  - type: textarea
+    id: keep
+    attributes:
+      label: Keep（継続したいこと）
+      description: "今スプリントでうまくいったこと、継続すべきことを記述してください。"
+      placeholder: "- 1セッション1WPの徹底\n- 計画書作成後にPO承認を得る運用"
+    validations:
+      required: false
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem（課題）
+      description: "今スプリントで発生した課題や予実差の原因を記述してください。"
+      placeholder: "- 既存資料の読み込み不足から設計修正が発生\n- 見積もりが楽観的になりがち"
+    validations:
+      required: false
+
+  - type: textarea
+    id: try
+    attributes:
+      label: Try（次スプリントで試すこと）
+      description: "次スプリントで改善するための具体的なアクションを記述してください。"
+      placeholder: "- セッション開始時に必ず関連設計書を5件読み込む\n- Effort見積もりに+1回のバッファを含める"
+    validations:
+      required: false
+
+  - type: textarea
+    id: referenced_sessions
+    attributes:
+      label: 参照元セッション
+      description: "振り返りの元となったWP Issue番号やセッション情報を記述してください。"
+      placeholder: "- #100 WP_d 計画策定\n- #101 WP_d 実装"
+    validations:
+      required: false

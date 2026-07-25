@@ -1,0 +1,101 @@
+name: Review作成
+description: スプリントレビュー記録用のIssueを新規作成
+labels:
+  - type:Review
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## マイルストーン紐づけ
+        対象スプリントは **マイルストーン** で紐づけてください。
+        Issue 作成後、右側の「Milestone」欄から対象スプリントを選択してください。
+
+  - type: input
+    id: review_date
+    attributes:
+      label: レビュー実施日
+      description: "レビューを実施する日付（YYYY-MM-DD）を入力してください。"
+      placeholder: "2026-06-19"
+    validations:
+      required: false
+
+  - type: input
+    id: demo_environment
+    attributes:
+      label: デモ環境
+      description: "実機デモに使用する環境を入力してください。"
+      placeholder: "サンドボックス（コンテナID: XXXX）"
+    validations:
+      required: false
+
+  - type: textarea
+    id: sprint_goal
+    attributes:
+      label: スプリントゴール
+      description: "対象スプリントのNorth Starゴールを簡潔に記述してください。"
+      placeholder: "[スプリントのNorth Starゴールを簡潔に記述]"
+    validations:
+      required: false
+
+  - type: textarea
+    id: pbi_summary
+    attributes:
+      label: PBI達成状況一覧
+      description: "レビュー対象PBIと判定結果を記述してください。作成時は未定（空欄）で、実施時に🟢/🔴を更新してください。"
+      placeholder: |
+        | PBI ID / タイトル | 証明方法 | 判定結果 | 備考 |
+        | :--- | :---: | :---: | :--- |
+        | `[カテゴリ/エピック]/PBI-TITLE` | 実機デモ / テストログ / diff | 🟢 合格 / 🔴 不合格 | |
+        | `[SprintReview]/Sprint-N-Review-Verification` | 上記全PBIの合計 | 🟢 合格 / 🔴 不合格 | |
+    validations:
+      required: false
+
+  - type: textarea
+    id: demo_and_evidence
+    attributes:
+      label: 個別PBIの実機デモとエビデンス記録
+      description: "各PBIのデモ手順、エビデンス、PO判定を記述してください。作成時は計画を、実施時は結果を追記してください。"
+      placeholder: |
+        ### PBI: [PBI-TITLE]
+
+        #### 実機デモ記録
+        - **デモ環境**: サンドボックス（コンテナID: `XXXX`）
+        - **デモ手順概要**: [例: ブラウザで `localhost:3000` にアクセスし、ログインフローをPOと共に操作確認]
+
+        #### AC達成の客観的証明
+        - **AC 1: [AC-1の記述]**
+          - **証明方法**: 実機デモ（browser_subagent 録画）
+          - **エビデンス**: [リンクまたは録画]
+          - **PO判定**: 🟢 合格 / 🔴 不合格
+    validations:
+      required: false
+
+  - type: textarea
+    id: po_feedback
+    attributes:
+      label: POフィードバック
+      description: "デモを通じてPOから得られた評価・改善点・承認コメントを記述してください。"
+      placeholder: "[デモを通じてPOから得られた評価・改善点・承認コメントをここに記録します]"
+    validations:
+      required: false
+
+  - type: textarea
+    id: po_approval
+    attributes:
+      label: PO承認の証跡
+      description: "承認日時、承認状態、差し戻し理由を記述してください。"
+      placeholder: |
+        - **承認日時**: YYYY-MM-DD HH:MM
+        - **承認状態**: 🟢 承認済み / 🔴 差し戻し
+        - **差し戻し理由（該当する場合）**: [記述]
+    validations:
+      required: false
+
+  - type: textarea
+    id: handoff
+    attributes:
+      label: 次スプリントへの申し送り事項
+      description: "積み残し課題や次スプリントへの改善・追加要件を記述してください。"
+      placeholder: "- [ ] [積み残し課題や次スプリントへの改善・追加要件]"
+    validations:
+      required: false

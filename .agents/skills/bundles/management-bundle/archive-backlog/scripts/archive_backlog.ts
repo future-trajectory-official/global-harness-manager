@@ -5,7 +5,7 @@ import {
   loadBacklogSchema,
   updateContents,
   validateWpCompleteness,
-} from "../../../../../core/shared/parse/backlog-schema.ts";
+} from "../../../../../core/backlog-schema.ts";
 
 const BACKLOG_PATH = ".agents/management/product-backlog.md";
 const ARCHIVE_PATH = ".agents/management/product-backlog-archive.md";

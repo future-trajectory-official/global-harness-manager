@@ -51,9 +51,9 @@
 
 **説明**: スプリントで開発する機能群について、詳細タスクへ分解し、実装可能な状態にプランニングを行う。
 
-### assess-alignment
+### verify-vision-capability
 
-**説明**: assess-alignment スキルにより Vision（GitHub Issue）とロール・スキルのアライメントを評価し、アライメントレポートを出力する。
+**説明**: プロジェクトのビジョンと、現在行使可能な能力（ロール・スキル）を確認し、セッションの価値判断基準を整える。
 
 ### identify-work-package
 
