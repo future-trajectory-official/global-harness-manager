@@ -7,10 +7,11 @@
 
 ## 操作一覧
 
-| 操作       | スクリプト                      | ユースケース                                             |
-| ---------- | ------------------------------- | -------------------------------------------------------- |
-| WP作成     | `define_wp.ts`                  | 親PBIのsub-issueとしてWPを作成＋Sprint Board追加＋AC設定 |
-| 初期見積り | `estimate_wp_initial_effort.ts` | WPに計画前effort見積りを記録                             |
+| 操作       | スクリプト                      | ユースケース                          |
+| ---------- | ------------------------------- | ------------------------------------- |
+| WP作成     | `define_wp.ts`                  | 親PBIに紐付くWPを作成＋AC設定         |
+| 初期見積り | `estimate_wp_initial_effort.ts` | WPに計画前effort見積りを記録          |
+| WPコミット | `commit_wp.ts`                  | WPをIdea→Todoに進行しスプリントへ確定 |
 
 ---
 
@@ -57,4 +58,27 @@ echo '{"identifier":{"title":"Implement login UI","id":"42","code":"42"},"initia
 
 # 本実行
 echo '{"identifier":{"title":"Implement login UI","id":"42","code":"42"},"initialEstimate":5}' | deno run -A .agents/skills/bundles/management-bundle/define-work-package/scripts/estimate_wp_initial_effort.ts
+```
+
+---
+
+## commit_wp.ts — WPコミット
+
+WPのステータスを Idea→Todo に進行し、スプリントに確定する。
+
+### 入力パラメータ
+
+| パラメータ     | 型                  | 必須 | 説明                    |
+| -------------- | ------------------- | ---- | ----------------------- |
+| `identifier`   | `{title, id, code}` | 必須 | WPの識別子。`id` は必須 |
+| `sprintNumber` | `number`            | 必須 | 確定先スプリント番号    |
+
+### 実行例
+
+```bash
+# dry-run
+echo '{"identifier":{"title":"Implement login UI","id":"42","code":"42"},"sprintNumber":19}' | deno run -A .agents/skills/bundles/management-bundle/define-work-package/scripts/commit_wp.ts --dry-run
+
+# 本実行
+echo '{"identifier":{"title":"Implement login UI","id":"42","code":"42"},"sprintNumber":19}' | deno run -A .agents/skills/bundles/management-bundle/define-work-package/scripts/commit_wp.ts
 ```

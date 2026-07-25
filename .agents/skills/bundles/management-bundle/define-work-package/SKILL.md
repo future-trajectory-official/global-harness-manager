@@ -1,6 +1,6 @@
 ---
 name: define-work-package
-description: スプリントに確定したPBIに対してWork Packageを作成し初期見積りを行う。各WPは親PBIのsub-issueとして作成されSprint Boardに追加される。
+description: スプリントに確定したPBIをWPに分解し、作成・初期見積り・確定を行う。
 tags:
   - trigger: define-work-package
   - trigger: define-wp
@@ -16,10 +16,11 @@ PBIのタスク分解としてWPを作成し、初期見積りを記録する。
 
 ## 操作スクリプト
 
-| 操作       | スクリプト                      | 用途                                                                   |
-| ---------- | ------------------------------- | ---------------------------------------------------------------------- |
-| WP作成     | `define_wp.ts`                  | 親PBIのsub-issueとしてWPを作成し、Sprint Boardに追加。AC項目も同時設定 |
-| 初期見積り | `estimate_wp_initial_effort.ts` | WPの計画前effort見積り（initialEstimate）を記録                        |
+| 操作       | スクリプト                      | 用途                                    |
+| ---------- | ------------------------------- | --------------------------------------- |
+| WP作成     | `define_wp.ts`                  | 親PBIに紐付くWPを作成。AC項目も同時設定 |
+| 初期見積り | `estimate_wp_initial_effort.ts` | WPに計画前effortを見積もる              |
+| WPコミット | `commit_wp.ts`                  | WPをIdea→Todoに進行しスプリントへ確定   |
 
 ## 制約
 
@@ -49,5 +50,22 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/define-work
 を参考に、各WPに初期見積りを設定する。
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/define-work-package/scripts/estimate_wp_initial_effort.ts
+echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/define-work-package/scripts/estimate_wp_initial_effort.ts --dry-run
 ```
+
+ユーザー承認後に `--dry-run` を外して本実行。
+
+<!-- STOP -->
+
+### Step 3: WPコミット
+
+各WPのステータスを Idea→Todo に進行し、スプリントに確定する。
+
+[commit_wp.ts の入力](/.agents/skills/bundles/management-bundle/define-work-package/references/reference.md#commit_wpts--wpコミット)
+を参考に、各WPをコミットする。
+
+```bash
+echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/define-work-package/scripts/commit_wp.ts --dry-run
+```
+
+ユーザー承認後に `--dry-run` を外して本実行。
