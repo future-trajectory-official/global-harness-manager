@@ -83,7 +83,8 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
 既存のエピック/フィーチャー分類階層を対話的に改善し、PBIを適切なフィーチャーに配置します。
 
 - **読み込むペルソナ**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
-- **実行するスキル**: `refine-classification-hierarchy`
+- **実行するスキル**:
+  `[refine-classification-hierarchy](/.agents/skills/bundles/management-bundle/refine-classification-hierarchy/SKILL.md)`
 - **入力（前提条件）**: 既存のエピック/フィーチャー分類階層が存在すること。
 - **手続き**: `refine-classification-hierarchy` スキルの Quick-Start に従い、既存階層の表示 →
   対話による再定義 → 親子関係変更 → PBI配置を段階的に行う。
