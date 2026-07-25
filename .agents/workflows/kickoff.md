@@ -33,9 +33,8 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 プロジェクトの「北極星」となる価値とターゲットを言語化します。
 
 - **読み込むペルソナ**: `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ)
-- **実行するスキル**: `craft-vision`
-- **終了条件**: ユーザーがステートメントに合意し、`[VISION.md](/.agents/management/VISION.md)`
-  が生成されること。
+- **実行するスキル**: `establish-vision`
+- **終了条件**: ユーザーがステートメントに合意し、合意した Vision が永続化されていること。
 
 <!-- STOP -->
 
@@ -44,13 +43,25 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 ビジョンを、計測可能な具体的な最初のゴールへと落とし込みます。
 
 - **読み込むペルソナ**: `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ)
-- **実行するスキル**: `define-product-goal`
-- **終了条件**: `[product-backlog.md](/.agents/management/product-backlog.md)`（ゴールセクション）と
-  `[epic-master.md](/.agents/management/epic-master.md)` の骨格が生成されること。
+- **実行するスキル**: `set-product-goal`
+- **終了条件**: プロダクトゴールが永続化されていること。 ※
+  エピック/フィーチャー構造の設計は本フェーズの対象外。別スキルで扱う。
 
 <!-- STOP -->
 
-## Phase 3: 技術スタックの選定 (Tech Stack Selection)
+## Phase 3: エピック/フィーチャー分類階層の設計 (Classification Hierarchy Design)
+
+プロダクトゴールに基づき、エピックとフィーチャーの分類階層を対話的に設計し、GitHub
+Issueとして永続化します。
+
+- **読み込むペルソナ**: `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ)
+- **実行するスキル**: `design-classification-hierarchy`
+- **終了条件**: エピックとフィーチャーがGitHub
+  Issueとして作成され、親子関係が構築され、POが内容に合意していること。
+
+<!-- STOP -->
+
+## Phase 4: 技術スタックの選定 (Tech Stack Selection)
 
 ゴールを実現するための技術基盤を、トレードオフを比較しながら選定します。
 
@@ -61,7 +72,7 @@ description: プロジェクトの立ち上げ（キックオフ）を、情熱�
 
 <!-- STOP -->
 
-## Phase 4: アライメントの最終検証 (Alignment Confirmation)
+## Phase 5: アライメントの最終検証 (Alignment Confirmation)
 
 全フェーズの成果物に矛盾がないか検証し、最終的な開始の決断を行います。
 

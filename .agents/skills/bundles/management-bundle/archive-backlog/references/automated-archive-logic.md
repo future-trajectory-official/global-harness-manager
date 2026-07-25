@@ -36,40 +36,42 @@ AI は以下の構造を持つ JSON を生成し、引数 `--data` として渡�
   "sprint": "Sprint N",
   "insights": "予実差分析の本文。乖離原因を具体的に記述する。",
   "tags": ["#Decision", "#Architecture", "#Troubleshooting", "#Pivot"],
-  "metrics": { "turns": 15, "sessions": 1 },
-  "outcomes": ["- 成果物1のリンク/パス", "- 成果物2の名称"],
-  "size_estimated": "M",
-  "size_actual": "S",
-  "effort_preplan": 3,
-  "effort_postplan": 4,
-  "effort_actual": 5,
-  "wp_planned_achieved": ["WP_1: AC1", "WP_1: AC2"],
-  "wp_planned_missed": [],
-  "wp_added_achieved": [],
-  "wp_added_missed": ["WP_a: AC1"]
+  "outcomes": ["- 成果物1へのパス", "- 成果物2の名称"],
+  "sizeEstimated": "M",
+  "sizeActual": "S",
+  "effortPreplan": 3,
+  "effortPostplan": 4,
+  "effortActual": 5,
+  "wpPlannedAchieved": ["WP_1: AC1", "WP_1: AC2"],
+  "wpPlannedMissed": [],
+  "wpAddedAchieved": [],
+  "wpAddedMissed": ["WP_a: AC1"]
 }
 ```
 
 #### フィールド説明
 
-| フィールド            | 必須 | 内容                             |
-| --------------------- | ---- | -------------------------------- |
-| `id`                  | ✅   | PBI識別子（そのまま保持）        |
-| `sprint`              | ✅   | 完了スプリント（例: "Sprint N"） |
-| `insights`            | ✅   | 予実差分析（AIが解釈して記述）   |
-| `tags`                | ✅   | カテゴリタグ（知見の分類）       |
-| `metrics.turns`       | ✅   | 総ターン数                       |
-| `metrics.sessions`    | ✅   | 総セッション数                   |
-| `outcomes`            | ✅   | 実際の成果物リスト               |
-| `size_estimated`      | ✅   | 見積サイズ（S/M/L/XL）           |
-| `size_actual`         | ✅   | 実感サイズ（S/M/L/XL）           |
-| `effort_preplan`      | ❌   | 計画前見積合計（介入回数）       |
-| `effort_postplan`     | ❌   | 計画後見積合計（介入回数）       |
-| `effort_actual`       | ❌   | 完了時実績合計（介入回数）       |
-| `wp_planned_achieved` | ❌   | 計画時WPの達成済みAC一覧         |
-| `wp_planned_missed`   | ❌   | 計画時WPの未達成AC一覧           |
-| `wp_added_achieved`   | ❌   | 追加WPの達成済みAC一覧           |
-| `wp_added_missed`     | ❌   | 追加WPの未達成AC一覧             |
+| フィールド          | 必須 | 内容                             |
+| ------------------- | ---- | -------------------------------- |
+| `id`                | ✅   | PBI識別子（そのまま保持）        |
+| `sprint`            | ✅   | 完了スプリント（例: "Sprint N"） |
+| `insights`          | ✅   | 予実差分析（AIが解釈して記述）   |
+| `tags`              | ✅   | カテゴリタグ（知見の分類）       |
+| `outcomes`          | ✅   | 実際の成果物リスト（文字列配列） |
+| `sizeEstimated`     | ✅   | 見積サイズ（XS/S/M/L/XL）        |
+| `sizeActual`        | ✅   | 実感サイズ（XS/S/M/L/XL）        |
+| `effortPreplan`     | ❌   | 計画前見積合計（介入回数）       |
+| `effortPostplan`    | ❌   | 計画後見積合計（介入回数）       |
+| `effortActual`      | ❌   | 完了時実績合計（介入回数）       |
+| `wpPlannedAchieved` | ❌   | 計画時WPの達成済みAC一覧         |
+| `wpPlannedMissed`   | ❌   | 計画時WPの未達成AC一覧           |
+| `wpAddedAchieved`   | ❌   | 追加WPの達成済みAC一覧           |
+| `wpAddedMissed`     | ❌   | 追加WPの未達成AC一覧             |
+
+> **注意**: スクリプト内部では `effortActual` の代替として `actualEffort`、 `effortPreplan`
+> の代替として `planPre`、`effortPostplan` の代替として `planPost`
+> も受け付けます（後方互換性）。新規にデータを構築する場合は上記 camelCase
+> のフィールド名を使用してください。
 
 ## 2. 実行手順
 

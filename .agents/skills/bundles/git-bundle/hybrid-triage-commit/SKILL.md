@@ -12,75 +12,51 @@ tags:
 
 # hybrid-triage-commit
 
-本スキルは、認知負荷を下げつつ「芸術的に美しいアトミックコミット」を維持するためのハイブリッド・トリアージ戦略を制御します。
-本スキルには `wip` と `triage` の2つの実行モードがあります。
+試行錯誤中は細かく WIP 保存し、完了後に diff を意味単位で再構成する。
 
-## 1. Quick-Start & モード別詳細手順
+## 制約
 
-本スキルには、開発の局面に合わせた 2 つの実行モードがあります。
+`git reset --soft` / `commit --amend` / `rebase` は禁止。 Triage
+はベースから新ブランチを作成し、diff を俯瞰して意味単位で `add + commit` し直す。
 
-### A. 【wip モード】進行状況の自動セーブ（開発中）
+## Quick-Start
 
-マイルストーンの達成、テストの通過、またはファイル書き換えの成功時など、こまめに実行して作業のセーブポイントを作ります。
+### wip モード（開発中）
 
-`git-triage.ts` スクリプト（wipモード）を実行します。
-
-```bash
-deno run -A .agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts wip
-```
-
-### B. 【triage モード】歴史の編纂（プッシュ・PR作成直前）
-
-すべての実装、検証、リファクタリングが完了したタイミングで実行し、雑多なWIP履歴を美しいアトミックコミットへと事後的に再構築します。
-
-`git-triage.ts` スクリプト（triageモード）を実行します。
+意味は問わない。動いたらセーブする。
 
 ```bash
-deno run -A .agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts triage
+git add -A && git commit -m "[wip] <savepoint>"
 ```
 
-スクリプトは以下の処理を対話的にガイドします。
+### triage モード（プッシュ直前）
 
-1. ベースブランチ（`origin/main`）を自動検出し、WIP履歴をステージング状態にリセット
-2. 全変更ファイルを一覧表示
-3. コミット対象ファイルの選択を促す（番号入力/全選択/中断）
-4. Conventional Commits 形式でのコミットメッセージ入力を促す
-5. **論理的境界バリデーション**: 異なる論理役割（例: `feat` と
-   `docs`）のファイル混在を検出し、警告を表示
-6. 承認後、アトミックコミットを作成
-7. 未コミットのファイルが残っている場合は次のコミット作成に戻る
+**「意味単位で分割する」** が唯一の目的。以下の値は
+[hybrid-triage-commit-process.md](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)
+で確認すること：
 
-### C. 【非対話環境での代替手順】手動トリアージ
-
-CIやCLI専用環境など、`git-triage.ts`
-の対話的プロンプトが動作しない場合は、以下の手動手順でアトミックコミットを再構築します。
-
-1. **WIP履歴のリセット**: `git reset --soft origin/main`（または適切なベースブランチ）
-2. **全変更の確認**: `git status --short` で未コミットの全変更ファイルを一覧表示
-3. **論理グループへの分割**:
-   - 変更内容を確認し、`feat`（機能追加）、`fix`（修正）、`chore`（雑務）、`docs`（ドキュメント）、`refactor`（リファクタリング）、`test`（テスト）などの論理単位に分類
-   - 各グループごとに `git add <ファイル>` でステージングし、`git commit -m "type: メッセージ"`
-     でコミット
-4. **Conventional Commits の遵守**: コミットメッセージは `type(scope): 説明` の形式に従う
-5. **最終確認**: `git log --oneline` で履歴の論理性を確認
+- `<base>` — ベースブランチ名の導出方法
+- `<wip-branch>` — WIPブランチ名の特定方法
+- `<clean-name>` — 新ブランチ名の命名規則
+- 意味単位の分類基準（feat / fix / refactor / test / docs / chore の定義）
 
 ```bash
-# 実例：3つの論理コミットに分割する場合
-git reset --soft origin/main
-git status --short
-# グループ1: rename操作
-git add path/to/rename/files
-git commit -m "feat: rename X to Y"
-# グループ2: トリガー更新
-git add path/to/trigger/files
-git commit -m "chore: update trigger tags"
-# グループ3: 参照修正
-git add path/to/reference/files
-git commit -m "docs: update references"
+# 準備: ベースから新ブランチ
+git checkout <base> && git pull && git checkout -b <clean-name>
+# 俯瞰: WIP との差分を確認
+git diff --name-status <base>..<wip-branch>
 ```
 
-## 2. 詳細仕様 (Sidecar Reference)
+出力されたファイル一覧を意味単位に分類し、単位ごとに以下を繰り返す：
 
-具体的なトリアージの決定木や、コミットメッセージの分類規格については、以下のサイドカーリファレンスを参照してください。
+```bash
+git checkout <wip-branch> -- <files>
+git add <files>
+git commit -m "<type>(<scope>): <description>"
+```
 
-- **[トリアージプロセス詳細](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)**
+- 追跡対象外のファイル（`.gitignore` で除外）は commit できない。`git ls-files` で確認。
+- 完了後: `git branch -D <wip-branch>`
+
+対話的仕分けにはスクリプト:
+[git-triage.ts](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts)
