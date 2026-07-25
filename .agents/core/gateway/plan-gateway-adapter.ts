@@ -1732,7 +1732,15 @@ export class PlanGatewayAdapter implements PlanGateway {
       `description=${description}`,
     ]);
     if (result.code !== 0) {
-      return { operation, success: false, error: result.stderr };
+      const stderr = result.stderr ?? "";
+      if (stderr.includes("HTTP 422") || stderr.includes("already exists")) {
+        return {
+          operation,
+          success: false,
+          error: `Milestone "${title}" already exists. Each sprint number must be unique.`,
+        };
+      }
+      return { operation, success: false, error: stderr };
     }
     const output = parseJsonOutput(result.stdout) as { number?: number } | undefined;
     return {

@@ -1906,7 +1906,7 @@ Deno.test("Sprint create - should propagate gh api error", async () => {
   };
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults[0].success, false);
-  assertStringIncludes(result.stepResults[0].error ?? "", "HTTP 422");
+  assertStringIncludes(result.stepResults[0].error ?? "", "already exists");
 });
 
 /**
