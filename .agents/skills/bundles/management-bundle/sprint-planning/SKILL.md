@@ -11,7 +11,8 @@ tags:
 # sprint-planning
 
 プロダクトバックログリファインメントで確定したPBIをスプリントにコミットする。入力形式と実行コマンドの詳細は
-[reference.md](/.agents/skills/bundles/management-bundle/sprint-planning/reference.md) を参照。
+[references/reference.md](/.agents/skills/bundles/management-bundle/sprint-planning/references/reference.md)
+を参照。
 
 ## 操作スクリプト
 
@@ -22,7 +23,7 @@ tags:
 ## 制約
 
 - JSON入力形式と必須フィールドは
-  [reference.md](/.agents/skills/bundles/management-bundle/sprint-planning/reference.md)
+  [references/reference.md](/.agents/skills/bundles/management-bundle/sprint-planning/references/reference.md)
   で確認すること。
 - `--dry-run` でPlan内容を確認してから本実行に移ること。
 

@@ -38,7 +38,7 @@ tags:
   **操作支援用タスク** も併せて設計し、リストに組み込みます。
 - 各タスクに対し、**T シャツサイズ**による見積りを適用します。
 - **技術的不確実性の検出**: PBIの見積り時に技術的不確実性が認められる場合、
-  [spike-issuance-at-sprint-planning.md](/.agents/skills/bundles/management-bundle/sprint-planning/references/spike-issuance-at-sprint-planning.md)
+  [spike-issuance-at-sprint-planning.md](/.agents/skills/bundles/management-bundle/sprint-planning-old/references/spike-issuance-at-sprint-planning.md)
   に従い、PO判断でスパイクWP（`WP_0`）の発行を検討します。
 
 ### 3. ステータス付与とドキュメント更新
