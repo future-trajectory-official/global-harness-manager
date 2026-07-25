@@ -85,5 +85,5 @@ dry-runでPlanを確認し、PO承認後に本実行する。
 
 ### Phase 5: 完了報告
 
-完成したPBI/Feature/Epicの構造は、ProjectV2のボードで確認できる旨をPOに伝える。 必要に応じて Phase
+完成したPBI/Feature/Epicの構造をPOに提示する。 必要に応じて Phase
 1（show-hierarchy）で結果を再表示する。
