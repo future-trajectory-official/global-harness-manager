@@ -172,13 +172,12 @@ Deno.test("define should throw for undefined parent PBI id", () => {
 Deno.test("commit should return Plan with commit and update", () => {
   const plan = workPackageUseCase.commit(makeWpId(), makeSprintId());
   assertEquals(plan.summary, "Commit WP Implement Login to Sprint 15");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "commit");
   assertEquals(plan.steps[1].params.stage, "todo");
   assertEquals(plan.steps[1].params.state, "open");
-  assertEquals(plan.steps[2].operation, "update");
 });
 
 Deno.test("commit should throw for undefined id", () => {

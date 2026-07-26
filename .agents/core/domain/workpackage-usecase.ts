@@ -221,14 +221,6 @@ export const workPackageUseCase: WorkPackageUseCase & {
             sprint: sprint.title.value,
           },
         },
-        {
-          entity: "WorkPackage",
-          operation: "update",
-          params: {
-            itemId: identifier.code,
-            bodyAppend: formatEditComment("Commit", `Committed to ${sprint.title.value}`),
-          },
-        },
       ],
     };
   },
