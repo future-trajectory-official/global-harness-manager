@@ -1785,6 +1785,150 @@ Deno.test("WorkPackage estimateInitialEffort - should fail without itemId", asyn
   assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
 });
 
+Deno.test("WorkPackage estimatePlannedEffort - should succeed with valid params", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "estimate planned effort",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "estimatePlannedEffort",
+        params: { itemId: "51", effortPlanned: 5 },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage estimatePlannedEffort - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "estimate planned effort no id",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "estimatePlannedEffort",
+        params: { effortPlanned: 5 },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("WorkPackage recordActualEffort - should succeed with valid params", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record actual effort",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "recordActualEffort",
+        params: { itemId: "51", effortActual: 8 },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage recordActualEffort - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record actual effort no id",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "recordActualEffort",
+        params: { effortActual: 8 },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("WorkPackage recordAnalysis - should succeed with valid params", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record analysis",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "recordAnalysis",
+        params: {
+          itemId: "51",
+          body:
+            "## Process Analysis\n### Planning Review\nplan text\n### Execution Review\nexec text\n### Improvement Suggestions\nsuggest text",
+        },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage recordAnalysis - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record analysis no id",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "recordAnalysis",
+        params: { body: "## Process Analysis\nreview text" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("WorkPackage recordSessionMetrics - should succeed with valid params", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record session metrics",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "recordSessionMetrics",
+        params: { itemId: "51", body: "## Session Metrics\n- Intent Alignment Rate: 5" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage recordSessionMetrics - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record session metrics no id",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "recordSessionMetrics",
+        params: { body: "## Session Metrics\nmetrics text" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
 Deno.test("WorkPackage view - should return issue details", async () => {
   const expectedOutput = JSON.stringify({
     number: 51,
