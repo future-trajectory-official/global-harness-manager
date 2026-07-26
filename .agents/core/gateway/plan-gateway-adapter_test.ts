@@ -1785,6 +1785,254 @@ Deno.test("WorkPackage estimateInitialEffort - should fail without itemId", asyn
   assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
 });
 
+Deno.test("WorkPackage estimatePlannedEffort - should succeed with valid params", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "estimate planned effort",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "estimatePlannedEffort",
+        params: { itemId: "51", effortPlanned: 5 },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage estimatePlannedEffort - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "estimate planned effort no id",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "estimatePlannedEffort",
+        params: { effortPlanned: 5 },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("WorkPackage recordActualEffort - should succeed with valid params", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record actual effort",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "recordActualEffort",
+        params: { itemId: "51", effortActual: 8 },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage recordActualEffort - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record actual effort no id",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "recordActualEffort",
+        params: { effortActual: 8 },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("WorkPackage recordAnalysis - should succeed with valid params", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record analysis",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "recordAnalysis",
+        params: {
+          itemId: "51",
+          body:
+            "## Process Analysis\n### Planning Review\nplan text\n### Execution Review\nexec text\n### Improvement Suggestions\nsuggest text",
+        },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage recordAnalysis - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record analysis no id",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "recordAnalysis",
+        params: { body: "## Process Analysis\nreview text" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("WorkPackage recordSessionMetrics - should succeed with valid params", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record session metrics",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "recordSessionMetrics",
+        params: { itemId: "51", body: "## Session Metrics\n- Intent Alignment Rate: 5" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage recordSessionMetrics - should fail without itemId", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "record session metrics no id",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "recordSessionMetrics",
+        params: { body: "## Session Metrics\nmetrics text" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+// ======== Board Integration Tests ========
+
+function makeBoardMock() {
+  let idx = 0;
+  const calls: { cmd: string; args: string[] }[] = [];
+  const responses = [
+    // 1: gh issue view <id> --json id
+    { code: 0, stdout: '{"id":"NODE_123"}', stderr: "" },
+    // 2: gh api graphql -f query=...(getProjectIdQuery)
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_123"}}}}', stderr: "" },
+    // 3: gh api graphql -f query=...(addItemMutation)
+    { code: 0, stdout: '{"data":{"addProjectV2ItemById":{"item":{"id":"ITEM_123"}}}}', stderr: "" },
+    // 4: gh api graphql -f query=...(readTextFieldValue)
+    { code: 0, stdout: '{"data":{"node":{"fv":{"text":null}}}}', stderr: "" },
+    // 5: gh api graphql -f query=...(resolveFieldId)
+    {
+      code: 0,
+      stdout: '{"data":{"organization":{"projectV2":{"field":{"id":"FIELD_123"}}}}}',
+      stderr: "",
+    },
+    // 6: gh api graphql -f query=...(resolveProjectNodeId)
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_123"}}}}', stderr: "" },
+    // 7: gh project item-edit (setTextFieldValue)
+    { code: 0, stdout: "", stderr: "" },
+    // 8+: gh issue view/edit for bodyAppend fallback (recordSessionMetrics)
+    { code: 0, stdout: '{"body":"Existing body content"}', stderr: "" },
+    { code: 0, stdout: "", stderr: "" },
+  ];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const r = responses[idx];
+    idx++;
+    return Promise.resolve(r ?? { code: 0, stdout: "", stderr: "" });
+  };
+  return { runner, calls };
+}
+
+function makeBoardMockAdapter(): PlanGatewayAdapter {
+  const adapter = new PlanGatewayAdapter(makeBoardMock().runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99);
+  return adapter;
+}
+
+Deno.test("WorkPackage estimatePlannedEffort - should write to board field via setEffortField", async () => {
+  const adapter = makeBoardMockAdapter();
+  const result = await adapter.execute({
+    summary: "estimate planned effort",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "estimatePlannedEffort",
+      params: { itemId: "51", effortPlanned: 5 },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage recordActualEffort - should write to board field via setEffortField", async () => {
+  const adapter = makeBoardMockAdapter();
+  const result = await adapter.execute({
+    summary: "record actual effort",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordActualEffort",
+      params: { itemId: "51", effortActual: 8 },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage recordAnalysis - should read/write board field for process analysis", async () => {
+  const adapter = makeBoardMockAdapter();
+  const result = await adapter.execute({
+    summary: "record analysis",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordAnalysis",
+      params: {
+        itemId: "51",
+        body:
+          "## Process Analysis\n### Planning Review\nplan text\n### Execution Review\nexec text\n### Improvement Suggestions\nsuggest text",
+      },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage recordSessionMetrics - should write to board field for session metrics", async () => {
+  const adapter = makeBoardMockAdapter();
+  const result = await adapter.execute({
+    summary: "record session metrics",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordSessionMetrics",
+      params: { itemId: "51", body: "## Session Metrics\n- Intent Alignment Rate: 5" },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
 Deno.test("WorkPackage view - should return issue details", async () => {
   const expectedOutput = JSON.stringify({
     number: 51,
