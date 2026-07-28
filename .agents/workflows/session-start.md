@@ -10,6 +10,9 @@ description: 価値観同期・Work Package特定・戦略策定を段階的に�
 
 ## 1. 価値観と能力の同期フェーズ
 
+**開始条件**:
+POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
+
 ### 1-1. ビジョンと保有スキルの宣言
 
 - **ロール**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行役として開始)
@@ -28,11 +31,14 @@ description: 価値観同期・Work Package特定・戦略策定を段階的に�
 
 ## 2. Work Package特定フェーズ
 
+**開始条件**:
+POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
+
 ### 2-1. 1セッション1Work Packageの絞り込み
 
 - **ロール**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (優先順位の調整)
 - **実行スキル**:
-  `[identify-work-package](/.agents/skills/bundles/management-bundle/identify-work-package/SKILL.md)`
+  `[select-work-package](/.agents/skills/bundles/management-bundle/select-work-package/SKILL.md)`
 - **成果物**: 「Session Task Identification」報告
 - **セルフチェック**:
   - [ ] **[1セッション1Work Package]** バックログから、迷走を防ぐための最小単位のWork
@@ -47,6 +53,9 @@ description: 価値観同期・Work Package特定・戦略策定を段階的に�
 ---
 
 ## 3. 戦略策定（セッション計画）フェーズ
+
+**開始条件**:
+POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
 
 ### 3-1. 専門家による詳細設計
 
@@ -67,12 +76,18 @@ description: 価値観同期・Work Package特定・戦略策定を段階的に�
 
 ## 4. 合意と承認フェーズ
 
-### 4-1. 計画の承認と WIP 更新
+**開始条件**:
+POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
+
+### 4-1. 計画の承認と WP着手
 
 - **ロール**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (最終確認)
+- **実行スキル**:
+  `[start-work-package](/.agents/skills/bundles/management-bundle/start-work-package/SKILL.md)`
 - **セルフチェック**:
   - [ ] **[POの承認]** 実装計画（アーティファクト）に対し、PO からの最終合意を得たか。
-  - [ ] **[ステータス管理]** **POの承認を得た後**にはじめて、バックログを `[WIP]` に更新したか。
+  - [ ] **[WP着手]** **POの承認を得た後**にはじめて、`start-work-package`
+        スキルで計画後effort見積りを記録し、WPをInProgressに遷移したか。
   - [ ] **[ハンドオフ]** 実装ワークフロー（例：`/develop-work-package` や
         `/refactoring`）へ迷いなく移行できる準備が整ったか。
 
