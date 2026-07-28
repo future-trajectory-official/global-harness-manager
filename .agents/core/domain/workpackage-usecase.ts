@@ -452,6 +452,7 @@ export const workPackageUseCase: WorkPackageUseCase & {
         params: {
           itemId: identifier.code,
           body: formatSessionMetricsBody(metrics),
+          metrics: metrics,
         },
       }],
     };
