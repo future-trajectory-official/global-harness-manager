@@ -12,6 +12,11 @@ tags:
 
 計画承認後のWPに対して、計画後effort見積りと着手準備を行う。
 
+## 事前条件
+
+- WPがTodo状態（未着手）であること。
+- 実装計画（`implementation_plan.md`）のPO承認が完了していること。
+
 ## Quick-Start
 
 1. **介入の記録**:
@@ -22,8 +27,9 @@ tags:
 
 3. **見積りの提示と了承**: 算出した見積りをPOに提示し、了承を得る。
 
-4. **見積りの記録**: 見積りを記録する。
+4. **見積りの記録**: 見積りを記録する。事前に `--dry-run` でPlanを確認し、PO承認後に本実行すること。
    ```bash
+   echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/estimate_planned_effort.ts --dry-run
    echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/estimate_planned_effort.ts
    ```
    入力パラメータは
@@ -32,8 +38,9 @@ tags:
 
 5. **着手の了承**: POに開始の了承を得る。
 
-6. **着手の記録**: 着手を記録する。
+6. **着手の記録**: 着手を記録する。事前に `--dry-run` でPlanを確認し、PO承認後に本実行すること。
    ```bash
+   echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/start_wp.ts --dry-run
    echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/start_wp.ts
    ```
    入力パラメータは

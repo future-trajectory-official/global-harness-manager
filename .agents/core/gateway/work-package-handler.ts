@@ -279,11 +279,12 @@ export class WorkPackageHandler {
               nodeData.id,
               this.adapter.sprintBoardNumber,
             );
+            const metrics = params.metrics;
             await this.adapter.setTextFieldValue(
               projectItemNodeId,
               this.adapter.sprintBoardNumber,
               "harness-metrics",
-              String(params.body),
+              metrics ? JSON.stringify(metrics) : String(params.body),
             );
           }
         } catch { /* ok */ }
