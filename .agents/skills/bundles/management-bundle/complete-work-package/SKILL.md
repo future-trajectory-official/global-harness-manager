@@ -12,10 +12,17 @@ tags:
 
 セッション終了後、WPを完了状態に遷移し、兄弟WPが全て完了している場合は親PBIも完了する。
 
+## 事前条件
+
+- WPが完了可能な状態（InProgress）であること。
+- 親PBIが特定されていること（WP作成時に設定済み）。
+
 ## Quick-Start
 
-1. **WPの完了**: 現在のWPを完了状態に遷移する。
+1. **WPの完了**: 現在のWPを完了状態に遷移する。事前に `--dry-run`
+   でPlanを確認し、PO承認後に本実行すること。
    ```bash
+   echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/complete-work-package/scripts/complete_wp.ts --dry-run
    echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/complete-work-package/scripts/complete_wp.ts
    ```
    入力パラメータは
@@ -28,8 +35,10 @@ tags:
    ```
 
 3. **PBI完了判定**:
-   - 全兄弟WPが完了 → 親PBIを完了状態に遷移する
+   - 全兄弟WPが完了 → 親PBIを完了状態に遷移する。事前に `--dry-run`
+     でPlanを確認し、PO承認後に本実行すること。
      ```bash
+     echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/complete-work-package/scripts/complete_pbi.ts --dry-run
      echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/complete-work-package/scripts/complete_pbi.ts
      ```
    - 未完了の兄弟WPあり → POにその旨を報告し、残作業を確認する
