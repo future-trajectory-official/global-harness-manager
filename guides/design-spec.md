@@ -228,17 +228,17 @@ Goalに対する達成状況を検証・承認するための概念。スプリ�
 3.2節の要件を満たすため、各概念をGitHubのどの仕組み（Issue / Milestone / Projects
 V2）で実現するかを決定します。選定理由は「デフォルトIssueで対応できること」と「不足しているため追加の仕組みが必要なこと」を区別して示します。
 
-| 概念          | 必要な要件                                                        | GitHub上の表現                               | 選定理由                                                                                                                                                                                                                                       |
-| ------------- | ----------------------------------------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vision        | 理念の永続保存。変更時はバージョン追跡                            | Issue + Comments                             | IssueのTitle+Body+Labelで静的な情報保持は十分。変更時はComment追記で版管理できる                                                                                                                                                               |
-| Product Goal  | ゴール文の保持と変更履歴                                          | Issue + Comments                             | Title+Body+Labelで保持。変更履歴はCommentの時系列で自動管理。Bodyに変遷一覧を集約                                                                                                                                                              |
-| Sprint Goal   | タイムボックス＋名称＋説明＋全スプリント成果物との紐付け          | **Milestone**                                | Milestoneがタイムボックス（期限）を標準提供。descriptionにGoalを記載。IssueにMilestoneを設定するだけで全成果物（PBI/WP/Review/Retrospective）が自動紐付け。Issue単体ではスプリント成果物の横断的なグルーピングができない                       |
-| Epic          | 名称＋説明＋子Featureの束ねる親子関係                             | Issue + sub-issues                           | Title+Body+Labelで十分。sub-issuesで子Featureを束ねられる。Projects V2は不要                                                                                                                                                                   |
-| Feature       | 名称＋説明＋親Epic＋子PBIの双方向親子関係                         | Issue + sub-issues + `--parent`              | Title+Body+Labelで十分。親Epicは`--parent`、子PBIはsub-issuesで紐付け。Projects V2は不要                                                                                                                                                       |
-| PBI           | 名称＋説明＋状態管理＋サイズ記録＋スプリント所属＋親Feature＋子WP | Issue + Milestone + Projects V2 + sub-issues | Title+Body+Label+Comment+Milestone+sub-issuesで基本情報はカバーできるが、**状態とサイズを構造化フィールドで管理できない**。Projects V2のStatus（Todo/InProgress/Done）で状態を、カスタムフィールド（`harness-size-*`）でサイズを構造化保存する |
-| WP            | 名称＋成果物＋親PBI＋effort＋乖離理由＋順序                       | Issue + Projects V2 + sub-issues + Comments  | Title+Body+Label+sub-issues+Commentsで基本情報はカバーできるが、**effort値と乖離理由と順序を構造化フィールドで管理できない**。Projects V2のカスタムフィールド（`harness-efforts-analysis` / `harness-sequence`）で構造化保存する               |
-| Review        | 名称＋達成度＋PBIサマリ＋承認状態                                 | Issue + Comments                             | Title+Body+Label+Commentで基本情報はカバーできる。カスタムフィールド不要（レビュー結果はBodyのMarkdownで管理）                                                                                                                                 |
-| Retrospective | 名称＋KPT項目＋スプリントメトリクス                               | Issue + Projects V2 + Comments               | Title+Body+Label+Commentで基本情報はカバーできるが、**KPTとメトリクスを構造化フィールドで管理できない**。カスタムフィールド（`harness-keep-problem-try` / `harness-metrics`）で構造化保存する                                                  |
+| 概念          | 必要な要件                                                        | GitHub上の表現                               | 選定理由                                                                                                                                                                                                                                                     |
+| ------------- | ----------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Vision        | 理念の永続保存。変更時はバージョン追跡                            | Issue + Comments                             | IssueのTitle+Body+Labelで静的な情報保持は十分。変更時はComment追記で版管理できる                                                                                                                                                                             |
+| Product Goal  | ゴール文の保持と変更履歴                                          | Issue + Comments                             | Title+Body+Labelで保持。変更履歴はCommentの時系列で自動管理。Bodyに変遷一覧を集約                                                                                                                                                                            |
+| Sprint Goal   | タイムボックス＋名称＋説明＋全スプリント成果物との紐付け          | **Milestone**                                | Milestoneがタイムボックス（期限）を標準提供。descriptionにGoalを記載。IssueにMilestoneを設定するだけで全成果物（PBI/WP/Review/Retrospective）が自動紐付け。Issue単体ではスプリント成果物の横断的なグルーピングができない                                     |
+| Epic          | 名称＋説明＋子Featureの束ねる親子関係                             | Issue + sub-issues                           | Title+Body+Labelで十分。sub-issuesで子Featureを束ねられる。Projects V2は不要                                                                                                                                                                                 |
+| Feature       | 名称＋説明＋親Epic＋子PBIの双方向親子関係                         | Issue + sub-issues + `--parent`              | Title+Body+Labelで十分。親Epicは`--parent`、子PBIはsub-issuesで紐付け。Projects V2は不要                                                                                                                                                                     |
+| PBI           | 名称＋説明＋状態管理＋サイズ記録＋スプリント所属＋親Feature＋子WP | Issue + Milestone + Projects V2 + sub-issues | Title+Body+Label+Comment+Milestone+sub-issuesで基本情報はカバーできるが、**状態とサイズを構造化フィールドで管理できない**。Projects V2のStatus（Todo/InProgress/Done）で状態を、カスタムフィールド（`harness-size-*`）でサイズを構造化保存する               |
+| WP            | 名称＋成果物＋親PBI＋effort＋乖離理由＋順序                       | Issue + Projects V2 + sub-issues + Comments  | Title+Body+Label+sub-issues+Commentsで基本情報はカバーできるが、**effort値と乖離理由と順序を構造化フィールドで管理できない**。Projects V2のカスタムフィールド（`harness-effort-summary` / `harness-variance-review-*` / `harness-sequence`）で構造化保存する |
+| Review        | 名称＋達成度＋PBIサマリ＋承認状態                                 | Issue + Comments                             | Title+Body+Label+Commentで基本情報はカバーできる。カスタムフィールド不要（レビュー結果はBodyのMarkdownで管理）                                                                                                                                               |
+| Retrospective | 名称＋KPT項目＋スプリントメトリクス                               | Issue + Projects V2 + Comments               | Title+Body+Label+Commentで基本情報はカバーできるが、**KPTとメトリクスを構造化フィールドで管理できない**。カスタムフィールド（`harness-keep-problem-try` / `harness-metrics`）で構造化保存する                                                                |
 
 ### 3.4. 概念間の階層関係
 
@@ -622,7 +622,11 @@ GoalはMilestoneで実装するため本節の対象外です（属性は5.1のM
 | 備忘録             | Comment   | -                                                                  |
 | 見積サイズ         | —         | **V2:Custom**: `harness-size-estimate` (SingleSelect: XS/S/M/L/XL) |
 | 実感サイズ         | —         | **V2:Custom**: `harness-size-actual` (SingleSelect: XS/S/M/L/XL)   |
-| 予実差分析         | —         | **V2:Custom**: `harness-efforts-analysis` (JSON)                   |
+| effort集計値       | —         | **V2:Custom**: `harness-effort-summary` (Text / JSON)              |
+| サイズ乖離総評     | —         | **V2:Custom**: `harness-variance-review-size` (Text)               |
+| 計画乖離レビュー   | —         | **V2:Custom**: `harness-variance-review-planning` (Text)           |
+| 実行レビュー       | —         | **V2:Custom**: `harness-variance-review-execution` (Text)          |
+| 改善提案           | —         | **V2:Custom**: `harness-improvement-suggestions` (Text)            |
 | 状態               | —         | V2:Status (NULL/Todo/InProgress/Done)                              |
 
 <details>
@@ -662,24 +666,32 @@ GoalはMilestoneで実装するため本節の対象外です（属性は5.1のM
 </details>
 
 <details>
-<summary>harness-efforts-analysis推奨構造</summary>
+<summary>個別カスタムフィールド一覧</summary>
+
+PBIの予実差分析は単一JSONから個別カスタムフィールドに分割され、1,024文字制限を回避している。
+
+| フィールド名                        | 型   | 内容                                                                                    |
+| ----------------------------------- | ---- | --------------------------------------------------------------------------------------- |
+| `harness-effort-summary`            | Text | 子WPのeffort集計値JSON（`{"initial_estimate": N, "planned_estimate": N, "actual": N}`） |
+| `harness-variance-review-size`      | Text | サイズ乖離総評（`confirmSize`時に記録）                                                 |
+| `harness-variance-review-planning`  | Text | 計画乖離レビュー（AI分析テキスト）                                                      |
+| `harness-variance-review-execution` | Text | 実行レビュー（AI分析テキスト）                                                          |
+| `harness-improvement-suggestions`   | Text | 改善提案（AI分析テキスト）                                                              |
+
+AIは `analyzeEffort`
+で子WPのeffortデータを取得・集計し、その結果をもとに定性分析テキストを生成する。 生成されたJSONを
+`recordAnalysis` ハンドラーに渡すことで、各フィールドに個別に書き込まれる。
 
 ```json
+// recordAnalysis に渡すAI生成JSONの構造
 {
   "wp_effort_summary": {
-    "initial_estimate": <ΣWP(harness-efforts-analysis.wp_effort_summary.initial_estimate)>,
-    "planned_estimate": <ΣWP(harness-efforts-analysis.wp_effort_summary.planned_estimate)>,
-    "actual": <ΣWP(harness-efforts-analysis.wp_effort_summary.actual)>,
-    "planning_variance": <Σplanning_variance>,
-    "execution_variance": <Σexecution_variance>
+    "initial_estimate": <Σ>,
+    "planned_estimate": <Σ>,
+    "actual": <Σ>
   },
-  "size_analysis": {
-    "size_estimate": "<XS|S|M|L|XL>",
-    "size_actual": "<XS|S|M|L|XL>",
-    "size_variance_review": "<見積と実感の乖離に関する総評>"
-  },
-  "planning_variance_review": "<計画時乖離の総評>",
-  "execution_variance_review": "<遂行時乖離の総評>",
+  "planning_variance_review": "<計画乖離レビュー>",
+  "execution_variance_review": "<実行レビュー>",
   "improvement_suggestions": "<改善提案>"
 }
 ```
@@ -688,23 +700,26 @@ GoalはMilestoneで実装するため本節の対象外です（属性は5.1のM
 
 #### WP
 
-| 属性                     | Issue         | Projects V2                                             |
-| ------------------------ | ------------- | ------------------------------------------------------- |
-| タイトル                 | Title         | Title                                                   |
-| 本文                     | Body          | —                                                       |
-| 種別（`type:WP`）        | Label         | Labels                                                  |
-| スプリント               | Milestone     | Milestone                                               |
-| 親PBI                    | Parent        | Parent issue                                            |
-| 変更内容                 | Pull Requests | Pull Request                                            |
-| 備忘録                   | Comment       | -                                                       |
-| 予実分析                 | —             | **V2:Custom**: `harness-efforts-analysis` (Text / JSON) |
-| セッションメトリクス     | -             | **V2:Custom**: `harness-metrics` (Text / JSON)          |
-| セッションKPT（Keep）    | -             | **V2:Custom**: `harness-kpt-keep` (Text)                |
-| セッションKPT（Problem） | -             | **V2:Custom**: `harness-kpt-problem` (Text)             |
-| セッションKPT（Try）     | -             | **V2:Custom**: `harness-kpt-try` (Text)                 |
-| セッションKPT（Advise）  | -             | **V2:Custom**: `harness-kpt-advise` (Text)              |
-| 順序                     | —             | **V2:Custom**: `harness-sequence` (Number / decimal)    |
-| 状態                     | —             | V2:Status (NULL/Todo/InProgress/Done)                   |
+| 属性                     | Issue         | Projects V2                                               |
+| ------------------------ | ------------- | --------------------------------------------------------- |
+| タイトル                 | Title         | Title                                                     |
+| 本文                     | Body          | —                                                         |
+| 種別（`type:WP`）        | Label         | Labels                                                    |
+| スプリント               | Milestone     | Milestone                                                 |
+| 親PBI                    | Parent        | Parent issue                                              |
+| 変更内容                 | Pull Requests | Pull Request                                              |
+| 備忘録                   | Comment       | -                                                         |
+| effort集計値             | —             | **V2:Custom**: `harness-effort-summary` (Text / JSON)     |
+| 計画乖離レビュー         | —             | **V2:Custom**: `harness-variance-review-planning` (Text)  |
+| 実行レビュー             | —             | **V2:Custom**: `harness-variance-review-execution` (Text) |
+| 改善提案                 | —             | **V2:Custom**: `harness-improvement-suggestions` (Text)   |
+| セッションメトリクス     | -             | **V2:Custom**: `harness-metrics` (Text / JSON)            |
+| セッションKPT（Keep）    | -             | **V2:Custom**: `harness-kpt-keep` (Text)                  |
+| セッションKPT（Problem） | -             | **V2:Custom**: `harness-kpt-problem` (Text)               |
+| セッションKPT（Try）     | -             | **V2:Custom**: `harness-kpt-try` (Text)                   |
+| セッションKPT（Advise）  | -             | **V2:Custom**: `harness-kpt-advise` (Text)                |
+| 順序                     | —             | **V2:Custom**: `harness-sequence` (Number / decimal)      |
+| 状態                     | —             | V2:Status (NULL/Todo/InProgress/Done)                     |
 
 <details>
 <summary>Body推奨構造</summary>
@@ -732,25 +747,8 @@ GoalはMilestoneで実装するため本節の対象外です（属性は5.1のM
 
 </details>
 
-<details>
-<summary>harness-efforts-analysis推奨構造</summary>
-
-```json
-{
-  "wp_effort_summary": {
-    "initial_estimate": <number>,
-    "planned_estimate": <number>,
-    "actual": <number>,
-    "planning_variance": <planned - initial>,
-    "execution_variance": <actual - planned>
-  },
-  "planning_variance_review": "<計画時乖離の総評>",
-  "execution_variance_review": "<遂行時乖離の総評>",
-  "improvement_suggestions": "<改善提案>"
-}
-```
-
-</details>
+PBIと同様、予実分析は個別カスタムフィールドに分割されている。`harness-effort-summary`
+にJSON形式でeffort集計値を格納し、分析テキストは各テキストフィールドに個別に保存する。
 
 <details>
 <summary>harness-metrics推奨構造 (session)</summary>
@@ -960,24 +958,30 @@ V2のTEXTフィールド制限）であり、4分割により全文保存が可�
 
 #### Product Backlog Board
 
-| フィールド名               | 型                         | 説明                                                         |
-| -------------------------- | -------------------------- | ------------------------------------------------------------ |
-| `harness-size-estimate`    | SingleSelect (XS/S/M/L/XL) | PBIのサイズ見積                                              |
-| `harness-size-actual`      | SingleSelect (XS/S/M/L/XL) | PBIのサイズ実績                                              |
-| `harness-efforts-analysis` | Text / JSON                | PBIの予実差分析（子WPのeffort集計＋size_analysisを含むJSON） |
-| `harness-sequence`         | Number (decimal)           | WPの実行順序（小数可）                                       |
+| フィールド名                        | 型                         | 説明                   |
+| ----------------------------------- | -------------------------- | ---------------------- |
+| `harness-size-estimate`             | SingleSelect (XS/S/M/L/XL) | PBIのサイズ見積        |
+| `harness-size-actual`               | SingleSelect (XS/S/M/L/XL) | PBIのサイズ実績        |
+| `harness-effort-summary`            | Text / JSON                | PBIの子WP effort集計値 |
+| `harness-variance-review-size`      | Text                       | サイズ乖離総評         |
+| `harness-variance-review-planning`  | Text                       | 計画乖離レビュー       |
+| `harness-variance-review-execution` | Text                       | 実行レビュー           |
+| `harness-improvement-suggestions`   | Text                       | 改善提案               |
 
 #### Sprint Board
 
-| フィールド名               | 型               | 説明                                          |
-| -------------------------- | ---------------- | --------------------------------------------- |
-| `harness-efforts-analysis` | Text / JSON      | WPの予実分析（単一WPのeffort値を含むJSON）    |
-| `harness-metrics`          | Text / JSON      | セッションメトリクス（AI協働品質4指標のJSON） |
-| `harness-kpt-keep`         | Text             | セッションKPTのKeep（上限1,024文字）          |
-| `harness-kpt-problem`      | Text             | セッションKPTのProblem（上限1,024文字）       |
-| `harness-kpt-try`          | Text             | セッションKPTのTry（上限1,024文字）           |
-| `harness-kpt-advise`       | Text             | セッションKPTのAdvise（上限1,024文字、任意）  |
-| `harness-sequence`         | Number (decimal) | WPの実行順序（小数可）                        |
+| フィールド名                        | 型               | 説明                                          |
+| ----------------------------------- | ---------------- | --------------------------------------------- |
+| `harness-effort-summary`            | Text / JSON      | WPのeffort集計値                              |
+| `harness-variance-review-planning`  | Text             | 計画乖離レビュー                              |
+| `harness-variance-review-execution` | Text             | 実行レビュー                                  |
+| `harness-improvement-suggestions`   | Text             | 改善提案                                      |
+| `harness-metrics`                   | Text / JSON      | セッションメトリクス（AI協働品質4指標のJSON） |
+| `harness-kpt-keep`                  | Text             | セッションKPTのKeep（上限1,024文字）          |
+| `harness-kpt-problem`               | Text             | セッションKPTのProblem（上限1,024文字）       |
+| `harness-kpt-try`                   | Text             | セッションKPTのTry（上限1,024文字）           |
+| `harness-kpt-advise`                | Text             | セッションKPTのAdvise（上限1,024文字、任意）  |
+| `harness-sequence`                  | Number (decimal) | WPの実行順序（小数可）                        |
 
 #### Review Board
 
