@@ -75,6 +75,30 @@ export class ProductBacklogItemHandler {
     });
 
     handlers.set("archive", async (_op, params) => {
+      const itemId = String(params.itemId ?? "");
+      if (!itemId) {
+        return { operation: "archive", success: false, error: "itemId is required" };
+      }
+      const viewResult = await this.adapter.runCommand("gh", [
+        "issue",
+        "view",
+        itemId,
+        "--json",
+        "state,closed",
+        ...this.adapter.buildRepoArg(),
+      ]);
+      if (viewResult.code === 0) {
+        try {
+          const viewData = JSON.parse(viewResult.stdout) as { state?: string; closed?: boolean };
+          if (viewData.state === "CLOSED" || viewData.closed) {
+            return {
+              operation: "archive",
+              success: false,
+              error: `Issue #${itemId} is already closed`,
+            };
+          }
+        } catch { /* ignore */ }
+      }
       return await this.adapter.handleCloseItem(params);
     });
 
@@ -120,7 +144,6 @@ export class ProductBacklogItemHandler {
     });
 
     handlers.set("confirmSize", async (_op, params) => {
-      const { PbiEffortAnalysisData } = await import("./pbi-effort-analysis-data.ts");
       const itemId = String(params.itemId ?? "");
       if (!itemId) return { operation: "confirmSize", success: false, error: "itemId is required" };
       const sizeActual = String(params.sizeActual ?? "");
@@ -193,19 +216,11 @@ export class ProductBacklogItemHandler {
               }
             }
             if (varianceReason) {
-              const text = await this.adapter.readTextFieldValue(
-                projectItemNodeId,
-                this.adapter.productBacklogBoardNumber,
-                "harness-efforts-analysis",
-              );
-              const data = PbiEffortAnalysisData.fromJson(text ?? "").setSizeVarianceReview(
-                varianceReason,
-              );
               await this.adapter.setTextFieldValue(
                 projectItemNodeId,
                 this.adapter.productBacklogBoardNumber,
-                "harness-efforts-analysis",
-                data.toJson(),
+                "harness-variance-review-size",
+                varianceReason,
               );
             }
           } catch { /* ok */ }
@@ -214,90 +229,185 @@ export class ProductBacklogItemHandler {
       return { operation: "confirmSize", success: true, itemId };
     });
 
+    handlers.set("analyzeEffort", async (_op, params) => {
+      const itemId = String(params.itemId ?? "");
+      if (!itemId) {
+        return { operation: "analyzeEffort", success: false, error: "itemId is required" };
+      }
+      let sumInitial = 0;
+      let sumPlanned = 0;
+      let sumActual = 0;
+
+      if (
+        this.adapter.sprintBoardNumber && this.adapter.scopeOwner &&
+        this.adapter.scopeRepository
+      ) {
+        const query =
+          `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){subIssues(first:100){nodes{... on Issue{number projectItems(first:20){nodes{id project{number} effortField:fieldValueByName(name:"harness-effort-summary"){... on ProjectV2ItemFieldTextValue{text}}}}}}}}}}`;
+        const lr = await this.adapter.runCommand("gh", [
+          "api",
+          "graphql",
+          "-f",
+          `query=${query}`,
+          "-f",
+          `owner=${this.adapter.scopeOwner}`,
+          "-f",
+          `repo=${this.adapter.scopeRepository}`,
+          "-F",
+          `num=${parseInt(itemId, 10)}`,
+        ]);
+        if (lr.code === 0) {
+          const ld = JSON.parse(lr.stdout) as {
+            data?: {
+              repository?: {
+                issue?: {
+                  subIssues?: {
+                    nodes?: Array<{
+                      projectItems?: {
+                        nodes?: Array<{
+                          project: { number: number };
+                          effortField?: { text?: string };
+                        }>;
+                      };
+                    }>;
+                  };
+                };
+              };
+            };
+          };
+          const subNodes = ld?.data?.repository?.issue?.subIssues?.nodes ?? [];
+          for (const sub of subNodes) {
+            const pItem = sub.projectItems?.nodes?.find(
+              (n) => n.project.number === this.adapter.sprintBoardNumber!,
+            );
+            if (pItem?.effortField?.text) {
+              try {
+                const parsed = JSON.parse(pItem.effortField.text) as {
+                  initial_estimate?: number;
+                  planned_estimate?: number;
+                  actual?: number;
+                };
+                sumInitial += parsed.initial_estimate ?? 0;
+                sumPlanned += parsed.planned_estimate ?? 0;
+                sumActual += parsed.actual ?? 0;
+              } catch { /* ignore */ }
+            }
+          }
+        }
+      }
+      return {
+        operation: "analyzeEffort",
+        success: true,
+        itemId,
+        output: {
+          wp_effort_summary: {
+            initial_estimate: sumInitial,
+            planned_estimate: sumPlanned,
+            actual: sumActual,
+          },
+        },
+      };
+    });
+
     handlers.set("recordAnalysis", async (_op, params) => {
       const itemId = String(params.itemId ?? "");
       if (!itemId) {
         return { operation: "recordAnalysis", success: false, error: "itemId is required" };
       }
-      if (params.body && this.adapter.productBacklogBoardNumber) {
+      const body = String(params.body ?? "");
+      if (!body) {
+        return { operation: "recordAnalysis", success: false, error: "body is required" };
+      }
+      const { PbiEffortAnalysisData } = await import("./pbi-effort-analysis-data.ts");
+      const validation = PbiEffortAnalysisData.validate(body);
+      if (!validation.valid) {
+        return { operation: "recordAnalysis", success: false, error: validation.error };
+      }
+      if (!this.adapter.productBacklogBoardNumber) {
+        return { operation: "recordAnalysis", success: true, itemId };
+      }
+      try {
+        const nodeResult = await this.adapter.runCommand("gh", [
+          "issue",
+          "view",
+          itemId,
+          "--json",
+          "id",
+          ...this.adapter.buildRepoArg(),
+        ]);
+        if (nodeResult.code !== 0) {
+          return { operation: "recordAnalysis", success: true, itemId };
+        }
+        const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
+        let projectItemNodeId: string;
         try {
-          const body = String(params.body);
-          const extract = (heading: string): string | undefined => {
-            const re = new RegExp(`### ${heading}\\n\\n([\\s\\S]*?)(?:\\n###|\\n$|$)`);
-            const m = body.match(re);
-            return m ? m[1].trim() : undefined;
-          };
-          const nodeResult = await this.adapter.runCommand("gh", [
-            "issue",
-            "view",
-            itemId,
-            "--json",
-            "id",
-            ...this.adapter.buildRepoArg(),
+          ({ projectItemNodeId } = await this.adapter.addItemToProject(
+            nodeData.id,
+            this.adapter.productBacklogBoardNumber,
+          ));
+        } catch {
+          const owned = this.adapter.scopeOwner;
+          const repod = this.adapter.scopeRepository;
+          if (!owned || !repod) return { operation: "recordAnalysis", success: true, itemId };
+          const lookup =
+            `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
+          const lr = await this.adapter.runCommand("gh", [
+            "api",
+            "graphql",
+            "-f",
+            `query=${lookup}`,
+            "-f",
+            `owner=${owned}`,
+            "-f",
+            `repo=${repod}`,
+            "-F",
+            `num=${parseInt(itemId, 10)}`,
           ]);
-          if (nodeResult.code === 0) {
-            const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
-            let projectItemNodeId: string;
-            const { PbiEffortAnalysisData } = await import("./pbi-effort-analysis-data.ts");
-            try {
-              ({ projectItemNodeId } = await this.adapter.addItemToProject(
-                nodeData.id,
-                this.adapter.productBacklogBoardNumber,
-              ));
-            } catch {
-              const owned = this.adapter.scopeOwner;
-              const repod = this.adapter.scopeRepository;
-              if (!owned || !repod) return { operation: "recordAnalysis", success: true, itemId };
-              const lookup =
-                `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
-              const lr = await this.adapter.runCommand("gh", [
-                "api",
-                "graphql",
-                "-f",
-                `query=${lookup}`,
-                "-f",
-                `owner=${owned}`,
-                "-f",
-                `repo=${repod}`,
-                "-F",
-                `num=${parseInt(itemId, 10)}`,
-              ]);
-              if (lr.code !== 0) return { operation: "recordAnalysis", success: true, itemId };
-              const ld = JSON.parse(lr.stdout) as {
-                data?: {
-                  repository?: {
-                    issue?: {
-                      projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
-                    };
-                  };
+          if (lr.code !== 0) return { operation: "recordAnalysis", success: true, itemId };
+          const ld = JSON.parse(lr.stdout) as {
+            data?: {
+              repository?: {
+                issue?: {
+                  projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
                 };
               };
-              const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
-                n.project.number === this.adapter.productBacklogBoardNumber!
-              );
-              if (!matched) return { operation: "recordAnalysis", success: true, itemId };
-              projectItemNodeId = matched.id;
-            }
-            const text = await this.adapter.readTextFieldValue(
-              projectItemNodeId,
-              this.adapter.productBacklogBoardNumber,
-              "harness-efforts-analysis",
-            );
-            const data = PbiEffortAnalysisData.fromJson(text ?? "");
-            data.setAnalysisFields(
-              extract("Planning Review"),
-              extract("Execution Review"),
-              extract("Improvement Suggestions"),
-            );
-            await this.adapter.setTextFieldValue(
-              projectItemNodeId,
-              this.adapter.productBacklogBoardNumber,
-              "harness-efforts-analysis",
-              data.toJson(),
-            );
+            };
+          };
+          const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
+            n.project.number === this.adapter.productBacklogBoardNumber!
+          );
+          if (!matched) return { operation: "recordAnalysis", success: true, itemId };
+          projectItemNodeId = matched.id;
+        }
+        const parsed = JSON.parse(body) as Record<string, unknown>;
+        const writes: Array<{ field: string; value: string }> = [];
+        if (parsed.wp_effort_summary !== undefined) {
+          writes.push({
+            field: "harness-effort-summary",
+            value: JSON.stringify(parsed.wp_effort_summary),
+          });
+        }
+        for (
+          const [key, field] of Object.entries({
+            planning_variance_review: "harness-variance-review-planning",
+            execution_variance_review: "harness-variance-review-execution",
+            improvement_suggestions: "harness-improvement-suggestions",
+          } as Record<string, string>)
+        ) {
+          if (parsed[key] !== undefined) {
+            writes.push({ field, value: String(parsed[key]) });
           }
-        } catch { /* ok */ }
-      }
+        }
+        const boardNumber = this.adapter.productBacklogBoardNumber!;
+        await Promise.all(writes.map((w) =>
+          this.adapter.setTextFieldValue(
+            projectItemNodeId,
+            boardNumber,
+            w.field,
+            w.value,
+          )
+        ));
+      } catch { /* ok */ }
       return { operation: "recordAnalysis", success: true, itemId };
     });
 
