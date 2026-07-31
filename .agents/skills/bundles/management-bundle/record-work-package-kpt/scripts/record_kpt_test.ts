@@ -2,6 +2,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { wpId } from "../../../../../core/domain/types.ts";
 import type { KeepProblemTryAdvice } from "../../../../../core/domain/types.ts";
 import { workPackageUseCase } from "../../../../../core/domain/workpackage-usecase.ts";
+import { type RecordKptInput, validateInput } from "./record_kpt.ts";
 
 /**
  * @description KPT記録時に全フィールド（keep/problem/try/advise）を含むPlanが生成されること
@@ -60,10 +61,10 @@ Deno.test("record_kpt - should handle empty advise", () => {
 });
 
 /**
- * @description KPTデータがJSON形式でbodyに正しくシリアライズされること
- * @verify bodyをJSON.parseした結果が入力値と一致すること
+ * @description KPTデータがkptオブジェクトとしてPlan paramsに渡されること
+ * @verify params.kptが入力値と一致すること
  */
-Deno.test("record_kpt - should include body in plan params", () => {
+Deno.test("record_kpt - should include kpt object in plan params", () => {
   const identifier = wpId("Test WP", "node-id", "42");
   const kpt: KeepProblemTryAdvice = {
     keep: "Keep item",
@@ -72,11 +73,37 @@ Deno.test("record_kpt - should include body in plan params", () => {
     advise: "Advise item",
   };
   const plan = workPackageUseCase.recordKpt(identifier, kpt);
-  const body = plan.steps[1].params.body;
-  assertEquals(typeof body, "string");
-  const parsed = JSON.parse(body as string);
-  assertEquals(parsed.keep, "Keep item");
-  assertEquals(parsed.problem, "Problem item");
-  assertEquals(parsed.try, "Try item");
-  assertEquals(parsed.advise, "Advise item");
+  const params = plan.steps[1].params;
+  assertEquals(params.itemId, "42");
+  assertEquals(params.kpt, kpt);
+});
+
+/**
+ * @description 各項目がProjects V2のTEXT上限1,024バイト以内であること
+ * @verify 1,024バイト（日本語約340文字）は許可され、超過はINVALID_INPUTエラーとなること
+ */
+Deno.test("record_kpt - should enforce 1024-byte limit per field", () => {
+  const base: RecordKptInput = {
+    identifier: { title: "T", id: "1", code: "1" },
+    keep: "K",
+    problem: "P",
+    try: "T",
+    advise: "",
+  };
+  validateInput(base);
+  const atLimit: RecordKptInput = {
+    ...base,
+    keep: "あ".repeat(341),
+  };
+  validateInput(atLimit);
+  const overLimit: RecordKptInput = {
+    ...base,
+    keep: "あ".repeat(342),
+  };
+  assertThrows(() => validateInput(overLimit), Error, "INVALID_INPUT");
+  const adviseOverLimit: RecordKptInput = {
+    ...base,
+    advise: "あ".repeat(342),
+  };
+  assertThrows(() => validateInput(adviseOverLimit), Error, "INVALID_INPUT");
 });

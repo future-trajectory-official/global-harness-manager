@@ -444,7 +444,7 @@ export const workPackageUseCase: WorkPackageUseCase & {
         operation: "recordKpt",
         params: {
           itemId: identifier.code,
-          body: JSON.stringify(kpt),
+          kpt,
         },
       }],
     };

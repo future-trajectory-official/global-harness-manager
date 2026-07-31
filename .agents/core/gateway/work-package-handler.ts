@@ -302,73 +302,116 @@ export class WorkPackageHandler {
           error: "itemId is required",
         });
       }
-      const body = String(params.body ?? "");
-      if (body && this.adapter.sprintBoardNumber) {
-        try {
-          const nodeResult = await this.adapter.runCommand("gh", [
-            "issue",
-            "view",
+      const kpt = params.kpt as
+        | { keep?: string; problem?: string; try?: string; advise?: string }
+        | undefined;
+      const fields: Array<[string, string]> = [];
+      if (kpt) {
+        if (kpt.keep) fields.push(["harness-kpt-keep", kpt.keep]);
+        if (kpt.problem) fields.push(["harness-kpt-problem", kpt.problem]);
+        if (kpt.try) fields.push(["harness-kpt-try", kpt.try]);
+        if (kpt.advise) fields.push(["harness-kpt-advise", kpt.advise]);
+      }
+      if (fields.length === 0 || !this.adapter.sprintBoardNumber) {
+        return Promise.resolve({ operation: "recordKpt", success: true, itemId });
+      }
+      const nodeResult = await this.adapter.runCommand("gh", [
+        "issue",
+        "view",
+        itemId,
+        "--json",
+        "id",
+        ...this.adapter.buildRepoArg(),
+      ]);
+      if (nodeResult.code !== 0) {
+        return Promise.resolve({
+          operation: "recordKpt",
+          success: false,
+          itemId,
+          error: nodeResult.stderr,
+        });
+      }
+      const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
+      let projectItemNodeId: string;
+      try {
+        ({ projectItemNodeId } = await this.adapter.addItemToProject(
+          nodeData.id,
+          this.adapter.sprintBoardNumber,
+        ));
+      } catch {
+        const owned = this.adapter.scopeOwner;
+        const repod = this.adapter.scopeRepository;
+        if (!owned || !repod) {
+          return Promise.resolve({
+            operation: "recordKpt",
+            success: false,
             itemId,
-            "--json",
-            "id",
-            ...this.adapter.buildRepoArg(),
-          ]);
-          if (nodeResult.code === 0) {
-            const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
-            let projectItemNodeId: string;
-            try {
-              ({ projectItemNodeId } = await this.adapter.addItemToProject(
-                nodeData.id,
-                this.adapter.sprintBoardNumber,
-              ));
-            } catch {
-              const owned = this.adapter.scopeOwner;
-              const repod = this.adapter.scopeRepository;
-              if (!owned || !repod) {
-                return Promise.resolve({ operation: "recordKpt", success: true, itemId });
-              }
-              const lookup =
-                `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
-              const lr = await this.adapter.runCommand("gh", [
-                "api",
-                "graphql",
-                "-f",
-                `query=${lookup}`,
-                "-f",
-                `owner=${owned}`,
-                "-f",
-                `repo=${repod}`,
-                "-F",
-                `num=${parseInt(itemId, 10)}`,
-              ]);
-              if (lr.code !== 0) {
-                return Promise.resolve({ operation: "recordKpt", success: true, itemId });
-              }
-              const ld = JSON.parse(lr.stdout) as {
-                data?: {
-                  repository?: {
-                    issue?: {
-                      projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
-                    };
-                  };
-                };
+            error: "scope owner/repository is not resolved",
+          });
+        }
+        const lookup =
+          `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
+        const lr = await this.adapter.runCommand("gh", [
+          "api",
+          "graphql",
+          "-f",
+          `query=${lookup}`,
+          "-f",
+          `owner=${owned}`,
+          "-f",
+          `repo=${repod}`,
+          "-F",
+          `num=${parseInt(itemId, 10)}`,
+        ]);
+        if (lr.code !== 0) {
+          return Promise.resolve({
+            operation: "recordKpt",
+            success: false,
+            itemId,
+            error: lr.stderr,
+          });
+        }
+        const ld = JSON.parse(lr.stdout) as {
+          data?: {
+            repository?: {
+              issue?: {
+                projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
               };
-              const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
-                n.project.number === this.adapter.sprintBoardNumber!
-              );
-              if (!matched) {
-                return Promise.resolve({ operation: "recordKpt", success: true, itemId });
-              }
-              projectItemNodeId = matched.id;
-            }
-            await this.adapter.setTextFieldValue(
-              projectItemNodeId,
-              this.adapter.sprintBoardNumber,
-              "harness-keep-problem-try",
-              body,
-            );
-          }
-        } catch { /* ok */ }
+            };
+          };
+        };
+        const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
+          n.project.number === this.adapter.sprintBoardNumber!
+        );
+        if (!matched) {
+          return Promise.resolve({
+            operation: "recordKpt",
+            success: false,
+            itemId,
+            error: `WP #${itemId} is not on Sprint Board #${this.adapter.sprintBoardNumber}`,
+          });
+        }
+        projectItemNodeId = matched.id;
+      }
+      const errors: string[] = [];
+      for (const [fieldName, value] of fields) {
+        const result = await this.adapter.setTextFieldValue(
+          projectItemNodeId,
+          this.adapter.sprintBoardNumber,
+          fieldName,
+          value,
+        );
+        if (!result.success) {
+          errors.push(`${fieldName}: ${result.error ?? "unknown error"}`);
+        }
+      }
+      if (errors.length > 0) {
+        return Promise.resolve({
+          operation: "recordKpt",
+          success: false,
+          itemId,
+          error: errors.join("; "),
+        });
       }
       return Promise.resolve({ operation: "recordKpt", success: true, itemId });
     });

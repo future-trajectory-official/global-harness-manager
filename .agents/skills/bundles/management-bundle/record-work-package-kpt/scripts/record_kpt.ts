@@ -5,7 +5,7 @@ import type { KeepProblemTryAdvice } from "../../../../../core/domain/types.ts";
 import { workPackageUseCase } from "../../../../../core/domain/workpackage-usecase.ts";
 import { runCli } from "../../../../../core/shared/cli/runner.ts";
 
-interface RecordKptInput {
+export interface RecordKptInput {
   identifier: { title: string; id: string; code?: string };
   keep: string;
   problem: string;
@@ -13,12 +13,24 @@ interface RecordKptInput {
   advise?: string;
 }
 
-function validateInput(input: RecordKptInput): void {
+export function validateInput(input: RecordKptInput): void {
   if (!input.identifier) throw new Error("INVALID_INPUT: identifier is required");
   if (!input.identifier.id) throw new Error("INVALID_INPUT: identifier.id must not be empty");
   if (!input.keep) throw new Error("INVALID_INPUT: keep must not be empty");
   if (!input.problem) throw new Error("INVALID_INPUT: problem must not be empty");
   if (!input.try) throw new Error("INVALID_INPUT: try must not be empty");
+  const MAX_BYTES = 1024;
+  const over = (["keep", "problem", "try", "advise"] as const).filter((key) => {
+    const value = input[key] ?? "";
+    return new TextEncoder().encode(value).length > MAX_BYTES;
+  });
+  if (over.length > 0) {
+    throw new Error(
+      `INVALID_INPUT: ${
+        over.join(", ")
+      } exceeds the Projects V2 TEXT limit of ${MAX_BYTES} bytes (UTF-8 Japanese is about 340 chars)`,
+    );
+  }
 }
 
 if (import.meta.main) {

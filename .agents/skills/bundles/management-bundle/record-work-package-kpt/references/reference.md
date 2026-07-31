@@ -18,6 +18,12 @@ POと合意したKPT内容をWPに記録する。
 | `try`        | `string`          | 必須 | 次回試すこと               |
 | `advise`     | `string`          | 任意 | AIからPOへのフィードバック |
 
+> [!IMPORTANT] **各項目は1,024バイト以内に収めること。** Projects
+> V2のTEXTフィールド上限は1,024バイト（文字数ではない）。
+> UTF-8では日本語は1文字=3バイトのため、**日本語は約340文字が上限**となる。 超過するとGitHub側で
+> `GraphQL: Column value must be a valid value for text column` エラーとなり、記録が失敗する。
+> KPT生成時に各項目を必ず要約し、この上限を守ること。
+
 ### 実行例
 
 ```bash
