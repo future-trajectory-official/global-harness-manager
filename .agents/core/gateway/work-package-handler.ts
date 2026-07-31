@@ -1,6 +1,5 @@
 import type { EntityType, StepOperation } from "../domain/types.ts";
 import type { OperationHandler, PlanGatewayAdapter } from "./plan-gateway-adapter.ts";
-import { EffortAnalysisData } from "./effort-analysis-data.ts";
 
 export class WorkPackageHandler {
   constructor(private readonly adapter: PlanGatewayAdapter) {}
@@ -92,6 +91,34 @@ export class WorkPackageHandler {
     });
 
     handlers.set("archive", async (_op, params) => {
+      const itemId = String(params.itemId ?? "");
+      if (!itemId) {
+        return Promise.resolve({
+          operation: "archive",
+          success: false,
+          error: "itemId is required",
+        });
+      }
+      const viewResult = await this.adapter.runCommand("gh", [
+        "issue",
+        "view",
+        itemId,
+        "--json",
+        "state,closed",
+        ...this.adapter.buildRepoArg(),
+      ]);
+      if (viewResult.code === 0) {
+        try {
+          const viewData = JSON.parse(viewResult.stdout) as { state?: string; closed?: boolean };
+          if (viewData.state === "CLOSED" || viewData.closed) {
+            return Promise.resolve({
+              operation: "archive",
+              success: false,
+              error: `Issue #${itemId} is already closed`,
+            });
+          }
+        } catch { /* ignore */ }
+      }
       return await this.adapter.handleCloseItem(params);
     });
 
@@ -168,89 +195,104 @@ export class WorkPackageHandler {
           error: "itemId is required",
         });
       }
-      if (params.body && this.adapter.sprintBoardNumber) {
+      const body = String(params.body ?? "");
+      if (!body) {
+        return Promise.resolve({
+          operation: "recordAnalysis",
+          success: false,
+          error: "body is required",
+        });
+      }
+      const { PbiEffortAnalysisData } = await import("./pbi-effort-analysis-data.ts");
+      const validation = PbiEffortAnalysisData.validate(body);
+      if (!validation.valid) {
+        return Promise.resolve({
+          operation: "recordAnalysis",
+          success: false,
+          error: validation.error,
+        });
+      }
+      if (!this.adapter.sprintBoardNumber) {
+        return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
+      }
+      try {
+        const nodeResult = await this.adapter.runCommand("gh", [
+          "issue",
+          "view",
+          itemId,
+          "--json",
+          "id",
+          ...this.adapter.buildRepoArg(),
+        ]);
+        if (nodeResult.code !== 0) {
+          return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
+        }
+        const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
+        let projectItemNodeId: string;
         try {
-          const body = String(params.body);
-          const extract = (heading: string): string | undefined => {
-            const re = new RegExp(`### ${heading}\\n\\n([\\s\\S]*?)(?:\\n###|\\n$|$)`);
-            const m = body.match(re);
-            return m ? m[1].trim() : undefined;
-          };
-          const nodeResult = await this.adapter.runCommand("gh", [
-            "issue",
-            "view",
-            itemId,
-            "--json",
-            "id",
-            ...this.adapter.buildRepoArg(),
+          ({ projectItemNodeId } = await this.adapter.addItemToProject(
+            nodeData.id,
+            this.adapter.sprintBoardNumber,
+          ));
+        } catch {
+          const lookupQuery =
+            `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
+          const lr = await this.adapter.runCommand("gh", [
+            "api",
+            "graphql",
+            "-f",
+            `query=${lookupQuery}`,
+            "-f",
+            `owner=${this.adapter.scopeOwner}`,
+            "-f",
+            `repo=${this.adapter.scopeRepository}`,
+            "-F",
+            `num=${parseInt(itemId, 10)}`,
           ]);
-          if (nodeResult.code === 0) {
-            const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
-            let projectItemNodeId: string;
-            try {
-              ({ projectItemNodeId } = await this.adapter.addItemToProject(
-                nodeData.id,
-                this.adapter.sprintBoardNumber,
-              ));
-            } catch {
-              const lookupQuery =
-                `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
-              const lr = await this.adapter.runCommand("gh", [
-                "api",
-                "graphql",
-                "-f",
-                `query=${lookupQuery}`,
-                "-f",
-                `owner=${this.adapter.scopeOwner}`,
-                "-f",
-                `repo=${this.adapter.scopeRepository}`,
-                "-F",
-                `num=${parseInt(itemId, 10)}`,
-              ]);
-              if (lr.code === 0) {
-                const ld = JSON.parse(lr.stdout) as {
-                  data?: {
-                    repository?: {
-                      issue?: {
-                        projectItems?: {
-                          nodes: Array<{ id: string; project: { number: number } }>;
-                        };
-                      };
+          if (lr.code === 0) {
+            const ld = JSON.parse(lr.stdout) as {
+              data?: {
+                repository?: {
+                  issue?: {
+                    projectItems?: {
+                      nodes: Array<{ id: string; project: { number: number } }>;
                     };
                   };
                 };
-                const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
-                  n.project.number === this.adapter.sprintBoardNumber!
-                );
-                if (!matched) {
-                  return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
-                }
-                projectItemNodeId = matched.id;
-              } else return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
-            }
-            const text = await this.adapter.readTextFieldValue(
-              projectItemNodeId,
-              this.adapter.sprintBoardNumber,
-              "harness-efforts-analysis",
+              };
+            };
+            const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
+              n.project.number === this.adapter.sprintBoardNumber!
             );
-            const data = EffortAnalysisData.fromJson(text ?? "");
-            const planning = extract("Planning Review");
-            const execution = extract("Execution Review");
-            const suggestions = extract("Improvement Suggestions");
-            if (planning || execution || suggestions) {
-              if (planning) data.mergeAnalysis({ planningReview: planning });
-              if (execution) data.mergeAnalysis({ executionReview: execution });
-              if (suggestions) data.mergeAnalysis({ improvementSuggestions: suggestions });
-              await this.adapter.setTextFieldValue(
-                projectItemNodeId,
-                this.adapter.sprintBoardNumber,
-                "harness-efforts-analysis",
-                data.toJson(),
-              );
+            if (!matched) {
+              return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
             }
+            projectItemNodeId = matched.id;
+          } else return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
+        }
+        const parsed = JSON.parse(body) as Record<string, unknown>;
+        const writes: Array<{ field: string; value: string }> = [];
+        for (
+          const [key, field] of Object.entries({
+            planning_variance_review: "harness-variance-review-planning",
+            execution_variance_review: "harness-variance-review-execution",
+            improvement_suggestions: "harness-improvement-suggestions",
+          } as Record<string, string>)
+        ) {
+          if (parsed[key] !== undefined) {
+            writes.push({ field, value: String(parsed[key]) });
           }
-        } catch { /* ok */ }
-      }
+        }
+        const boardNumber = this.adapter.sprintBoardNumber!;
+        await Promise.all(writes.map((w) =>
+          this.adapter.setTextFieldValue(
+            projectItemNodeId,
+            boardNumber,
+            w.field,
+            w.value,
+          )
+        ));
+      } catch { /* ok */ }
       return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
     });
 
@@ -468,7 +510,7 @@ export class WorkPackageHandler {
   private async setEffortField(
     itemId: string,
     boardNumber: number,
-    key: keyof import("./effort-analysis-data.ts").WpEffortSummary,
+    key: string,
     value: unknown,
   ): Promise<void> {
     const nodeResult = await this.adapter.runCommand("gh", [
@@ -521,14 +563,18 @@ export class WorkPackageHandler {
     const text = await this.adapter.readTextFieldValue(
       projectItemNodeId,
       boardNumber,
-      "harness-efforts-analysis",
+      "harness-effort-summary",
     );
-    const data = EffortAnalysisData.fromJson(text ?? "").mergeEffort(key, Number(value));
+    let data: Record<string, number> = {};
+    try {
+      data = JSON.parse(text ?? "{}") as Record<string, number>;
+    } catch { /* use empty */ }
+    data[key] = Number(value);
     await this.adapter.setTextFieldValue(
       projectItemNodeId,
       boardNumber,
-      "harness-efforts-analysis",
-      data.toJson(),
+      "harness-effort-summary",
+      JSON.stringify(data),
     );
   }
 }
