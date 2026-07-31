@@ -48,21 +48,11 @@ function formatEditComment(operation: string, detail: string): string {
 }
 
 function formatAnalysisBody(analysis: ProcessAnalysis): string {
-  const lines: string[] = [];
-  lines.push("## Process Analysis");
-  lines.push("");
-  lines.push("### Planning Review");
-  lines.push("");
-  lines.push(analysis.planningReview);
-  lines.push("");
-  lines.push("### Execution Review");
-  lines.push("");
-  lines.push(analysis.executionReview);
-  lines.push("");
-  lines.push("### Improvement Suggestions");
-  lines.push("");
-  lines.push(analysis.improvementSuggestions);
-  return lines.join("\n");
+  return JSON.stringify({
+    planning_variance_review: analysis.planningReview,
+    execution_variance_review: analysis.executionReview,
+    improvement_suggestions: analysis.improvementSuggestions,
+  });
 }
 
 function formatSessionMetricsBody(metrics: SessionMetrics): string {
