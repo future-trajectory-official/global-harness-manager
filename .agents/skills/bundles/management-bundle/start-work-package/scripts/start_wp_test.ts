@@ -9,7 +9,7 @@ import { workPackageUseCase } from "../../../../../core/domain/workpackage-useca
 Deno.test("start_wp - should generate plan", () => {
   const identifier = wpId("Test WP", "node-id", "42");
   const plan = workPackageUseCase.start(identifier);
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.summary, "Start WP: Test WP");
   assertEquals(plan.steps[1].operation, "start");

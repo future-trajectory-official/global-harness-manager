@@ -2033,6 +2033,143 @@ Deno.test("WorkPackage recordSessionMetrics - should write to board field for se
   assertEquals(result.stepResults[0].success, true);
 });
 
+// ======== KPT Board Integration Tests ========
+
+function makeKptBoardMock(failFieldIndex?: number) {
+  let idx = 0;
+  const calls: { cmd: string; args: string[] }[] = [];
+  const responses: { code: number; stdout: string; stderr: string }[] = [
+    // 1: gh issue view <id> --json id
+    { code: 0, stdout: '{"id":"NODE_123"}', stderr: "" },
+    // 2: gh api graphql getProjectIdQuery
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_123"}}}}', stderr: "" },
+    // 3: gh api graphql addItemMutation
+    { code: 0, stdout: '{"data":{"addProjectV2ItemById":{"item":{"id":"ITEM_123"}}}}', stderr: "" },
+  ];
+  // 4 フィールド分 × (resolveFieldId, resolveProjectNodeId, item-edit)
+  for (let i = 0; i < 4; i++) {
+    responses.push(
+      {
+        code: 0,
+        stdout: '{"data":{"organization":{"projectV2":{"field":{"id":"FIELD_123"}}}}}',
+        stderr: "",
+      },
+      { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_123"}}}}', stderr: "" },
+      failFieldIndex === i
+        ? { code: 1, stdout: "", stderr: `failed to set field ${i}` }
+        : { code: 0, stdout: "", stderr: "" },
+    );
+  }
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const r = responses[idx];
+    idx++;
+    return Promise.resolve(r ?? { code: 0, stdout: "", stderr: "" });
+  };
+  return { runner, calls };
+}
+
+function makeKptBoardMockAdapter(failFieldIndex?: number): PlanGatewayAdapter {
+  const adapter = new PlanGatewayAdapter(makeKptBoardMock(failFieldIndex).runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99);
+  return adapter;
+}
+
+const SAMPLE_KPT = {
+  keep: "#### Keep\n\n- Good communication",
+  problem: "#### Problem\n\n- Scope was unclear",
+  try: "#### Try\n\n- Define scope earlier",
+  advise: "#### Advise\n\n- Use checklists",
+};
+
+Deno.test("WorkPackage recordKpt - should write to 4 board fields", async () => {
+  const mock = makeKptBoardMock();
+  const adapter = new PlanGatewayAdapter(mock.runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99);
+  const result = await adapter.execute({
+    summary: "record kpt",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordKpt",
+      params: { itemId: "51", kpt: SAMPLE_KPT },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const editCalls = mock.calls.filter((c) => c.args.includes("item-edit"));
+  assertEquals(editCalls.length, 4);
+  const fieldCalls = mock.calls.filter((c) => c.args.some((a) => a.includes("fieldName=")));
+  assertEquals(fieldCalls.length, 4);
+  const joined = fieldCalls.map((c) => c.args.join(" ")).join("\n");
+  assertStringIncludes(joined, "harness-kpt-keep");
+  assertStringIncludes(joined, "harness-kpt-problem");
+  assertStringIncludes(joined, "harness-kpt-try");
+  assertStringIncludes(joined, "harness-kpt-advise");
+  const editJoined = editCalls.map((c) => c.args.join(" ")).join("\n");
+  assertStringIncludes(editJoined, "Good communication");
+  assertStringIncludes(editJoined, "Scope was unclear");
+  assertStringIncludes(editJoined, "Define scope earlier");
+  assertStringIncludes(editJoined, "Use checklists");
+});
+
+Deno.test("WorkPackage recordKpt - should report failure when a field write fails", async () => {
+  const adapter = makeKptBoardMockAdapter(2);
+  const result = await adapter.execute({
+    summary: "record kpt",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordKpt",
+      params: { itemId: "51", kpt: SAMPLE_KPT },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "failed to set field 2");
+});
+
+Deno.test("WorkPackage recordKpt - should fail without itemId", async () => {
+  const adapter = makeKptBoardMockAdapter();
+  const result = await adapter.execute({
+    summary: "record kpt",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordKpt",
+      params: { kpt: SAMPLE_KPT },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+Deno.test("WorkPackage recordKpt - should succeed with empty advise (no write for empty field)", async () => {
+  const mock = makeKptBoardMock();
+  const adapter = new PlanGatewayAdapter(mock.runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99);
+  const result = await adapter.execute({
+    summary: "record kpt",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordKpt",
+      params: { itemId: "51", kpt: { keep: "K", problem: "P", try: "T", advise: "" } },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const editCalls = mock.calls.filter((c) => c.args.includes("item-edit"));
+  assertEquals(editCalls.length, 3);
+  const fieldCalls = mock.calls.filter((c) => c.args.some((a) => a.includes("fieldName=")));
+  assertEquals(fieldCalls.length, 3);
+  const joined = fieldCalls.map((c) => c.args.join(" ")).join("\n");
+  assertStringIncludes(joined, "harness-kpt-keep");
+  assertStringIncludes(joined, "harness-kpt-problem");
+  assertStringIncludes(joined, "harness-kpt-try");
+  assertEquals(joined.includes("harness-kpt-advise"), false);
+});
+
 Deno.test("WorkPackage view - should return issue details", async () => {
   const expectedOutput = JSON.stringify({
     number: 51,

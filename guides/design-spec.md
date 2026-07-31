@@ -688,20 +688,23 @@ GoalはMilestoneで実装するため本節の対象外です（属性は5.1のM
 
 #### WP
 
-| 属性                 | Issue         | Projects V2                                             |
-| -------------------- | ------------- | ------------------------------------------------------- |
-| タイトル             | Title         | Title                                                   |
-| 本文                 | Body          | —                                                       |
-| 種別（`type:WP`）    | Label         | Labels                                                  |
-| スプリント           | Milestone     | Milestone                                               |
-| 親PBI                | Parent        | Parent issue                                            |
-| 変更内容             | Pull Requests | Pull Request                                            |
-| 備忘録               | Comment       | -                                                       |
-| 予実分析             | —             | **V2:Custom**: `harness-efforts-analysis` (Text / JSON) |
-| セッションメトリクス | -             | **V2:Custom**: `harness-metrics` (Text / JSON)          |
-| セッションKPT        | -             | **V2:Custom**: `harness-keep-problem-try` (Text / JSON) |
-| 順序                 | —             | **V2:Custom**: `harness-sequence` (Number / decimal)    |
-| 状態                 | —             | V2:Status (NULL/Todo/InProgress/Done)                   |
+| 属性                     | Issue         | Projects V2                                             |
+| ------------------------ | ------------- | ------------------------------------------------------- |
+| タイトル                 | Title         | Title                                                   |
+| 本文                     | Body          | —                                                       |
+| 種別（`type:WP`）        | Label         | Labels                                                  |
+| スプリント               | Milestone     | Milestone                                               |
+| 親PBI                    | Parent        | Parent issue                                            |
+| 変更内容                 | Pull Requests | Pull Request                                            |
+| 備忘録                   | Comment       | -                                                       |
+| 予実分析                 | —             | **V2:Custom**: `harness-efforts-analysis` (Text / JSON) |
+| セッションメトリクス     | -             | **V2:Custom**: `harness-metrics` (Text / JSON)          |
+| セッションKPT（Keep）    | -             | **V2:Custom**: `harness-kpt-keep` (Text)                |
+| セッションKPT（Problem） | -             | **V2:Custom**: `harness-kpt-problem` (Text)             |
+| セッションKPT（Try）     | -             | **V2:Custom**: `harness-kpt-try` (Text)                 |
+| セッションKPT（Advise）  | -             | **V2:Custom**: `harness-kpt-advise` (Text)              |
+| 順序                     | —             | **V2:Custom**: `harness-sequence` (Number / decimal)    |
+| 状態                     | —             | V2:Status (NULL/Todo/InProgress/Done)                   |
 
 <details>
 <summary>Body推奨構造</summary>
@@ -767,14 +770,16 @@ GoalはMilestoneで実装するため本節の対象外です（属性は5.1のM
 <details>
 <summary>セッションKPT推奨構造</summary>
 
-```json
-{
-  "keep": "<Keep文章>",
-  "problem": "<Problem文章>",
-  "try": "<Try文章>",
-  "advise": "<AIからユーザーへのアドバイス>"
-}
-```
+KPTは4つのTEXTフィールド（`harness-kpt-keep` / `harness-kpt-problem` / `harness-kpt-try` /
+`harness-kpt-advise`）に分割して保存する。各フィールドの上限は 1,024文字（Projects
+V2のTEXTフィールド制限）であり、4分割により全文保存が可能。
+
+| フィールド名          | 内容                                 |
+| --------------------- | ------------------------------------ |
+| `harness-kpt-keep`    | Keep文章（うまくいったこと）         |
+| `harness-kpt-problem` | Problem文章（課題・問題点）          |
+| `harness-kpt-try`     | Try文章（次回試すこと）              |
+| `harness-kpt-advise`  | AIからユーザーへのアドバイス（任意） |
 
 </details>
 
@@ -968,7 +973,10 @@ GoalはMilestoneで実装するため本節の対象外です（属性は5.1のM
 | -------------------------- | ---------------- | --------------------------------------------- |
 | `harness-efforts-analysis` | Text / JSON      | WPの予実分析（単一WPのeffort値を含むJSON）    |
 | `harness-metrics`          | Text / JSON      | セッションメトリクス（AI協働品質4指標のJSON） |
-| `harness-keep-problem-try` | Text / JSON      | セッションKPT（JSON文字列）                   |
+| `harness-kpt-keep`         | Text             | セッションKPTのKeep（上限1,024文字）          |
+| `harness-kpt-problem`      | Text             | セッションKPTのProblem（上限1,024文字）       |
+| `harness-kpt-try`          | Text             | セッションKPTのTry（上限1,024文字）           |
+| `harness-kpt-advise`       | Text             | セッションKPTのAdvise（上限1,024文字、任意）  |
 | `harness-sequence`         | Number (decimal) | WPの実行順序（小数可）                        |
 
 #### Review Board
@@ -977,10 +985,10 @@ GoalはMilestoneで実装するため本節の対象外です（属性は5.1のM
 
 #### Retrospective Board
 
-| フィールド名               | 型          | 説明                                                                   |
-| -------------------------- | ----------- | ---------------------------------------------------------------------- |
-| `harness-keep-problem-try` | Text / JSON | スプリントKPT（JSON文字列、WPのセッションKPTとは別フィールド）         |
-| `harness-metrics`          | Text / JSON | スプリントメトリクス（metrics-guide.mdの4指標 + VelocityをJSONで格納） |
+| フィールド名               | 型          | 説明                                                                              |
+| -------------------------- | ----------- | --------------------------------------------------------------------------------- |
+| `harness-keep-problem-try` | Text / JSON | スプリントKPT（JSON文字列、WPのセッションKPT（`harness-kpt-*`）とは別フィールド） |
+| `harness-metrics`          | Text / JSON | スプリントメトリクス（metrics-guide.mdの4指標 + VelocityをJSONで格納）            |
 
 ### 5.4. 表現の分離と主従関係
 
@@ -993,10 +1001,10 @@ GoalはMilestoneで実装するため本節の対象外です（属性は5.1のM
 - **従**: Issue Body / Comments の Markdown —
   GitHubを直接確認したい場合に備えた補助的な人間可読表現。完全性は保証せず、あくまで参照用。
 
-| 情報     | AI向け表現（主）                       | 人間向け表現（従）             | 信頼できる情報源  |
-| -------- | -------------------------------------- | ------------------------------ | ----------------- |
-| タイトル | Projects V2 Title                      | Issue Title                    | Issue（自動同期） |
-| KPT      | Projects V2 `harness-keep-problem-try` | Issue Body（ベストエフォート） | Projects V2       |
+| 情報     | AI向け表現（主）                                  | 人間向け表現（従）             | 信頼できる情報源  |
+| -------- | ------------------------------------------------- | ------------------------------ | ----------------- |
+| タイトル | Projects V2 Title                                 | Issue Title                    | Issue（自動同期） |
+| KPT      | Projects V2 `harness-kpt-keep/problem/try/advise` | Issue Body（ベストエフォート） | Projects V2       |
 
 #### 同期ルール
 

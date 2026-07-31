@@ -9,7 +9,7 @@ import { productBacklogItemUseCase } from "../../../../../core/domain/product-ba
 Deno.test("complete_pbi - should generate plan", () => {
   const identifier = pbiId("Test PBI", "node-id", "42");
   const plan = productBacklogItemUseCase.complete(identifier);
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.summary, "Complete PBI: Test PBI");
   assertEquals(plan.steps[1].operation, "complete");

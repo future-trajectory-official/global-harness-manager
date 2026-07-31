@@ -247,16 +247,15 @@ Deno.test("revise should throw for empty reason", () => {
 
 // ===== start =====
 
-Deno.test("start should return Plan with start stage=inProgress and update", () => {
+Deno.test("start should return Plan with start stage=inProgress", () => {
   const plan = workPackageUseCase.start(makeWpId());
   assertEquals(plan.summary, "Start WP: Implement Login");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "start");
   assertEquals(plan.steps[1].params.stage, "inProgress");
   assertEquals(plan.steps[1].params.state, "open");
-  assertEquals(plan.steps[2].operation, "update");
 });
 
 Deno.test("start should throw for undefined id", () => {
@@ -280,13 +279,12 @@ Deno.test("start should throw for empty title", () => {
 Deno.test("complete should return Plan with complete stage=done and update (no parent promotion)", () => {
   const plan = workPackageUseCase.complete(makeWpId());
   assertEquals(plan.summary, "Complete WP: Implement Login");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "complete");
   assertEquals(plan.steps[1].params.stage, "done");
   assertEquals(plan.steps[1].params.state, "open");
-  assertEquals(plan.steps[2].operation, "update");
 });
 
 Deno.test("complete should throw for undefined id", () => {
@@ -307,16 +305,15 @@ Deno.test("complete should throw for empty title", () => {
 
 // ===== archive =====
 
-Deno.test("archive should return Plan with archive and update", () => {
+Deno.test("archive should return Plan with archive", () => {
   const plan = workPackageUseCase.archive(makeWpId());
   assertEquals(plan.summary, "Archive WP: Implement Login");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "archive");
   assertEquals(plan.steps[1].params.stage, "done");
   assertEquals(plan.steps[1].params.state, "closed");
-  assertEquals(plan.steps[2].operation, "update");
 });
 
 Deno.test("archive should throw for undefined id", () => {

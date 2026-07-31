@@ -1362,7 +1362,11 @@ export class PlanGatewayAdapter implements PlanGateway {
       };
       const matched = data.items.filter((item) => {
         if (!item.content) return false;
-        if ((item.status ?? null) !== status) return false;
+        if (status === "__none__") {
+          if (item.status != null) return false;
+        } else {
+          if ((item.status ?? null) !== status) return false;
+        }
         if (sprintIssueNumbers && !sprintIssueNumbers.has(item.content!.number)) return false;
         return true;
       });

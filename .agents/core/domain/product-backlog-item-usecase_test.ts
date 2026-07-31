@@ -243,15 +243,14 @@ Deno.test("revise should throw for empty reason", () => {
  * @description PBIのスプリントコミット時に正しい Plan（commit + update）が生成されること
  * @verify Plan.summary、steps の長さ、各 step の operation/params が期待値と一致すること
  */
-Deno.test("commit should return Plan with commit + update", () => {
+Deno.test("commit should return Plan with commit", () => {
   const plan = productBacklogItemUseCase.commit(makePbiId(), makeSprintId());
   assertEquals(plan.summary, "Commit PBI User Authentication to Sprint 15");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "commit");
   assertEquals(plan.steps[1].params.sprint, "Sprint 15");
-  assertEquals(plan.steps[2].operation, "update");
 });
 
 /**
@@ -274,14 +273,13 @@ Deno.test("commit should throw for undefined id", () => {
  * @description PBIの開始時に正しい Plan（start + update）が生成されること
  * @verify Plan.summary、steps の長さ、各 step の operation が期待値と一致すること
  */
-Deno.test("start should return Plan with start + update", () => {
+Deno.test("start should return Plan with start", () => {
   const plan = productBacklogItemUseCase.start(makePbiId());
   assertEquals(plan.summary, "Start PBI: User Authentication");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "start");
-  assertEquals(plan.steps[2].operation, "update");
 });
 
 /**
@@ -307,11 +305,10 @@ Deno.test("start should throw for undefined id", () => {
 Deno.test("complete should return Plan with complete + update", () => {
   const plan = productBacklogItemUseCase.complete(makePbiId());
   assertEquals(plan.summary, "Complete PBI: User Authentication");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "complete");
-  assertEquals(plan.steps[2].operation, "update");
 });
 
 // ===== archive =====
@@ -321,14 +318,13 @@ Deno.test("complete should return Plan with complete + update", () => {
  * @description PBIのアーカイブ時に正しい Plan（archive + update）が生成されること
  * @verify Plan.summary、steps の長さ、各 step の operation が期待値と一致すること
  */
-Deno.test("archive should return Plan with archive + update", () => {
+Deno.test("archive should return Plan with archive", () => {
   const plan = productBacklogItemUseCase.archive(makePbiId());
   assertEquals(plan.summary, "Archive PBI: User Authentication");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "archive");
-  assertEquals(plan.steps[2].operation, "update");
 });
 
 // ===== defineAcceptanceCriteria =====

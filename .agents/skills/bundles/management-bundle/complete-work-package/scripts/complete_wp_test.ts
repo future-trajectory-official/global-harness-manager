@@ -9,7 +9,7 @@ import { workPackageUseCase } from "../../../../../core/domain/workpackage-useca
 Deno.test("complete_wp - should generate plan", () => {
   const identifier = wpId("Test WP", "node-id", "42");
   const plan = workPackageUseCase.complete(identifier);
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.summary, "Complete WP: Test WP");
   assertEquals(plan.steps[1].operation, "complete");
@@ -36,6 +36,6 @@ Deno.test("complete_wp - should throw for missing identifier id", () => {
 Deno.test("complete_wp - should include itemId in params", () => {
   const identifier = wpId("Test WP", "node-id", "42");
   const plan = workPackageUseCase.complete(identifier);
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[1].params.itemId, "42");
 });

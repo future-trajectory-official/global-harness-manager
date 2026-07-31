@@ -452,7 +452,8 @@ Domain層が `SprintIdentifier.number` を "Sprint N"
 | 労力の計画前見積をする         | `estimateInitialEffort`          | `WorkPackageIdentifier`, `EffortRecord`                                         | `Plan` |
 | 労力の計画後見積をする         | `estimatePlannedEffort`          | `WorkPackageIdentifier`, `EffortRecord`                                         | `Plan` |
 | 労力の完了時実績を記録する     | `recordActualEffort`             | `WorkPackageIdentifier`, `EffortRecord`                                         | `Plan` |
-| 分析記録する                   | `recordAnalysis`                 | `WorkPackageIdentifier`, `ProcessAnalysis`, `KeepProblemTryAdvice?`             | `Plan` |
+| 分析記録する                   | `recordAnalysis`                 | `WorkPackageIdentifier`, `ProcessAnalysis`                                      | `Plan` |
+| KPTを記録する                  | `recordKpt`                      | `WorkPackageIdentifier`, `KeepProblemTryAdvice`                                 | `Plan` |
 | セッションメトリクスを記録する | `recordSessionMetrics`           | `WorkPackageIdentifier`, `SessionMetrics`                                       | `Plan` |
 | 特定する                       | `find`                           | `WorkPackageIdentifier`                                                         | `Plan` |
 | 探す                           | `search`                         | `WorkPackageSearchCondition`                                                    | `Plan` |
