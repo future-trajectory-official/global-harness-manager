@@ -217,6 +217,7 @@ export type ProductBacklogItemOperation =
   | "update"
   | "estimateSize"
   | "confirmSize"
+  | "analyzeEffort"
   | "recordAnalysis"
   | "defineAcceptanceCriteria"
   | "assignToFeature"
