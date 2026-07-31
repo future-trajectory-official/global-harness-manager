@@ -1361,24 +1361,24 @@ V2カスタムフィールド含む）は保持され、子WPもClosed状態で�
 
 #### PBI
 
-| フィールド                    | アーカイブ前 | アーカイブ後                                                |
-| ----------------------------- | ------------ | ----------------------------------------------------------- |
-| Issue状態                     | Open         | **Closed**                                                  |
-| Title / Body                  | 設定済み     | 変化なし                                                    |
-| Projects V2 Status            | Done         | Done（変化なし）                                            |
-| Projects V2カスタムフィールド | 設定済み     | **保持**（`harness-size-*`, `harness-efforts-analysis` 等） |
-| 子WP                          | 全WPがDone   | 全WPが **Closed**                                           |
-| マイルストーン                | 設定済み     | 変化なし                                                    |
+| フィールド                    | アーカイブ前 | アーカイブ後                                              |
+| ----------------------------- | ------------ | --------------------------------------------------------- |
+| Issue状態                     | Open         | **Closed**                                                |
+| Title / Body                  | 設定済み     | 変化なし                                                  |
+| Projects V2 Status            | Done         | Done（変化なし）                                          |
+| Projects V2カスタムフィールド | 設定済み     | **保持**（`harness-size-*`, `harness-effort-summary` 等） |
+| 子WP                          | 全WPがDone   | 全WPが **Closed**                                         |
+| マイルストーン                | 設定済み     | 変化なし                                                  |
 
 #### WP
 
-| フィールド                    | アーカイブ前                       | アーカイブ後                                                 |
-| ----------------------------- | ---------------------------------- | ------------------------------------------------------------ |
-| Issue状態                     | Done（Open維持）→ スプリント終了時 | **Closed**                                                   |
-| Projects V2 Status            | Done                               | Done（変化なし）                                             |
-| Projects V2カスタムフィールド | 設定済み                           | **保持**（`harness-efforts-analysis`, `harness-metrics` 等） |
-| processEvidence               | 設定済み                           | 変化なし                                                     |
-| sessionMetrics                | 設定済み                           | 変化なし                                                     |
+| フィールド                    | アーカイブ前                       | アーカイブ後                                               |
+| ----------------------------- | ---------------------------------- | ---------------------------------------------------------- |
+| Issue状態                     | Done（Open維持）→ スプリント終了時 | **Closed**                                                 |
+| Projects V2 Status            | Done                               | Done（変化なし）                                           |
+| Projects V2カスタムフィールド | 設定済み                           | **保持**（`harness-effort-summary`, `harness-metrics` 等） |
+| processEvidence               | 設定済み                           | 変化なし                                                   |
+| sessionMetrics                | 設定済み                           | 変化なし                                                   |
 
 #### Review / Retrospective
 
