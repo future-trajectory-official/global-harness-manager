@@ -1250,8 +1250,33 @@ Deno.test("ProductBacklogItem archive - should close the issue", async () => {
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
-  assertEquals(calls.length, 1);
-  assertStringIncludes(calls[0].args.join(" "), "issue close 42");
+  assertEquals(calls.length, 2);
+  assertStringIncludes(calls[1].args.join(" "), "issue close 42");
+});
+
+Deno.test("ProductBacklogItem archive - should error if issue is already closed", async () => {
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ state: "CLOSED", closed: true }),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive closed PBI",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "archive",
+        params: { itemId: "42" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "already closed");
 });
 
 Deno.test("ProductBacklogItem view - should return issue details with parent/milestone", async () => {
@@ -1538,15 +1563,141 @@ Deno.test("ProductBacklogItem search - should search by PBI label", async () => 
   assertStringIncludes(calls[0].args.join(" "), "--label type:PBI");
 });
 
-Deno.test("ProductBacklogItem recordAnalysis - should succeed with valid params", async () => {
+Deno.test("ProductBacklogItem analyzeEffort - should aggregate subIssues effort and return output", async () => {
+  const runner = (_cmd: string, args: string[]): Promise<ExecuteResult> => {
+    const cmdStr = args.join(" ");
+    if (cmdStr.includes("api graphql")) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({
+          data: {
+            repository: {
+              issue: {
+                subIssues: {
+                  nodes: [
+                    {
+                      projectItems: {
+                        nodes: [
+                          {
+                            project: { number: 10 },
+                            effortField: {
+                              text: JSON.stringify({
+                                initial_estimate: 2,
+                                planned_estimate: 3,
+                                actual: 4,
+                              }),
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      projectItems: {
+                        nodes: [
+                          {
+                            project: { number: 10 },
+                            effortField: {
+                              text: JSON.stringify({
+                                initial_estimate: 1,
+                                planned_estimate: 1,
+                                actual: 1,
+                              }),
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+
+  const adapter = makeAdapter(runner);
+  adapter.setProjectBoardNumbers(10, 10);
+  const plan: Plan = {
+    summary: "analyze effort",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "analyzeEffort",
+        params: { itemId: "42" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as {
+    wp_effort_summary: { initial_estimate: number; planned_estimate: number; actual: number };
+  };
+  assertEquals(output.wp_effort_summary.initial_estimate, 3);
+  assertEquals(output.wp_effort_summary.planned_estimate, 4);
+  assertEquals(output.wp_effort_summary.actual, 5);
+});
+
+Deno.test("ProductBacklogItem recordAnalysis - should reject invalid JSON body", async () => {
   const adapter = makeAdapter();
   const plan: Plan = {
-    summary: "record analysis",
+    summary: "record analysis invalid",
     steps: [
       {
         entity: "ProductBacklogItem",
         operation: "recordAnalysis",
-        params: { itemId: "42", body: "## Process Analysis\nreview text" },
+        params: { itemId: "42", body: "not valid json" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "Invalid JSON");
+});
+
+Deno.test("ProductBacklogItem recordAnalysis - should write valid analysis JSON to board", async () => {
+  let callCount = 0;
+  const responses: Record<number, ExecuteResult> = {
+    1: { code: 0, stdout: JSON.stringify({ id: "node-pbi-42" }), stderr: "" },
+    2: {
+      code: 0,
+      stdout: JSON.stringify({ data: { addProjectV2ItemById: { item: { id: "pvti-42" } } } }),
+      stderr: "",
+    },
+    3: {
+      code: 0,
+      stdout: JSON.stringify({
+        data: { node: { fv: { text: '{"size_analysis":{"size_estimate":"M"}}' } } },
+      }),
+      stderr: "",
+    },
+  };
+  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    return Promise.resolve(responses[callCount] ?? { code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(chainedRunner);
+  adapter.setProjectBoardNumbers(99, 0);
+  const plan: Plan = {
+    summary: "record analysis valid",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "recordAnalysis",
+        params: {
+          itemId: "42",
+          body: JSON.stringify({
+            wp_effort_summary: { initial_estimate: 3, planned_estimate: 4, actual: 5 },
+            planning_variance_review: "test planning review",
+            execution_variance_review: "test execution review",
+            improvement_suggestions: "test suggestions",
+          }),
+        },
       },
     ],
   };
@@ -1747,7 +1898,8 @@ Deno.test("WorkPackage archive - should close the issue", async () => {
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
-  assertStringIncludes(calls[0].args.join(" "), "issue close 51");
+  assertEquals(calls.length, 2);
+  assertStringIncludes(calls[1].args.join(" "), "issue close 51");
 });
 
 Deno.test("WorkPackage estimateInitialEffort - should succeed with valid params", async () => {
@@ -1865,8 +2017,11 @@ Deno.test("WorkPackage recordAnalysis - should succeed with valid params", async
         operation: "recordAnalysis",
         params: {
           itemId: "51",
-          body:
-            "## Process Analysis\n### Planning Review\nplan text\n### Execution Review\nexec text\n### Improvement Suggestions\nsuggest text",
+          body: JSON.stringify({
+            planning_variance_review: "plan text",
+            execution_variance_review: "exec text",
+            improvement_suggestions: "suggest text",
+          }),
         },
       },
     ],
@@ -2010,8 +2165,11 @@ Deno.test("WorkPackage recordAnalysis - should read/write board field for proces
       operation: "recordAnalysis",
       params: {
         itemId: "51",
-        body:
-          "## Process Analysis\n### Planning Review\nplan text\n### Execution Review\nexec text\n### Improvement Suggestions\nsuggest text",
+        body: JSON.stringify({
+          planning_variance_review: "plan text",
+          execution_variance_review: "exec text",
+          improvement_suggestions: "suggest text",
+        }),
       },
     }],
   });
