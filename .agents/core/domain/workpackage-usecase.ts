@@ -48,6 +48,24 @@ function formatEditComment(operation: string, detail: string): string {
 }
 
 function formatAnalysisBody(analysis: ProcessAnalysis): string {
+  const lines: string[] = [];
+  lines.push("## Process Analysis");
+  lines.push("");
+  lines.push("### Planning Review");
+  lines.push("");
+  lines.push(analysis.planningReview);
+  lines.push("");
+  lines.push("### Execution Review");
+  lines.push("");
+  lines.push(analysis.executionReview);
+  lines.push("");
+  lines.push("### Improvement Suggestions");
+  lines.push("");
+  lines.push(analysis.improvementSuggestions);
+  return lines.join("\n");
+}
+
+function formatAnalysisJson(analysis: ProcessAnalysis): string {
   return JSON.stringify({
     planning_variance_review: analysis.planningReview,
     execution_variance_review: analysis.executionReview,
@@ -394,14 +412,22 @@ export const workPackageUseCase: WorkPackageUseCase & {
     assertTitleNonEmpty(identifier.title, "WP title");
     assertIdDefined(identifier.id, "record analysis for a WP");
     assertStringNonEmpty(analysis.planningReview, "planningReview");
+    const markdownBody = formatAnalysisBody(analysis);
     return {
       summary: `Record analysis for WP: ${identifier.title.value}`,
       steps: [scopeStep(identifier), {
         entity: "WorkPackage",
+        operation: "update",
+        params: {
+          itemId: identifier.code,
+          bodyAppend: markdownBody,
+        },
+      }, {
+        entity: "WorkPackage",
         operation: "recordAnalysis",
         params: {
           itemId: identifier.code,
-          body: formatAnalysisBody(analysis),
+          body: formatAnalysisJson(analysis),
         },
       }],
     };

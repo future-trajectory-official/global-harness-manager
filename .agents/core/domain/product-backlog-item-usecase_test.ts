@@ -428,13 +428,14 @@ Deno.test("confirmSize should return Plan with confirmSize", () => {
  * @description PBI のプロセス分析記録時に正しい Plan（recordAnalysis）が生成されること
  * @verify Plan.summary、steps の長さ、operation が期待値と一致すること
  */
-Deno.test("recordAnalysis should return Plan with recordAnalysis", () => {
+Deno.test("recordAnalysis should return Plan with update and recordAnalysis", () => {
   const plan = productBacklogItemUseCase.recordAnalysis(makePbiId(), makeProcessAnalysis());
   assertEquals(plan.summary, "Record analysis for PBI: User Authentication");
-  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps.length, 3);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
-  assertEquals(plan.steps[1].operation, "recordAnalysis");
+  assertEquals(plan.steps[1].operation, "update");
+  assertEquals(plan.steps[2].operation, "recordAnalysis");
 });
 
 /**

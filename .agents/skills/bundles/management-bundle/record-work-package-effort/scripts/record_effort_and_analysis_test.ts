@@ -56,10 +56,11 @@ Deno.test("record_analysis - should generate plan", () => {
     improvementSuggestions: "More detail in ACs",
   };
   const plan = workPackageUseCase.recordAnalysis(identifier, analysis);
-  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps.length, 3);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.summary, "Record analysis for WP: Test WP");
-  assertEquals(plan.steps[1].operation, "recordAnalysis");
+  assertEquals(plan.steps[1].operation, "update");
+  assertEquals(plan.steps[2].operation, "recordAnalysis");
 });
 
 /**
@@ -98,14 +99,16 @@ Deno.test("combined plan - should merge both operations", () => {
 
   const combined: Plan = {
     summary: "Record effort + analysis for WP: Test WP",
-    steps: [effortPlan.steps[0], effortPlan.steps[1], analysisPlan.steps[1]],
+    steps: [effortPlan.steps[0], effortPlan.steps[1], analysisPlan.steps[1], analysisPlan.steps[2]],
   };
 
-  assertEquals(combined.steps.length, 3);
+  assertEquals(combined.steps.length, 4);
   assertEquals(combined.steps[0].entity, "Scope");
   assertEquals(combined.steps[1].entity, "WorkPackage");
   assertEquals(combined.steps[1].operation, "recordActualEffort");
   assertEquals(combined.steps[1].params.effortActual, 3);
   assertEquals(combined.steps[2].entity, "WorkPackage");
-  assertEquals(combined.steps[2].operation, "recordAnalysis");
+  assertEquals(combined.steps[2].operation, "update");
+  assertEquals(combined.steps[3].entity, "WorkPackage");
+  assertEquals(combined.steps[3].operation, "recordAnalysis");
 });

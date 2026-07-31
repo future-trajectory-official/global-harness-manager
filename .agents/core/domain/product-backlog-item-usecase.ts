@@ -70,6 +70,24 @@ function formatReviseComment(statement: ProductBacklogItemStatement, reason: Cha
   return lines.join("\n");
 }
 
+function formatAnalysisBody(analysis: ProcessAnalysis): string {
+  const lines: string[] = [];
+  lines.push("## Process Analysis");
+  lines.push("");
+  lines.push("### Planning Review");
+  lines.push("");
+  lines.push(analysis.planningReview);
+  lines.push("");
+  lines.push("### Execution Review");
+  lines.push("");
+  lines.push(analysis.executionReview);
+  lines.push("");
+  lines.push("### Improvement Suggestions");
+  lines.push("");
+  lines.push(analysis.improvementSuggestions);
+  return lines.join("\n");
+}
+
 export interface ProductBacklogItemUseCase {
   propose(
     identifier: ProductBacklogItemIdentifier,
@@ -374,19 +392,26 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
     assertTitleNonEmpty(identifier.title, "PBI title");
     assertIdDefined(identifier.id, "record analysis for a PBI");
     assertStringNonEmpty(analysis.planningReview, "planningReview");
-    const body = JSON.stringify({
-      planning_variance_review: analysis.planningReview,
-      execution_variance_review: analysis.executionReview,
-      improvement_suggestions: analysis.improvementSuggestions,
-    });
+    const markdownBody = formatAnalysisBody(analysis);
     return {
       summary: `Record analysis for PBI: ${identifier.title.value}`,
       steps: [scopeStep(identifier), {
         entity: "ProductBacklogItem",
+        operation: "update",
+        params: {
+          itemId: identifier.code,
+          bodyAppend: markdownBody,
+        },
+      }, {
+        entity: "ProductBacklogItem",
         operation: "recordAnalysis",
         params: {
           itemId: identifier.code,
-          body,
+          body: JSON.stringify({
+            planning_variance_review: analysis.planningReview,
+            execution_variance_review: analysis.executionReview,
+            improvement_suggestions: analysis.improvementSuggestions,
+          }),
         },
       }],
     };

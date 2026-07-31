@@ -436,13 +436,14 @@ Deno.test("recordActualEffort should throw for undefined id", () => {
 
 // ===== recordAnalysis =====
 
-Deno.test("recordAnalysis should return Plan with recordAnalysis", () => {
+Deno.test("recordAnalysis should return Plan with update and recordAnalysis", () => {
   const plan = workPackageUseCase.recordAnalysis(makeWpId(), makeAnalysis());
   assertEquals(plan.summary, "Record analysis for WP: Implement Login");
-  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps.length, 3);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
-  assertEquals(plan.steps[1].operation, "recordAnalysis");
+  assertEquals(plan.steps[1].operation, "update");
+  assertEquals(plan.steps[2].operation, "recordAnalysis");
 });
 
 Deno.test("recordAnalysis should throw for undefined id", () => {

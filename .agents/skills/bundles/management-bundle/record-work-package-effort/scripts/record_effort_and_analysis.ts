@@ -23,10 +23,10 @@ function validateInput(input: RecordEffortAndAnalysisInput): void {
   if (!input.executionReview) throw new Error("INVALID_INPUT: executionReview must not be empty");
 }
 
-function findOperationStep(plan: Plan): Plan["steps"][number] {
-  const step = plan.steps.find((s) => s.entity !== "Scope");
-  if (!step) throw new Error("INVALID_INPUT: no operation step found in plan");
-  return step;
+function findOperationSteps(plan: Plan): Plan["steps"] {
+  const steps = plan.steps.filter((s) => s.entity !== "Scope");
+  if (steps.length === 0) throw new Error("INVALID_INPUT: no operation step found in plan");
+  return steps;
 }
 
 function buildCombinedPlan(input: RecordEffortAndAnalysisInput): Plan {
@@ -44,9 +44,8 @@ function buildCombinedPlan(input: RecordEffortAndAnalysisInput): Plan {
   return {
     summary: `Record effort + analysis for WP: ${input.identifier.title}`,
     steps: [
-      effortPlan.steps[0],
-      findOperationStep(effortPlan),
-      findOperationStep(analysisPlan),
+      ...effortPlan.steps,
+      ...findOperationSteps(analysisPlan),
     ],
   };
 }
