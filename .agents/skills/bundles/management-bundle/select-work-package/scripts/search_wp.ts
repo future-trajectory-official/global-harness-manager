@@ -13,7 +13,7 @@ async function main(): Promise<void> {
   try {
     const input = await readJsonFromStdin<SearchWpInput>();
     const condition = {
-      status: input.status ?? "todo",
+      status: input.status ?? "Todo",
       sprintNumber: input.sprintNumber,
       describe() {
         return {
