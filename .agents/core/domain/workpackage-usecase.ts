@@ -275,14 +275,6 @@ export const workPackageUseCase: WorkPackageUseCase & {
             state: "open",
           },
         },
-        {
-          entity: "WorkPackage",
-          operation: "update",
-          params: {
-            itemId: identifier.code,
-            bodyAppend: formatEditComment("Start", `Started work on ${identifier.title.value}`),
-          },
-        },
       ],
     };
   },
@@ -303,14 +295,6 @@ export const workPackageUseCase: WorkPackageUseCase & {
             state: "open",
           },
         },
-        {
-          entity: "WorkPackage",
-          operation: "update",
-          params: {
-            itemId: identifier.code,
-            bodyAppend: formatEditComment("Complete", `Completed ${identifier.title.value}`),
-          },
-        },
       ],
     };
   },
@@ -329,14 +313,6 @@ export const workPackageUseCase: WorkPackageUseCase & {
             itemId: identifier.code,
             stage: "done",
             state: "closed",
-          },
-        },
-        {
-          entity: "WorkPackage",
-          operation: "update",
-          params: {
-            itemId: identifier.code,
-            bodyAppend: formatEditComment("Archive", `Archived ${identifier.title.value}`),
           },
         },
       ],

@@ -35,7 +35,7 @@ function assertWpDataNonEmpty(wps: WorkPackageData[] | undefined): void {
   }
 }
 
-function formatPbiBody(statement: ProductBacklogItemStatement, parentFeatureId?: string): string {
+function formatPbiBody(statement: ProductBacklogItemStatement): string {
   const lines: string[] = [];
   lines.push("## Summary");
   lines.push("");
@@ -57,10 +57,6 @@ function formatPbiBody(statement: ProductBacklogItemStatement, parentFeatureId?:
     lines.push("");
     lines.push(statement.proofMethod);
   }
-  if (parentFeatureId) {
-    lines.push("");
-    lines.push(`**Parent Feature**: ${parentFeatureId}`);
-  }
   return lines.join("\n");
 }
 
@@ -71,14 +67,6 @@ function formatReviseComment(statement: ProductBacklogItemStatement, reason: Cha
   lines.push("| # | 変更前 | 変更後 | 変更理由 |");
   lines.push("| - | ------ | ------ | -------- |");
   lines.push(`| 1 | — | ${statement.summary} | ${reason.description} |`);
-  return lines.join("\n");
-}
-
-function formatEditComment(operation: string, detail: string): string {
-  const lines: string[] = [];
-  lines.push(`## ${operation}`);
-  lines.push("");
-  lines.push(detail);
   return lines.join("\n");
 }
 
@@ -161,7 +149,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
         operation: "propose",
         params: {
           title: identifier.title.value,
-          body: formatPbiBody(statement, parentFeature?.id),
+          body: formatPbiBody(statement),
           ...(parentFeature?.id ? { parentFeature: parentFeature.id } : {}),
         },
       }],
@@ -229,14 +217,6 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
           },
         },
         ...childWpSteps,
-        {
-          entity: "ProductBacklogItem",
-          operation: "update",
-          params: {
-            itemId: identifier.code,
-            bodyAppend: formatEditComment("Commit", `Committed to ${sprint.title.value}`),
-          },
-        },
       ],
     };
   },
@@ -255,14 +235,6 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
             itemId: identifier.code,
             stage: "inProgress",
             state: "open",
-          },
-        },
-        {
-          entity: "ProductBacklogItem",
-          operation: "update",
-          params: {
-            itemId: identifier.code,
-            bodyAppend: formatEditComment("Start", `Started work on ${identifier.title.value}`),
           },
         },
       ],
@@ -285,14 +257,6 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
             state: "open",
           },
         },
-        {
-          entity: "ProductBacklogItem",
-          operation: "update",
-          params: {
-            itemId: identifier.code,
-            bodyAppend: formatEditComment("Complete", `Completed ${identifier.title.value}`),
-          },
-        },
       ],
     };
   },
@@ -311,14 +275,6 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
             itemId: identifier.code,
             stage: "done",
             state: "closed",
-          },
-        },
-        {
-          entity: "ProductBacklogItem",
-          operation: "update",
-          params: {
-            itemId: identifier.code,
-            bodyAppend: formatEditComment("Archive", `Archived ${identifier.title.value}`),
           },
         },
       ],
