@@ -22,6 +22,26 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Milestone description の `## Velocity` セクションを追記・更新する。
+ * 既存セクションがあれば置換し、`## Goal` 等の他セクションは保持する。
+ * セクションが1つもない場合は末尾に追記する。
+ * 複数の `## Velocity` セクションが存在する場合は全て置換する。
+ * 置換後、後続セクションとの間に空行を保証する。
+ */
+export function upsertVelocitySection(current: string, velocitySection: string): string {
+  const velocitySectionRe = /^## Velocity\s*$[\s\S]*?(?=^## |$(?![\s\S]))/gm;
+  const matches = [...current.matchAll(velocitySectionRe)];
+  if (matches.length === 0) {
+    return current.trimEnd() + "\n\n" + velocitySection;
+  }
+  const firstIndex = matches[0].index;
+  const withoutVelocity = current.replace(velocitySectionRe, "");
+  const before = withoutVelocity.slice(0, firstIndex).replace(/\s+$/, "");
+  const after = withoutVelocity.slice(firstIndex).replace(/^\s+/, "");
+  return [before, velocitySection, after].filter((part) => part.length > 0).join("\n\n");
+}
+
 function parseJsonOutput(raw: string): unknown {
   try {
     return JSON.parse(raw);
@@ -201,6 +221,11 @@ export class PlanGatewayAdapter implements PlanGateway {
     this.register("Sprint", "create", (op, params) => this.#handleSprintCreate(op, params));
     this.register("Sprint", "endSprint", (op, params) => this.#handleSprintEnd(op, params));
     this.register("Sprint", "setGoal", (op, params) => this.#handleSprintSetGoal(op, params));
+    this.register(
+      "Sprint",
+      "recordVelocity",
+      (op, params) => this.#handleSprintRecordVelocity(op, params),
+    );
     this.register("Sprint", "setDueDate", (op, params) => this.#handleSprintSetDueDate(op, params));
     this.register("Sprint", "search", (op, params) => this.#handleSprintSearch(op, params));
     this.register(
@@ -1786,16 +1811,91 @@ export class PlanGatewayAdapter implements PlanGateway {
       return { operation, success: false, error: "itemId is required" };
     }
     const description = String(params.description ?? "");
+
+    const viewResult = await this.runCommand("gh", [
+      "api",
+      this.#milestoneUrl(itemId),
+    ]);
+    if (viewResult.code !== 0) {
+      return { operation, success: false, error: viewResult.stderr };
+    }
+    const milestone = parseJsonOutput(viewResult.stdout) as { description?: string } | undefined;
+    const current = milestone?.description ?? "";
+
+    const velocitySectionRe = /^## Velocity\s*$[\s\S]*?(?=^## |$(?![\s\S]))/gm;
+    const velocityMatches = current.match(velocitySectionRe) ?? [];
+    const newDescription = velocityMatches.length > 0
+      ? `${description.trimEnd()}\n\n${velocityMatches.join("\n")}`
+      : description;
+
     const result = await this.runCommand("gh", [
       "api",
       "-X",
       "PATCH",
       this.#milestoneUrl(itemId),
       "-f",
-      `description=${description}`,
+      `description=${newDescription}`,
     ]);
     if (result.code !== 0) {
       return { operation, success: false, error: result.stderr };
+    }
+    return { operation, success: true, itemId };
+  }
+
+  /**
+   * recordVelocity 操作を処理する。Milestone description に `## Velocity` セクションを追記し、
+   * 既存の `## Goal` セクションと同居させる。
+   * @param params.itemId - 対象 Milestone の番号
+   * @param params.velocity - ベロシティ集計値（sprintNumber, pbiCount, totalWeight, matchRate, summary）
+   */
+  async #handleSprintRecordVelocity(
+    operation: string,
+    params: Record<string, unknown>,
+  ): Promise<StepResult> {
+    const itemId = String(params.itemId ?? "");
+    if (!itemId) {
+      return { operation, success: false, error: "itemId is required" };
+    }
+    const velocity = params.velocity as
+      | {
+        sprintNumber: number;
+        pbiCount: number;
+        totalWeight: number;
+        matchRate: number;
+        summary: string;
+      }
+      | undefined;
+    if (!velocity) {
+      return { operation, success: false, error: "velocity is required" };
+    }
+
+    const viewResult = await this.runCommand("gh", [
+      "api",
+      this.#milestoneUrl(itemId),
+    ]);
+    if (viewResult.code !== 0) {
+      return { operation, success: false, error: viewResult.stderr };
+    }
+    const milestone = parseJsonOutput(viewResult.stdout) as { description?: string } | undefined;
+    const current = milestone?.description ?? "";
+
+    const velocityLine = `${velocity.pbiCount} PBI / ${velocity.totalWeight} points / ${
+      Math.round(velocity.matchRate * 100)
+    }% 一致 / ${String(velocity.summary ?? "").replace(/\s+/g, " ").trim()}`;
+    const velocitySection = `## Velocity\n\n${velocityLine}`;
+
+    const newDescription = upsertVelocitySection(current, velocitySection);
+
+    const updateResult = await this.runCommand("gh", [
+      "api",
+      "-X",
+      "PATCH",
+      this.#milestoneUrl(itemId),
+      "-f",
+      `description=${newDescription}`,
+    ]);
+    if (updateResult.code !== 0) {
+      return { operation, success: false, error: updateResult.stderr };
     }
     return { operation, success: true, itemId };
   }

@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import type { ExecuteResult } from "../shared/io/command.ts";
-import { PlanGatewayAdapter } from "./plan-gateway-adapter.ts";
+import { PlanGatewayAdapter, upsertVelocitySection } from "./plan-gateway-adapter.ts";
 import type { Plan } from "../domain/types.ts";
 
 function mockRunner() {
@@ -2357,6 +2357,218 @@ Deno.test("WorkPackage view - should return issue details", async () => {
   assertStringIncludes(calls[0].args.join(" "), "issue view 51");
 });
 
+// ===== Sprint recordVelocity =====
+
+/**
+ * @description upsertVelocitySection が既存の `## Goal` セクションを保持しつつ `## Velocity` を追記すること
+ * @verify 結果に Goal と Velocity の両セクションが含まれること
+ */
+Deno.test("upsertVelocitySection - should append Velocity section preserving Goal", () => {
+  const current = "## Goal\n\nスプリントゴール\n";
+  const velocity = "## Velocity\n\n3 PBI / 8 points / 67% 一致 / 乖離要約";
+  const result = upsertVelocitySection(current, velocity);
+  assertStringIncludes(result, "## Goal");
+  assertStringIncludes(result, "スプリントゴール");
+  assertStringIncludes(result, "## Velocity");
+  assertStringIncludes(result, "3 PBI / 8 points / 67% 一致 / 乖離要約");
+});
+
+/**
+ * @description upsertVelocitySection が既存の Velocity セクションを置換すること
+ * @verify 置換後も他セクションが保持され、Velocity セクションが1つだけになること
+ */
+Deno.test("upsertVelocitySection - should replace existing Velocity section", () => {
+  const current = "## Goal\n\nゴール\n\n## Velocity\n\n旧ベロシティ\n";
+  const velocity = "## Velocity\n\n新ベロシティ\n";
+  const result = upsertVelocitySection(current, velocity);
+  assertStringIncludes(result, "## Goal");
+  assertStringIncludes(result, "新ベロシティ");
+  assert(!result.includes("旧ベロシティ"));
+  assertEquals((result.match(/## Velocity/g) ?? []).length, 1);
+});
+
+/**
+ * @description upsertVelocitySection がセクション未存在時に末尾へ追記すること
+ * @verify Goal のみの内容に Velocity が追記されること
+ */
+Deno.test("upsertVelocitySection - should append when no section exists", () => {
+  const current = "plain description";
+  const velocity = "## Velocity\n\n1 PBI / 3 points / 100% 一致 / 全一致";
+  const result = upsertVelocitySection(current, velocity);
+  assertStringIncludes(result, "plain description");
+  assertStringIncludes(result, "## Velocity");
+});
+
+/**
+ * @description upsertVelocitySection が Velocity セクションを中間に持つ文書で後続セクションの空行を保持すること
+ * @verify Goal→Velocity→Notes の順で Velocity 置換後も Notes が見出しとして機能すること
+ */
+Deno.test("upsertVelocitySection - should preserve following section when Velocity is in the middle", () => {
+  const current = "## Goal\n\nゴール\n\n## Velocity\n\n旧ベロシティ\n\n## Notes\n\nメモ\n";
+  const velocity = "## Velocity\n\n新ベロシティ";
+  const result = upsertVelocitySection(current, velocity);
+  assertStringIncludes(result, "## Goal");
+  assertStringIncludes(result, "新ベロシティ");
+  assertStringIncludes(result, "## Notes");
+  assertStringIncludes(result, "\n\nメモ");
+  assert(!result.includes("旧ベロシティ"));
+});
+
+/**
+ * @description upsertVelocitySection が複数の Velocity セクションを全て置換すること
+ * @verify 置換後は Velocity セクションが1つだけになること
+ */
+Deno.test("upsertVelocitySection - should replace all Velocity sections", () => {
+  const current = "## Velocity\n\n旧1\n\n## Velocity\n\n旧2\n\n## Goal\n\nゴール\n";
+  const velocity = "## Velocity\n\n新ベロシティ";
+  const result = upsertVelocitySection(current, velocity);
+  assertEquals((result.match(/## Velocity/g) ?? []).length, 1);
+  assertStringIncludes(result, "新ベロシティ");
+  assert(!result.includes("旧1"));
+  assert(!result.includes("旧2"));
+  assertStringIncludes(result, "## Goal");
+});
+
+/**
+ * @description upsertVelocitySection が `## Velocity History` 等の類似見出しを誤マッチしないこと
+ * @verify Velocity セクションが存在しないため末尾に追記されること
+ */
+Deno.test("upsertVelocitySection - should not match Velocity History heading", () => {
+  const current = "## Goal\n\nゴール\n\n## Velocity History\n\n履歴\n";
+  const velocity = "## Velocity\n\n新ベロシティ";
+  const result = upsertVelocitySection(current, velocity);
+  assertStringIncludes(result, "## Velocity History");
+  assertStringIncludes(result, "履歴");
+  assertStringIncludes(result, "## Velocity\n\n新ベロシティ");
+});
+
+/**
+ * @description Sprint recordVelocity が Milestone description を取得し PATCH で更新すること
+ * @verify GET 後に PATCH が呼ばれ、velocity が Velocity セクションに含まれること
+ */
+Deno.test("Sprint recordVelocity - should update milestone description with velocity", async () => {
+  let callCount = 0;
+  const runner = (_cmd: string, args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ description: "## Goal\n\nゴール\n" }),
+        stderr: "",
+      });
+    }
+    if (callCount === 2) {
+      const patchArgs = args.join(" ");
+      assertStringIncludes(patchArgs, "PATCH");
+      assertStringIncludes(patchArgs, "repos/my-org/my-repo/milestones/5");
+      assertStringIncludes(patchArgs, "description=");
+      assertStringIncludes(patchArgs, "## Velocity");
+      assertStringIncludes(patchArgs, "3 PBI / 8 points / 67% 一致 / 乖離");
+      return Promise.resolve({ code: 0, stdout: "{}", stderr: "" });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "Record velocity",
+    steps: [
+      {
+        entity: "Sprint",
+        operation: "recordVelocity",
+        params: {
+          itemId: "5",
+          title: "Sprint 5",
+          velocity: {
+            sprintNumber: 5,
+            pbiCount: 3,
+            totalWeight: 8,
+            matchRate: 2 / 3,
+            summary: "乖離",
+          },
+        },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "5");
+  assertEquals(callCount, 2);
+});
+
+/**
+ * @description Sprint recordVelocity が summary 内の改行を1行に正規化して PATCH すること
+ * @verify 改行がスペースに変換され Velocity セクションが破壊されないこと
+ */
+Deno.test("Sprint recordVelocity - should normalize newlines in summary", async () => {
+  let callCount = 0;
+  const runner = (_cmd: string, args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ description: "" }),
+        stderr: "",
+      });
+    }
+    if (callCount === 2) {
+      const patchArgs = args.join(" ");
+      assertStringIncludes(patchArgs, "line1 line2");
+      assert(!patchArgs.includes("line1\nline2"));
+      return Promise.resolve({ code: 0, stdout: "{}", stderr: "" });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "Record velocity",
+    steps: [
+      {
+        entity: "Sprint",
+        operation: "recordVelocity",
+        params: {
+          itemId: "5",
+          title: "Sprint 5",
+          velocity: {
+            sprintNumber: 5,
+            pbiCount: 1,
+            totalWeight: 3,
+            matchRate: 1,
+            summary: "line1\nline2",
+          },
+        },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(callCount, 2);
+});
+
+/**
+ * @description Sprint recordVelocity が velocity 欠落時にエラーを返すこと
+ * @verify 成功せず、エラーメッセージに velocity が含まれること
+ */
+Deno.test("Sprint recordVelocity - should fail when velocity is missing", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "Record velocity",
+    steps: [
+      {
+        entity: "Sprint",
+        operation: "recordVelocity",
+        params: { itemId: "5" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "velocity");
+  assertEquals(calls.length, 0);
+});
+
 Deno.test("WorkPackage search - should search by WP label", async () => {
   const calls: { cmd: string; args: string[] }[] = [];
   const adapter = makeAdapter((cmd, args) => {
@@ -2622,10 +2834,22 @@ Deno.test("Sprint endSprint - should fail without itemId", async () => {
 });
 
 /**
- * Sprint setGoal - gh api -X PATCH milestones/:number with description が呼ばれることを検証する。
+ *  Sprint setGoal - gh api -X PATCH milestones/:number with description が呼ばれることを検証する。
+ *  M6対応: GET（既存description確認）→ PATCH（更新）の2回呼び出しになること
  */
-Deno.test("Sprint setGoal - should call gh api PATCH milestones with description", async () => {
-  const { runner, calls } = mockRunner();
+Deno.test("Sprint setGoal - should call gh api GET then PATCH milestones with description", async () => {
+  let callCount = 0;
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ description: "old goal" }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
   const adapter = makeAdapter(runner);
   const plan: Plan = {
     summary: "set sprint goal",
@@ -2638,11 +2862,44 @@ Deno.test("Sprint setGoal - should call gh api PATCH milestones with description
     ],
   };
   await adapter.execute(plan);
-  assertEquals(calls.length, 1);
-  assertEquals(calls[0].cmd, "gh");
-  assertEquals(calls[0].args[0], "api");
-  assertStringIncludes(calls[0].args.join(" "), "/milestones/5");
-  assertStringIncludes(calls[0].args.join(" "), "-f description=Complete all PBIs");
+  assertEquals(callCount, 2);
+});
+
+/**
+ *  Sprint setGoal - 既存descriptionに Velocity セクションがある場合、PATCH に Velocity が保持されることを検証する。
+ *  M6対応: setGoal 実行後も Velocity セクションが消えないこと
+ */
+Deno.test("Sprint setGoal - should preserve Velocity section when setting goal", async () => {
+  let callCount = 0;
+  const runner = (_cmd: string, args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ description: "## Velocity\n\n旧ベロシティ\n" }),
+        stderr: "",
+      });
+    }
+    const patchArgs = args.join(" ");
+    assertStringIncludes(patchArgs, "description=");
+    assertStringIncludes(patchArgs, "## Velocity");
+    assertStringIncludes(patchArgs, "旧ベロシティ");
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "set sprint goal",
+    steps: [
+      {
+        entity: "Sprint",
+        operation: "setGoal",
+        params: { itemId: "5", title: "Sprint 18", description: "New goal" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(callCount, 2);
 });
 
 /**

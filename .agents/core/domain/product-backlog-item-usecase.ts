@@ -124,6 +124,8 @@ export interface ProductBacklogItemUseCase {
     analysis: ProcessAnalysis,
   ): Plan;
 
+  analyzeEffort(identifier: ProductBacklogItemIdentifier): Plan;
+
   find(identifier: ProductBacklogItemIdentifier): Plan;
 
   search(condition: ProductBacklogItemSearchCondition): Plan;
@@ -400,6 +402,21 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
       steps: [scopeStep(identifier), {
         entity: "ProductBacklogItem",
         operation: "view",
+        params: {
+          itemId: identifier.code,
+        },
+      }],
+    };
+  },
+
+  analyzeEffort(identifier): Plan {
+    assertTitleNonEmpty(identifier.title, "PBI title");
+    assertIdDefined(identifier.id, "analyze effort for a PBI");
+    return {
+      summary: `Analyze effort for PBI: ${identifier.title.value}`,
+      steps: [scopeStep(identifier), {
+        entity: "ProductBacklogItem",
+        operation: "analyzeEffort",
         params: {
           itemId: identifier.code,
         },

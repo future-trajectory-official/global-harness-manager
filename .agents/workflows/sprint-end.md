@@ -1,5 +1,5 @@
 ---
-description: スプリントの終了プロセス（レビュー、アーカイブ、ベロシティ記録、メトリクス・予実評価、KPT、自己スキル最適化、ステートレスリセット）を安全に1ステップずつ実行するワークフロー。
+description: スプリントの終了プロセス（レビュー、effort分析、サイズ確定、メトリクス・予実評価、KPT、ベロシティ記録、アーカイブ、自己スキル最適化、ステートレスリセット）を安全に1ステップずつ実行するワークフロー。
 ---
 
 # Sprint End Workflow (`/sprint-end`)
@@ -40,22 +40,26 @@ description: スプリントの終了プロセス（レビュー、アーカイ�
 
 ---
 
-## Phase 2: 完了PBIのアーカイブ (Archive)
+## Phase 2: PBI effort分析 (Record PBI Effort Analysis)
 
-確認された完了PBIをアーカイブし、バックログをクリーンな状態にします。
+対象PBI配下の全WPのeffort（initial/planned/actual）を集計し、計画乖離・実行乖離の分析結果を GitHub
+カスタムフィールドに記録します。
 
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
-  `[archive-backlog](/.agents/skills/bundles/management-bundle/archive-backlog/SKILL.md)`
-- **入力（前提条件）**: PO承認を得た完了PBIの一覧。
+  `[record-pbi-effort-analysis](/.agents/skills/bundles/management-bundle/record-pbi-effort-analysis/SKILL.md)`
+- **入力（前提条件）**: スプリント内のPBI配下のWPが全て完了（`[DONE]`）しており、
+  effort実績（harness-effort-summary / harness-effort-actual）が GitHub
+  カスタムフィールドに記録されていること。
 - **手続き**:
-  1. スプリント内の全 `[DONE]` PBI を特定する。
-  2. 各PBIについて予実差分析JSONを構成する。
-  3. `archive_backlog.ts` を実行し、アーカイブカードを生成してバックログから除去する。
+  1. `analyzeEffort` で対象PBI配下の全WPのeffortを集計する。
+  2. 集計結果をもとに乖離分析（planning / execution）と改善提案を構成する。
+  3. `recordAnalysis` で GitHub カスタムフィールドに記録する。
 - **期待される結果（終了条件）**:
-  1. 全完了PBIが `product-backlog-archive.md` に移動されていること。
-  2. `product-backlog.md` から該当PBIが除去されていること。
+  1. effort集計と乖離分析が GitHub カスタムフィールド（`harness-variance-review-planning` /
+     `harness-variance-review-execution` / `harness-improvement-suggestions`）に記録されていること。
+  2. ユーザー（PO）が記録内容を確認し、承認していること。
 
 > [!IMPORTANT]
 > 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
@@ -66,16 +70,25 @@ description: スプリントの終了プロセス（レビュー、アーカイ�
 
 ---
 
-## Phase 3: アーカイブ-ベロシティ連携
+## Phase 3: PBIサイズ実績の確定 (Record PBI Size Analysis)
 
-archive-backlog の結果をもとに record-velocity を実行する連携Phase。
+対象PBIの実感サイズ（size_actual）を確定し、見積サイズとの乖離理由を GitHub
+カスタムフィールドに記録します。
 
-- **読み込むペルソナ**: `[scrum-master.md](/.agents/rules/scrum-master.md)`
+- **読み込むペルソナ**:
+  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
+- **実行するスキル**:
+  `[record-pbi-size-analysis](/.agents/skills/bundles/management-bundle/record-pbi-size-analysis/SKILL.md)`
+- **入力（前提条件）**: 対象PBIの見積サイズ（`harness-size-estimate`）が GitHub
+  カスタムフィールドに記録されていること。
 - **手続き**:
-  1. archive-backlog の出力を確認する。
-  2. record-velocity の入力を準備する。
+  1. 見積サイズ（`harness-size-estimate`）を取得する。
+  2. セッション履歴から実感サイズを提案し、乖離理由を整理する。
+  3. POの承認を得て `confirmSize` で size_actual と乖離理由を記録する。
 - **期待される結果（終了条件）**:
-  1. archive-backlog の出力が record-velocity へ正しく連携されること。
+  1. size_actual（`harness-size-actual`）と乖離理由（`harness-variance-review-size`）が GitHub
+     カスタムフィールドに記録されていること。
+  2. ユーザー（PO）が記録内容を確認し、承認していること。
 
 > [!IMPORTANT]
 > 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
@@ -86,37 +99,7 @@ archive-backlog の結果をもとに record-velocity を実行する連携Phase
 
 ---
 
-## Phase 4: ベロシティ記録 (Record Velocity)
-
-アーカイブされた PBI
-の実績データから合計ウェイト・実感サイズ一致率・乖離要約を自動集計し、`product-backlog.md`
-の「スプリント実績推移」テーブルに追記します。
-
-- **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行)
-  - `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (スクリプト実行・集計)
-- **実行するスキル**:
-  `[record-velocity](/.agents/skills/bundles/management-bundle/record-velocity/SKILL.md)`
-- **入力（前提条件）**: アーカイブが完了した `product-backlog-archive.md`。
-- **手続き**:
-  1. `record-velocity` スキルの手順に従い、アーカイブから対象スプリントの全 PBI ブロックを抽出する。
-  2. 各 PBI の見積サイズ・実感サイズから合計ウェイト・一致率・乖離要約を算出する。
-  3. `product-backlog.md` の「スプリント実績推移」テーブルに新規行を追記する。
-- **期待される結果（終了条件）**:
-  1. ベロシティデータ（開発PBI数・合計ウェイト・実感サイズ一致率・乖離要約）が `product-backlog.md`
-     に正しく追記されていること。
-  2. ユーザー（PO）が記録内容を確認し、承認していること。
-
-> [!IMPORTANT]
-> 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase 4
-> が完了しました。よろしければ『次のフェーズ（Phase 5）へ進む』とご指示ください」**
-> と明確にプロンプトして停止してください。
-
-<!-- STOP -->
-
----
-
-## Phase 5: スプリントメトリクス定量評価・予実分析 (Metrics & Estimation Variance)
+## Phase 4: スプリントメトリクス定量評価・予実分析 (Metrics & Estimation Variance)
 
 スプリント全体の規模消化力、品質健全性、プロセス規律を定量評価し、見積もり（Tシャツサイズ）と実労力（セッション数）の乖離を確定させます。
 
@@ -140,14 +123,14 @@ archive-backlog の結果をもとに record-velocity を実行する連携Phase
 
 > [!IMPORTANT]
 > 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
-> 5が完了しました。定量的な評価および予実差の確定を行いました。よろしければ『次のフェーズ（Phase
-> 6）へ進む』とご指示ください」** と明確にプロンプトして停止してください。
+> 4が完了しました。定量的な評価および予実差の確定を行いました。よろしければ『次のフェーズ（Phase
+> 5）へ進む』とご指示ください」** と明確にプロンプトして停止してください。
 
 <!-- STOP -->
 
 ---
 
-## Phase 6: スプリントレトロスペクティブ (Retrospective KPT)
+## Phase 5: スプリントレトロスペクティブ (Retrospective KPT)
 
 定量的なメトリクス評価結果をベースに、仕組みとプロセス全体のボトルネックや予実ギャップの根本原因をKPT形式で内省し、改善Tryを策定します。
 
@@ -168,14 +151,74 @@ archive-backlog の結果をもとに record-velocity を実行する連携Phase
 
 > [!IMPORTANT]
 > 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
-> 6が完了しました。よろしければ『次のフェーズ（Phase 7）へ進む』とご指示ください」**
+> 5が完了しました。よろしければ『次のフェーズ（Phase 6）へ進む』とご指示ください」**
 > と明確にプロンプトして停止してください。
 
 <!-- STOP -->
 
 ---
 
-## Phase 7: 自己スキルオプティマイザー (Skill Optimization)
+## Phase 6: ベロシティ記録 (Record Sprint Velocity)
+
+対象スプリントのベロシティ集計（完了PBI数・合計ウェイト・実感サイズ一致率・乖離要約）を算出し、
+Milestone description の `## Velocity` セクションに記録します。
+
+- **読み込むペルソナ**:
+  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行)
+  - `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (スクリプト実行・集計)
+- **実行するスキル**:
+  `[record-sprint-velocity](/.agents/skills/bundles/management-bundle/record-sprint-velocity/SKILL.md)`
+- **入力（前提条件）**: 対象スプリントのPBIに `size_actual`（`harness-size-actual`）が GitHub
+  カスタムフィールドに記録されていること。
+- **手続き**:
+  1. GitHub上のPBI実績データ（size_actual / size_estimate）から完了PBI数・合計ウェイト・
+     実感サイズ一致率・乖離要約を算出する。
+  2. 集計結果をPOに提示し、承認を得る。
+  3. `recordVelocity` で Milestone description の `## Velocity` セクションを追記/更新する
+     （`## Goal` セクションと同居）。
+- **期待される結果（終了条件）**:
+  1. ベロシティデータ（開発PBI数・合計ウェイト・実感サイズ一致率・乖離要約）が Milestone description
+     に正しく記録されていること。
+  2. ユーザー（PO）が記録内容を確認し、承認していること。
+
+> [!IMPORTANT]
+> 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase 6
+> が完了しました。よろしければ『次のフェーズ（Phase 7）へ進む』とご指示ください」**
+> と明確にプロンプトして停止してください。
+
+<!-- STOP -->
+
+---
+
+## Phase 7: 完了PBI/WPのアーカイブ (Archive Product Backlog Items)
+
+スプリントで完了したWPとPBIを、GitHub Issue をクローズすることでアーカイブします。 アーカイブ順序は
+**WP → PBI**（子先にクローズ）です。
+
+- **読み込むペルソナ**:
+  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
+- **実行するスキル**:
+  `[archive-product-backlog-items](/.agents/skills/bundles/management-bundle/archive-product-backlog-items/SKILL.md)`
+- **入力（前提条件）**: アーカイブ対象のPBI/WPが `[DONE]`（done, open）状態であること。
+- **手続き**:
+  1. スプリント内の完了済み（`[DONE]`）PBI/WP を一覧でPOに提示する。
+  2. アーカイブ順序（WP→PBI）と対象をPOが承認する。
+  3. `archive_wp.ts` → `archive_pbi.ts` の順でIssueをクローズする。
+- **期待される結果（終了条件）**:
+  1. 全対象WP/PBIの GitHub Issue が `closed` になっていること。
+  2. ローカル `product-backlog-archive.md` との関係（本スキルは GitHub 上のクローズのみを担い、
+     ローカルへの書き込みは行わない）を PO が理解し承認していること。
+
+> [!IMPORTANT]
+> 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
+> 7が完了しました。よろしければ『次のフェーズ（Phase 8）へ進む』とご指示ください」**
+> と明確にプロンプトして停止してください。
+
+<!-- STOP -->
+
+---
+
+## Phase 8: 自己スキルオプティマイザー (Skill Optimization)
 
 スプリント中の実行ログを分析し、スキルの発見性・再利用性向上、および不要な重複スキルのクリーンアップを自律的に提案・実行します。
 
@@ -194,22 +237,22 @@ archive-backlog の結果をもとに record-velocity を実行する連携Phase
 
 > [!IMPORTANT]
 > 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
-> 7が完了しました。スキルのクリーンアップ・最適化案が提示されました。よろしければ『次のフェーズ（Phase
-> 8）へ進む』とご指示ください」** と明確にプロンプトして停止してください。
+> 8が完了しました。スキルのクリーンアップ・最適化案が提示されました。よろしければ『次のフェーズ（Phase
+> 9）へ進む』とご指示ください」** と明確にプロンプトして停止してください。
 
 <!-- STOP -->
 
 ---
 
-## Phase 8: スプリント終了 (Sprint Conclusion)
+## Phase 9: スプリント終了 (Sprint Conclusion)
 
 すべてのスプリント後処理が完了したことを確認し、スプリントを終了状態にします。
 
 - **読み込むペルソナ**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
   `[conclude-sprint](/.agents/skills/bundles/management-bundle/conclude-sprint/SKILL.md)`
-- **入力（前提条件）**: Phase 1〜7
-  の全後処理（レビュー検証・アーカイブ・ベロシティ記録・メトリクス評価・レトロスペクティブ・スキル最適化）が完了し、POがスプリント終了を承認していること。
+- **入力（前提条件）**: Phase 1〜8
+  の全後処理（レビュー検証・effort分析・サイズ確定・メトリクス評価・レトロスペクティブ・ベロシティ記録・アーカイブ・スキル最適化）が完了し、POがスプリント終了を承認していること。
 - **手続き**:
   1. `conclude-sprint` スキルの Quick-Start に従い、対象スプリント番号を確定する。
   2. dry-run で終了される Plan を PO に提示し、承認を得る。
@@ -219,14 +262,14 @@ archive-backlog の結果をもとに record-velocity を実行する連携Phase
 
 > [!IMPORTANT]
 > 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
-> 8が完了しました。よろしければ『次のフェーズ（Phase 9）へ進む』とご指示ください」**
+> 9が完了しました。よろしければ『次のフェーズ（Phase 10）へ進む』とご指示ください」**
 > と明確にプロンプトして停止してください。
 
 <!-- STOP -->
 
 ---
 
-## Phase 9: ステートレスリセットの検討 (Stateless Reset)
+## Phase 10: ステートレスリセットの検討 (Stateless Reset)
 
 スプリントの完了を宣言し、次回スプリントに向けてキャッシュ、一時ファイル、記憶フォルダの退避を行い、環境をステートレスにクリアします。
 
@@ -242,7 +285,7 @@ archive-backlog の結果をもとに record-velocity を実行する連携Phase
 
 > [!IMPORTANT]
 > 完了後、**「/sprint-end
-> ワークフローがすべて完了しました！スプリント全体の儀式、アーカイブ、ベロシティ記録、メトリクス評価、スキル最適化、および環境のリセットが完了しました。次回スプリントはクリーンな状態で、新たに
+> ワークフローがすべて完了しました！スプリント全体の儀式、effort分析、サイズ確定、ベロシティ記録、メトリクス評価、スキル最適化、および環境のリセットが完了しました。次回スプリントはクリーンな状態で、新たに
 > `/sprint-start` を呼び出して開始してください」** と宣言し、POの最終指示をお待ちください。
 
 <!-- STOP -->
