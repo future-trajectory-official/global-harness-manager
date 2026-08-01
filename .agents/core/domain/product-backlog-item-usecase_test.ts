@@ -482,6 +482,35 @@ Deno.test("find should throw for undefined id", () => {
   );
 });
 
+// ===== analyzeEffort =====
+
+/**
+ * analyzeEffort の正常系。analyzeEffort 操作を含む Plan が返ることを確認する。
+ * @description PBI の effort 集計時に正しい Plan（analyzeEffort）が生成されること
+ * @verify steps[1].operation が "analyzeEffort"、params.itemId が code と一致すること
+ */
+Deno.test("analyzeEffort should return Plan with analyzeEffort step", () => {
+  const plan = productBacklogItemUseCase.analyzeEffort(makePbiId({ code: "42" }));
+  assertEquals(plan.summary, "Analyze effort for PBI: User Authentication");
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "analyzeEffort");
+  assertEquals(plan.steps[1].params.itemId, "42");
+});
+
+/**
+ * analyzeEffort の異常系。id が undefined の場合にエラーがスローされることを確認する。
+ * @description 不完全な PBI（id なし）の effort 集計で INVALID_INPUT エラーが発生すること
+ * @verify assertThrows で Error("INVALID_INPUT") がスローされること
+ */
+Deno.test("analyzeEffort should throw for undefined id", () => {
+  assertThrows(
+    () => productBacklogItemUseCase.analyzeEffort(makePbiId({ id: undefined })),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
 // ===== search =====
 
 /**

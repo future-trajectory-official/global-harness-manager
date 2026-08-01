@@ -2,7 +2,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import type { Plan } from "./types.ts";
 import type { GoalStatement, SprintIdentifier } from "./types.ts";
 import { sprintId } from "./types.ts";
-import { sprintUseCase } from "./sprint-usecase.ts";
+import { sprintUseCase, type VelocityMetrics } from "./sprint-usecase.ts";
 
 const scope = { owner: "my-org", repository: "my-repo" };
 
@@ -110,6 +110,54 @@ Deno.test("sprintUseCase - find without args should return Plan with search+view
   assertEquals(plan.steps[2].entity, "Sprint");
   assertEquals(plan.steps[2].operation, "view");
   assertEquals(plan.steps[2].params, {});
+});
+
+Deno.test("sprintUseCase - recordVelocity should return Plan with recordVelocity operation", () => {
+  const velocity: VelocityMetrics = {
+    sprintNumber: 16,
+    pbiCount: 3,
+    totalWeight: 8,
+    matchRate: 2 / 3,
+    summary: "乖離要約",
+  };
+  const plan = sprintUseCase.recordVelocity(makeId(), velocity) as Plan;
+  assertEquals(plan.summary, "Record velocity for sprint: Sprint 16");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[1].entity, "Sprint");
+  assertEquals(plan.steps[1].operation, "recordVelocity");
+  assertEquals(plan.steps[1].params.itemId, "16");
+  assertEquals(plan.steps[1].params.velocity, velocity);
+});
+
+Deno.test("sprintUseCase - recordVelocity should throw for undefined id", () => {
+  const velocity: VelocityMetrics = {
+    sprintNumber: 16,
+    pbiCount: 1,
+    totalWeight: 2,
+    matchRate: 1,
+    summary: "全一致",
+  };
+  assertThrows(
+    () => sprintUseCase.recordVelocity(sprintId(scope, 16), velocity),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
+Deno.test("sprintUseCase - recordVelocity should throw for negative pbiCount", () => {
+  const velocity: VelocityMetrics = {
+    sprintNumber: 16,
+    pbiCount: -1,
+    totalWeight: 2,
+    matchRate: 1,
+    summary: "",
+  };
+  assertThrows(
+    () => sprintUseCase.recordVelocity(makeId(), velocity),
+    Error,
+    "INVALID_INPUT",
+  );
 });
 
 // ====== sprintId factory tests ======

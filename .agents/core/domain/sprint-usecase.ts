@@ -34,7 +34,17 @@ export interface SprintUseCase {
   end(identifier: SprintIdentifier): Plan;
   setGoal(identifier: SprintIdentifier, goal: GoalStatement): Plan;
   setDueDate(identifier: SprintIdentifier, dueDate: Date): Plan;
+  recordVelocity(identifier: SprintIdentifier, velocity: VelocityMetrics): Plan;
   find(identifier?: SprintIdentifier): Plan;
+}
+
+/** スプリントベロシティの集計結果。Milestone description の `## Velocity` セクションに記録する。 */
+export interface VelocityMetrics {
+  sprintNumber: number;
+  pbiCount: number;
+  totalWeight: number;
+  matchRate: number;
+  summary: string;
 }
 
 export const sprintUseCase: SprintUseCase & {
@@ -128,6 +138,42 @@ export const sprintUseCase: SprintUseCase & {
         entity: "Sprint",
         operation: "view",
         params: { itemId: identifier.code },
+      }],
+    };
+  },
+
+  recordVelocity(identifier, velocity): Plan {
+    assertIdDefined(identifier.code, "record velocity for a sprint");
+    if (!Number.isInteger(velocity.sprintNumber) || velocity.sprintNumber < 1) {
+      throw new Error("INVALID_INPUT: sprintNumber must be a positive integer");
+    }
+    if (
+      !Number.isInteger(velocity.pbiCount) || !Number.isInteger(velocity.totalWeight) ||
+      velocity.pbiCount < 0 || velocity.totalWeight < 0
+    ) {
+      throw new Error("INVALID_INPUT: pbiCount and totalWeight must be non-negative integers");
+    }
+    if (
+      typeof velocity.matchRate !== "number" ||
+      !Number.isFinite(velocity.matchRate) ||
+      velocity.matchRate < 0 ||
+      velocity.matchRate > 1
+    ) {
+      throw new Error("INVALID_INPUT: matchRate must be a number between 0 and 1");
+    }
+    if (typeof velocity.summary !== "string" || velocity.summary.trim() === "") {
+      throw new Error("INVALID_INPUT: summary must not be empty");
+    }
+    return {
+      summary: `Record velocity for sprint: ${identifier.title.value}`,
+      steps: [scopeStep(identifier), {
+        entity: "Sprint",
+        operation: "recordVelocity",
+        params: {
+          itemId: identifier.code,
+          title: toMilestoneName(identifier),
+          velocity,
+        },
       }],
     };
   },

@@ -251,6 +251,7 @@ export type SprintOperation =
   | "create"
   | "endSprint"
   | "setGoal"
+  | "recordVelocity"
   | "setDueDate"
   | "view"
   | "search"
