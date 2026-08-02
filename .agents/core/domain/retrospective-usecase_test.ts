@@ -183,7 +183,26 @@ Deno.test("retrospectiveUseCase - find should return Plan with view step", () =>
   assertEquals(plan.steps[1].operation, "view");
 });
 
-Deno.test("retrospectiveUseCase - find should throw for undefined id", () => {
+/**
+ * find の正常系（codeのみ）。id が undefined でも code があれば Plan が返ることを確認する。
+ * @description read-project-state スキルは Issue 番号（code）を主キーに find を呼ぶため、id 無しで成立すること
+ * @verify code="42" を保持したまま find が Plan を返し、view 操作を含むこと
+ */
+Deno.test("retrospectiveUseCase - find should succeed with code even if id is undefined", () => {
+  const plan = retrospectiveUseCase.find(makeIdentifier({ id: undefined, code: "42" }));
+  assertEquals(plan.summary, "Find retrospective: Sprint 15 Retrospective");
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "view");
+  assertEquals(plan.steps[1].params.itemId, "42");
+});
+
+/**
+ * find の異常系。id と code の両方が undefined の場合にエラーがスローされることを確認する。
+ * @description 参照識別子（id/code）が完全に欠落している場合に INVALID_INPUT エラーが発生すること
+ * @verify assertThrows で Error("INVALID_INPUT") がスローされること
+ */
+Deno.test("retrospectiveUseCase - find should throw when both id and code are undefined", () => {
   assertThrows(
     () => retrospectiveUseCase.find(makeIdentifier({ id: undefined })),
     Error,

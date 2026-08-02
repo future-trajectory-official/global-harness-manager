@@ -23,7 +23,12 @@ function scopeStep(identifier: { scope: EntityScope }): Step {
     params: { ...identifier.scope },
   };
 }
-import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
+import {
+  assertIdDefined,
+  assertReferenceDefined,
+  assertStringNonEmpty,
+  assertTitleNonEmpty,
+} from "./validation.ts";
 
 /** Retrospective Issue の初期本文を生成する。スプリント情報をヘッダーとして記述する。 */
 function formatRetroBody(sprint: SprintIdentifier): string {
@@ -187,7 +192,7 @@ export const retrospectiveUseCase: RetrospectiveUseCase & {
 
   find(identifier): Plan {
     assertTitleNonEmpty(identifier.title, "Retrospective title");
-    assertIdDefined(identifier.id, "find a retrospective");
+    assertReferenceDefined(identifier.id, identifier.code, "find a retrospective");
     return {
       summary: `Find retrospective: ${identifier.title.value}`,
       steps: [scopeStep(identifier), {

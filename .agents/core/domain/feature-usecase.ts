@@ -22,7 +22,12 @@ function scopeStep(identifier: { scope: EntityScope }): Step {
     params: { ...identifier.scope },
   };
 }
-import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
+import {
+  assertIdDefined,
+  assertReferenceDefined,
+  assertStringNonEmpty,
+  assertTitleNonEmpty,
+} from "./validation.ts";
 
 /**
  * Feature の Issue Body を生成する。
@@ -193,7 +198,7 @@ export const featureUseCase: FeatureUseCase & {
 
   find(identifier): Plan {
     assertTitleNonEmpty(identifier.title, "Feature title");
-    assertIdDefined(identifier.id, "find a feature");
+    assertReferenceDefined(identifier.id, identifier.code, "find a feature");
     return {
       summary: `Find feature: ${identifier.title.value}`,
       steps: [scopeStep(identifier), {

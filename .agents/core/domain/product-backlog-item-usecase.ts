@@ -27,7 +27,12 @@ function scopeStep(identifier: { scope: EntityScope }): Step {
     params: { ...identifier.scope },
   };
 }
-import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
+import {
+  assertIdDefined,
+  assertReferenceDefined,
+  assertStringNonEmpty,
+  assertTitleNonEmpty,
+} from "./validation.ts";
 
 function assertWpDataNonEmpty(wps: WorkPackageData[] | undefined): void {
   if (!wps || wps.length === 0) {
@@ -396,7 +401,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
 
   find(identifier): Plan {
     assertTitleNonEmpty(identifier.title, "PBI title");
-    assertIdDefined(identifier.id, "find a PBI");
+    assertReferenceDefined(identifier.id, identifier.code, "find a PBI");
     return {
       summary: `Find PBI: ${identifier.title.value}`,
       steps: [scopeStep(identifier), {

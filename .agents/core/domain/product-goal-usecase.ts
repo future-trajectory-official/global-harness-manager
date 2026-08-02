@@ -2,7 +2,12 @@ import type { ExecutionResult, Plan, Step, StepResult } from "./types.ts";
 import type { ChangeReason, GoalStatement, ProductGoalIdentifier } from "./types.ts";
 import type { PlanGateway } from "./plan-gateway.ts";
 import { executePlan as _executePlan } from "./plan-executor.ts";
-import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
+import {
+  assertIdDefined,
+  assertReferenceDefined,
+  assertStringNonEmpty,
+  assertTitleNonEmpty,
+} from "./validation.ts";
 
 let _gateway: PlanGateway | undefined;
 
@@ -115,7 +120,7 @@ export const productGoalUseCase: ProductGoalUseCase & {
 
   find(identifier): Plan {
     assertTitleNonEmpty(identifier.title, "ProductGoal title");
-    assertIdDefined(identifier.id, "find a product goal");
+    assertReferenceDefined(identifier.id, identifier.code, "find a product goal");
     return {
       summary: `Find product goal: ${identifier.title.value}`,
       steps: [

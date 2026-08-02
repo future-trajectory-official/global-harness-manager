@@ -22,7 +22,12 @@ function scopeStep(identifier: { scope: EntityScope }): Step {
     params: { ...identifier.scope },
   };
 }
-import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
+import {
+  assertIdDefined,
+  assertReferenceDefined,
+  assertStringNonEmpty,
+  assertTitleNonEmpty,
+} from "./validation.ts";
 
 /**
  * Epic の Issue Body を生成する。
@@ -141,7 +146,7 @@ export const epicUseCase: EpicUseCase & {
 
   find(identifier): Plan {
     assertTitleNonEmpty(identifier.title, "Epic title");
-    assertIdDefined(identifier.id, "find an epic");
+    assertReferenceDefined(identifier.id, identifier.code, "find an epic");
     return {
       summary: `Find epic: ${identifier.title.value}`,
       steps: [scopeStep(identifier), {

@@ -20,3 +20,19 @@ export function assertIdDefined(id: string | undefined, label: string): void {
     );
   }
 }
+
+/**
+ * エンティティの参照に必要な識別子（id または code）が定義されていることを検証する。
+ * find 等の読取り操作は GitHub node-id（id）が無くても Issue 番号（code）だけで実行可能。
+ */
+export function assertReferenceDefined(
+  id: string | undefined,
+  code: string | undefined,
+  label: string,
+): void {
+  if (id === undefined && code === undefined) {
+    throw new Error(
+      `INVALID_INPUT: Cannot ${label} without a reference (id or code is undefined)`,
+    );
+  }
+}

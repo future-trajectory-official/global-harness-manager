@@ -27,7 +27,12 @@ function scopeStep(identifier: { scope: EntityScope }): Step {
     params: { ...identifier.scope },
   };
 }
-import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
+import {
+  assertIdDefined,
+  assertReferenceDefined,
+  assertStringNonEmpty,
+  assertTitleNonEmpty,
+} from "./validation.ts";
 
 function formatWpBody(statement: WorkPackageStatement): string {
   const lines: string[] = [];
@@ -442,7 +447,7 @@ export const workPackageUseCase: WorkPackageUseCase & {
 
   find(identifier): Plan {
     assertTitleNonEmpty(identifier.title, "WP title");
-    assertIdDefined(identifier.id, "find a WP");
+    assertReferenceDefined(identifier.id, identifier.code, "find a WP");
     return {
       summary: `Find WP: ${identifier.title.value}`,
       steps: [scopeStep(identifier), {

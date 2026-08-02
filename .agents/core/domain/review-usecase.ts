@@ -18,7 +18,12 @@ import type {
 } from "./types.ts";
 import type { PlanGateway } from "./plan-gateway.ts";
 import { executePlan as _executePlan } from "./plan-executor.ts";
-import { assertIdDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
+import {
+  assertIdDefined,
+  assertReferenceDefined,
+  assertStringNonEmpty,
+  assertTitleNonEmpty,
+} from "./validation.ts";
 
 let _gateway: PlanGateway | undefined;
 
@@ -296,7 +301,7 @@ export const reviewUseCase: ReviewUseCase & {
 
   find(identifier): Plan {
     assertTitleNonEmpty(identifier.title, "Review title");
-    assertIdDefined(identifier.id, "find a review");
+    assertReferenceDefined(identifier.id, identifier.code, "find a review");
     return {
       summary: `Find review: ${identifier.title.value}`,
       steps: [scopeStep(identifier), {
