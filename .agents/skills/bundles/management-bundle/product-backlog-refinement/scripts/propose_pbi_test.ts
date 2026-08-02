@@ -17,7 +17,7 @@ Deno.test("propose_pbi - should include parentFeature when provided", () => {
   const statement: ProductBacklogItemStatement = { summary: "Implement feature X" };
   const parentFeature = featureId("Auth", "node-id-123", "42");
   const plan = productBacklogItemUseCase.propose(identifier, statement, parentFeature);
-  assertEquals(plan.steps[1].params.parentFeature, "node-id-123");
+  assertEquals(plan.steps[1].params.parentFeature, "42");
 });
 
 Deno.test("propose_pbi - should throw for empty title", () => {

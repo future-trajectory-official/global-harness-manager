@@ -30,7 +30,8 @@ function makeEpicId(overrides?: Partial<EpicIdentifier>): EpicIdentifier {
   return {
     scope,
     title: { value: "Authentication" },
-    id: "epic-1",
+    id: "epic-node-1",
+    code: "epic-1",
     describe() {
       return { summary: "describe", steps: [] };
     },

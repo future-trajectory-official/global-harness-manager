@@ -34,7 +34,7 @@ Deno.test("define_wp - should include parentPbi in params", () => {
   const statement = makeStatement([{ number: "1", description: "Do something" }]);
   const parentPbi = pbiId("Parent PBI", "node-id-pbi", "42");
   const plan = workPackageUseCase.define(identifier, statement, parentPbi);
-  assertEquals(plan.steps[1].params.parentPbi, "node-id-pbi");
+  assertEquals(plan.steps[1].params.parentPbi, "42");
 });
 
 Deno.test("define_wp - should throw for empty title", () => {

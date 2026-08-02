@@ -52,7 +52,8 @@ function makeFeatureId(overrides?: Partial<FeatureIdentifier>): FeatureIdentifie
   return {
     scope,
     title: { value: "Authentication" },
-    id: "feature-1",
+    id: "feature-node-1",
+    code: "feature-1",
     describe() {
       return { summary: "describe", steps: [] };
     },

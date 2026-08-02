@@ -152,7 +152,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
         params: {
           title: identifier.title.value,
           body: formatPbiBody(statement),
-          ...(parentFeature?.id ? { parentFeature: parentFeature.id } : {}),
+          ...(parentFeature?.code ? { parentFeature: parentFeature.code } : {}),
         },
       }],
     };
@@ -296,7 +296,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
           operation: "defineAcceptanceCriteria" as const,
           params: {
             title: wp.identifier.title.value,
-            parentPbi: identifier.id,
+            parentPbi: identifier.code,
             body: wp.statement.acceptanceCriteria.items.map((ac) =>
               `- [ ] AC${ac.number}: ${ac.description}`
             ).join("\n"),
@@ -317,7 +317,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
         operation: "assignToFeature",
         params: {
           itemId: identifier.code,
-          parentFeature: feature.id,
+          parentFeature: feature.code,
         },
       }],
     };

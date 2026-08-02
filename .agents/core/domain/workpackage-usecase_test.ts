@@ -49,7 +49,8 @@ function makeParentPbi(
   return {
     scope,
     title: { value: "User Authentication" },
-    id: "pbi-1",
+    id: "pbi-node-1",
+    code: "pbi-1",
     describe() {
       return { summary: "describe", steps: [] };
     },

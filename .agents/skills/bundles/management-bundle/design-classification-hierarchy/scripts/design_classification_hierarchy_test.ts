@@ -17,7 +17,7 @@ Deno.test("define-epic should generate correct Plan", () => {
 
 Deno.test("define-feature with parentEpic should generate correct Plan", () => {
   const featureId = identify(scope, "ログイン機能");
-  const parentEpic = identify(scope, "認証基盤", "42");
+  const parentEpic = identify(scope, "認証基盤", "node-id-epic", "42");
   const plan = featureUseCase.define(
     featureId,
     { description: "ログイン画面と認証ロジック" },
@@ -55,7 +55,7 @@ Deno.test("define-feature should throw for empty description", () => {
 });
 
 Deno.test("show-hierarchy should generate correct Plan", () => {
-  const identifier = identify(scope, "認証基盤", "42", "42");
+  const identifier = identify(scope, "認証基盤", "node-id-epic", "42");
   const plan = epicUseCase.showHierarchy(identifier);
 
   assertEquals(plan.summary, "Show hierarchy: 認証基盤");
