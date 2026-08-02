@@ -185,7 +185,7 @@ export const workPackageUseCase: WorkPackageUseCase & {
           operation: "define",
           params: {
             title: identifier.title.value,
-            parentPbi: parentPbi.id,
+            parentPbi: parentPbi.code,
             body: formatWpBody(statement),
           },
         },
@@ -320,7 +320,7 @@ export const workPackageUseCase: WorkPackageUseCase & {
         operation: "assignToProductBacklogItem",
         params: {
           itemId: identifier.code,
-          parentPbi: pbi.id,
+          parentPbi: pbi.code,
         },
       }],
     };

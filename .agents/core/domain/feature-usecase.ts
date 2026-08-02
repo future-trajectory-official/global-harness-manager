@@ -125,8 +125,8 @@ export const featureUseCase: FeatureUseCase & {
         operation: "create",
         params: {
           title: identifier.title.value,
-          body: formatFeatureBody(statement, parentEpic?.id),
-          ...(parentEpic?.id ? { parentEpic: parentEpic.id } : {}),
+          body: formatFeatureBody(statement, parentEpic?.code),
+          ...(parentEpic?.code ? { parentEpic: parentEpic.code } : {}),
         },
       }],
     };
@@ -170,7 +170,7 @@ export const featureUseCase: FeatureUseCase & {
         operation: "update",
         params: {
           itemId: identifier.code,
-          parentEpic: epic.id,
+          parentEpic: epic.code,
         },
       }],
     };
