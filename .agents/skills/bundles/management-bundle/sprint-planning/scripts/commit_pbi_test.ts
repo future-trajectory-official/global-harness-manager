@@ -2,7 +2,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { pbiId, sprintRef } from "../../../../../core/domain/types.ts";
 import { productBacklogItemUseCase } from "../../../../../core/domain/product-backlog-item-usecase.ts";
 
-const validPbi = pbiId("Login feature", "42", "42");
+const validPbi = pbiId("Login feature", "node-id-pbi", "42");
 const sprint19 = sprintRef(19);
 
 Deno.test("commit_pbi - should generate commit plan", () => {

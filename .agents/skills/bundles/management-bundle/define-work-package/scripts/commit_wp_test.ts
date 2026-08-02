@@ -2,7 +2,7 @@ import { assertEquals, assertThrows } from "@std/assert";
 import { sprintRef, wpId } from "../../../../../core/domain/types.ts";
 import { workPackageUseCase } from "../../../../../core/domain/workpackage-usecase.ts";
 
-const validWp = wpId("Implement login UI", "42", "42");
+const validWp = wpId("Implement login UI", "node-id-wp", "42");
 const sprint19 = sprintRef(19);
 
 Deno.test("commit_wp - should generate commit plan", () => {

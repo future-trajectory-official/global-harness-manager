@@ -9,7 +9,7 @@ const scope = { owner: "test", repository: "test-repo" };
 // ===== show-hierarchy =====
 
 Deno.test("show-hierarchy should generate correct Plan", () => {
-  const identifier = identify(scope, "認証基盤", "42", "42");
+  const identifier = identify(scope, "認証基盤", "node-id-epic", "42");
   const plan = epicUseCase.showHierarchy(identifier);
 
   assertEquals(plan.summary, "Show hierarchy: 認証基盤");
@@ -34,7 +34,7 @@ Deno.test("show-hierarchy should throw for undefined id", () => {
 // ===== revise-epic =====
 
 Deno.test("revise-epic should generate correct Plan", () => {
-  const identifier = identify(scope, "認証基盤", "42", "42");
+  const identifier = identify(scope, "認証基盤", "node-id-epic", "42");
   const plan = epicUseCase.revise(
     identifier,
     { description: "ユーザー認証に関する全機能" },
@@ -50,7 +50,7 @@ Deno.test("revise-epic should generate correct Plan", () => {
 });
 
 Deno.test("revise-epic should throw for empty description", () => {
-  const identifier = identify(scope, "認証基盤", "42", "42");
+  const identifier = identify(scope, "認証基盤", "node-id-epic", "42");
   try {
     epicUseCase.revise(
       identifier,
@@ -67,7 +67,7 @@ Deno.test("revise-epic should throw for empty description", () => {
 // ===== revise-feature =====
 
 Deno.test("revise-feature should generate correct Plan", () => {
-  const identifier = identify(scope, "パスワード管理", "45", "45");
+  const identifier = identify(scope, "パスワード管理", "node-id-feature", "45");
   const plan = featureUseCase.revise(
     identifier,
     { description: "パスワード変更・リセット" },
@@ -96,8 +96,8 @@ Deno.test("revise-feature should succeed with code even if id is undefined", () 
 // ===== assign-feature-to-epic =====
 
 Deno.test("assign-feature-to-epic should generate correct Plan", () => {
-  const featureId = identify(scope, "パスワード管理", "45", "45");
-  const epic = identify(scope, "認証基盤", "42");
+  const featureId = identify(scope, "パスワード管理", "node-id-feature", "45");
+  const epic = identify(scope, "認証基盤", "node-id-epic", "42");
   const plan = featureUseCase.assignToEpic(featureId, epic);
 
   assertEquals(plan.steps.length, 2);
@@ -120,7 +120,7 @@ Deno.test("assign-feature-to-epic should throw for undefined feature id", () => 
 });
 
 Deno.test("assign-feature-to-epic should throw for undefined epic id", () => {
-  const featureId = identify(scope, "パスワード管理", "45", "45");
+  const featureId = identify(scope, "パスワード管理", "node-id-feature", "45");
   const epic = identify(scope, "認証基盤");
   try {
     featureUseCase.assignToEpic(featureId, epic);
@@ -134,7 +134,7 @@ Deno.test("assign-feature-to-epic should throw for undefined epic id", () => {
 // ===== unassign-feature-from-epic =====
 
 Deno.test("unassign-feature-from-epic should generate correct Plan", () => {
-  const featureId = identify(scope, "パスワード管理", "45", "45");
+  const featureId = identify(scope, "パスワード管理", "node-id-feature", "45");
   const plan = featureUseCase.unassignFromEpic(featureId);
 
   assertEquals(plan.steps.length, 2);
@@ -158,8 +158,8 @@ Deno.test("unassign-feature-from-epic should throw for undefined id", () => {
 // ===== assign-pbi-to-feature =====
 
 Deno.test("assign-pbi-to-feature should generate correct Plan", () => {
-  const pbiId = identify(scope, "パスワード変更画面", "50", "50");
-  const feature = identify(scope, "パスワード管理", "45");
+  const pbiId = identify(scope, "パスワード変更画面", "node-id-pbi", "50");
+  const feature = identify(scope, "パスワード管理", "node-id-feature", "45");
   const plan = productBacklogItemUseCase.assignToFeature(pbiId, feature);
 
   assertEquals(plan.steps.length, 2);
@@ -182,7 +182,7 @@ Deno.test("assign-pbi-to-feature should throw for undefined pbi id", () => {
 });
 
 Deno.test("assign-pbi-to-feature should throw for undefined feature id", () => {
-  const pbiId = identify(scope, "パスワード変更画面", "50", "50");
+  const pbiId = identify(scope, "パスワード変更画面", "node-id-pbi", "50");
   const feature = identify(scope, "パスワード管理");
   try {
     productBacklogItemUseCase.assignToFeature(pbiId, feature);
@@ -196,7 +196,7 @@ Deno.test("assign-pbi-to-feature should throw for undefined feature id", () => {
 // ===== unassign-pbi-from-feature =====
 
 Deno.test("unassign-pbi-from-feature should generate correct Plan", () => {
-  const pbiId = identify(scope, "パスワード変更画面", "50", "50");
+  const pbiId = identify(scope, "パスワード変更画面", "node-id-pbi", "50");
   const plan = productBacklogItemUseCase.unassignFromFeature(pbiId);
 
   assertEquals(plan.steps.length, 2);
