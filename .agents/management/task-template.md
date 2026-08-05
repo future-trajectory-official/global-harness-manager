@@ -101,12 +101,20 @@ GUARD:NOTE この GUARD ブロックはテンプレートの不変契約を宣�
 
 ### Phase 2: Foreach (AC[].count) ACベースの開発
 
-ACごとに「実装→WIP保存」を1セットとして逐次実行する：
+ACごとに「実装→WIP保存→**停止・報告**」を1セットとして逐次実行する：
+
+<!--
+停止・報告ルール: 各AC完了時に必ず停止し、POへ以下を報告して次の指示を待つ。
+- 報告内容: ①何が実装できたか ②テスト結果 ③次のACの予定
+- POの指示を待たずに次ACへ進んではならない。
+-->
 
 - [ ] **[skill:ac-checkpoint-implementation] (AC-1)**: [AC-1の内容]
 - [ ] **[skill:hybrid-triage-commit] (wip)**: AC-1完了をWIP保存
+- [ ] **[停止・報告]**: AC-1の成果・テスト結果・次AC予定をPOに報告し、指示を待つ
 - [ ] **[skill:ac-checkpoint-implementation] (AC-2)**: [AC-2の内容]
 - [ ] **[skill:hybrid-triage-commit] (wip)**: AC-2完了をWIP保存
+- [ ] **[停止・報告]**: AC-2の成果・テスト結果・次AC予定をPOに報告し、指示を待つ
 - [ ] ...（以降、AC数に応じて展開）
 
 ### Phase 3: コードレビューと品質検証
