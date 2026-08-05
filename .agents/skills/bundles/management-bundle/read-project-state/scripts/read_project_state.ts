@@ -21,7 +21,7 @@ import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
 /** read-project-state スキルの入力。 */
-interface ReadProjectStateInput {
+export interface ReadProjectStateInput {
   entityType: EntityType;
   operation: "search" | "find";
   params: Record<string, unknown>;
@@ -49,35 +49,58 @@ function toPlan(condition: DescribeCondition): Plan {
   };
 }
 
-/** ディスパッチする操作ハンドラ。search は単一インスタンスEntityでは未提供。 */
-interface OperationDispatch {
-  search?: (params: Record<string, unknown>) => Plan;
-  find: (params: Record<string, unknown>) => Plan;
+/** Plan を実行できる UseCase。 */
+export interface Executable {
+  executePlan(plan: Plan): Promise<{
+    stepResults: readonly StepResult[];
+    getStep(entity: string, operation: string): StepResult | undefined;
+  }>;
 }
 
-/** 検索条件の共通構築。entityType と labelType から describe() 付き条件を作る。 */
+/**
+ * ディスパッチする操作ハンドラ。
+ * - useCase: Plan 実行用の UseCase（getUseCaseFor の二重マップを廃止）
+ * - search: 一覧検索。単一インスタンスEntityでは未提供
+ * - find: 詳細閲覧
+ * - notImplemented: Gateway 未登録で未実装の Entity を明示するフラグ
+ */
+interface OperationDispatch {
+  useCase: Executable;
+  search?: (params: Record<string, unknown>) => Plan;
+  find: (params: Record<string, unknown>) => Plan;
+  notImplemented?: boolean;
+}
+
+/**
+ * search 条件の共通構築。entityType と labelType から describe() 付き条件を作る。
+ * statusSupported が false の Entity に status が指定された場合は明示エラーを投げる
+ * （黙殺して全件を返す誤動作を防ぐ）。
+ */
 function buildSearchCondition(
   entityType: string,
   labelType: string,
   params: Record<string, unknown>,
+  options: { statusSupported: boolean },
 ): DescribeCondition {
+  if (params.status !== undefined && params.status !== "" && !options.statusSupported) {
+    throw new Error(
+      `INVALID_INPUT: status filter is not supported for ${entityType} search. Use state instead.`,
+    );
+  }
   const filters: string[] = [];
   const stepParams: Record<string, unknown> = { labelType };
-  if (params.status !== undefined && params.status !== "") {
-    filters.push(`status="${params.status}"`);
-    stepParams.status = params.status;
-  }
-  if (params.sprintNumber !== undefined && params.sprintNumber !== "") {
-    filters.push(`sprint=${params.sprintNumber}`);
-    stepParams.sprintNumber = params.sprintNumber;
-  }
-  if (params.state !== undefined && params.state !== "") {
-    filters.push(`state="${params.state}"`);
-    stepParams.state = params.state;
-  }
-  if (params.keyword !== undefined && params.keyword !== "") {
-    filters.push(`keyword="${params.keyword}"`);
-    stepParams.keyword = params.keyword;
+  const specs: readonly [key: string, template: string][] = [
+    ["status", `status="%s"`],
+    ["sprintNumber", `sprint=%s`],
+    ["state", `state="%s"`],
+    ["keyword", `keyword="%s"`],
+  ];
+  for (const [key, template] of specs) {
+    const value = params[key];
+    if (value !== undefined && value !== "") {
+      filters.push(template.replace("%s", String(value)));
+      stepParams[key] = value;
+    }
   }
   const summary = filters.length > 0
     ? `Search ${entityType}: ${filters.join(", ")}`
@@ -92,19 +115,32 @@ function buildSearchCondition(
   };
 }
 
-/** find の入力から identifier を構築する。code は Issue 番号。 */
+/** params から code（Issue 番号）をエイリアス優先順で解決する。 */
+function resolveCode(
+  params: Record<string, unknown>,
+  aliases: readonly string[],
+): string | undefined {
+  for (const key of aliases) {
+    const value = params[key];
+    if (value !== undefined && value !== "") {
+      return String(value);
+    }
+  }
+  return undefined;
+}
+
+/**
+ * find の入力から identifier を構築する。
+ * code は Issue 番号の主キー。id のみの指定は Gateway で解決できないため拒否する。
+ */
 function toIdentifier(
   entity: string,
   title: string,
   params: Record<string, unknown>,
 ) {
   const id = params.id !== undefined ? String(params.id) : undefined;
-  const code = params.itemId !== undefined
-    ? String(params.itemId)
-    : params.code !== undefined
-    ? String(params.code)
-    : undefined;
-  if (code === undefined && id === undefined) {
+  const code = resolveCode(params, ["itemId", "code"]);
+  if (code === undefined) {
     throw new Error(`INVALID_INPUT: find for ${entity} requires itemId (Issue number)`);
   }
   return identify(UNKNOWN_SCOPE, title, id, code);
@@ -129,76 +165,63 @@ function unsupportedSearch(entity: string): never {
   );
 }
 
-/** Gateway 未登録エラーを明示的な未実装エラーへ変換する。 */
-function normalizeExecutionError(entity: string, error: string): string {
-  if (entity === "Retrospective" && /No handler registered/.test(error)) {
-    return `Retrospective: not yet implemented in gateway layer`;
-  }
-  return error;
+/** 検索・閲覧とも不可の非エンティティ（Scope）専用エラー。 */
+function invalidScopeOperation(): never {
+  throw new Error("INVALID_INPUT: Scope is not a searchable/findable entity");
 }
 
 /** EntityType ごとのディスパッチ定義（Strategyパターン）。 */
 const dispatcher: Record<EntityType, OperationDispatch> = {
   Vision: {
+    useCase: visionUseCase,
     find: (params) => visionUseCase.find(toIdentifier("Vision", "Vision", params)),
   },
   ProductGoal: {
+    useCase: productGoalUseCase,
     find: (params) => productGoalUseCase.find(toIdentifier("ProductGoal", "Product Goal", params)),
   },
   Epic: {
+    useCase: epicUseCase,
     search: (params) => {
-      const condition = buildSearchCondition("Epic", "Epic", params);
-      return epicUseCase.search({
-        keyword: params.keyword !== undefined ? String(params.keyword) : undefined,
-        describe: () => toPlan(condition),
-      });
+      const condition = buildSearchCondition("Epic", "Epic", params, { statusSupported: false });
+      return epicUseCase.search({ describe: () => toPlan(condition) });
     },
     find: (params) => epicUseCase.find(toIdentifier("Epic", "Epic", params)),
   },
   Feature: {
+    useCase: featureUseCase,
     search: (params) => {
-      const condition = buildSearchCondition("Feature", "Feature", params);
-      return featureUseCase.search({
-        keyword: params.keyword !== undefined ? String(params.keyword) : undefined,
-        describe: () => toPlan(condition),
+      const condition = buildSearchCondition("Feature", "Feature", params, {
+        statusSupported: false,
       });
+      return featureUseCase.search({ describe: () => toPlan(condition) });
     },
     find: (params) => featureUseCase.find(toIdentifier("Feature", "Feature", params)),
   },
   ProductBacklogItem: {
+    useCase: productBacklogItemUseCase,
     search: (params) => {
-      const condition = buildSearchCondition("ProductBacklogItem", "PBI", params);
-      return productBacklogItemUseCase.search({
-        keyword: params.keyword !== undefined ? String(params.keyword) : undefined,
-        sprintNumber: params.sprintNumber !== undefined ? Number(params.sprintNumber) : undefined,
-        status: params.status !== undefined ? String(params.status) : undefined,
-        state: params.state !== undefined ? String(params.state) : undefined,
-        describe: () => toPlan(condition),
+      const condition = buildSearchCondition("ProductBacklogItem", "PBI", params, {
+        statusSupported: true,
       });
+      return productBacklogItemUseCase.search({ describe: () => toPlan(condition) });
     },
     find: (params) => productBacklogItemUseCase.find(toIdentifier("PBI", "PBI", params)),
   },
   WorkPackage: {
+    useCase: workPackageUseCase,
     search: (params) => {
-      const condition = buildSearchCondition("WorkPackage", "WP", params);
-      return workPackageUseCase.search({
-        keyword: params.keyword !== undefined ? String(params.keyword) : undefined,
-        sprintNumber: params.sprintNumber !== undefined ? Number(params.sprintNumber) : undefined,
-        status: params.status !== undefined ? String(params.status) : undefined,
-        describe: () => toPlan(condition),
+      const condition = buildSearchCondition("WorkPackage", "WP", params, {
+        statusSupported: true,
       });
+      return workPackageUseCase.search({ describe: () => toPlan(condition) });
     },
     find: (params) => workPackageUseCase.find(toIdentifier("WP", "WP", params)),
   },
   Sprint: {
+    useCase: sprintUseCase,
     find: (params) => {
-      const code = params.itemId !== undefined
-        ? String(params.itemId)
-        : params.code !== undefined
-        ? String(params.code)
-        : params.number !== undefined
-        ? String(params.number)
-        : undefined;
+      const code = resolveCode(params, ["itemId", "code", "number"]);
       if (code === undefined) {
         return sprintUseCase.find();
       }
@@ -210,30 +233,35 @@ const dispatcher: Record<EntityType, OperationDispatch> = {
     },
   },
   Review: {
+    useCase: reviewUseCase,
     search: (params) => {
-      const condition = buildSearchCondition("Review", "Review", params);
-      return reviewUseCase.search({
-        sprintNumber: params.sprintNumber !== undefined ? Number(params.sprintNumber) : undefined,
-        describe: () => toPlan(condition),
+      const condition = buildSearchCondition("Review", "Review", params, {
+        statusSupported: false,
       });
+      return reviewUseCase.search({ describe: () => toPlan(condition) });
     },
     find: (params) => reviewUseCase.find(toIdentifier("Review", "Review", params)),
   },
   Retrospective: {
+    useCase: retrospectiveUseCase,
+    notImplemented: true,
     search: (params) => {
-      const condition = buildSearchCondition("Retrospective", "Retrospective", params);
-      return retrospectiveUseCase.search({
-        sprintNumber: params.sprintNumber !== undefined ? Number(params.sprintNumber) : undefined,
-        describe: () => toPlan(condition),
+      const condition = buildSearchCondition("Retrospective", "Retrospective", params, {
+        statusSupported: false,
       });
+      return retrospectiveUseCase.search({ describe: () => toPlan(condition) });
     },
     find: (params) =>
       retrospectiveUseCase.find(toIdentifier("Retrospective", "Retrospective", params)),
   },
   Scope: {
-    find: () => {
-      throw new Error("INVALID_INPUT: Scope is not a searchable/findable entity");
+    useCase: {
+      executePlan: () => {
+        throw new Error("unreachable");
+      },
     },
+    search: () => invalidScopeOperation(),
+    find: () => invalidScopeOperation(),
   },
 };
 
@@ -260,48 +288,19 @@ async function executeAndFormat(
   input: ReadProjectStateInput,
   plan: Plan,
 ): Promise<unknown> {
-  const useCase = getUseCaseFor(input.entityType);
-  const result = await useCase.executePlan(plan);
+  const dispatch = dispatcher[input.entityType];
+  if (dispatch.notImplemented) {
+    return { success: false, error: `${input.entityType}: not yet implemented in gateway layer` };
+  }
+  const result = await dispatch.useCase.executePlan(plan);
   const step = result.getStep(input.entityType, input.operation === "find" ? "view" : "search");
   if (step) {
-    const normalized = normalizeExecutionError(input.entityType, step.error ?? "");
     if (step.error) {
-      return { success: false, error: normalized, step: formatStepResult(step) };
+      return { success: false, error: step.error, step: formatStepResult(step) };
     }
     return { success: true, step: formatStepResult(step) };
   }
   return { success: true, stepResults: result.stepResults };
-}
-
-interface Executable {
-  executePlan(plan: Plan): Promise<{
-    stepResults: readonly StepResult[];
-    getStep(entity: string, operation: string): StepResult | undefined;
-  }>;
-}
-
-function getUseCaseFor(entity: EntityType): Executable {
-  const useCases: Record<EntityType, Executable> = {
-    Vision: visionUseCase,
-    ProductGoal: productGoalUseCase,
-    Epic: epicUseCase,
-    Feature: featureUseCase,
-    ProductBacklogItem: productBacklogItemUseCase,
-    WorkPackage: workPackageUseCase,
-    Sprint: sprintUseCase,
-    Review: reviewUseCase,
-    Retrospective: retrospectiveUseCase,
-    Scope: {
-      executePlan: async () => {
-        await Promise.resolve();
-        return {
-          stepResults: [],
-          getStep: () => undefined,
-        };
-      },
-    },
-  };
-  return useCases[entity];
 }
 
 async function main(): Promise<void> {
