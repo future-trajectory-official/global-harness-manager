@@ -238,7 +238,10 @@ const dispatcher: Record<EntityType, OperationDispatch> = {
 };
 
 /** 入力から操作対象の Plan を取得する。 */
-function buildPlan(input: ReadProjectStateInput): Plan {
+export function buildPlan(input: ReadProjectStateInput): Plan {
+  if (input.operation !== "search" && input.operation !== "find") {
+    throw new Error(`INVALID_INPUT: operation must be "search" or "find"`);
+  }
   const dispatch = dispatcher[input.entityType];
   if (!dispatch) {
     throw new Error(`INVALID_INPUT: Unknown entityType: ${input.entityType}`);
@@ -304,9 +307,6 @@ function getUseCaseFor(entity: EntityType): Executable {
 async function main(): Promise<void> {
   try {
     const input = await readJsonFromStdin<ReadProjectStateInput>();
-    if (input.operation !== "search" && input.operation !== "find") {
-      throw new Error(`INVALID_INPUT: operation must be "search" or "find"`);
-    }
     const plan = buildPlan(input);
     const output = await executeAndFormat(input, plan);
     console.log(JSON.stringify(output, null, 2));
