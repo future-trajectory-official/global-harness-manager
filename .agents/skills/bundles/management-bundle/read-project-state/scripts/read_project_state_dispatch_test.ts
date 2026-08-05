@@ -1,11 +1,10 @@
-import { assertEquals, assertExists } from "@std/assert";
-import { buildPlan } from "./read_project_state.ts";
+import { assertEquals, assertExists, assertThrows } from "@std/assert";
+import { buildPlan, type ReadProjectStateInput } from "./read_project_state.ts";
 import type { Plan } from "../../../../../core/domain/types.ts";
 
-/**
- * 生成された Plan の指定 entity の step を探す。
- * search は Scope:resolve が前置されるため、対象 entity の step を検索する。
- */
+type Input = ReadProjectStateInput;
+
+/** 生成された Plan の指定 entity の step を探す。 */
 function findStep(plan: Plan, entity: string, operation: string) {
   return plan.steps.find((s) => s.entity === entity && s.operation === operation);
 }
@@ -26,13 +25,7 @@ for (
 ) {
   Deno.test(`read_project_state dispatch - ${entityType} search delegates to use case`, () => {
     const params: Record<string, unknown> = { [conditionKey]: "42" };
-    const plan = buildPlan(
-      {
-        entityType,
-        operation: "search",
-        params,
-      } as Parameters<typeof buildPlan>[0],
-    );
+    const plan = buildPlan({ entityType, operation: "search", params } as Input);
 
     const step = findStep(plan, entityType, "search");
     assertExists(step, `search step for ${entityType} not found`);
@@ -58,13 +51,7 @@ for (
   ] as const
 ) {
   Deno.test(`read_project_state dispatch - ${entityType} find by code delegates to use case`, () => {
-    const plan = buildPlan(
-      {
-        entityType,
-        operation: "find",
-        params: { itemId: "42" },
-      } as Parameters<typeof buildPlan>[0],
-    );
+    const plan = buildPlan({ entityType, operation: "find", params: { itemId: "42" } } as Input);
 
     const step = findStep(plan, entityType, "view");
     assertExists(step, `view step for ${entityType} not found`);
@@ -77,24 +64,16 @@ for (
  * @verify code なし: Sprint search step が含まれる。code あり: view step の itemId が指定値であること
  */
 Deno.test("read_project_state dispatch - Sprint find resolves latest open or by number", () => {
-  const latestPlan = buildPlan(
-    {
-      entityType: "Sprint",
-      operation: "find",
-      params: {},
-    } as Parameters<typeof buildPlan>[0],
-  );
+  const latestPlan = buildPlan({ entityType: "Sprint", operation: "find", params: {} } as Input);
   const latestStep = findStep(latestPlan, "Sprint", "search");
   assertExists(latestStep, "latest open search step not found");
   assertEquals(latestStep.params.state, "open");
 
-  const byNumberPlan = buildPlan(
-    {
-      entityType: "Sprint",
-      operation: "find",
-      params: { itemId: "19" },
-    } as Parameters<typeof buildPlan>[0],
-  );
+  const byNumberPlan = buildPlan({
+    entityType: "Sprint",
+    operation: "find",
+    params: { itemId: "19" },
+  } as Input);
   const byNumberStep = findStep(byNumberPlan, "Sprint", "view");
   assertExists(byNumberStep, "by-number view step not found");
   assertEquals(byNumberStep.params.itemId, "19");
@@ -106,21 +85,24 @@ Deno.test("read_project_state dispatch - Sprint find resolves latest open or by 
  */
 for (const entityType of ["Vision", "ProductGoal", "Sprint"] as const) {
   Deno.test(`read_project_state dispatch - ${entityType} search throws unsupported error`, () => {
-    let thrown = "";
-    try {
-      buildPlan(
-        {
-          entityType,
-          operation: "search",
-          params: {},
-        } as Parameters<typeof buildPlan>[0],
-      );
-    } catch (e) {
-      thrown = (e as Error).message;
-    }
-    assertExists(
-      thrown.match(/search is not supported for/),
-      `expected unsupported error, got: ${thrown}`,
+    assertThrows(
+      () => buildPlan({ entityType, operation: "search", params: {} } as Input),
+      Error,
+      "search is not supported for",
+    );
+  });
+}
+
+/**
+ * @description status フィルタ未対応Entity（Epic / Feature / Review）の search が明示エラーを投げること
+ * @verify buildPlan が "status filter is not supported" のエラーを投げ、黙殺して全件返さないこと
+ */
+for (const entityType of ["Epic", "Feature", "Review"] as const) {
+  Deno.test(`read_project_state dispatch - ${entityType} search with status throws error`, () => {
+    assertThrows(
+      () => buildPlan({ entityType, operation: "search", params: { status: "Todo" } } as Input),
+      Error,
+      "status filter is not supported",
     );
   });
 }
@@ -130,27 +112,32 @@ for (const entityType of ["Vision", "ProductGoal", "Sprint"] as const) {
  * @verify 未知の entityType と operation で明確なエラーが投げられること
  */
 Deno.test("read_project_state dispatch - unknown entityType and operation throw", () => {
-  let thrown1 = "";
-  try {
-    buildPlan({
-      entityType: "Unknown" as Parameters<typeof buildPlan>[0]["entityType"],
-      operation: "find",
-      params: {},
-    });
-  } catch (e) {
-    thrown1 = (e as Error).message;
-  }
-  assertExists(thrown1.match(/Unknown entityType/), `expected Unknown entityType, got: ${thrown1}`);
+  assertThrows(
+    () =>
+      buildPlan({ entityType: "Unknown" as Input["entityType"], operation: "find", params: {} }),
+    Error,
+    "Unknown entityType",
+  );
+  assertThrows(
+    () => buildPlan({ entityType: "Epic", operation: "unknown" as Input["operation"], params: {} }),
+    Error,
+    "operation must be",
+  );
+});
 
-  let thrown2 = "";
-  try {
-    buildPlan({
-      entityType: "Epic",
-      operation: "unknown" as Parameters<typeof buildPlan>[0]["operation"],
-      params: {},
-    });
-  } catch (e) {
-    thrown2 = (e as Error).message;
-  }
-  assertExists(thrown2.match(/operation must be/), `expected operation error, got: ${thrown2}`);
+/**
+ * @description Scope の search / find が「非エンティティ」専用エラーを投げること
+ * @verify 誤解を招く「single-instance」文言ではなく、Scope 専用のエラーが投げられること
+ */
+Deno.test("read_project_state dispatch - Scope throws dedicated error", () => {
+  assertThrows(
+    () => buildPlan({ entityType: "Scope", operation: "search", params: {} }),
+    Error,
+    "Scope is not a searchable/findable entity",
+  );
+  assertThrows(
+    () => buildPlan({ entityType: "Scope", operation: "find", params: {} }),
+    Error,
+    "Scope is not a searchable/findable entity",
+  );
 });
