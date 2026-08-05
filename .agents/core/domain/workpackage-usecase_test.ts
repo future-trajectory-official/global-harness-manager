@@ -496,7 +496,27 @@ Deno.test("find should return Plan with view", () => {
   assertEquals(plan.steps[1].operation, "view");
 });
 
-Deno.test("find should throw for undefined id", () => {
+/**
+ * find の正常系（codeのみ）。id が undefined でも code があれば Plan が返ることを確認する。
+ * @description read-project-state スキルは Issue 番号（code）を主キーに find を呼ぶため、id 無しで成立すること
+ * @verify code="42" を保持したまま find が Plan を返し、view 操作を含むこと
+ */
+Deno.test("find should succeed with code even if id is undefined", () => {
+  const plan = workPackageUseCase.find(makeWpId({ id: undefined, code: "42" }));
+  assertEquals(plan.summary, "Find WP: Implement Login");
+  assertEquals(plan.steps.length, 2);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "view");
+  assertEquals(plan.steps[1].params.itemId, "42");
+});
+
+/**
+ * find の異常系。id と code の両方が undefined の場合にエラーがスローされることを確認する。
+ * @description 参照識別子（id/code）が完全に欠落している場合に INVALID_INPUT エラーが発生すること
+ * @verify assertThrows で Error("INVALID_INPUT") がスローされること
+ */
+Deno.test("find should throw when both id and code are undefined", () => {
   assertThrows(
     () => workPackageUseCase.find(makeWpId({ id: undefined })),
     Error,
