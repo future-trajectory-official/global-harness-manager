@@ -23,7 +23,7 @@ function scopeStep(identifier: { scope: EntityScope }): Step {
     params: { ...identifier.scope },
   };
 }
-import { assertIdDefined, assertStringNonEmpty } from "./validation.ts";
+import { assertIdDefined, assertReferenceDefined, assertStringNonEmpty } from "./validation.ts";
 
 function toMilestoneName(identifier: SprintIdentifier): string {
   return identifier.title.value;
@@ -131,7 +131,7 @@ export const sprintUseCase: SprintUseCase & {
         ],
       };
     }
-    assertIdDefined(identifier.code, "find a sprint");
+    assertReferenceDefined(identifier.id, identifier.code, "find a sprint");
     return {
       summary: `Find sprint: ${identifier.title.value}`,
       steps: [scopeStep(identifier), {
