@@ -111,15 +111,13 @@ Labels: <labels>
 
 ## EntityType 一覧
 
-| EntityType         | search | find           |
-| ------------------ | ------ | -------------- |
-| Vision             | 対象外 | あり           |
-| ProductGoal        | 対象外 | あり           |
-| Sprint             | 対象外 | あり           |
-| Epic               | あり   | あり           |
-| Feature            | あり   | あり           |
-| ProductBacklogItem | あり   | あり           |
-| WorkPackage        | あり   | あり           |
-| Review             | あり   | あり           |
-| Retrospective      | あり   | あり（未実装） |
-| Scope              | なし   | なし           |
+下表は
+[input-schema.md](/.agents/skills/bundles/management-bundle/read-project-state/references/input-schema.md)
+の「EntityType 一覧と対応操作」を**正**とする（二重管理を避けるため、詳細な対応表は input-schema.md
+側に集約）。個別の対応関係・params キー・実行例は必ず input-schema.md を参照する。
+
+要点のみ:
+
+- **search 対象外**（単一インスタンス）: Vision / ProductGoal / Sprint
+- **未実装**（Gateway 未登録）: Retrospective
+- **検索・閲覧とも不可**: Scope
