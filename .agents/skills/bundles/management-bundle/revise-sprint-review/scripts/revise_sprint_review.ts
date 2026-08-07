@@ -300,7 +300,10 @@ async function handleRevise(
       i.pbiNumber != null && i.wpNumber != null,
   );
   if (scopedRemovals && scopedRemovals.length > 0) {
-    (plan.steps[0].params as Record<string, unknown>).removedScoped = scopedRemovals;
+    const reviseStep = plan.steps.find((s) => s.operation === "revise");
+    if (reviseStep) {
+      (reviseStep.params as Record<string, unknown>).removedScoped = scopedRemovals;
+    }
   }
 
   if (dryRun) {
