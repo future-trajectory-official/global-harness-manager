@@ -537,6 +537,270 @@ Deno.test("Review report - should call gh issue edit", async () => {
   assertStringIncludes(calls[1].args.join(" "), "--body");
 });
 
+/** gh issue edit に渡される newBody を抽出するヘルパー。 */
+function extractEditedBody(calls: { cmd: string; args: string[] }[]): string {
+  const editCall = calls.find((c) => c.args[0] === "issue" && c.args[1] === "edit");
+  assert(editCall, "edit call not found");
+  const bodyIdx = editCall.args.indexOf("--body");
+  return editCall.args[bodyIdx + 1];
+}
+
+const REVIEW_BODY_WITH_ADDED_SECTION = `## スプリント開始時検証計画
+
+### 📦 PBI: [2] [CorePlatform/EntityLifecycle]/Session-Lifecycle-Persistence
+
+#### WP_1: Gatewayハンドラー実装
+
+- ❔ AC_1: WP着手でInProgress遷移
+- ➖ AC_3: 全子WP Done時に親PBIが自動Doneに昇格
+- ➖ AC_4: 最初のWP着手時に親PBIが自動InProgressに昇格
+- ➖ AC_8: 重複startエラー
+
+## スプリント中追加検証計画
+
+### 📦 PBI: [2] 
+
+#### WP_1: 
+
+- ❔ AC_3: WP完了時に兄弟WP検索し親PBI Doneへ
+- ❔ AC_4: 最初のWP着手時に兄弟WP検索し親PBI InProgressへ
+- ❔ AC_8: Sprint未紐付けWPの開始・完了をブロック`;
+
+Deno.test("Review report - added-plan new ACs replace only in added section", async () => {
+  const runner = fixedRunner(JSON.stringify({ body: REVIEW_BODY_WITH_ADDED_SECTION }));
+  const calls: { cmd: string; args: string[] }[] = [];
+  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return runner(cmd, args);
+  };
+  const adapter = makeAdapter(trackingRunner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "report",
+        params: {
+          itemId: "42",
+          postPlanAcGroups: [
+            {
+              pbiNumber: 2,
+              wpNumber: "1",
+              acJudgments: [
+                { number: "3", judgment: "pass" },
+                { number: "4", judgment: "fail" },
+                { number: "8", judgment: "fail" },
+              ],
+            },
+          ],
+        },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "- ✅ AC_3: WP完了時に兄弟WP検索し親PBI Doneへ");
+  assertStringIncludes(newBody, "- ❌ AC_4: 最初のWP着手時に兄弟WP検索し親PBI InProgressへ");
+  assertStringIncludes(newBody, "- ❌ AC_8: Sprint未紐付けWPの開始・完了をブロック");
+  assertStringIncludes(newBody, "- ➖ AC_3: 全子WP Done時に親PBIが自動Doneに昇格");
+  assertStringIncludes(newBody, "- ➖ AC_4: 最初のWP着手時に親PBIが自動InProgressに昇格");
+  assertStringIncludes(newBody, "- ➖ AC_8: 重複startエラー");
+  assert(!newBody.includes("✅ AC_3: 全子WP"), "old AC_3 must not be overwritten");
+});
+
+Deno.test("Review report - start-plan ACs replace in start section", async () => {
+  const body = `## スプリント開始時検証計画
+
+### 📦 PBI: [1] [CorePlatform/EntityLifecycle]/Sprint-Start-Persistence
+
+#### WP_1: Gatewayハンドラー実装
+
+- ❔ AC_1: 「PBIを発案する」操作がGitHub上にtype:PBIラベル付きIssueを作成すること
+
+#### WP_2: Skillスクリプト実装
+
+- ❔ AC_2: 全スクリプトがdry-runモードに対応しPlan表示のみで終了すること
+
+## スプリント中追加検証計画
+
+### 📦 PBI: [1] 
+
+#### WP_1: 
+
+- ❔ AC_5: 計画前effortが独立フィールド harness-effort-summary に記録されること`;
+  const runner = fixedRunner(JSON.stringify({ body }));
+  const calls: { cmd: string; args: string[] }[] = [];
+  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return runner(cmd, args);
+  };
+  const adapter = makeAdapter(trackingRunner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "report",
+        params: {
+          itemId: "42",
+          postPlanAcGroups: [
+            { pbiNumber: 1, wpNumber: "1", acJudgments: [{ number: "1", judgment: "pass" }] },
+            { pbiNumber: 1, wpNumber: "2", acJudgments: [{ number: "2", judgment: "pass" }] },
+            { pbiNumber: 1, wpNumber: "1", acJudgments: [{ number: "5", judgment: "pass" }] },
+          ],
+        },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(
+    newBody,
+    "- ✅ AC_1: 「PBIを発案する」操作がGitHub上にtype:PBIラベル付きIssueを作成すること",
+  );
+  assertStringIncludes(
+    newBody,
+    "- ✅ AC_2: 全スクリプトがdry-runモードに対応しPlan表示のみで終了すること",
+  );
+  assertStringIncludes(
+    newBody,
+    "- ✅ AC_5: 計画前effortが独立フィールド harness-effort-summary に記録されること",
+  );
+});
+
+Deno.test("Review report - overallResult updates judgment and PO opinion", async () => {
+  const body = `## 総合判定
+
+### 判定結果
+
+❔
+
+### PO意見
+
+❔`;
+  const runner = fixedRunner(JSON.stringify({ body }));
+  const calls: { cmd: string; args: string[] }[] = [];
+  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return runner(cmd, args);
+  };
+  const adapter = makeAdapter(trackingRunner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "report",
+        params: {
+          itemId: "42",
+          overallResult: {
+            judgment: "fail",
+            reason: "不合格項目あり",
+          },
+        },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "### 判定結果\n\n❌ 不合格");
+  assertStringIncludes(newBody, "不合格項目あり");
+});
+
+Deno.test("Review revise - removedScoped removes only the AC in the matching section", async () => {
+  const body = `## スプリント開始時検証計画
+
+### 📦 PBI: [2] [CorePlatform/EntityLifecycle]/Session-Lifecycle-Persistence
+
+#### WP_1: Gatewayハンドラー実装
+
+- ❔ AC_1: WP着手でInProgress遷移
+- ❔ AC_3: 全子WP Done時に親PBIが自動Doneに昇格
+
+## スプリント中追加検証計画
+
+### 📦 PBI: [2] 
+
+#### WP_1: 
+
+- ❔ AC_3: WP完了時に兄弟WP検索し親PBI Doneへ`;
+  const runner = fixedRunner(JSON.stringify({ body }));
+  const calls: { cmd: string; args: string[] }[] = [];
+  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return runner(cmd, args);
+  };
+  const adapter = makeAdapter(trackingRunner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "revise",
+        params: {
+          itemId: "42",
+          removedScoped: [
+            { pbiNumber: 2, wpNumber: "1", number: "3", description: "新仕様に置換" },
+          ],
+        },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "- ➖ AC_3: 新仕様に置換");
+  assertStringIncludes(newBody, "- ❔ AC_3: 全子WP Done時に親PBIが自動Doneに昇格");
+  assert(!newBody.includes("➖ AC_3: 全子WP"), "start-plan AC_3 must not be removed");
+});
+
+Deno.test("Review revise - removedScoped removes start-plan AC when added section has no match", async () => {
+  const body = `## スプリント開始時検証計画
+
+### 📦 PBI: [1] [CorePlatform/EntityLifecycle]/Sprint-Start-Persistence
+
+#### WP_1: Gatewayハンドラー実装
+
+- ❔ AC_1: 「PBIを発案する」操作がGitHub上にtype:PBIラベル付きIssueを作成すること
+- ❔ AC_5: 計画前effortがharness-efforts-analysisに記録されること
+
+## スプリント中追加検証計画
+
+### 📦 PBI: [2] 
+
+#### WP_1: 
+
+- ❔ AC_3: WP完了時に兄弟WP検索し親PBI Doneへ`;
+  const runner = fixedRunner(JSON.stringify({ body }));
+  const calls: { cmd: string; args: string[] }[] = [];
+  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return runner(cmd, args);
+  };
+  const adapter = makeAdapter(trackingRunner);
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "revise",
+        params: {
+          itemId: "42",
+          removedScoped: [
+            { pbiNumber: 1, wpNumber: "1", number: "5", description: "旧文言" },
+          ],
+        },
+      },
+    ],
+  };
+  await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "- ➖ AC_5: 旧文言");
+  assertStringIncludes(
+    newBody,
+    "- ❔ AC_1: 「PBIを発案する」操作がGitHub上にtype:PBIラベル付きIssueを作成すること",
+  );
+});
+
 Deno.test("Review archive - should call gh issue close", async () => {
   const { runner, calls } = mockRunner();
   const adapter = makeAdapter(runner);
