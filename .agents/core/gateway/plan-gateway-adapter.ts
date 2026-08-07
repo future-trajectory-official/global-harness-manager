@@ -947,6 +947,36 @@ export class PlanGatewayAdapter implements PlanGateway {
   }
 
   /**
+   * Review Issue 本文を「スプリント開始時検証計画」「スプリント中追加検証計画」に分割する。
+   *
+   * 開始時検証計画の旧AC（➖論理削除含む）と、スプリント中追加検証計画の新ACは
+   * 同じPBI番号・WP番号・AC番号を持ち得るため、セクションをアンカーにして
+   * 誤マッチ（追加ACが開始時検証計画の同番号ACを上書きする）を防ぐために使う。
+   */
+  private splitReviewSections(
+    body: string,
+  ): { beforeStart: string; startSection: string; addedSection: string } {
+    const startMarker = "## スプリント開始時検証計画";
+    const addedMarker = "## スプリント中追加検証計画";
+    const startIdx = body.indexOf(startMarker);
+    const addedIdx = body.indexOf(addedMarker);
+    let beforeStart = "";
+    let startSection = "";
+    let addedSection = "";
+    if (startIdx >= 0) {
+      beforeStart = body.slice(0, startIdx);
+      startSection = body.slice(startIdx, addedIdx >= 0 ? addedIdx : body.length);
+    }
+    if (addedIdx >= 0) {
+      addedSection = body.slice(addedIdx);
+    }
+    if (startIdx < 0 && addedIdx < 0) {
+      beforeStart = body;
+    }
+    return { beforeStart, startSection, addedSection };
+  }
+
+  /**
    * report 操作を処理する。GitHub Issue の本文内の AC マーカー（❔）を
    * 合格/不合格/条件付き合格 のマーカーに置き換え、Overall Result を追記する。
    */
@@ -979,32 +1009,59 @@ export class PlanGatewayAdapter implements PlanGateway {
       | undefined;
 
     let newBody = currentBody;
+
+    let { beforeStart, startSection, addedSection } = this.splitReviewSections(newBody);
+
+    // 対象セクション内の AC マーカーを置換する。論理削除済み（➖）は上書きしない。
+    // 置換対象セクションは「追加検証計画 → 開始時検証計画 → 全体（フォールバック）」の順。
+    const replaceInSection = (
+      section: string,
+      pbiNumber: number | undefined,
+      wpNumber: string | undefined,
+      acNumber: string,
+      marker: string,
+    ): { section: string; replaced: boolean } => {
+      let replaced = false;
+      if (pbiNumber !== undefined && wpNumber !== undefined) {
+        const escapedWp = String(wpNumber).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const contextPattern = new RegExp(
+          `(### 📦 PBI: \\[${pbiNumber}\\][\\s\\S]*?#### WP_${escapedWp}:.*?\\n[\\s\\S]*?)([❔✅❌⚠️])\\s*(AC_${acNumber}:)`,
+        );
+        if (contextPattern.test(section)) {
+          section = section.replace(contextPattern, `$1${marker} $3`);
+          replaced = true;
+        }
+      }
+      if (!replaced) {
+        const acPattern = new RegExp(`([❔✅❌⚠️])\\s*(AC_${acNumber}:)`);
+        if (acPattern.test(section)) {
+          section = section.replace(acPattern, `${marker} $2`);
+          replaced = true;
+        }
+      }
+      return { section, replaced };
+    };
+
     if (postPlanAcGroups) {
       for (const group of postPlanAcGroups) {
         for (const ac of group.acJudgments) {
           const marker = ac.judgment === "pass" ? "✅" : ac.judgment === "fail" ? "❌" : "⚠️";
-
           const pbiNumber = group.pbiNumber;
           const wpNumber = group.wpNumber;
-          let replaced = false;
 
-          if (pbiNumber !== undefined && wpNumber !== undefined) {
-            const escapedWp = String(wpNumber).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-            const contextPattern = new RegExp(
-              `(### 📦 PBI: \\[${pbiNumber}\\][\\s\\S]*?#### WP_${escapedWp}:.*?\\n[\\s\\S]*?)([❔✅❌⚠️➖])\\s*(AC_${ac.number}:)`,
-            );
-            if (contextPattern.test(newBody)) {
-              newBody = newBody.replace(contextPattern, `$1${marker} $3`);
-              replaced = true;
-            }
+          let r = replaceInSection(addedSection, pbiNumber, wpNumber, ac.number, marker);
+          addedSection = r.section;
+          if (!r.replaced) {
+            r = replaceInSection(startSection, pbiNumber, wpNumber, ac.number, marker);
+            startSection = r.section;
           }
-
-          if (!replaced) {
-            const acPattern = new RegExp(`([❔✅❌⚠️➖])\\s*(AC_${ac.number}:)`);
-            newBody = newBody.replace(acPattern, `${marker} $2`);
+          if (!r.replaced) {
+            r = replaceInSection(beforeStart, pbiNumber, wpNumber, ac.number, marker);
+            beforeStart = r.section;
           }
         }
       }
+      newBody = beforeStart + startSection + addedSection;
     }
 
     if (params.overallResult) {
@@ -1060,6 +1117,7 @@ export class PlanGatewayAdapter implements PlanGateway {
     const parsed = JSON.parse(viewResult.stdout) as { body?: string } | undefined;
     const currentBody = parsed?.body ?? "";
 
+    let { beforeStart, startSection, addedSection } = this.splitReviewSections(currentBody);
     let newBody = currentBody;
     const removed = params.removed as
       | { items?: Array<{ number: string; description: string }> }
@@ -1079,18 +1137,43 @@ export class PlanGatewayAdapter implements PlanGateway {
       >
       | undefined;
 
+    // スコープ指定された AC を論理削除（➖）する。
+    // 追加検証計画セクション → 開始時検証計画セクション → 全体（フォールバック）の順に置換し、
+    // 同番号の旧ACを誤って削除することを防ぐ。
+    const removeAcInSection = (
+      section: string,
+      item: { pbiNumber: number; wpNumber: string; number: string; description: string },
+    ): { section: string; removed: boolean } => {
+      const acNum = String(item.number);
+      const pbiMarker = `### 📦 PBI: [${item.pbiNumber}]`;
+      const wpMarker = `#### WP_${item.wpNumber}:`;
+      const re = new RegExp(
+        `(${escapeRegex(pbiMarker)}[\\s\\S]*?${escapeRegex(wpMarker)}[\\s\\S]*?)- [❔✅⚠️❌] AC_${
+          escapeRegex(acNum)
+        }:.*`,
+      );
+      let removed = false;
+      if (re.test(section)) {
+        section = section.replace(re, `$1- ➖ AC_${acNum}: ${item.description}`);
+        removed = true;
+      }
+      return { section, removed };
+    };
+
     if (removedScoped?.length) {
       for (const item of removedScoped) {
-        const acNum = String(item.number);
-        const pbiMarker = `### 📦 PBI: [${item.pbiNumber}]`;
-        const wpMarker = `#### WP_${item.wpNumber}:`;
-        const re = new RegExp(
-          `(${escapeRegex(pbiMarker)}[\\s\\S]*?${escapeRegex(wpMarker)}[\\s\\S]*?)- [❔✅⚠️❌] AC_${
-            escapeRegex(acNum)
-          }:.*`,
-        );
-        newBody = newBody.replace(re, `$1- ➖ AC_${acNum}: ${item.description}`);
+        let r = removeAcInSection(addedSection, item);
+        addedSection = r.section;
+        if (!r.removed) {
+          r = removeAcInSection(startSection, item);
+          startSection = r.section;
+        }
+        if (!r.removed) {
+          r = removeAcInSection(beforeStart, item);
+          beforeStart = r.section;
+        }
       }
+      newBody = beforeStart + startSection + addedSection;
     } else if (removed?.items) {
       for (const item of removed.items) {
         const acNum = String(item.number);
