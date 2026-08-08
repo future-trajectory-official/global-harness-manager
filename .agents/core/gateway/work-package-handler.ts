@@ -57,6 +57,8 @@ export class WorkPackageHandler {
       if (!itemId) {
         return Promise.resolve({ operation: "start", success: false, error: "itemId is required" });
       }
+      const milestoneMissing = await this.requireMilestone(itemId, "start");
+      if (milestoneMissing) return milestoneMissing;
       if (this.adapter.sprintBoardNumber) {
         await this.adapter.setBoardStatus(
           itemId,
@@ -76,6 +78,8 @@ export class WorkPackageHandler {
           error: "itemId is required",
         });
       }
+      const milestoneMissing = await this.requireMilestone(itemId, "complete");
+      if (milestoneMissing) return milestoneMissing;
       if (this.adapter.sprintBoardNumber) {
         await this.adapter.setBoardStatus(
           itemId,
@@ -505,6 +509,31 @@ export class WorkPackageHandler {
     const existing = stepHandlers.get("WorkPackage") ?? new Map();
     for (const [op, handler] of handlers) existing.set(op, handler);
     stepHandlers.set("WorkPackage", existing);
+  }
+
+  private async requireMilestone(
+    itemId: string,
+    operation: "start" | "complete",
+  ): Promise<{ operation: string; success: false; itemId: string; error: string } | null> {
+    const view = await this.adapter.getSprintMilestone(itemId);
+    if (!view.success) {
+      return {
+        operation,
+        success: false,
+        itemId,
+        error: view.error ?? "failed to resolve item",
+      };
+    }
+    if (!view.milestone) {
+      return {
+        operation,
+        success: false,
+        itemId,
+        error:
+          `WP #${itemId} is not linked to a Sprint milestone: 先に commit 操作で milestone(Sprint) を設定してください`,
+      };
+    }
+    return null;
   }
 
   private async setEffortField(
