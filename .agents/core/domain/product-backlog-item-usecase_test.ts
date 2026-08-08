@@ -455,6 +455,96 @@ Deno.test("recordAnalysis should throw for empty planningReview", () => {
   );
 });
 
+/**
+ * recordAnalysis の正常系。effortSummary を含む ProcessAnalysis で wp_effort_summary が body に含まれることを確認する。
+ * @description PBI のプロセス分析記録時に effortSummary が body の wp_effort_summary として snake_case で記録されること
+ * @verify body をパースした際に wp_effort_summary.initial_estimate / planned_estimate / actual が期待値と一致すること
+ */
+Deno.test("recordAnalysis should include wp_effort_summary in body when effortSummary provided", () => {
+  const plan = productBacklogItemUseCase.recordAnalysis(makePbiId(), {
+    planningReview: "Good planning",
+    executionReview: "Smooth execution",
+    improvementSuggestions: "Add more tests",
+    effortSummary: { initialEstimate: 3, plannedEstimate: 4, actual: 5 },
+  });
+  const body = plan.steps[1].params.body as string;
+  const parsed = JSON.parse(body) as Record<string, unknown>;
+  const summary = parsed.wp_effort_summary as Record<string, unknown>;
+  assertEquals(summary.initial_estimate, 3);
+  assertEquals(summary.planned_estimate, 4);
+  assertEquals(summary.actual, 5);
+});
+
+/**
+ * recordAnalysis の正常系。effortSummary 未指定時は body に wp_effort_summary が含まれないことを確認する。
+ * @description 既存呼び出し（effortSummary なし）が wp_effort_summary を含まないことを保証し、後方互換を確認すること
+ * @verify body に wp_effort_summary キーが存在しないこと
+ */
+Deno.test("recordAnalysis should omit wp_effort_summary when effortSummary not provided", () => {
+  const plan = productBacklogItemUseCase.recordAnalysis(makePbiId(), makeProcessAnalysis());
+  const body = plan.steps[1].params.body as string;
+  const parsed = JSON.parse(body) as Record<string, unknown>;
+  assertEquals(parsed.wp_effort_summary, undefined);
+});
+
+/**
+ * recordAnalysis の正常系。effortSummary の値が全て 0 でも wp_effort_summary に記録されることを確認する。
+ * @description 0 は有効な effort 値であり、省略・null と区別して記録されること
+ * @verify body の wp_effort_summary が {0,0,0} として記録されること
+ */
+Deno.test("recordAnalysis should include wp_effort_summary with zero values", () => {
+  const plan = productBacklogItemUseCase.recordAnalysis(makePbiId(), {
+    planningReview: "planning",
+    executionReview: "execution",
+    improvementSuggestions: "improvement",
+    effortSummary: { initialEstimate: 0, plannedEstimate: 0, actual: 0 },
+  });
+  const body = plan.steps[1].params.body as string;
+  const summary = (JSON.parse(body) as Record<string, unknown>)
+    .wp_effort_summary as Record<string, unknown>;
+  assertEquals(summary.initial_estimate, 0);
+  assertEquals(summary.planned_estimate, 0);
+  assertEquals(summary.actual, 0);
+});
+
+/**
+ * recordAnalysis の異常系。effortSummary に負数が含まれる場合に INVALID_INPUT エラーになることを確認する。
+ * @description 負の effort 値は不正であり、記録前に拒否されること
+ * @verify assertThrows で Error("INVALID_INPUT") がスローされること
+ */
+Deno.test("recordAnalysis should reject negative effortSummary values", () => {
+  assertThrows(
+    () =>
+      productBacklogItemUseCase.recordAnalysis(makePbiId(), {
+        planningReview: "planning",
+        executionReview: "execution",
+        improvementSuggestions: "improvement",
+        effortSummary: { initialEstimate: -1, plannedEstimate: 4, actual: 5 },
+      }),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
+/**
+ * recordAnalysis の異常系。effortSummary に NaN が含まれる場合に INVALID_INPUT エラーになることを確認する。
+ * @description 非有限数は不正であり、記録前に拒否されること
+ * @verify assertThrows で Error("INVALID_INPUT") がスローされること
+ */
+Deno.test("recordAnalysis should reject non-finite effortSummary values", () => {
+  assertThrows(
+    () =>
+      productBacklogItemUseCase.recordAnalysis(makePbiId(), {
+        planningReview: "planning",
+        executionReview: "execution",
+        improvementSuggestions: "improvement",
+        effortSummary: { initialEstimate: Number.NaN, plannedEstimate: 4, actual: 5 },
+      }),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
 // ===== find =====
 
 /**

@@ -1926,24 +1926,42 @@ Deno.test("ProductBacklogItem recordAnalysis - should reject invalid JSON body",
 
 Deno.test("ProductBacklogItem recordAnalysis - should write valid analysis JSON to board", async () => {
   let callCount = 0;
-  const responses: Record<number, ExecuteResult> = {
-    1: { code: 0, stdout: JSON.stringify({ id: "node-pbi-42" }), stderr: "" },
-    2: {
-      code: 0,
-      stdout: JSON.stringify({ data: { addProjectV2ItemById: { item: { id: "pvti-42" } } } }),
-      stderr: "",
-    },
-    3: {
-      code: 0,
-      stdout: JSON.stringify({
-        data: { node: { fv: { text: '{"size_analysis":{"size_estimate":"M"}}' } } },
-      }),
-      stderr: "",
-    },
-  };
-  const chainedRunner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const chainedRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
     callCount++;
-    return Promise.resolve(responses[callCount] ?? { code: 0, stdout: "", stderr: "" });
+    calls.push({ cmd, args });
+    const argsStr = args.join(" ");
+    if (argsStr.startsWith("issue view ")) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ id: "node-pbi-42" }),
+        stderr: "",
+      });
+    }
+    if (argsStr.includes("addProjectV2ItemById")) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ data: { addProjectV2ItemById: { item: { id: "pvti-42" } } } }),
+        stderr: "",
+      });
+    }
+    if (argsStr.includes("field(name: $fieldName)")) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({
+          data: { organization: { projectV2: { field: { id: "field-" + callCount } } } },
+        }),
+        stderr: "",
+      });
+    }
+    if (argsStr.includes("projectV2(number: $number) { id }")) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ data: { organization: { projectV2: { id: "proj-node" } } } }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
   };
   const adapter = makeAdapter(chainedRunner);
   adapter.setProjectBoardNumbers(99, 0);
@@ -1968,6 +1986,15 @@ Deno.test("ProductBacklogItem recordAnalysis - should write valid analysis JSON 
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
+
+  const itemEditCalls = calls.filter((c) => c.args.includes("item-edit"));
+  assert(itemEditCalls.length >= 4, "expected at least 4 field writes (effort + 3 reviews)");
+  const effortWrite = itemEditCalls.find((c) => {
+    const idx = c.args.indexOf("--text");
+    return idx >= 0 &&
+      c.args[idx + 1] === JSON.stringify({ initial_estimate: 3, planned_estimate: 4, actual: 5 });
+  });
+  assert(effortWrite, "harness-effort-summary should be written with wp_effort_summary value");
 });
 
 Deno.test("ProductBacklogItem defineAcceptanceCriteria - should create WP issue with AC body and set parent", async () => {

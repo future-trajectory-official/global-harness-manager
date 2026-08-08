@@ -42,23 +42,20 @@ description: スプリントの終了プロセス（レビュー、effort分析�
 
 ## Phase 2: PBI effort分析 (Record PBI Effort Analysis)
 
-対象PBI配下の全WPのeffort（initial/planned/actual）を集計し、計画乖離・実行乖離の分析結果を GitHub
-カスタムフィールドに記録します。
+対象PBI配下の全WPのeffort（initial/planned/actual）を集計し、計画乖離・実行乖離の分析結果を対象PBIに記録します。
 
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
   `[record-pbi-effort-analysis](/.agents/skills/bundles/management-bundle/record-pbi-effort-analysis/SKILL.md)`
-- **入力（前提条件）**: スプリント内のPBI配下のWPが全て完了（`[DONE]`）しており、
-  effort実績（harness-effort-summary / harness-effort-actual）が GitHub
-  カスタムフィールドに記録されていること。
+- **入力（前提条件）**: スプリント内のPBI配下のWPが全て完了（`[DONE]`）しており、 effort実績（計画前
+  / 計画後 / 実績）が対象PBI/WPに記録されていること。
 - **手続き**:
-  1. `analyzeEffort` で対象PBI配下の全WPのeffortを集計する。
+  1. effort集計で対象PBI配下の全WPのeffortを集計する。
   2. 集計結果をもとに乖離分析（planning / execution）と改善提案を構成する。
-  3. `recordAnalysis` で GitHub カスタムフィールドに記録する。
+  3. 分析結果の記録を実行する。
 - **期待される結果（終了条件）**:
-  1. effort集計と乖離分析が GitHub カスタムフィールド（`harness-variance-review-planning` /
-     `harness-variance-review-execution` / `harness-improvement-suggestions`）に記録されていること。
+  1. effort集計値と乖離分析（計画乖離 / 実行乖離 / 改善提案）が対象PBIに記録されていること。
   2. ユーザー（PO）が記録内容を確認し、承認していること。
 
 > [!IMPORTANT]
@@ -72,22 +69,19 @@ description: スプリントの終了プロセス（レビュー、effort分析�
 
 ## Phase 3: PBIサイズ実績の確定 (Record PBI Size Analysis)
 
-対象PBIの実感サイズ（size_actual）を確定し、見積サイズとの乖離理由を GitHub
-カスタムフィールドに記録します。
+対象PBIの実感サイズを確定し、見積サイズとの乖離理由を対象PBIに記録します。
 
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
   `[record-pbi-size-analysis](/.agents/skills/bundles/management-bundle/record-pbi-size-analysis/SKILL.md)`
-- **入力（前提条件）**: 対象PBIの見積サイズ（`harness-size-estimate`）が GitHub
-  カスタムフィールドに記録されていること。
+- **入力（前提条件）**: 対象PBIの見積サイズが対象PBIに記録されていること。
 - **手続き**:
-  1. 見積サイズ（`harness-size-estimate`）を取得する。
+  1. 見積サイズを取得する。
   2. セッション履歴から実感サイズを提案し、乖離理由を整理する。
-  3. POの承認を得て `confirmSize` で size_actual と乖離理由を記録する。
+  3. POの承認を得て実感サイズと乖離理由を記録する。
 - **期待される結果（終了条件）**:
-  1. size_actual（`harness-size-actual`）と乖離理由（`harness-variance-review-size`）が GitHub
-     カスタムフィールドに記録されていること。
+  1. 実感サイズと乖離理由が対象PBIに記録されていること。
   2. ユーザー（PO）が記録内容を確認し、承認していること。
 
 > [!IMPORTANT]
@@ -161,24 +155,22 @@ description: スプリントの終了プロセス（レビュー、effort分析�
 ## Phase 6: ベロシティ記録 (Record Sprint Velocity)
 
 対象スプリントのベロシティ集計（完了PBI数・合計ウェイト・実感サイズ一致率・乖離要約）を算出し、
-Milestone description の `## Velocity` セクションに記録します。
+スプリントの説明に記録します。
 
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行)
   - `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (スクリプト実行・集計)
 - **実行するスキル**:
   `[record-sprint-velocity](/.agents/skills/bundles/management-bundle/record-sprint-velocity/SKILL.md)`
-- **入力（前提条件）**: 対象スプリントのPBIに `size_actual`（`harness-size-actual`）が GitHub
-  カスタムフィールドに記録されていること。
+- **入力（前提条件）**: 対象スプリントのPBIに実感サイズが対象PBIに記録されていること。
 - **手続き**:
-  1. GitHub上のPBI実績データ（size_actual / size_estimate）から完了PBI数・合計ウェイト・
+  1. PBI実績データ（実感サイズ / 見積サイズ）から完了PBI数・合計ウェイト・
      実感サイズ一致率・乖離要約を算出する。
   2. 集計結果をPOに提示し、承認を得る。
-  3. `recordVelocity` で Milestone description の `## Velocity` セクションを追記/更新する
-     （`## Goal` セクションと同居）。
+  3. ベロシティ情報をスプリントの説明に追記/更新する。
 - **期待される結果（終了条件）**:
-  1. ベロシティデータ（開発PBI数・合計ウェイト・実感サイズ一致率・乖離要約）が Milestone description
-     に正しく記録されていること。
+  1. ベロシティデータ（開発PBI数・合計ウェイト・実感サイズ一致率・乖離要約）がスプリントの説明に
+     正しく記録されていること。
   2. ユーザー（PO）が記録内容を確認し、承認していること。
 
 > [!IMPORTANT]
@@ -192,8 +184,8 @@ Milestone description の `## Velocity` セクションに記録します。
 
 ## Phase 7: 完了PBI/WPのアーカイブ (Archive Product Backlog Items)
 
-スプリントで完了したWPとPBIを、GitHub Issue をクローズすることでアーカイブします。 アーカイブ順序は
-**WP → PBI**（子先にクローズ）です。
+スプリントで完了したWPとPBIを、クローズすることでアーカイブします。 アーカイブ順序は **WP →
+PBI**（子先にクローズ）です。
 
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
@@ -203,10 +195,10 @@ Milestone description の `## Velocity` セクションに記録します。
 - **手続き**:
   1. スプリント内の完了済み（`[DONE]`）PBI/WP を一覧でPOに提示する。
   2. アーカイブ順序（WP→PBI）と対象をPOが承認する。
-  3. `archive_wp.ts` → `archive_pbi.ts` の順でIssueをクローズする。
+  3. 対象のWP/PBIを順にクローズする。
 - **期待される結果（終了条件）**:
-  1. 全対象WP/PBIの GitHub Issue が `closed` になっていること。
-  2. ローカル `product-backlog-archive.md` との関係（本スキルは GitHub 上のクローズのみを担い、
+  1. 全対象WP/PBIがクローズ（`closed`）になっていること。
+  2. ローカル `product-backlog-archive.md` との関係（本スキルはクローズのみを担い、
      ローカルへの書き込みは行わない）を PO が理解し承認していること。
 
 > [!IMPORTANT]
@@ -258,7 +250,7 @@ Milestone description の `## Velocity` セクションに記録します。
   2. dry-run で終了される Plan を PO に提示し、承認を得る。
   3. 本実行でスプリントを終了する。
 - **期待される結果（終了条件）**:
-  1. 対象スプリント（Milestone）が終了状態（closed）になっていること。
+  1. 対象スプリントが終了状態（closed）になっていること。
 
 > [!IMPORTANT]
 > 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase

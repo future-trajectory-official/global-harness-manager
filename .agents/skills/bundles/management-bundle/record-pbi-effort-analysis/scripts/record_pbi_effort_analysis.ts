@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run -A
 import "../../../../../core/composition-root.ts";
-import { pbiId } from "../../../../../core/domain/types.ts";
+import { type EffortSummary, pbiId } from "../../../../../core/domain/types.ts";
 import type { Plan } from "../../../../../core/domain/types.ts";
 import { productBacklogItemUseCase } from "../../../../../core/domain/product-backlog-item-usecase.ts";
 import { runCli } from "../../../../../core/shared/cli/runner.ts";
@@ -10,12 +10,14 @@ interface RecordPbiEffortAnalysisInput {
   planningReview?: string;
   executionReview?: string;
   improvementSuggestions?: string;
+  effortSummary?: EffortSummary;
 }
 
 function hasAnalysis(input: RecordPbiEffortAnalysisInput): boolean {
   return input.planningReview !== undefined ||
     input.executionReview !== undefined ||
-    input.improvementSuggestions !== undefined;
+    input.improvementSuggestions !== undefined ||
+    input.effortSummary !== undefined;
 }
 
 export { buildPlan, hasAnalysis, validateInput };
@@ -25,6 +27,21 @@ function validateInput(input: RecordPbiEffortAnalysisInput): void {
   if (!input.identifier.id) throw new Error("INVALID_INPUT: identifier.id must not be empty");
   if (hasAnalysis(input) && !input.planningReview) {
     throw new Error("INVALID_INPUT: planningReview must not be empty when recording analysis");
+  }
+  if (hasAnalysis(input) && !input.effortSummary) {
+    throw new Error(
+      "INVALID_INPUT: effortSummary is required when recording analysis (wp_effort_summary must be recorded to harness-effort-summary)",
+    );
+  }
+  if (hasAnalysis(input) && input.effortSummary) {
+    const { initialEstimate, plannedEstimate, actual } = input.effortSummary;
+    for (const [key, value] of Object.entries({ initialEstimate, plannedEstimate, actual })) {
+      if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+        throw new Error(
+          `INVALID_INPUT: effortSummary.${key} must be a finite non-negative number`,
+        );
+      }
+    }
   }
 }
 
@@ -47,6 +64,7 @@ function buildPlan(input: RecordPbiEffortAnalysisInput): Plan {
     planningReview: input.planningReview ?? "",
     executionReview: input.executionReview ?? "",
     improvementSuggestions: input.improvementSuggestions ?? "",
+    effortSummary: input.effortSummary,
   };
   const analysisPlan = productBacklogItemUseCase.recordAnalysis(identifier, analysis);
 

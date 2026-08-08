@@ -145,11 +145,24 @@ export interface SizeVariance {
   readonly varianceReason?: string;
 }
 
-/** 工数実績。initialEstimate は作成時に設定し、plannedEstimate/actual は段階的に更新する。 */
-export interface EffortRecord {
+/** effort 値の共通フィールド。initialEstimate は必須、plannedEstimate/actual は段階的に更新される。 */
+interface EffortValues {
   readonly initialEstimate: number;
   readonly plannedEstimate?: number;
   readonly actual?: number;
+}
+
+/** 工数実績。initialEstimate は作成時に設定し、plannedEstimate/actual は段階的に更新する。 */
+export interface EffortRecord extends EffortValues {}
+
+/**
+ * PBI配下のWP effort集計値。recordAnalysis の body に wp_effort_summary として記録される。
+ * 全フィールド必須（0以上の有限数）。部分指定・空オブジェクトは不正とみなし、空記録を防ぐ。
+ */
+export interface EffortSummary extends EffortValues {
+  readonly initialEstimate: number;
+  readonly plannedEstimate: number;
+  readonly actual: number;
 }
 
 /** AIによるプロセス分析結果。 */
@@ -157,6 +170,11 @@ export interface ProcessAnalysis {
   readonly planningReview: string;
   readonly executionReview: string;
   readonly improvementSuggestions: string;
+  /**
+   * PBI配下のWP effort集計値。任意。指定時のみ wp_effort_summary として記録される。
+   * 乖離分析を記録する（Skill: record-pbi-effort-analysis 経由）場合は必須。
+   */
+  readonly effortSummary?: EffortSummary;
 }
 
 /** プロセスに関する証跡。effort または processAnalysis を保持。 */
