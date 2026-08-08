@@ -42,6 +42,15 @@ tags:
 
 合意した内容を記録する。
 
+**dry-run（Plan 表示のみ・記録しない）**: `--dry-run` を付与すると、実際に実行される Plan（summary /
+steps）を表示するだけで、GitHub 上の WP を変更せずに終了する。 PO への提示・確認に利用する。
+
+```bash
+echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-work-package-metrics/scripts/record_metrics.ts --dry-run
+```
+
+**本記録（GitHub へ反映）**:
+
 ```bash
 echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-work-package-metrics/scripts/record_metrics.ts
 ```
