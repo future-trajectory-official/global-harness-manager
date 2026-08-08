@@ -47,4 +47,24 @@ tags:
    [references/reference.md](/.agents/skills/bundles/management-bundle/start-work-package/references/reference.md)
    を参照すること。
 
-7. **結果報告**: 見積り値と着手完了をPOに報告する。
+7. **親PBIの昇格判定**: 着手したWPが**最初のWP**（親PBI配下で最初の着手）かを確認する。
+   - 該当WPを view して親PBIを特定し、親PBI配下の全WP（兄弟WP）を subIssues で列挙する。
+     ```bash
+     echo '{"entityType":"WorkPackage","operation":"find","params":{"itemId":<着手WP番号>}}' \
+       | deno run -A .agents/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
+     # → output.parent で親PBI番号を確認
+     echo '{"entityType":"ProductBacklogItem","operation":"find","params":{"itemId":<親PBI番号>}}' \
+       | deno run -A .agents/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
+     # → output.children で兄弟WP一覧（number）を確認
+     ```
+   - 兄弟WP各々を view して Status を確認し、1件でも `In Progress` または `Done`
+     がある場合は、親PBIは既に昇格済みのため昇格しない。
+   - 全兄弟WPが `Todo`（かつ今回のWPが最初の着手）の場合、親PBIを `InProgress` へ昇格する。事前に
+     `--dry-run` でPlanを確認し、PO承認後に本実行すること。
+     ```bash
+     echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/start_pbi.ts --dry-run
+     echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/start_pbi.ts
+     ```
+   - 注意: 親PBIへ直接着手して不整合を起こさないよう、親PBI昇格は本手順の判定に従うこと。
+
+8. **結果報告**: 見積り値と着手完了、および親PBI昇格の要否・実行結果をPOに報告する。
