@@ -43,13 +43,17 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-
 
 ### 3. 記録
 
-- 分析結果（planning / execution / improvement）を対象PBIに記録する。
+- 集計値（`wp_effort_summary`）と分析結果（planning / execution / improvement）を対象PBIに記録する。
+- 集計値は `harness-effort-summary`、分析結果は各 `harness-variance-review-*`
+  フィールドに記録される。
 
 ### 4. 対話パターン
 
 1. AI: dry-run で集計Planを提示し、PO確認を得る
-2. AI: 集計値と乖離分析ドラフトを提示し、POの調整・承認を得る
-3. AI: recordAnalysis で記録し、結果をPOに報告する
+2. AI: `analyzeEffort`
+   を実実行して集計値（`output.wp_effort_summary`）を取得し、乖離分析ドラフトとともに提示する
+3. AI: 集計値を `effortSummary` として入力に含め、`recordAnalysis` で記録し、結果をPOに報告する
+   - 記録時は `effortSummary` 必須（`harness-effort-summary` への記録を保証するため）
 
 ## 詳細リファレンス
 

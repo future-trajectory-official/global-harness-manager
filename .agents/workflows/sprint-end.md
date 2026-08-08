@@ -57,8 +57,9 @@ description: スプリントの終了プロセス（レビュー、effort分析�
   2. 集計結果をもとに乖離分析（planning / execution）と改善提案を構成する。
   3. `recordAnalysis` で GitHub カスタムフィールドに記録する。
 - **期待される結果（終了条件）**:
-  1. effort集計と乖離分析が GitHub カスタムフィールド（`harness-variance-review-planning` /
-     `harness-variance-review-execution` / `harness-improvement-suggestions`）に記録されていること。
+  1. effort集計と乖離分析が GitHub カスタムフィールド（`harness-effort-summary` /
+     `harness-variance-review-planning` / `harness-variance-review-execution` /
+     `harness-improvement-suggestions`）に記録されていること。
   2. ユーザー（PO）が記録内容を確認し、承認していること。
 
 > [!IMPORTANT]
