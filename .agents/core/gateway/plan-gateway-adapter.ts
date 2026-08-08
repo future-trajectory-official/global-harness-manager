@@ -1345,6 +1345,58 @@ export class PlanGatewayAdapter implements PlanGateway {
   }
 
   /**
+   * 指定 Issue の milestone（=Sprint）を REST の1呼び出しで取得する。
+   * handleFindItem の GraphQL enrich に依存しないため、ガード判定に安全に使える。
+   * @param itemId - 取得対象の Issue 番号
+   * @returns milestone（GH 上で未設定の場合は null）を含む Success / 失敗時は error
+   */
+  async getSprintMilestone(itemId: string): Promise<
+    StepResult & {
+      milestone: {
+        number: number;
+        title: string;
+      } | null;
+    }
+  > {
+    const result = await this.runCommand("gh", [
+      "issue",
+      "view",
+      itemId,
+      "--json",
+      "milestone",
+      ...this.buildRepoArg(),
+    ]);
+    if (result.code !== 0) {
+      return {
+        operation: "view",
+        success: false,
+        itemId,
+        error: result.stderr,
+        milestone: null,
+      };
+    }
+    try {
+      const data = JSON.parse(result.stdout) as {
+        milestone?: { number: number; title: string } | null;
+      };
+      return {
+        operation: "view",
+        success: true,
+        itemId,
+        milestone: data?.milestone ?? null,
+      };
+    } catch {
+      return {
+        operation: "view",
+        success: false,
+        itemId,
+        error: "Failed to parse milestone from gh output",
+        milestone: null,
+      };
+    }
+  }
+
+  /**
    * searchItems 操作を処理する。指定されたラベル種別で Issue を検索する。
    * @param params.type - 検索するラベル種別（例: "Vision"）
    * @returns 検索結果（number, title, labels の配列）を含む StepResult

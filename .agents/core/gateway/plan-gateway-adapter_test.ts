@@ -2112,8 +2112,18 @@ Deno.test("WorkPackage commit - should set milestone", async () => {
   assertStringIncludes(calls[0].args.join(" "), "--milestone Sprint 19");
 });
 
-Deno.test("WorkPackage start - should succeed with valid itemId", async () => {
-  const adapter = makeAdapter();
+function milestoneRunner(milestone: { number: number; title: string } | null) {
+  return (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ milestone }),
+      stderr: "",
+    });
+  };
+}
+
+Deno.test("WorkPackage start - should succeed with valid itemId and milestone", async () => {
+  const adapter = makeAdapter(milestoneRunner({ number: 19, title: "Sprint 19" }));
   const plan: Plan = {
     summary: "start WP",
     steps: [
@@ -2129,8 +2139,8 @@ Deno.test("WorkPackage start - should succeed with valid itemId", async () => {
   assertEquals(result.stepResults[0].success, true);
 });
 
-Deno.test("WorkPackage complete - should succeed with valid itemId", async () => {
-  const adapter = makeAdapter();
+Deno.test("WorkPackage complete - should succeed with valid itemId and milestone", async () => {
+  const adapter = makeAdapter(milestoneRunner({ number: 19, title: "Sprint 19" }));
   const plan: Plan = {
     summary: "complete WP",
     steps: [
@@ -2144,6 +2154,82 @@ Deno.test("WorkPackage complete - should succeed with valid itemId", async () =>
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
+});
+
+Deno.test("WorkPackage start - should fail when milestone is missing", async () => {
+  const adapter = makeAdapter(milestoneRunner(null));
+  const plan: Plan = {
+    summary: "start WP without milestone",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "start",
+        params: { itemId: "51" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "not linked to a Sprint milestone");
+});
+
+Deno.test("WorkPackage complete - should fail when milestone is missing", async () => {
+  const adapter = makeAdapter(milestoneRunner(null));
+  const plan: Plan = {
+    summary: "complete WP without milestone",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "complete",
+        params: { itemId: "51" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "not linked to a Sprint milestone");
+});
+
+Deno.test("WorkPackage start - should return gh error when milestone fetch fails", async () => {
+  const adapter = makeAdapter((_cmd, _args) =>
+    Promise.resolve({ code: 1, stdout: "", stderr: "rate limited" })
+  );
+  const plan: Plan = {
+    summary: "start WP on gh failure",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "start",
+        params: { itemId: "51" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "rate limited");
+});
+
+Deno.test("WorkPackage complete - should return error when milestone fetch fails", async () => {
+  const adapter = makeAdapter((_cmd, _args) =>
+    Promise.resolve({ code: 1, stdout: "", stderr: "rate limited" })
+  );
+  const plan: Plan = {
+    summary: "complete WP with gh failure",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "complete",
+        params: { itemId: "51" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "rate limited");
 });
 
 Deno.test("WorkPackage archive - should close the issue", async () => {
