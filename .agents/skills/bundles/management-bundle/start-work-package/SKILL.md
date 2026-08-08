@@ -23,7 +23,17 @@ tags:
    初回計画提案から計画承認までに発生したPOからの軌道修正・方針変更指示を、介入履歴として記録する。
 
 2. **見積りの算出**:
-   実装計画の規模・AC数・複雑性・介入実績を分析し、このWPの完了までに必要と見込まれる計画後effort（想定介入回数）を算出する。
+   - まず、対象WPの**既存の計画前見積**を確認する。`read-project-state`
+     スキルを呼び出して該当WPを閲覧する。
+     ```bash
+     echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
+     # → 出力の projectItems[].effort に計画前見積（initial_estimate）が記録されている
+     ```
+     入力JSONの組み立て方は
+     [references/reference.md](/.agents/skills/bundles/management-bundle/start-work-package/references/reference.md)
+     を参照すること。
+   - 計画後見積の定義と算出方法は [guides/backlog-guidelines.md](/guides/backlog-guidelines.md) の
+     **2.2.1** に従うこと。
 
 3. **見積りの提示と了承**: 算出した見積りをPOに提示し、了承を得る。
 

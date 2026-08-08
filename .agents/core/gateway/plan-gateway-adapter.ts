@@ -1259,7 +1259,7 @@ export class PlanGatewayAdapter implements PlanGateway {
     if (this.resolvedScope) {
       try {
         const enrichQuery =
-          `query($owner: String!, $repo: String!, $number: Int!) { repository(owner: $owner, name: $repo) { issue(number: $number) { parent { ... on Issue { number title id } } milestone { number title } subIssues(first: 100) { nodes { ... on Issue { number title id } } } projectItems(first: 10) { nodes { id project { title number } sizeEst: fieldValueByName(name: "harness-size-estimate") { ... on ProjectV2ItemFieldSingleSelectValue { name } } sizeAct: fieldValueByName(name: "harness-size-actual") { ... on ProjectV2ItemFieldSingleSelectValue { name } } status: fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } } } } } } }`;
+          `query($owner: String!, $repo: String!, $number: Int!) { repository(owner: $owner, name: $repo) { issue(number: $number) { parent { ... on Issue { number title id } } milestone { number title } subIssues(first: 100) { nodes { ... on Issue { number title id } } } projectItems(first: 10) { nodes { id project { title number } sizeEst: fieldValueByName(name: "harness-size-estimate") { ... on ProjectV2ItemFieldSingleSelectValue { name } } sizeAct: fieldValueByName(name: "harness-size-actual") { ... on ProjectV2ItemFieldSingleSelectValue { name } } effort: fieldValueByName(name: "harness-effort-summary") { ... on ProjectV2ItemFieldTextValue { text } } status: fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } } } } } } }`;
         const gqlResult = await this.runCommand("gh", [
           "api",
           "graphql",
@@ -1289,6 +1289,7 @@ export class PlanGatewayAdapter implements PlanGateway {
                         project: { title: string; number: number };
                         sizeEst?: { name: string } | null;
                         sizeAct?: { name: string } | null;
+                        effort?: { text: string } | null;
                         status?: { name: string } | null;
                       }>
                       | null;
@@ -1327,6 +1328,7 @@ export class PlanGatewayAdapter implements PlanGateway {
                 itemId: item.id,
                 sizeEstimate: item.sizeEst?.name ?? null,
                 sizeActual: item.sizeAct?.name ?? null,
+                effort: item.effort?.text ?? null,
                 status: item.status?.name ?? null,
               }));
             }
