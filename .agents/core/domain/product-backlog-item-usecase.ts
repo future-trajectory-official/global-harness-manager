@@ -28,6 +28,7 @@ function scopeStep(identifier: { scope: EntityScope }): Step {
   };
 }
 import {
+  assertEffortSummary,
   assertIdDefined,
   assertReferenceDefined,
   assertStringNonEmpty,
@@ -73,6 +74,27 @@ function formatReviseComment(statement: ProductBacklogItemStatement, reason: Cha
   lines.push("| - | ------ | ------ | -------- |");
   lines.push(`| 1 | — | ${statement.summary} | ${reason.description} |`);
   return lines.join("\n");
+}
+
+/**
+ * PBI のプロセス分析 body（JSON文字列）を生成する。
+ * effortSummary 指定時は wp_effort_summary を snake_case で含める。
+ */
+function formatPbiAnalysisBody(analysis: ProcessAnalysis): string {
+  const bodyObj: Record<string, unknown> = {
+    planning_variance_review: analysis.planningReview,
+    execution_variance_review: analysis.executionReview,
+    improvement_suggestions: analysis.improvementSuggestions,
+  };
+  if (analysis.effortSummary) {
+    assertEffortSummary(analysis.effortSummary, "effortSummary");
+    bodyObj.wp_effort_summary = {
+      initial_estimate: analysis.effortSummary.initialEstimate,
+      planned_estimate: analysis.effortSummary.plannedEstimate,
+      actual: analysis.effortSummary.actual,
+    };
+  }
+  return JSON.stringify(bodyObj);
 }
 
 export interface ProductBacklogItemUseCase {
@@ -381,11 +403,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
     assertTitleNonEmpty(identifier.title, "PBI title");
     assertIdDefined(identifier.id, "record analysis for a PBI");
     assertStringNonEmpty(analysis.planningReview, "planningReview");
-    const body = JSON.stringify({
-      planning_variance_review: analysis.planningReview,
-      execution_variance_review: analysis.executionReview,
-      improvement_suggestions: analysis.improvementSuggestions,
-    });
+    const body = formatPbiAnalysisBody(analysis);
     return {
       summary: `Record analysis for PBI: ${identifier.title.value}`,
       steps: [scopeStep(identifier), {

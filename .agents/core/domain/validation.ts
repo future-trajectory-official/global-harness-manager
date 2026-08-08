@@ -36,3 +36,18 @@ export function assertReferenceDefined(
     );
   }
 }
+
+/**
+ * effort集計値（EffortSummary）が全て 0以上の有限数であることを検証する。
+ * 部分指定・空オブジェクトによる harness-effort-summary への空記録を防ぐ。
+ */
+export function assertEffortSummary(
+  effort: { initialEstimate: number; plannedEstimate: number; actual: number },
+  label: string,
+): void {
+  for (const [key, value] of Object.entries(effort)) {
+    if (!Number.isFinite(value) || value < 0) {
+      throw new Error(`INVALID_INPUT: ${label}.${key} must be a finite non-negative number`);
+    }
+  }
+}
