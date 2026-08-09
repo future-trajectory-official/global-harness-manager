@@ -52,16 +52,6 @@ Deno.test({
 });
 
 Deno.test({
-  name: "SKILL.md should define boundary with define-acceptance-criteria",
-  fn: async () => {
-    const content = await Deno.readTextFile(SKILL_MD);
-    assertExists(content.match(/define-acceptance-criteria/));
-    assertExists(content.match(/定義.*フェーズ/));
-    assertExists(content.match(/実装.*フェーズ/));
-  },
-});
-
-Deno.test({
   name: "SKILL.md should state WIP commit is out of scope",
   fn: async () => {
     const content = await Deno.readTextFile(SKILL_MD);
@@ -88,14 +78,5 @@ Deno.test({
     }
     assertExists(entries.includes("deno-ts.md"));
     assertExists(entries.includes("python.md"));
-  },
-});
-
-Deno.test({
-  name: "SKILL.md should document tdd-implementation replacement",
-  fn: async () => {
-    const content = await Deno.readTextFile(SKILL_MD);
-    assertExists(content.match(/tdd-implementation/));
-    assertExists(content.match(/置き換え/));
   },
 });

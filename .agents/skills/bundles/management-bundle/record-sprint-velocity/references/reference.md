@@ -54,7 +54,7 @@ echo '{"velocity":{"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全W
 
 ## WEIGHT_MAP（本スキル内で独立定義）
 
-旧スキル record-velocity からの import は禁止。本スキル内で独立に定義する。
+ウェイト換算表は本スキル内で独立に定義する。
 
 | サイズ | ウェイト |
 | ------ | -------- |
@@ -69,4 +69,3 @@ echo '{"velocity":{"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全W
 - スクリプトは「stdin パース・UseCase呼び出し・結果表示」の3役割のみを担当する
 - ベロシティの集計・対話は SKILL.md の手順・AI側に保持する
 - GitHub 操作は既存 UseCase（`recordVelocity`）のみを経由する
-- 旧スキル（record-velocity / archive-backlog）とは一切連携しない

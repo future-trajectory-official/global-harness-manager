@@ -40,6 +40,10 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-
   - **planning（計画乖離）**: 初期見積（initial）vs 計画見積（planned）の乖離要因
   - **execution（実行乖離）**: 計画見積（planned）vs 実績（actual）の乖離要因
   - **improvement（改善提案）**: 次スプリントへの具体的な改善策
+- **乖離要因の分析は集計値の合計だけでなく、PBI配下の各WPに記録されたナラティブ
+  （`harness-variance-review-planning` / `harness-variance-review-execution` /
+  `harness-improvement-suggestions` 等）を収集・参照して行う。**
+  数値の裏付けとなる具体的な要因をWP個別の記録から特定する。
 
 ### 3. 記録
 

@@ -63,4 +63,3 @@ echo '{"identifier":{"title":"Sprint-End-Persistence","id":"node-id","code":"614
   closeItem を再利用する
 - ローカルファイル（[product-backlog.md](/.agents/management/product-backlog.md) /
   [product-backlog-archive.md](/.agents/management/product-backlog-archive.md)）には一切書き込まない
-- 旧スキル（record-velocity / archive-backlog）のファイル・ロジックには一切触れない
