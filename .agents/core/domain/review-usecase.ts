@@ -287,14 +287,6 @@ export const reviewUseCase: ReviewUseCase & {
             state: "closed",
           },
         },
-        {
-          entity: "Review",
-          operation: "update",
-          params: {
-            itemId: identifier.code,
-            body: formatEditComment("Archive", `Archived ${identifier.title.value}`),
-          },
-        },
       ],
     };
   },
@@ -334,12 +326,3 @@ export const reviewUseCase: ReviewUseCase & {
     return await _executePlan(plan, _gateway);
   },
 };
-
-/** 操作コメントの本文を生成する。Markdown の H2 見出しで操作名と詳細を記述する。 */
-function formatEditComment(operation: string, detail: string): string {
-  const lines: string[] = [];
-  lines.push(`## ${operation}`);
-  lines.push("");
-  lines.push(detail);
-  return lines.join("\n");
-}

@@ -245,14 +245,13 @@ Deno.test("reviewUseCase - report should throw for undefined id", () => {
   );
 });
 
-Deno.test("reviewUseCase - archive should return Plan with archive + update steps", () => {
+Deno.test("reviewUseCase - archive should return Plan with archive step", () => {
   const plan = reviewUseCase.archive(makeIdentifier());
   assertEquals(plan.summary, "Archive review: Sprint 15 Review");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "archive");
-  assertEquals(plan.steps[2].operation, "update");
 });
 
 Deno.test("reviewUseCase - archive should throw for undefined id", () => {
