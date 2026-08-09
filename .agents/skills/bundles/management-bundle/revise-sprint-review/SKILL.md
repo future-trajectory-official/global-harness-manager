@@ -24,7 +24,7 @@ Plan を生成し、永続化層へ反映する。
 が内部で保持し、PO に一気に表示して確認負荷をかけてはいけない。
 
 ```bash
-echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts examine
+deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts examine
 ```
 
 <!-- STOP -->
@@ -34,8 +34,7 @@ echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bund
 [references/reference.md](/.agents/skills/bundles/management-bundle/revise-sprint-review/references/reference.md)
 に沿って、以下の流れで PO と対話する：
 
-1. スプリントゴールと各 PBI Body（ワークフロー文脈または `.agents/management/product-backlog.md`
-   から取得）を確認材料として保持する。
+1. スプリントゴールと各 PBI の内容（`read-project-state` スキル等で取得）を確認材料として保持する。
 2. Review の AC を **1 つずつ** PO に提示し、「この AC はスプリントゴール / PBI Body
    のどの部分を検証するか」を説明する。
 3. PO と認識のずれやカバレッジ不足がないか確認する。

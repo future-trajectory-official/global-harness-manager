@@ -26,10 +26,11 @@ POとレビューの目的・スコープを共有し、認識を揃えます。
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
   - `[tester.md](/.agents/rules/tester.md)` (品質検証・客観的エビデンス提示)
-- **入力（前提条件）**: 最新の `[product-backlog.md](/.agents/management/product-backlog.md)`。
+- **入力（前提条件）**:
+  対象スプリントのスプリントゴール、スプリントにコミットされたPBI一覧、各PBIに紐づくWPとAC。
 - **手続き**:
-  1. AI
-     はバックログから本スプリントのスプリントゴール、対象PBI数、WP数、AC総数を読み込み、内部コンテキストに保持する。
+  1. AI は `read-project-state`
+     スキル（読取専用）を用いて、本スプリントのスプリントゴール、対象PBI数、WP数、AC総数を取得し、内部コンテキストに保持する。
   2. POに以下の要約を提示する：
      > 「Sprint N のスプリントレビューを開始します。対象: M 件の PBI、N 件の
      > AC。実機デモ主体・エビデンス駆動で検証を進めます。」
