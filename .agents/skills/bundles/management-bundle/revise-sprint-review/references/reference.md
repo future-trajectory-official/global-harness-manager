@@ -24,6 +24,14 @@
 
 ### 入力 JSON
 
+省略時は Open 状態の最新スプリントの Review を自動取得する（入力不要）：
+
+```json
+{}
+```
+
+過去スプリントの Review を再検証する場合は `sprintNumber` を指定：
+
 ```json
 {
   "sprintNumber": 17
@@ -41,6 +49,10 @@
 ### 実行例
 
 ```bash
+# 引数なし（Open 状態の最新スプリントを自動取得）
+deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts examine
+
+# 過去スプリントの Review を指定して取得
 echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts examine
 ```
 
@@ -62,8 +74,7 @@ echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bund
 ### 対話の進め方
 
 1. **文脈を取得する**
-   - スプリントゴールと各 PBI Body を確認材料として保持する（ワークフロー文脈、または
-     `.agents/management/product-backlog.md` 等から取得）
+   - スプリントゴールと各 PBI の内容を確認材料として保持する（スキル操作で取得）
    - 将来的には `plan-sprint-review` 実行時にこれらを Review Issue 本文内に埋め込む（WP_b で対応）
 
 2. **Review の AC を 1 つずつ確認する**
@@ -127,23 +138,23 @@ echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bund
 
 ### 各フィールドの説明
 
-| フィールド                                | 必須                    | 説明                                                                                   |
-| ----------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------- |
-| `sprintNumber`                            | `code` 未指定時         | レビュー対象のスプリント番号。`code` とのどちらか一方が必須                            |
-| `code`                                    | `sprintNumber` 未指定時 | Review Issue の番号。既知の場合はこちらを優先                                          |
-| `changeReason`                            | 必須                    | 変更の理由。空文字は不可                                                               |
-| `removed`                                 | 任意                    | 論理削除（➖）する既存 AC の一覧                                                       |
-| `removed.items[].pbiNumber`               | 推奨                    | AC が属する PBI 番号。指定しない場合は全 PBI から最初にマッチした AC を削除            |
-| `removed.items[].wpNumber`                | 推奨                    | AC が属する WP 番号。指定しない場合は全 WP から最初にマッチした AC を削除              |
-| `removed.items[].number`                  | 必須                    | 削除対象 AC の番号                                                                     |
-| `removed.items[].description`             | 必須                    | 削除対象 AC の説明（Issue 本文置換用）                                                 |
-| `addedGroups`                             | 任意                    | 「スプリント中追加検証計画」セクションに追記する AC 群                                 |
-| `addedGroups[].pbiNumber`                 | 必須                    | 追加 AC の属する PBI 番号                                                              |
-| `addedGroups[].pbiTitle`                  | 任意                    | PBI タイトル（表示用）                                                                 |
-| `addedGroups[].wpNumber`                  | 必須                    | 追加 AC の属する WP 番号。途中追加の WP はアルファベット suffix（例: `"a"`）を使用する |
-| `addedGroups[].wpTitle`                   | 任意                    | WP タイトル（表示用）                                                                  |
-| `addedGroups[].acJudgments[].number`      | 必須                    | 追加 AC の番号                                                                         |
-| `addedGroups[].acJudgments[].description` | 必須                    | 追加 AC の説明                                                                         |
+| フィールド                                | 必須 | 説明                                                                                   |
+| ----------------------------------------- | ---- | -------------------------------------------------------------------------------------- |
+| `sprintNumber`                            | 任意 | レビュー対象のスプリント番号。省略時は Open 状態の最新スプリントを自動検出             |
+| `code`                                    | 任意 | Review Issue の番号。既知の場合はこちらを優先                                          |
+| `changeReason`                            | 必須 | 変更の理由。空文字は不可                                                               |
+| `removed`                                 | 任意 | 論理削除（➖）する既存 AC の一覧                                                       |
+| `removed.items[].pbiNumber`               | 推奨 | AC が属する PBI 番号。指定しない場合は全 PBI から最初にマッチした AC を削除            |
+| `removed.items[].wpNumber`                | 推奨 | AC が属する WP 番号。指定しない場合は全 WP から最初にマッチした AC を削除              |
+| `removed.items[].number`                  | 必須 | 削除対象 AC の番号                                                                     |
+| `removed.items[].description`             | 必須 | 削除対象 AC の説明（Issue 本文置換用）                                                 |
+| `addedGroups`                             | 任意 | 「スプリント中追加検証計画」セクションに追記する AC 群                                 |
+| `addedGroups[].pbiNumber`                 | 必須 | 追加 AC の属する PBI 番号                                                              |
+| `addedGroups[].pbiTitle`                  | 任意 | PBI タイトル（表示用）                                                                 |
+| `addedGroups[].wpNumber`                  | 必須 | 追加 AC の属する WP 番号。途中追加の WP はアルファベット suffix（例: `"a"`）を使用する |
+| `addedGroups[].wpTitle`                   | 任意 | WP タイトル（表示用）                                                                  |
+| `addedGroups[].acJudgments[].number`      | 必須 | 追加 AC の番号                                                                         |
+| `addedGroups[].acJudgments[].description` | 必須 | 追加 AC の説明                                                                         |
 
 ### 実行例
 
@@ -183,14 +194,17 @@ PO は `itemId`、`removed`、`addedGroups` の内容を確認し、承認する
 
 ## エラーハンドリング
 
-| エラー                                                   | 原因                                       | 対処                                         |
-| -------------------------------------------------------- | ------------------------------------------ | -------------------------------------------- |
-| `INVALID_INPUT: either sprintNumber or code is required` | `sprintNumber` と `code` の両方が未指定    | 対象 Review Issue を特定できる情報を入力する |
-| `INVALID_INPUT: sprintNumber must be a positive integer` | `sprintNumber` が 1 未満または小数         | 正の整数を指定する                           |
-| `INVALID_INPUT: code must be a string`                   | `code` が数値等                            | 文字列で指定する                             |
-| `INVALID_INPUT: changeReason is required`                | `changeReason` が未指定                    | 変更理由を入力する                           |
-| `INVALID_INPUT: changeReason must not be empty`          | `changeReason` が空文字                    | 具体的な変更理由を入力する                   |
-| `No Review Issue found for Sprint N`                     | 該当スプリントの Review Issue が存在しない | `plan-sprint-review` で事前に作成する        |
+| エラー                                                   | 原因                                       | 対処                                  |
+| -------------------------------------------------------- | ------------------------------------------ | ------------------------------------- |
+| `INVALID_INPUT: sprintNumber must be a positive integer` | `sprintNumber` が 1 未満または小数         | 正の整数を指定する                    |
+| `INVALID_INPUT: code must be a string`                   | `code` が数値等                            | 文字列で指定する                      |
+| `INVALID_INPUT: changeReason is required`                | `changeReason` が未指定                    | 変更理由を入力する                    |
+| `INVALID_INPUT: changeReason must not be empty`          | `changeReason` が空文字                    | 具体的な変更理由を入力する            |
+| `No Review Issue found for Sprint N`                     | 該当スプリントの Review Issue が存在しない | `plan-sprint-review` で事前に作成する |
+
+注: `sprintNumber` と `code` はいずれも**省略可能**。省略時は Open
+状態の最新スプリントを自動検出してその Review を取得する。明示指定は過去スプリントの Review
+を再検証する場合のみ。
 
 ---
 
