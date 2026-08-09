@@ -138,14 +138,11 @@ Deno.test("revise-sprint-review - dry-run output should contain Plan structure",
 });
 
 /**
- * バリデーション: sprintNumber と code の両方が未指定の場合はエラーとなる。
+ * バリデーション: sprintNumber と code の両方を省略してもエラーとならない。
+ * （省略時は Open 状態の最新スプリントを自動検出する）
  */
-Deno.test("revise-sprint-review - validateCommonInput should throw when neither sprintNumber nor code is given", () => {
-  assertThrows(
-    () => validateCommonInput({ changeReason: "理由" }),
-    Error,
-    "either sprintNumber or code is required",
-  );
+Deno.test("revise-sprint-review - validateCommonInput should accept when neither sprintNumber nor code is given", () => {
+  validateCommonInput({ changeReason: "理由" });
 });
 
 /**

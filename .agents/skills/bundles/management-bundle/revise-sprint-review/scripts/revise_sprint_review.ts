@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run -A
 import { parseArgs } from "@std/cli/parse-args";
 import "../../../../../core/composition-root.ts";
-import { identify, sprintId } from "../../../../../core/domain/types.ts";
+import { identify, sprintId, UNKNOWN_SCOPE } from "../../../../../core/domain/types.ts";
 import type {
   AcceptanceCriterias,
   AcGroup,
@@ -14,7 +14,8 @@ import type {
 import { REVIEW_MARKERS, reviewUseCase } from "../../../../../core/domain/review-usecase.ts";
 import { errorUtil } from "../../../../../core/harness-core.ts";
 import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
-import { detectCurrentSprint, sprintNumberFrom } from "../../../../../core/shared/sprint-utils.ts";
+import { sprintNumberFrom } from "../../../../../core/shared/sprint-utils.ts";
+import { sprintUseCase } from "../../../../../core/domain/sprint-usecase.ts";
 
 interface RemovedAc {
   number: string;
@@ -48,9 +49,6 @@ interface ReviseSprintReviewInput {
 }
 
 export function validateCommonInput(input: ReviseSprintReviewInput): void {
-  if (input.sprintNumber == null && input.code == null) {
-    throw new Error("INVALID_INPUT: either sprintNumber or code is required");
-  }
   if (
     input.sprintNumber != null &&
     (!Number.isInteger(input.sprintNumber) || input.sprintNumber < 1)
@@ -74,10 +72,18 @@ export function validateReviseInput(input: ReviseSprintReviewInput): void {
 
 async function resolveSprintIdentifier(
   input: ReviseSprintReviewInput,
-  scope: EntityScope,
 ): Promise<SprintIdentifier> {
-  if (input.sprintNumber != null) return sprintId(scope, input.sprintNumber);
-  return await detectCurrentSprint(scope);
+  if (input.sprintNumber != null) return sprintId(UNKNOWN_SCOPE, input.sprintNumber);
+  const findPlan = sprintUseCase.find();
+  const findResult = await sprintUseCase.executePlan(findPlan);
+  const viewOutput = findResult.getStep("Sprint", "view")?.output as
+    | { number?: number; title?: string }
+    | undefined;
+  const sprintNumber = viewOutput?.number;
+  if (sprintNumber == null || !Number.isInteger(sprintNumber) || sprintNumber < 1) {
+    throw new Error("Failed to detect current sprint from open milestones");
+  }
+  return sprintId(UNKNOWN_SCOPE, sprintNumber);
 }
 
 async function searchReviewIssue(
@@ -213,7 +219,7 @@ async function handleExamine(
 ): Promise<void> {
   validateCommonInput(input);
 
-  const sprintIdentifier = await resolveSprintIdentifier(input, scope);
+  const sprintIdentifier = await resolveSprintIdentifier(input);
   const sprintNumber = sprintNumberFrom(sprintIdentifier);
   const { code, title } = input.code
     ? { code: input.code, title: `Sprint ${sprintNumber} Review` }
@@ -267,7 +273,7 @@ async function handleRevise(
 ): Promise<void> {
   validateReviseInput(input);
 
-  const sprintIdentifier = await resolveSprintIdentifier(input, scope);
+  const sprintIdentifier = await resolveSprintIdentifier(input);
   const sprintNumber = sprintNumberFrom(sprintIdentifier);
   const { code, title } = input.code
     ? { code: input.code, title: `Sprint ${sprintNumber} Review` }
@@ -327,7 +333,9 @@ async function main(): Promise<void> {
       throw new Error("USAGE: revise_sprint_review.ts <examine|revise> [--dry-run]");
     }
 
-    const input = await readJsonFromStdin<ReviseSprintReviewInput>();
+    const input = subcommand === "examine" && Deno.stdin.isTerminal()
+      ? {} as ReviseSprintReviewInput
+      : await readJsonFromStdin<ReviseSprintReviewInput>();
     const scope = input.scope ?? { owner: "unknown", repository: "unknown" };
 
     if (subcommand === "examine") {
