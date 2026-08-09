@@ -7,9 +7,15 @@
 
 ## record_sprint_velocity.ts — スプリントベロシティ記録
 
-対象スプリントは引数なし `find()`
-により**最新のオープンスプリント（Milestone）を自動解決**する。入力に identifier / sprintNumber
-は不要。
+### 対象スプリントの解決（引数なし find）
+
+本スクリプトは入力から identifier（sprintNumber / Milestone番号）を受け取らない。
+`find()`（引数なし）により**最新のオープンスプリント（Milestone）を自動解決**し、
+そのスプリント番号と Milestone 番号で `recordVelocity` を実行する。
+
+- スプリントのスプリント指定なし運用は、スプリント終了処理（Phase 9 conclude 前）が
+  常にオープン中の最新スプリントを対象とすることに基づく。
+- dry-run 出力の `resolvedSprint`（`sprintNumber` / `milestoneNumber`）で解決結果を確認できる。
 
 ### 入力パラメータ
 
@@ -19,6 +25,17 @@
 | `velocity.totalWeight` | `number` | 必須 | size_actual のウェイト合計（非負） |
 | `velocity.matchRate`   | `number` | 必須 | 見積一致率（0.0〜1.0）             |
 | `velocity.summary`     | `string` | 必須 | 数値で説明しきれない文脈・留意点   |
+
+### 集計パラメータの作り方
+
+各パラメータは、対象スプリントに含まれる**完了PBIの `size_actual`** を収集して以下のように算出する。
+
+| パラメータ    | 算出方法                                                        |
+| ------------- | --------------------------------------------------------------- |
+| `pbiCount`    | 完了PBI数                                                       |
+| `totalWeight` | 各PBIの `size_actual` を WEIGHT_MAP（下表）でウェイト化した合計 |
+| `matchRate`   | 見積サイズ（estimate）と `size_actual` が一致したPBI数 ÷ 全体   |
+| `summary`     | 数値で説明しきれない文脈・留意点（乖離要因等）                  |
 
 ### 出力
 
