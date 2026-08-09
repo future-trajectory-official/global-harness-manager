@@ -19,7 +19,7 @@ tags:
 ## Quick-Start
 
 ```bash
-# dry-run: recordVelocity の Plan を確認
+# dry-run: recordVelocity の Plan を確認（最新のオープンスプリントを自動解決）
 echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts --dry-run
 
 # 実実行
@@ -30,7 +30,8 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-spri
 
 ### 1. ベロシティ集計
 
-- 該当スプリントに含まれる完了PBIの `size_actual` を収集し、以下の値を集計する。
+- 対象スプリント（最新のオープンスプリント）に含まれる完了PBIの `size_actual`
+  を収集し、以下の値を集計する。
   - `pbiCount`: 完了PBI数
   - `totalWeight`: size_actual のウェイト合計（XS=1 / S=2 / M=3 / L=5 / XL=8）
   - `matchRate`: 見積一致率（estimate と actual が一致したPBI数 ÷ 全体）
@@ -38,6 +39,9 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-spri
 
 > **WEIGHT_MAP**（旧スキル record-velocity からの import 禁止。本スキル内で独立定義） XS=1, S=2,
 > M=3, L=5, XL=8
+>
+> **対象スプリントの解決**: スクリプトは引数なし `find()`
+> で最新のオープンスプリント（Milestone）を自動解決する。入力に identifier / sprintNumber は不要。
 
 ### 2. PO確認と記録
 

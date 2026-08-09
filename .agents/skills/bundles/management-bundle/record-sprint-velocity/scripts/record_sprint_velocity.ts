@@ -1,63 +1,97 @@
 #!/usr/bin/env -S deno run -A
 import "../../../../../core/composition-root.ts";
+import type { VelocityMetrics } from "../../../../../core/domain/sprint-usecase.ts";
+import { sprintUseCase } from "../../../../../core/domain/sprint-usecase.ts";
 import { sprintRef } from "../../../../../core/domain/types.ts";
-import { sprintUseCase, type VelocityMetrics } from "../../../../../core/domain/sprint-usecase.ts";
-import { runCli } from "../../../../../core/shared/cli/runner.ts";
+import { errorUtil } from "../../../../../core/harness-core.ts";
+import { parseArgs } from "@std/cli/parse-args";
+import { readJsonFromStdin } from "../../../../../core/shared/io/io.ts";
 
 interface RecordSprintVelocityInput {
-  identifier: { title: string; id: string; code?: string };
-  velocity: VelocityMetrics;
+  velocity: Omit<VelocityMetrics, "sprintNumber">;
 }
 
 function validateInput(input: RecordSprintVelocityInput): void {
-  if (!input.identifier) throw new Error("INVALID_INPUT: identifier is required");
-  if (!input.identifier.id) throw new Error("INVALID_INPUT: identifier.id must not be empty");
   if (!input.velocity) throw new Error("INVALID_INPUT: velocity is required");
-  if (!Number.isInteger(input.velocity.sprintNumber) || input.velocity.sprintNumber < 1) {
-    throw new Error("INVALID_INPUT: velocity.sprintNumber must be a positive integer");
-  }
+  const { pbiCount, totalWeight, matchRate, summary } = input.velocity;
   if (
-    !Number.isInteger(input.velocity.pbiCount) || !Number.isInteger(input.velocity.totalWeight) ||
-    input.velocity.pbiCount < 0 || input.velocity.totalWeight < 0
+    !Number.isInteger(pbiCount) || !Number.isInteger(totalWeight) ||
+    pbiCount < 0 || totalWeight < 0
   ) {
     throw new Error("INVALID_INPUT: pbiCount and totalWeight must be non-negative integers");
   }
   if (
-    typeof input.velocity.matchRate !== "number" ||
-    !Number.isFinite(input.velocity.matchRate) ||
-    input.velocity.matchRate < 0 ||
-    input.velocity.matchRate > 1
+    typeof matchRate !== "number" ||
+    !Number.isFinite(matchRate) ||
+    matchRate < 0 ||
+    matchRate > 1
   ) {
     throw new Error("INVALID_INPUT: matchRate must be a number between 0 and 1");
   }
-  if (typeof input.velocity.summary !== "string" || input.velocity.summary.trim() === "") {
+  if (typeof summary !== "string" || summary.trim() === "") {
     throw new Error("INVALID_INPUT: velocity.summary must not be empty");
-  }
-  if (
-    input.identifier.code !== undefined &&
-    Number(input.identifier.code) !== input.velocity.sprintNumber
-  ) {
-    throw new Error(
-      "INVALID_INPUT: identifier.code must match velocity.sprintNumber",
-    );
   }
 }
 
 export { validateInput };
 
-if (import.meta.main) {
-  runCli<RecordSprintVelocityInput>({
-    validate: validateInput,
-    buildPlan(input) {
-      const identifier = sprintRef(
-        input.velocity.sprintNumber,
-        input.identifier.id,
-        input.identifier.code,
+async function resolveLatestSprint() {
+  const findPlan = sprintUseCase.find();
+  const findResult = await sprintUseCase.executePlan(findPlan);
+  const viewOutput = findResult.getStep("Sprint", "view")?.output as
+    | { number: number; title: string }
+    | undefined;
+  if (!viewOutput || viewOutput.number == null || !viewOutput.title) {
+    throw new Error("No open milestone found. Cannot resolve latest sprint.");
+  }
+  const sprintMatch = viewOutput.title.match(/^Sprint\s+(\d+)$/);
+  if (!sprintMatch) {
+    throw new Error(`Unexpected milestone title format: "${viewOutput.title}"`);
+  }
+  return {
+    milestoneNumber: String(viewOutput.number),
+    sprintNumber: parseInt(sprintMatch[1], 10),
+  };
+}
+
+async function main(): Promise<void> {
+  try {
+    const args = parseArgs(Deno.args, {
+      boolean: ["dry-run"],
+      alias: { "dry-run": "d" },
+    });
+    const input = await readJsonFromStdin<RecordSprintVelocityInput>();
+    validateInput(input);
+
+    const { milestoneNumber, sprintNumber } = await resolveLatestSprint();
+    const identifier = sprintRef(sprintNumber, undefined, milestoneNumber);
+    const velocity: VelocityMetrics = { ...input.velocity, sprintNumber };
+    const plan = sprintUseCase.recordVelocity(identifier, velocity);
+
+    if (args["dry-run"]) {
+      console.log(
+        JSON.stringify(
+          {
+            summary: plan.summary,
+            resolvedSprint: { sprintNumber, milestoneNumber },
+            steps: plan.steps,
+          },
+          null,
+          2,
+        ),
       );
-      return sprintUseCase.recordVelocity(identifier, input.velocity);
-    },
-    executePlan(plan) {
-      return sprintUseCase.executePlan(plan);
-    },
-  });
+      return;
+    }
+
+    const result = await sprintUseCase.executePlan(plan);
+    console.log(JSON.stringify(result, null, 2));
+  } catch (e) {
+    const err = errorUtil.toError(e);
+    errorUtil.log(err);
+    Deno.exit(1);
+  }
+}
+
+if (import.meta.main) {
+  main();
 }

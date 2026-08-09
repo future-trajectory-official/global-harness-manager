@@ -7,16 +7,18 @@
 
 ## record_sprint_velocity.ts — スプリントベロシティ記録
 
+対象スプリントは引数なし `find()`
+により**最新のオープンスプリント（Milestone）を自動解決**する。入力に identifier / sprintNumber
+は不要。
+
 ### 入力パラメータ
 
-| パラメータ              | 型                | 必須 | 説明                                     |
-| ----------------------- | ----------------- | ---- | ---------------------------------------- |
-| `identifier`            | `{title,id,code}` | 必須 | スプリントの識別子（code=Milestone番号） |
-| `velocity.sprintNumber` | `number`          | 必須 | スプリント番号（1以上の整数）            |
-| `velocity.pbiCount`     | `number`          | 必須 | 完了PBI数（非負）                        |
-| `velocity.totalWeight`  | `number`          | 必須 | size_actual のウェイト合計（非負）       |
-| `velocity.matchRate`    | `number`          | 必須 | 見積一致率（0.0〜1.0）                   |
-| `velocity.summary`      | `string`          | 必須 | 数値で説明しきれない文脈・留意点         |
+| パラメータ             | 型       | 必須 | 説明                               |
+| ---------------------- | -------- | ---- | ---------------------------------- |
+| `velocity.pbiCount`    | `number` | 必須 | 完了PBI数（非負）                  |
+| `velocity.totalWeight` | `number` | 必須 | size_actual のウェイト合計（非負） |
+| `velocity.matchRate`   | `number` | 必須 | 見積一致率（0.0〜1.0）             |
+| `velocity.summary`     | `string` | 必須 | 数値で説明しきれない文脈・留意点   |
 
 ### 出力
 
@@ -26,11 +28,11 @@
 ### 実行例
 
 ```bash
-# dry-run
-echo '{"identifier":{"title":"Sprint 16","id":"node-id","code":"16"},"velocity":{"sprintNumber":16,"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全WPを計画内に完了"}}' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts --dry-run
+# dry-run（最新オープンスプリントを解決して Plan を表示）
+echo '{"velocity":{"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全WPを計画内に完了"}}' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts --dry-run
 
 # 実実行
-echo '{"identifier":{"title":"Sprint 16","id":"node-id","code":"16"},"velocity":{"sprintNumber":16,"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全WPを計画内に完了"}}' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts
+echo '{"velocity":{"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全WPを計画内に完了"}}' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts
 ```
 
 ## WEIGHT_MAP（本スキル内で独立定義）

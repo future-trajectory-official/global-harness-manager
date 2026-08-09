@@ -1,11 +1,11 @@
 import { assertEquals, assertThrows } from "@std/assert";
-import { sprintUseCase, type VelocityMetrics } from "../../../../../core/domain/sprint-usecase.ts";
+import { sprintUseCase } from "../../../../../core/domain/sprint-usecase.ts";
+import type { VelocityMetrics } from "../../../../../core/domain/sprint-usecase.ts";
 import { sprintRef } from "../../../../../core/domain/types.ts";
 import type { Plan } from "../../../../../core/domain/types.ts";
 import { validateInput } from "./record_sprint_velocity.ts";
 
-const VELOCITY: VelocityMetrics = {
-  sprintNumber: 16,
+const VELOCITY: Omit<VelocityMetrics, "sprintNumber"> = {
   pbiCount: 5,
   totalWeight: 21,
   matchRate: 0.8,
@@ -18,7 +18,7 @@ const VELOCITY: VelocityMetrics = {
  */
 Deno.test("record_sprint_velocity - recordVelocity plan", () => {
   const identifier = sprintRef(16, "node-id", "16");
-  const plan = sprintUseCase.recordVelocity(identifier, VELOCITY) as Plan;
+  const plan = sprintUseCase.recordVelocity(identifier, { ...VELOCITY, sprintNumber: 16 }) as Plan;
   assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[1].entity, "Sprint");
@@ -49,35 +49,53 @@ Deno.test("record_sprint_velocity - recordVelocity throws for invalid sprintNumb
 Deno.test("record_sprint_velocity - recordVelocity throws for out-of-range matchRate", () => {
   const identifier = sprintRef(16, "node-id", "16");
   assertThrows(
-    () => sprintUseCase.recordVelocity(identifier, { ...VELOCITY, matchRate: 1.5 }),
-    Error,
-    "INVALID_INPUT",
-  );
-});
-
-/**
- * @description validateInput が identifier.code と sprintNumber の不一致を拒否すること
- * @verify code=99 で INVALID_INPUT エラーになること
- */
-Deno.test("record_sprint_velocity - validateInput rejects code/sprintNumber mismatch", () => {
-  assertThrows(
     () =>
-      validateInput({
-        identifier: { title: "Sprint 16", id: "node-id", code: "99" },
-        velocity: VELOCITY,
-      }),
+      sprintUseCase.recordVelocity(identifier, { ...VELOCITY, sprintNumber: 16, matchRate: 1.5 }),
     Error,
     "INVALID_INPUT",
   );
 });
 
 /**
- * @description validateInput が一致する code/sprintNumber を受け付けること
+ * @description validateInput が正しい velocity を受け付けること
  * @verify 例外が発生しないこと
  */
-Deno.test("record_sprint_velocity - validateInput accepts matching code/sprintNumber", () => {
-  validateInput({
-    identifier: { title: "Sprint 16", id: "node-id", code: "16" },
-    velocity: VELOCITY,
-  });
+Deno.test("record_sprint_velocity - validateInput accepts valid velocity", () => {
+  validateInput({ velocity: VELOCITY });
+});
+
+/**
+ * @description validateInput が negative pbiCount を拒否すること
+ * @verify INVALID_INPUT エラーが発生すること
+ */
+Deno.test("record_sprint_velocity - validateInput rejects negative pbiCount", () => {
+  assertThrows(
+    () => validateInput({ velocity: { ...VELOCITY, pbiCount: -1 } }),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
+/**
+ * @description validateInput が範囲外 matchRate を拒否すること
+ * @verify INVALID_INPUT エラーが発生すること
+ */
+Deno.test("record_sprint_velocity - validateInput rejects out-of-range matchRate", () => {
+  assertThrows(
+    () => validateInput({ velocity: { ...VELOCITY, matchRate: 1.2 } }),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
+/**
+ * @description validateInput が空 summary を拒否すること
+ * @verify INVALID_INPUT エラーが発生すること
+ */
+Deno.test("record_sprint_velocity - validateInput rejects empty summary", () => {
+  assertThrows(
+    () => validateInput({ velocity: { ...VELOCITY, summary: "" } }),
+    Error,
+    "INVALID_INPUT",
+  );
 });
