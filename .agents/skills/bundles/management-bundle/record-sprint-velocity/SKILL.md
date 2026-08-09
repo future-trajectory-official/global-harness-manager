@@ -30,14 +30,11 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-spri
 
 ### 1. ベロシティ集計
 
-- 該当スプリントに含まれる完了PBIの `size_actual` を収集し、以下の値を集計する。
-  - `pbiCount`: 完了PBI数
-  - `totalWeight`: size_actual のウェイト合計（XS=1 / S=2 / M=3 / L=5 / XL=8）
-  - `matchRate`: 見積一致率（estimate と actual が一致したPBI数 ÷ 全体）
-  - `summary`: 数値で説明しきれない文脈・留意点
-
-> **WEIGHT_MAP**（旧スキル record-velocity からの import 禁止。本スキル内で独立定義） XS=1, S=2,
-> M=3, L=5, XL=8
+- 対象スプリントに含まれる完了PBIの `size_actual` を収集し、ベロシティ集計値を算出する。
+- 集計パラメータ（`pbiCount` / `totalWeight` / `matchRate` / `summary`）の算出方法と
+  ウェイト換算表（WEIGHT_MAP）は
+  [references/reference.md](/.agents/skills/bundles/management-bundle/record-sprint-velocity/references/reference.md)
+  を参照。
 
 ### 2. PO確認と記録
 
@@ -51,6 +48,6 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-spri
 
 ## 詳細リファレンス
 
-- 入力JSON形式・スクリプト呼出パターンは
+- 入力JSON形式・スクリプト呼出パターン・対象スプリントの解決方法は
   [references/reference.md](/.agents/skills/bundles/management-bundle/record-sprint-velocity/references/reference.md)
   を参照

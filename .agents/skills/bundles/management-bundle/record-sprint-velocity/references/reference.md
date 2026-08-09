@@ -7,16 +7,35 @@
 
 ## record_sprint_velocity.ts — スプリントベロシティ記録
 
+### 対象スプリントの解決（引数なし find）
+
+本スクリプトは入力から identifier（sprintNumber / Milestone番号）を受け取らない。
+`find()`（引数なし）により**最新のオープンスプリント（Milestone）を自動解決**し、
+そのスプリント番号と Milestone 番号で `recordVelocity` を実行する。
+
+- スプリントのスプリント指定なし運用は、スプリント終了処理（Phase 9 conclude 前）が
+  常にオープン中の最新スプリントを対象とすることに基づく。
+- dry-run 出力の `resolvedSprint`（`sprintNumber` / `milestoneNumber`）で解決結果を確認できる。
+
 ### 入力パラメータ
 
-| パラメータ              | 型                | 必須 | 説明                                     |
-| ----------------------- | ----------------- | ---- | ---------------------------------------- |
-| `identifier`            | `{title,id,code}` | 必須 | スプリントの識別子（code=Milestone番号） |
-| `velocity.sprintNumber` | `number`          | 必須 | スプリント番号（1以上の整数）            |
-| `velocity.pbiCount`     | `number`          | 必須 | 完了PBI数（非負）                        |
-| `velocity.totalWeight`  | `number`          | 必須 | size_actual のウェイト合計（非負）       |
-| `velocity.matchRate`    | `number`          | 必須 | 見積一致率（0.0〜1.0）                   |
-| `velocity.summary`      | `string`          | 必須 | 数値で説明しきれない文脈・留意点         |
+| パラメータ             | 型       | 必須 | 説明                               |
+| ---------------------- | -------- | ---- | ---------------------------------- |
+| `velocity.pbiCount`    | `number` | 必須 | 完了PBI数（非負）                  |
+| `velocity.totalWeight` | `number` | 必須 | size_actual のウェイト合計（非負） |
+| `velocity.matchRate`   | `number` | 必須 | 見積一致率（0.0〜1.0）             |
+| `velocity.summary`     | `string` | 必須 | 数値で説明しきれない文脈・留意点   |
+
+### 集計パラメータの作り方
+
+各パラメータは、対象スプリントに含まれる**完了PBIの `size_actual`** を収集して以下のように算出する。
+
+| パラメータ    | 算出方法                                                        |
+| ------------- | --------------------------------------------------------------- |
+| `pbiCount`    | 完了PBI数                                                       |
+| `totalWeight` | 各PBIの `size_actual` を WEIGHT_MAP（下表）でウェイト化した合計 |
+| `matchRate`   | 見積サイズ（estimate）と `size_actual` が一致したPBI数 ÷ 全体   |
+| `summary`     | 数値で説明しきれない文脈・留意点（乖離要因等）                  |
 
 ### 出力
 
@@ -26,11 +45,11 @@
 ### 実行例
 
 ```bash
-# dry-run
-echo '{"identifier":{"title":"Sprint 16","id":"node-id","code":"16"},"velocity":{"sprintNumber":16,"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全WPを計画内に完了"}}' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts --dry-run
+# dry-run（最新オープンスプリントを解決して Plan を表示）
+echo '{"velocity":{"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全WPを計画内に完了"}}' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts --dry-run
 
 # 実実行
-echo '{"identifier":{"title":"Sprint 16","id":"node-id","code":"16"},"velocity":{"sprintNumber":16,"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全WPを計画内に完了"}}' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts
+echo '{"velocity":{"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全WPを計画内に完了"}}' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts
 ```
 
 ## WEIGHT_MAP（本スキル内で独立定義）
