@@ -3599,12 +3599,14 @@ const hierarchyResponse = JSON.stringify({
   data: {
     repository: {
       issue: {
+        id: "node-id-epic-42",
         number: 42,
         title: "Auth Epic",
         body: "## Description\n\nAuth features",
         subIssues: {
           nodes: [
             {
+              id: "node-id-feature-43",
               number: 43,
               title: "Login Feature",
               body: "## Description\n\nLogin",
@@ -3629,13 +3631,15 @@ Deno.test("Epic showHierarchy - should return epic with features", async () => {
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
   const output = result.stepResults[0].output as {
-    identifier: { title: { value: string }; code?: string };
-    features: { items: Array<{ identifier: { title: { value: string } } }> };
+    identifier: { title: { value: string }; code?: string; id?: string };
+    features: { items: Array<{ identifier: { title: { value: string }; id?: string } }> };
   };
   assertEquals(output.identifier.code, "42");
+  assertEquals(output.identifier.id, "node-id-epic-42");
   assertEquals(output.identifier.title.value, "Auth Epic");
   assertEquals(output.features.items.length, 1);
   assertEquals(output.features.items[0].identifier.title.value, "Login Feature");
+  assertEquals(output.features.items[0].identifier.id, "node-id-feature-43");
 });
 
 Deno.test("Epic showHierarchy - should handle no sub-issues", async () => {

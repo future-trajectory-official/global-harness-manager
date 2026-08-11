@@ -1557,12 +1557,14 @@ export class PlanGatewayAdapter implements PlanGateway {
     const query = `query($owner: String!, $repo: String!, $number: Int!) {
       repository(owner: $owner, name: $repo) {
         issue(number: $number) {
+          id
           number
           title
           body
           subIssues(first: 100) {
             nodes {
               ... on Issue {
+                id
                 number
                 title
                 body
@@ -1609,12 +1611,14 @@ export class PlanGatewayAdapter implements PlanGateway {
       data?: {
         repository?: {
           issue: {
+            id: string;
             number: number;
             title: string;
             body: string;
             subIssues: {
               nodes:
                 | Array<{
+                  id: string;
                   number: number;
                   title: string;
                   body: string;
@@ -1644,7 +1648,7 @@ export class PlanGatewayAdapter implements PlanGateway {
       identifier: identify(
         this.resolvedScope!,
         node.title,
-        undefined,
+        node.id,
         String(node.number),
       ),
       statement: { description: node.body ?? "" },
@@ -1655,7 +1659,7 @@ export class PlanGatewayAdapter implements PlanGateway {
       identifier: identify(
         this.resolvedScope!,
         issue.title,
-        undefined,
+        issue.id,
         String(issue.number),
       ),
       statement: { description: issue.body ?? "" },
@@ -1705,12 +1709,14 @@ export class PlanGatewayAdapter implements PlanGateway {
     const query = `query($owner: String!, $repo: String!, $number: Int!) {
       repository(owner: $owner, name: $repo) {
         issue(number: $number) {
+          id
           number
           title
           body
           subIssues(first: 100) {
             nodes {
               ... on Issue {
+                id
                 number
                 title
                 body
@@ -1747,6 +1753,7 @@ export class PlanGatewayAdapter implements PlanGateway {
         data?: {
           repository?: {
             issue?: {
+              id: string;
               number: number;
               title: string;
               body: string;
@@ -1754,6 +1761,7 @@ export class PlanGatewayAdapter implements PlanGateway {
                 nodes:
                   | Array<
                     {
+                      id: string;
                       number: number;
                       title: string;
                       body: string;
@@ -1770,13 +1778,13 @@ export class PlanGatewayAdapter implements PlanGateway {
       if (!issue) continue;
 
       const featureList: FeatureData[] = (issue.subIssues?.nodes ?? []).map((node) => ({
-        identifier: identify(this.resolvedScope!, node.title, undefined, String(node.number)),
+        identifier: identify(this.resolvedScope!, node.title, node.id, String(node.number)),
         statement: { description: node.body ?? "" },
         state: "open" as const,
       }));
 
       epicDataList.push({
-        identifier: identify(this.resolvedScope!, issue.title, undefined, String(issue.number)),
+        identifier: identify(this.resolvedScope!, issue.title, issue.id, String(issue.number)),
         statement: { description: issue.body ?? "" },
         state: "open" as const,
         features: { items: featureList, totalCount: featureList.length },

@@ -169,7 +169,11 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
     assertTitleNonEmpty(identifier.title, "PBI title");
     assertStringNonEmpty(statement.summary, "PBI statement summary");
     if (parentFeature) {
-      assertIdDefined(parentFeature.id, "assign PBI to a feature without id");
+      assertReferenceDefined(
+        parentFeature.id,
+        parentFeature.code,
+        "assign PBI to a feature without id",
+      );
     }
     return {
       summary: `Propose PBI: ${identifier.title.value}`,
@@ -335,8 +339,12 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
 
   assignToFeature(identifier, feature): Plan {
     assertTitleNonEmpty(identifier.title, "PBI title");
-    assertIdDefined(identifier.id, "assign a PBI to a feature");
-    assertIdDefined(feature.id, "assign a PBI to a feature without id");
+    assertReferenceDefined(identifier.id, identifier.code, "assign a PBI to a feature");
+    assertReferenceDefined(
+      feature.id,
+      feature.code,
+      "assign a PBI to a feature without id",
+    );
     return {
       summary: `Assign PBI ${identifier.title.value} to feature ${feature.title.value}`,
       steps: [scopeStep(identifier), {
@@ -352,7 +360,7 @@ export const productBacklogItemUseCase: ProductBacklogItemUseCase & {
 
   unassignFromFeature(identifier): Plan {
     assertTitleNonEmpty(identifier.title, "PBI title");
-    assertIdDefined(identifier.id, "unassign a PBI from a feature");
+    assertReferenceDefined(identifier.id, identifier.code, "unassign a PBI from a feature");
     return {
       summary: `Unassign PBI ${identifier.title.value} from feature`,
       steps: [scopeStep(identifier), {

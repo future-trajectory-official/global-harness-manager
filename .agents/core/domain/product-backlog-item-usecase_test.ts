@@ -184,13 +184,23 @@ Deno.test("propose with parentFeature should include parent feature id", () => {
  * @description 不完全な FeatureIdentifier（id なし）を渡した場合に INVALID_INPUT エラーが発生すること
  * @verify assertThrows で Error("INVALID_INPUT") がスローされること
  */
-Deno.test("propose should throw for parentFeature with undefined id", () => {
-  const feature = makeFeatureId({ id: undefined });
+Deno.test("propose should throw for parentFeature with undefined reference", () => {
+  const feature = makeFeatureId({ id: undefined, code: undefined });
   assertThrows(
     () => productBacklogItemUseCase.propose(makePbiId({ id: undefined }), makeStatement(), feature),
     Error,
     "INVALID_INPUT",
   );
+});
+
+Deno.test("propose should succeed for parentFeature with code only", () => {
+  const feature = makeFeatureId({ id: undefined });
+  const plan = productBacklogItemUseCase.propose(
+    makePbiId({ id: undefined }),
+    makeStatement(),
+    feature,
+  );
+  assertEquals(plan.steps[1].params.parentFeature, "feature-1");
 });
 
 // ===== revise =====
@@ -371,6 +381,14 @@ Deno.test("assignToFeature should return Plan with assignToFeature", () => {
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "assignToFeature");
+  assertEquals(plan.steps[1].params.parentFeature, "feature-1");
+});
+
+Deno.test("assignToFeature should succeed for feature with code only", () => {
+  const plan = productBacklogItemUseCase.assignToFeature(
+    makePbiId(),
+    makeFeatureId({ id: undefined }),
+  );
   assertEquals(plan.steps[1].params.parentFeature, "feature-1");
 });
 
