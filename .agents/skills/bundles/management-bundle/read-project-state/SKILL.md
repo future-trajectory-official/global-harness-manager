@@ -34,8 +34,9 @@ POへの問いかけが曖昧な場合は、**必ず以下の3点を尋ねて**�
 - 「**探す**」→ 一覧検索 `search`
 - 「**調べる**」→ 詳細閲覧 `find`
 - 回答から `entityType` / `operation` / `params` を一意に決定する
-- **単一インスタンスEntity**（Vision / ProductGoal / Sprint）は search が対象外であることを
-  案内し、find を案内する
+- **単一インスタンスEntity**（Vision / ProductGoal）は search が対象外であることを 案内し、find
+  を案内する
+- Sprint は search が利用可能（state 指定でマイルストーン一覧を取得。次スプリント番号の把握に使用）
 - 例:「現在のPBIを教えて」→ 1:PBI / 2:探す / 3:状態が進行中のもの
 - 例:「#42のWPのACを見せて」→ 1:WP / 2:調べる / 3:#42
 
@@ -118,6 +119,7 @@ Labels: <labels>
 
 要点のみ:
 
-- **search 対象外**（単一インスタンス）: Vision / ProductGoal / Sprint
+- **search 対象外**（単一インスタンス）: Vision / ProductGoal
+- **Sprint search**: state 指定（open / closed / all）でマイルストーン一覧を解決できる
 - **未実装**（Gateway 未登録）: Retrospective
 - **検索・閲覧とも不可**: Scope
