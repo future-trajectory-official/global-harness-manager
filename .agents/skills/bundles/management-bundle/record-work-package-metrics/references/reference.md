@@ -22,8 +22,9 @@ POと合意したメトリクススコアをWPに記録する。
 ### 実行例
 
 ```bash
+# id に node-id、code に Issue番号を指定
 echo '{
-  "identifier": {"title":"Session-Lifecycle-Persistence","id":"42","code":"42"},
+  "identifier": {"title":"Session-Lifecycle-Persistence","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"},
   "intentAlignmentRate": 5,
   "constraintAdherenceScore": 4,
   "contextExtractionQuality": 3,

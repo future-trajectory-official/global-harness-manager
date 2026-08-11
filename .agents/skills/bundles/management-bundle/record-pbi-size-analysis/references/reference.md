@@ -23,11 +23,11 @@ GitHubカスタムフィールドに記録する。
 ### 実行例
 
 ```bash
-# dry-run
-echo '{"identifier":{"title":"Sprint-End-Persistence","id":"node-id","code":"614"},"sizeActual":"M","varianceReason":"実装範囲が拡大した"}' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-size-analysis/scripts/record_pbi_size_analysis.ts --dry-run
+# dry-run（id に node-id、code に Issue番号を指定）
+echo '{"identifier":{"title":"Sprint-End-Persistence","id":"I_kwDOR5-zI88AAAABKcLZJA","code":"614"},"sizeActual":"M","varianceReason":"実装範囲が拡大した"}' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-size-analysis/scripts/record_pbi_size_analysis.ts --dry-run
 
 # 実実行
-echo '{"identifier":{"title":"Sprint-End-Persistence","id":"node-id","code":"614"},"sizeActual":"M","varianceReason":"実装範囲が拡大した"}' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-size-analysis/scripts/record_pbi_size_analysis.ts
+echo '{"identifier":{"title":"Sprint-End-Persistence","id":"I_kwDOR5-zI88AAAABKcLZJA","code":"614"},"sizeActual":"M","varianceReason":"実装範囲が拡大した"}' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-size-analysis/scripts/record_pbi_size_analysis.ts
 ```
 
 ### 記録されるカスタムフィールド
