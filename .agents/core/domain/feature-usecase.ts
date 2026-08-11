@@ -22,12 +22,7 @@ function scopeStep(identifier: { scope: EntityScope }): Step {
     params: { ...identifier.scope },
   };
 }
-import {
-  assertIdDefined,
-  assertReferenceDefined,
-  assertStringNonEmpty,
-  assertTitleNonEmpty,
-} from "./validation.ts";
+import { assertReferenceDefined, assertStringNonEmpty, assertTitleNonEmpty } from "./validation.ts";
 
 /**
  * Feature の Issue Body を生成する。
@@ -121,7 +116,11 @@ export const featureUseCase: FeatureUseCase & {
     assertTitleNonEmpty(identifier.title, "Feature title");
     assertStringNonEmpty(statement.description, "FeatureStatement description");
     if (parentEpic) {
-      assertIdDefined(parentEpic.id, "assign feature to an epic without id");
+      assertReferenceDefined(
+        parentEpic.id,
+        parentEpic.code,
+        "assign feature to an epic without id",
+      );
     }
     return {
       summary: `Define feature: ${identifier.title.value}`,
@@ -166,8 +165,8 @@ export const featureUseCase: FeatureUseCase & {
   },
 
   assignToEpic(identifier, epic): Plan {
-    assertIdDefined(identifier.id, "assign a feature to an epic");
-    assertIdDefined(epic.id, "assign a feature to an epic without id");
+    assertReferenceDefined(identifier.id, identifier.code, "assign a feature to an epic");
+    assertReferenceDefined(epic.id, epic.code, "assign a feature to an epic without id");
     return {
       summary: `Assign feature ${identifier.title.value} to epic ${epic.title.value}`,
       steps: [scopeStep(identifier), {
@@ -182,7 +181,7 @@ export const featureUseCase: FeatureUseCase & {
   },
 
   unassignFromEpic(identifier): Plan {
-    assertIdDefined(identifier.id, "unassign a feature from an epic");
+    assertReferenceDefined(identifier.id, identifier.code, "unassign a feature from an epic");
     return {
       summary: `Unassign feature ${identifier.title.value} from epic`,
       steps: [scopeStep(identifier), {
