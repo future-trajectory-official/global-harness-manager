@@ -104,7 +104,7 @@ async function main(): Promise<void> {
             "INVALID_INPUT: parentEpicNumber is required for assign-feature-to-epic",
           );
         }
-        const parentEpic = identify(scope, parentEpicNumber, parentEpicNumber);
+        const parentEpic = identify(scope, parentEpicNumber, parentEpicNumber, parentEpicNumber);
         plan = featureUseCase.assignToEpic(featureId, parentEpic);
         break;
       }
@@ -131,7 +131,12 @@ async function main(): Promise<void> {
             "INVALID_INPUT: parentFeatureNumber is required for assign-pbi-to-feature",
           );
         }
-        const parentFeature = identify(scope, parentFeatureNumber, parentFeatureNumber);
+        const parentFeature = identify(
+          scope,
+          parentFeatureNumber,
+          parentFeatureNumber,
+          parentFeatureNumber,
+        );
         plan = productBacklogItemUseCase.assignToFeature(pbiId, parentFeature);
         break;
       }
