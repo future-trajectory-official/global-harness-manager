@@ -35,8 +35,10 @@ interface RefineHierarchyInput {
   pbiNumber?: string;
   parentEpicId?: string;
   parentEpicNumber?: string;
+  parentEpicTitle?: string;
   parentFeatureId?: string;
   parentFeatureNumber?: string;
+  parentFeatureTitle?: string;
   reason?: string;
   scope?: EntityScope;
 }
@@ -104,7 +106,12 @@ async function main(): Promise<void> {
             "INVALID_INPUT: parentEpicNumber is required for assign-feature-to-epic",
           );
         }
-        const parentEpic = identify(scope, parentEpicNumber, parentEpicNumber);
+        const parentEpic = identify(
+          scope,
+          input.parentEpicTitle ?? String(parentEpicNumber),
+          input.parentEpicId,
+          String(parentEpicNumber),
+        );
         plan = featureUseCase.assignToEpic(featureId, parentEpic);
         break;
       }
@@ -131,7 +138,12 @@ async function main(): Promise<void> {
             "INVALID_INPUT: parentFeatureNumber is required for assign-pbi-to-feature",
           );
         }
-        const parentFeature = identify(scope, parentFeatureNumber, parentFeatureNumber);
+        const parentFeature = identify(
+          scope,
+          input.parentFeatureTitle ?? String(parentFeatureNumber),
+          input.parentFeatureId,
+          String(parentFeatureNumber),
+        );
         plan = productBacklogItemUseCase.assignToFeature(pbiId, parentFeature);
         break;
       }
