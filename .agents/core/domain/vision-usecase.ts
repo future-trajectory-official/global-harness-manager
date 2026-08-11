@@ -87,6 +87,19 @@ export function formatVisionComment(
   return lines.join("\n");
 }
 
+/**
+ * Vision エンティティに対する全操作を定義するUseCaseインターフェース。
+ *
+ * 各メソッドはバリデーション後にPlan（実行計画）を返す。
+ *
+ * ## 識別子（identifier）の意味
+ *
+ * - `identifier.id` は GitHub node-id（グローバル識別子）、`identifier.code` はリポジトリ内識別子
+ *   （Issue番号）を表す。
+ * - 既存参照操作は `code`（Issue番号）で項目を特定する。Gateway層が `code` から node-id を
+ *   内部解決して操作を行う。`id` を渡してもこの解決ステップは省かれず、
+ *   パフォーマンスやAPI制限に問題が出るまで実装変更は行わない方針。
+ */
 export interface VisionUseCase {
   establish(identifier: VisionIdentifier, statement: VisionStatement, outcomes: Outcomes): Plan;
   pivot(

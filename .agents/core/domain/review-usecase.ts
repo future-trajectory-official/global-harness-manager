@@ -174,7 +174,21 @@ function formatReportBody(data: ReviewData): string {
   return lines.join("\n");
 }
 
-/** Review（スプリントレビュー）エンティティに対する全操作を定義するUseCaseインターフェース。 */
+/**
+ * Review（スプリントレビュー）エンティティに対する全操作を定義するUseCaseインターフェース。
+ *
+ * 各メソッドはバリデーション後にPlan（実行計画）を返す。
+ * 状態遷移ルールや値の制約に関する詳細な検証は ReviewValidator で行う。
+ *
+ * ## 識別子（identifier）の意味
+ *
+ * - `identifier.id` は GitHub node-id（グローバル識別子）、`identifier.code` はリポジトリ内識別子
+ *   （Issue番号）を表す。
+ * - 既存参照操作は `code`（Issue番号）で項目を特定する。Gateway層が `code` から node-id を
+ *   内部解決して操作を行う。`id` を渡してもこの解決ステップは省かれず、
+ *   パフォーマンスやAPI制限に問題が出るまで実装変更は行わない方針。
+ * - 各操作の解決方法は操作ごとのJSDocに明記する。
+ */
 export interface ReviewUseCase {
   /** Review Issue を新規作成する。対象スプリントを紐づけ、全ACを ❔ 未確認で列挙した検証台帳を生成する。 */
   plan(identifier: ReviewIdentifier, sprint: SprintIdentifier, planInput: ReviewPlanInput): Plan;
