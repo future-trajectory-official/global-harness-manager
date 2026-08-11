@@ -101,13 +101,19 @@ Deno.test("featureUseCase - define should throw for empty description", () => {
   );
 });
 
-Deno.test("featureUseCase - define should throw for parentEpic with undefined id", () => {
-  const epic = makeEpicId({ id: undefined });
+Deno.test("featureUseCase - define should throw for parentEpic with undefined reference", () => {
+  const epic = makeEpicId({ id: undefined, code: undefined });
   assertThrows(
     () => featureUseCase.define(makeId({ id: undefined }), makeStatement(), epic),
     Error,
     "INVALID_INPUT",
   );
+});
+
+Deno.test("featureUseCase - define should succeed for parentEpic with code only", () => {
+  const epic = makeEpicId({ id: undefined });
+  const plan = featureUseCase.define(makeId({ id: undefined }), makeStatement(), epic);
+  assertEquals(plan.steps[1].params.parentEpic, "epic-1");
 });
 
 Deno.test("featureUseCase - revise should return Plan with update + comment", () => {
@@ -157,12 +163,17 @@ Deno.test("featureUseCase - assignToEpic should throw for feature with undefined
   );
 });
 
-Deno.test("featureUseCase - assignToEpic should throw for epic with undefined id", () => {
+Deno.test("featureUseCase - assignToEpic should throw for epic with undefined reference", () => {
   assertThrows(
-    () => featureUseCase.assignToEpic(makeId(), makeEpicId({ id: undefined })),
+    () => featureUseCase.assignToEpic(makeId(), makeEpicId({ id: undefined, code: undefined })),
     Error,
     "INVALID_INPUT",
   );
+});
+
+Deno.test("featureUseCase - assignToEpic should succeed for epic with code only", () => {
+  const plan = featureUseCase.assignToEpic(makeId(), makeEpicId({ id: undefined }));
+  assertEquals(plan.steps[1].params.parentEpic, "epic-1");
 });
 
 Deno.test("featureUseCase - unassignFromEpic should return Plan with update", () => {
