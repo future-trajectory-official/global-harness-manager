@@ -25,9 +25,9 @@ POとの対話で確定した介入実績とプロセス分析を一括で記録
 ### 実行例
 
 ```bash
-# 通常実行（実績記録＋分析記録を一括）
+# 通常実行（実績記録＋分析記録を一括。id に node-id、code に Issue番号を指定）
 echo '{
-  "identifier": {"title":"Session-Lifecycle-Persistence","id":"42","code":"42"},
+  "identifier": {"title":"Session-Lifecycle-Persistence","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"},
   "actual": 3,
   "planningReview": "計画は適切だったが、ACの詳細度が不足していた",
   "executionReview": "実装はスムーズに進んだ。テスト駆動で品質が安定した",
@@ -35,5 +35,5 @@ echo '{
 }' | deno run -A .agents/skills/bundles/management-bundle/record-work-package-effort/scripts/record_effort_and_analysis.ts
 
 # dry-run（処理内容の確認のみ）
-echo '{"identifier":{"title":"Test","id":"1","code":"1"},"actual":0,"planningReview":"OK","executionReview":"OK"}' | deno run -A --dry-run .agents/skills/bundles/management-bundle/record-work-package-effort/scripts/record_effort_and_analysis.ts
+echo '{"identifier":{"title":"Test","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"},"actual":0,"planningReview":"OK","executionReview":"OK"}' | deno run -A --dry-run .agents/skills/bundles/management-bundle/record-work-package-effort/scripts/record_effort_and_analysis.ts
 ```

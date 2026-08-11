@@ -20,11 +20,11 @@ PBI**（子先にクローズ）。
 ### 実行例
 
 ```bash
-# dry-run
-echo '{"identifier":{"title":"Skill scripts","id":"node-id","code":"42"}}' | deno run -A .agents/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_wp.ts --dry-run
+# dry-run（id に node-id、code に Issue番号を指定）
+echo '{"identifier":{"title":"Skill scripts","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"}}' | deno run -A .agents/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_wp.ts --dry-run
 
 # 実実行
-echo '{"identifier":{"title":"Skill scripts","id":"node-id","code":"42"}}' | deno run -A .agents/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_wp.ts
+echo '{"identifier":{"title":"Skill scripts","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"}}' | deno run -A .agents/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_wp.ts
 ```
 
 ## archive_pbi.ts — PBIのクローズ
@@ -42,11 +42,11 @@ echo '{"identifier":{"title":"Skill scripts","id":"node-id","code":"42"}}' | den
 ### 実行例
 
 ```bash
-# dry-run
-echo '{"identifier":{"title":"Sprint-End-Persistence","id":"node-id","code":"614"}}' | deno run -A .agents/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_pbi.ts --dry-run
+# dry-run（id に node-id、code に Issue番号を指定）
+echo '{"identifier":{"title":"Sprint-End-Persistence","id":"I_kwDOR5-zI88AAAABKcLZJA","code":"614"}}' | deno run -A .agents/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_pbi.ts --dry-run
 
 # 実実行
-echo '{"identifier":{"title":"Sprint-End-Persistence","id":"node-id","code":"614"}}' | deno run -A .agents/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_pbi.ts
+echo '{"identifier":{"title":"Sprint-End-Persistence","id":"I_kwDOR5-zI88AAAABKcLZJA","code":"614"}}' | deno run -A .agents/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_pbi.ts
 ```
 
 ## 利用する既存UseCase

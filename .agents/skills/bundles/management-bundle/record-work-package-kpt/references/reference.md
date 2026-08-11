@@ -27,8 +27,9 @@ POと合意したKPT内容をWPに記録する。
 ### 実行例
 
 ```bash
+# id に node-id、code に Issue番号を指定
 echo '{
-  "identifier": {"title":"Session-Lifecycle-Persistence","id":"42","code":"42"},
+  "identifier": {"title":"Session-Lifecycle-Persistence","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"},
   "keep": "計画段階で十分な対話ができ、認識齟齬が少なかった",
   "problem": "AIが既存コード構造を十分に把握しておらず、アプローチの再検討が発生した",
   "try": "作業着手前に AI が該当コードの構造を読み、POに要約してから実装に入る",

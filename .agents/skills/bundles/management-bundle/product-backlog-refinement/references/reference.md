@@ -101,11 +101,11 @@ echo '{"title":"New feature","summary":"Implement user authentication"}' | deno 
 ### 実行例
 
 ```bash
-# dry-run
-echo '{"identifier":{"title":"PBI title","id":"42","code":"42"},"size":"M"}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/estimate_pbi_size.ts --dry-run
+# dry-run（id に node-id、code に Issue番号を指定）
+echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"size":"M"}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/estimate_pbi_size.ts --dry-run
 
 # 本実行
-echo '{"identifier":{"title":"PBI title","id":"42","code":"42"},"size":"M"}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/estimate_pbi_size.ts
+echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"size":"M"}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/estimate_pbi_size.ts
 ```
 
 ---
@@ -127,9 +127,9 @@ echo '{"identifier":{"title":"PBI title","id":"42","code":"42"},"size":"M"}' | d
 ### 実行例
 
 ```bash
-# dry-run
-echo '{"identifier":{"title":"PBI title","id":"42","code":"42"},"summary":"Updated summary","reason":{"description":"POからの指示により仕様変更"}}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/update_pbi.ts --dry-run
+# dry-run（id に node-id、code に Issue番号を指定）
+echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"summary":"Updated summary","reason":{"description":"POからの指示により仕様変更"}}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/update_pbi.ts --dry-run
 
 # 本実行
-echo '{"identifier":{"title":"PBI title","id":"42","code":"42"},"summary":"Updated summary","reason":{"description":"POからの指示により仕様変更"}}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/update_pbi.ts
+echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"summary":"Updated summary","reason":{"description":"POからの指示により仕様変更"}}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/update_pbi.ts
 ```

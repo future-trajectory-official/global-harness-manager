@@ -21,7 +21,8 @@ WPを完了状態に遷移する。
 ### 実行例
 
 ```bash
-echo '{"identifier":{"title":"Session-Lifecycle-Persistence","id":"42","code":"42"}}' | deno run -A .agents/skills/bundles/management-bundle/complete-work-package/scripts/complete_wp.ts
+# id に node-id、code に Issue番号を指定
+echo '{"identifier":{"title":"Session-Lifecycle-Persistence","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"}}' | deno run -A .agents/skills/bundles/management-bundle/complete-work-package/scripts/complete_wp.ts
 ```
 
 ## complete_pbi.ts — PBI完了
@@ -37,5 +38,6 @@ echo '{"identifier":{"title":"Session-Lifecycle-Persistence","id":"42","code":"4
 ### 実行例
 
 ```bash
-echo '{"identifier":{"title":"EntityLifecycle","id":"100","code":"100"}}' | deno run -A .agents/skills/bundles/management-bundle/complete-work-package/scripts/complete_pbi.ts
+# id に node-id、code に Issue番号を指定
+echo '{"identifier":{"title":"EntityLifecycle","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"}}' | deno run -A .agents/skills/bundles/management-bundle/complete-work-package/scripts/complete_pbi.ts
 ```

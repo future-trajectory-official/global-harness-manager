@@ -35,14 +35,14 @@
 ### 実行例
 
 ```bash
-# 集計のみ（dry-run）
-echo '{"identifier":{"title":"Sprint-End-Persistence","id":"node-id","code":"614"}}' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-effort-analysis/scripts/record_pbi_effort_analysis.ts --dry-run
+# 集計のみ（dry-run。id に node-id、code に Issue番号を指定）
+echo '{"identifier":{"title":"Sprint-End-Persistence","id":"I_kwDOR5-zI88AAAABKcLZJA","code":"614"}}' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-effort-analysis/scripts/record_pbi_effort_analysis.ts --dry-run
 
 # 集計のみ（実実行）
-echo '{"identifier":{"title":"Sprint-End-Persistence","id":"node-id","code":"614"}}' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-effort-analysis/scripts/record_pbi_effort_analysis.ts
+echo '{"identifier":{"title":"Sprint-End-Persistence","id":"I_kwDOR5-zI88AAAABKcLZJA","code":"614"}}' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-effort-analysis/scripts/record_pbi_effort_analysis.ts
 
 # 集計 + 乖離分析の記録（effortSummary 必須）
-echo '{"identifier":{"title":"Sprint-End-Persistence","id":"node-id","code":"614"},"planningReview":"初期見積を上回る計画変更があった","executionReview":"実績は計画内に収まった","improvementSuggestions":"初期見積精度の改善を試みる","effortSummary":{"initialEstimate":3,"plannedEstimate":4,"actual":5}}' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-effort-analysis/scripts/record_pbi_effort_analysis.ts
+echo '{"identifier":{"title":"Sprint-End-Persistence","id":"I_kwDOR5-zI88AAAABKcLZJA","code":"614"},"planningReview":"初期見積を上回る計画変更があった","executionReview":"実績は計画内に収まった","improvementSuggestions":"初期見積精度の改善を試みる","effortSummary":{"initialEstimate":3,"plannedEstimate":4,"actual":5}}' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-effort-analysis/scripts/record_pbi_effort_analysis.ts
 ```
 
 ### 記録されるカスタムフィールド

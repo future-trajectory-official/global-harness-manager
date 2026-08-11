@@ -49,7 +49,8 @@ WPの計画後effort見積り（plannedEstimate）を記録する。
 ### 実行例
 
 ```bash
-echo '{"identifier":{"title":"Session-Lifecycle-Persistence","id":"42","code":"42"},"plannedEstimate":3}' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/estimate_planned_effort.ts
+# id に node-id、code に Issue番号を指定
+echo '{"identifier":{"title":"Session-Lifecycle-Persistence","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"},"plannedEstimate":3}' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/estimate_planned_effort.ts
 ```
 
 ## start_wp.ts — WP着手
@@ -65,5 +66,6 @@ WPのステータスをInProgressに遷移する。
 ### 実行例
 
 ```bash
-echo '{"identifier":{"title":"Session-Lifecycle-Persistence","id":"42","code":"42"}}' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/start_wp.ts
+# id に node-id、code に Issue番号を指定
+echo '{"identifier":{"title":"Session-Lifecycle-Persistence","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"}}' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/start_wp.ts
 ```

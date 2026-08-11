@@ -71,7 +71,21 @@ function formatMetricsBody(metrics: SprintMetrics): string {
   return lines.join("\n");
 }
 
-/** Retrospective（スプリント振り返り）エンティティに対する全操作を定義するUseCaseインターフェース。 */
+/**
+ * Retrospective（スプリント振り返り）エンティティに対する全操作を定義するUseCaseインターフェース。
+ *
+ * 各メソッドはバリデーション後にPlan（実行計画）を返す。
+ * 状態遷移ルールや値の制約に関する詳細な検証は RetrospectiveValidator で行う。
+ *
+ * ## 識別子（identifier）の意味
+ *
+ * - `identifier.id` は GitHub node-id（グローバル識別子）、`identifier.code` はリポジトリ内識別子
+ *   （Issue番号）を表す。
+ * - 既存参照操作は `code`（Issue番号）で項目を特定する。Gateway層が `code` から node-id を
+ *   内部解決し、ProjectV2 フィールド等の操作を行う。`id` を渡してもこの解決ステップは省かれず、
+ *   パフォーマンスやAPI制限に問題が出るまで実装変更は行わない方針。
+ * - 各操作の解決方法は操作ごとのJSDocに明記する。
+ */
 export interface RetrospectiveUseCase {
   /** Retrospective Issue を新規作成する。対象スプリントを紐づける。 */
   plan(identifier: RetrospectiveIdentifier, sprint: SprintIdentifier): Plan;
