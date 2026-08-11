@@ -220,6 +220,13 @@ const dispatcher: Record<EntityType, OperationDispatch> = {
   },
   Sprint: {
     useCase: sprintUseCase,
+    search: (params) => {
+      const state = String(params.state ?? "all");
+      if (!["open", "closed", "all"].includes(state)) {
+        throw new Error(`INVALID_INPUT: Sprint state must be one of "open", "closed", "all"`);
+      }
+      return sprintUseCase.search({ state: state as "open" | "closed" | "all" });
+    },
     find: (params) => {
       const code = resolveCode(params, ["itemId", "code", "number"]);
       if (code === undefined) {
