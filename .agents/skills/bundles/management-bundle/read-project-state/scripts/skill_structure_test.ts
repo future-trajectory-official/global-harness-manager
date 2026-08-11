@@ -81,7 +81,7 @@ Deno.test({
 
 /**
  * ユースケース: エラー時の表示規則が定義されていることの検証。
- * 検証意図: 対象外エラー（Vision/ProductGoal/Sprint の search）・未実装エラー
+ * 検証意図: 対象外エラー（Vision/ProductGoal の search）・未実装エラー
  * （Retrospective）・検索0件・code不明などのエラー時の振る舞いが定義されていることを保証する。
  */
 Deno.test({

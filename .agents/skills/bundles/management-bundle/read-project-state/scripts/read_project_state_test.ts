@@ -52,7 +52,7 @@ case "$1" in
     fi
     case "$2" in
       repos/my-org/my-repo/milestones\?*)
-        echo '[{"number":19,"title":"Sprint 19"}]'
+        echo '[{"number":19,"title":"Sprint 19"},{"number":17,"title":"Sprint 18"}]'
         exit 0
         ;;
       repos/my-org/my-repo/milestones/19)
@@ -229,10 +229,10 @@ Deno.test("read_project_state - find PBI enriches hierarchy via graphql", async 
 });
 
 /**
- * @description 業務前提（単一インスタンス）により Vision / ProductGoal / Sprint の search が「対象外」エラーを返すこと
+ * @description 業務前提（単一インスタンス）により Vision / ProductGoal の search が「対象外」エラーを返すこと
  * @verify 出力に "search is not supported for <Entity>" が含まれること
  */
-for (const entityType of ["Vision", "ProductGoal", "Sprint"] as const) {
+for (const entityType of ["Vision", "ProductGoal"] as const) {
   Deno.test(`read_project_state - ${entityType} search returns unsupported error`, async () => {
     await withMockScript(
       { entityType, operation: "search", params: {} },
@@ -304,6 +304,52 @@ Deno.test("read_project_state - Sprint find by code returns milestone", async ()
       assertStringIncludes(result.stdout, '"operation": "view"');
       assertStringIncludes(result.stdout, '"number": 19');
       assertStringIncludes(result.callLog, "milestones/19");
+    },
+  );
+});
+
+/**
+ * @description Sprint の search（state指定）が状態別のマイルストーン一覧を返すこと
+ * @verify milestones?state=closed の gh api 呼び出しログと、一覧（複数件）を含む成功した step が返ること
+ */
+Deno.test("read_project_state - Sprint search by state returns milestone list", async () => {
+  await withMockScript(
+    { entityType: "Sprint", operation: "search", params: { state: "closed" } },
+    (result) => {
+      assertEquals(
+        result.code,
+        0,
+        `Script failed with code ${result.code}\nStderr: ${result.stderr}`,
+      );
+      assertStringIncludes(result.stdout, '"success": true');
+      assertStringIncludes(result.stdout, '"operation": "search"');
+      assertStringIncludes(result.stdout, '"itemId": "19"');
+      assertStringIncludes(result.stdout, '"number": 19');
+      assertStringIncludes(result.stdout, '"number": 17');
+      assertStringIncludes(result.callLog, "milestones?state=closed");
+    },
+  );
+});
+
+/**
+ * @description Sprint の search（state未指定）が既定の all でマイルストーン一覧を返すこと
+ * @verify milestones?state=all の gh api 呼び出しログと、一覧（複数件）を含む成功した step が返ること
+ */
+Deno.test("read_project_state - Sprint search default state=all returns milestone list", async () => {
+  await withMockScript(
+    { entityType: "Sprint", operation: "search", params: {} },
+    (result) => {
+      assertEquals(
+        result.code,
+        0,
+        `Script failed with code ${result.code}\nStderr: ${result.stderr}`,
+      );
+      assertStringIncludes(result.stdout, '"success": true');
+      assertStringIncludes(result.stdout, '"operation": "search"');
+      assertStringIncludes(result.stdout, '"itemId": "19"');
+      assertStringIncludes(result.stdout, '"number": 19');
+      assertStringIncludes(result.stdout, '"number": 17');
+      assertStringIncludes(result.callLog, "milestones?state=all");
     },
   );
 });
