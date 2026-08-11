@@ -80,10 +80,53 @@ Deno.test("read_project_state dispatch - Sprint find resolves latest open or by 
 });
 
 /**
- * @description 単一インスタンスEntity（Vision / ProductGoal / Sprint）の search が対象外エラーを投げること
+ * @description Sprint の search が state 指定（open / closed / all）の Plan を生成すること
+ * @verify search step params.state が入力に一致し、既定値は all であること
+ */
+for (
+  const [state, expected] of [
+    ["open", "open"],
+    ["closed", "closed"],
+  ] as const
+) {
+  Deno.test(
+    `read_project_state dispatch - Sprint search with state=${state} delegates correctly`,
+    () => {
+      const plan = buildPlan(
+        { entityType: "Sprint", operation: "search", params: { state } } as Input,
+      );
+      const step = findStep(plan, "Sprint", "search");
+      assertExists(step, "Sprint search step not found");
+      assertEquals(step.params.state, expected);
+    },
+  );
+}
+
+Deno.test("read_project_state dispatch - Sprint search defaults to state=all", () => {
+  const plan = buildPlan({ entityType: "Sprint", operation: "search", params: {} } as Input);
+  const step = findStep(plan, "Sprint", "search");
+  assertExists(step, "Sprint search step not found");
+  assertEquals(step.params.state, "all");
+});
+
+/**
+ * @description Sprint search が不正な state 値で明示エラーを投げ、黙殺して全件を返さないこと
+ * @verify buildPlan が "Sprint state must be" のエラーを投げること
+ */
+Deno.test("read_project_state dispatch - Sprint search with invalid state throws error", () => {
+  assertThrows(
+    () =>
+      buildPlan({ entityType: "Sprint", operation: "search", params: { state: "tbd" } } as Input),
+    Error,
+    "Sprint state must be",
+  );
+});
+
+/**
+ * @description 単一インスタンスEntity（Vision / ProductGoal）の search が対象外エラーを投げること
  * @verify buildPlan が "search is not supported" のエラーを投げること
  */
-for (const entityType of ["Vision", "ProductGoal", "Sprint"] as const) {
+for (const entityType of ["Vision", "ProductGoal"] as const) {
   Deno.test(`read_project_state dispatch - ${entityType} search throws unsupported error`, () => {
     assertThrows(
       () => buildPlan({ entityType, operation: "search", params: {} } as Input),

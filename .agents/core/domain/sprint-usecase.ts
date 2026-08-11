@@ -35,7 +35,13 @@ export interface SprintUseCase {
   setGoal(identifier: SprintIdentifier, goal: GoalStatement): Plan;
   setDueDate(identifier: SprintIdentifier, dueDate: Date): Plan;
   recordVelocity(identifier: SprintIdentifier, velocity: VelocityMetrics): Plan;
+  search(condition?: SprintSearchCondition): Plan;
   find(identifier?: SprintIdentifier): Plan;
+}
+
+/** Sprint（マイルストーン）の検索条件。state 指定でマイルストーン一覧を解決する。 */
+export interface SprintSearchCondition {
+  state?: "open" | "closed" | "all";
 }
 
 /** スプリントベロシティの集計結果。Milestone description の `## Velocity` セクションに記録する。 */
@@ -113,6 +119,21 @@ export const sprintUseCase: SprintUseCase & {
           dueDate: dueDate.toISOString(),
         },
       }],
+    };
+  },
+
+  search(condition?: SprintSearchCondition): Plan {
+    const state = condition?.state ?? "all";
+    return {
+      summary: `Search sprints: state=${state}`,
+      steps: [
+        {
+          entity: "Scope",
+          operation: "resolve",
+          params: { owner: "unknown", repository: "unknown" },
+        },
+        { entity: "Sprint", operation: "search", params: { state } },
+      ],
     };
   },
 

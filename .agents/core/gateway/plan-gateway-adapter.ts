@@ -2080,14 +2080,14 @@ export class PlanGatewayAdapter implements PlanGateway {
       "api",
       `repos/${this.resolvedScope?.owner ?? "unknown"}/${
         this.resolvedScope?.repository ?? "unknown"
-      }/milestones?state=${state}&per_page=1&direction=desc`,
+      }/milestones?state=${state}&per_page=100&direction=desc`,
     ]);
     if (result.code !== 0) {
       return { operation, success: false, error: result.stderr };
     }
     const milestones = parseJsonOutput(result.stdout) as Array<{ number: number }> | undefined;
     if (!milestones || milestones.length === 0) {
-      return { operation, success: false, error: "No open milestones found" };
+      return { operation, success: false, error: `No ${state} milestones found` };
     }
     const latest = milestones[0];
     return {
