@@ -49,19 +49,37 @@ echo '{"sprintNumber": 19}' | deno run -A .agents/skills/bundles/management-bund
 
 ### 入力パラメータ
 
-| パラメータ      | 型                  | 必須 | 説明                                              |
-| --------------- | ------------------- | ---- | ------------------------------------------------- |
-| `title`         | `string`            | 必須 | PBIのタイトル                                     |
-| `summary`       | `string`            | 必須 | PBIの概要説明                                     |
-| `artifacts`     | `string[]`          | 任意 | 成果物リスト（例: `["UI mockup", "API spec"]`）   |
-| `proofMethod`   | `string`            | 任意 | 証明方法（例: `"E2Eテスト"`, `"コードレビュー"`） |
-| `parentFeature` | `{title, id, code}` | 任意 | 親Featureの識別子。`id` は必須                    |
+| パラメータ      | 型                  | 必須 | 説明                                                               |
+| --------------- | ------------------- | ---- | ------------------------------------------------------------------ |
+| `title`         | `string`            | 必須 | PBIのタイトル                                                      |
+| `summary`       | `string`            | 必須 | PBIの概要説明                                                      |
+| `artifacts`     | `Artifacts`         | 任意 | 成果物の分類構造。`{categories: [{name, items: [{description}]}]}` |
+| `proofMethod`   | `string`            | 任意 | 証明方法（例: `"E2Eテスト"`, `"コードレビュー"`）                  |
+| `parentFeature` | `{title, id, code}` | 任意 | 親Featureの識別子。`id` は必須                                     |
+
+`artifacts` はL2仕様（design-spec.md PBI Body推奨構造）に基づくカテゴリ階層形式である。`string[]`
+の簡易リストは受け付けない（`TypeError: statement.artifacts.categories is not iterable`）。
+
+```json
+// artifacts の入力形式
+{
+  "categories": [
+    {
+      "name": "実装成果物",
+      "items": [
+        { "description": "SKILL.md + references" },
+        { "description": "Domain層修正" }
+      ]
+    }
+  ]
+}
+```
 
 ### 実行例
 
 ```bash
-# dry-run
-echo '{"title":"New feature","summary":"Implement user authentication"}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/propose_pbi.ts --dry-run
+# dry-run（artifacts はカテゴリ階層形式）
+echo '{"title":"New feature","summary":"Implement user authentication","artifacts":{"categories":[{"name":"成果物","items":[{"description":"UI mockup"},{"description":"API spec"}]}]}}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/propose_pbi.ts --dry-run
 
 # 本実行
 echo '{"title":"New feature","summary":"Implement user authentication"}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/propose_pbi.ts
