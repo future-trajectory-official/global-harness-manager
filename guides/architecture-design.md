@@ -471,13 +471,17 @@ Domain層が `SprintIdentifier.number` を "Sprint N"
 
 **RetrospectiveUseCase** — Retrospective（振り返り）の管理
 
-| L2操作名 | 公開操作名(英) | 入力                                                                               | 出力   |
-| -------- | -------------- | ---------------------------------------------------------------------------------- | ------ |
-| 計画する | `plan`         | `RetrospectiveIdentifier`, `SprintIdentifier`                                      | `Plan` |
-| 実施する | `execute`      | `RetrospectiveIdentifier`, `KeepProblemTryAdvice`, `SprintMetrics`, `ChangeReason` | `Plan` |
-| 保管する | `archive`      | `RetrospectiveIdentifier`                                                          | `Plan` |
-| 特定する | `find`         | `RetrospectiveIdentifier`                                                          | `Plan` |
-| 探す     | `search`       | `RetrospectiveSearchCondition`                                                     | `Plan` |
+| L2操作名                 | 公開操作名(英)        | 入力                                              | 出力   |
+| ------------------------ | --------------------- | ------------------------------------------------- | ------ |
+| 計画する（枠作成）       | `plan`                | `RetrospectiveIdentifier`, `SprintIdentifier`     | `Plan` |
+| スプリントKPT記録        | `recordSprintKpt`     | `RetrospectiveIdentifier`, `KeepProblemTryAdvice` | `Plan` |
+| スプリントメトリクス記録 | `recordSprintMetrics` | `RetrospectiveIdentifier`, `SprintMetrics`        | `Plan` |
+| 保管する                 | `archive`             | `RetrospectiveIdentifier`                         | `Plan` |
+| 特定する                 | `find`                | `RetrospectiveIdentifier`                         | `Plan` |
+| 探す                     | `search`              | `RetrospectiveSearchCondition`                    | `Plan` |
+
+> 旧操作 `execute`（実施する）を KPT 記録とメトリクス記録の2操作に分割した背景（操作分離の意図）は
+> design-spec.md 4.2 を参照。
 
 ### 3.3. Domain層 → Gateway層 公開API
 
@@ -774,12 +778,16 @@ interface WorkPackageStatement {
 interface WorkPackageIdentifier extends Identifier {
 }
 
+/**
+ * セッションメトリクス（Domain層のオブジェクト操作時の構造）。
+ * 記録時は 1024バイト制限のため、`harness-metrics-summary`（数値JSONのみ）と4指標のナラティブ
+ * 独立フィールドに分離して書き込む。詳細は design-spec.md 5.2 / 5.3 を参照。
+ */
 interface SessionMetrics {
-  readonly intentAlignmentRate: number;
-  readonly constraintAdherenceScore: number;
-  readonly contextExtractionQuality: number;
-  readonly workSizeStability: number;
-  readonly comment: string;
+  readonly intentAlignment: MetricScore;
+  readonly constraintAdherence: MetricScore;
+  readonly contextExtraction: MetricScore;
+  readonly workSizeStability: MetricScore;
 }
 
 interface WorkPackageProcessEvidence extends ProcessEvidence {
@@ -842,19 +850,41 @@ interface ReviewSearchCondition extends SearchCondition {
 interface Metrics {
 }
 
+/**
+ * スプリントメトリクス（Domain層のオブジェクト操作時の構造）。
+ *
+ * 【スキーマの使い分け（PO確定）】
+ * - オブジェクト操作時（Domain層）: 各指標を { score, narrative }（Velocity は { value, narrative }）
+ *   のペアで保持する。score/value は数値、narrative は定性的な説明。
+ * - 記録時（Projects V2 への書き込み）: 1024バイト制限（TEXTフィールド）のため、
+ *   `harness-metrics-summary`（数値JSONのみ）と5指標のナラティブ独立フィールドに分離して書き込む。
+ *   詳細は design-spec.md 5.2 / 5.3 を参照。
+ */
 interface SprintMetrics extends Metrics {
-  readonly goalAchievementRate: number;
-  readonly estimationAccuracy: number;
-  readonly qualityIntegrity: number;
-  readonly collaborationDiscipline: number;
-  readonly velocity: number;
+  readonly goalAchievementRate: MetricScore;
+  readonly estimationAccuracy: MetricScore;
+  readonly qualityIntegrity: MetricScore;
+  readonly collaborationDiscipline: MetricScore;
+  readonly velocity: MetricValue;
+}
+
+/** 1〜5スコア＋ナラティブ（Goal Achievement / Estimation Accuracy / Quality Integrity / Collaboration Discipline） */
+interface MetricScore {
+  readonly score: number; // 1〜5
+  readonly narrative: string;
+}
+
+/** ウェイト換算値＋ナラティブ（Velocity。スコアは持たない） */
+interface MetricValue {
+  readonly value: number; // ΣPBI(実感サイズ × ウェイト換算値)
+  readonly narrative: string;
 }
 
 interface KeepProblemTryAdvice {
   readonly keep: string;
   readonly problem: string;
   readonly try: string;
-  readonly advise: string;
+  readonly advise?: string; // 任意（省略時は harness-kpt-advise を更新しない）
 }
 
 interface RetrospectiveIdentifier extends Identifier {
@@ -1372,13 +1402,13 @@ V2カスタムフィールド含む）は保持され、子WPもClosed状態で�
 
 #### WP
 
-| フィールド                    | アーカイブ前                       | アーカイブ後                                               |
-| ----------------------------- | ---------------------------------- | ---------------------------------------------------------- |
-| Issue状態                     | Done（Open維持）→ スプリント終了時 | **Closed**                                                 |
-| Projects V2 Status            | Done                               | Done（変化なし）                                           |
-| Projects V2カスタムフィールド | 設定済み                           | **保持**（`harness-effort-summary`, `harness-metrics` 等） |
-| processEvidence               | 設定済み                           | 変化なし                                                   |
-| sessionMetrics                | 設定済み                           | 変化なし                                                   |
+| フィールド                    | アーカイブ前                       | アーカイブ後                                                                                                           |
+| ----------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Issue状態                     | Done（Open維持）→ スプリント終了時 | **Closed**                                                                                                             |
+| Projects V2 Status            | Done                               | Done（変化なし）                                                                                                       |
+| Projects V2カスタムフィールド | 設定済み                           | **保持**（`harness-effort-summary`, `harness-metrics-summary` とセッションメトリクス4指標ナラティブ独立フィールド 等） |
+| processEvidence               | 設定済み                           | 変化なし                                                                                                               |
+| sessionMetrics                | 設定済み                           | 変化なし                                                                                                               |
 
 #### Review / Retrospective
 
