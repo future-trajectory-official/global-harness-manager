@@ -33,8 +33,13 @@ try {
     ? projects.productBacklog
     : undefined;
   const sprintBoard = typeof projects.sprintBoard === "number" ? projects.sprintBoard : undefined;
-  if (productBacklog !== undefined || sprintBoard !== undefined) {
-    gateway.setProjectBoardNumbers(productBacklog, sprintBoard);
+  const retrospectiveBoard = typeof projects.retrospectiveBoard === "number"
+    ? projects.retrospectiveBoard
+    : undefined;
+  if (
+    productBacklog !== undefined || sprintBoard !== undefined || retrospectiveBoard !== undefined
+  ) {
+    gateway.setProjectBoardNumbers(productBacklog, sprintBoard, retrospectiveBoard);
   }
 } catch {
   // .harnessrc not found or invalid; board numbers remain unconfigured

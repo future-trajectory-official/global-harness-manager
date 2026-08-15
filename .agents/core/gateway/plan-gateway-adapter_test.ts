@@ -3912,3 +3912,586 @@ Deno.test("ProductBacklogItem unassignFromFeature - should remove parent via Gra
   assertEquals(result.stepResults[0].success, true);
   assertEquals(callCount, 3);
 });
+
+// ======== Retrospective Integration Tests ========
+
+/**
+ * ユースケース: Retrospective の plan 操作が type:Retrospective ラベルで Issue を作成すること
+ * 検証意図: handleCreateItem が type:Retrospective で呼ばれ、gh issue create --label type:Retrospective が発行されることを確認する
+ */
+Deno.test("Retrospective plan - should create issue with type:Retrospective label", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  const result = await adapter.execute({
+    summary: "Plan retrospective: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "plan",
+      params: {
+        title: "Sprint 20 Retrospective",
+        body: "## Sprint Retrospective\n\n- **Sprint**: Sprint 20",
+      },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const createCall = calls.find((c) => c.args.includes("create"));
+  assert(createCall, "gh issue create should be called");
+  assertStringIncludes(createCall.args.join(" "), "--label type:Retrospective");
+});
+
+/**
+ * ユースケース: Retrospective の archive 操作が Issue をクローズすること
+ * 検証意図: handleCloseItem が呼ばれ、gh issue close が発行されることを確認する
+ */
+Deno.test("Retrospective archive - should close the issue", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  const result = await adapter.execute({
+    summary: "Archive retrospective: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "archive",
+      params: { itemId: "101", state: "closed" },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const closeCall = calls.find((c) => c.args.includes("close"));
+  assert(closeCall, "gh issue close should be called");
+  assertStringIncludes(closeCall.args.join(" "), "101");
+});
+
+/**
+ * ユースケース: Retrospective の view 操作が Issue 詳細を取得すること
+ * 検証意図: handleFindItem が呼ばれ、gh issue view が発行されることを確認する
+ */
+Deno.test("Retrospective view - should fetch the issue details", async () => {
+  const viewOutput = JSON.stringify({
+    number: 101,
+    title: "Sprint 20 Retrospective",
+    body: "## Sprint Retrospective",
+    labels: [{ name: "type:Retrospective" }],
+    id: "node-retro-101",
+  });
+  const adapter = makeAdapter(fixedRunner(viewOutput));
+  const result = await adapter.execute({
+    summary: "Find retrospective: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "view",
+      params: { itemId: "101" },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "101");
+});
+
+/**
+ * ユースケース: Retrospective の search 操作が type:Retrospective ラベルで検索すること
+ * 検証意図: handleSearchItems が type:Retrospective で呼ばれ、gh issue list --label type:Retrospective が発行されることを確認する
+ */
+Deno.test("Retrospective search - should search issues with type:Retrospective label", async () => {
+  const listOutput = JSON.stringify([
+    { number: 101, title: "Sprint 20 Retrospective" },
+  ]);
+  const { runner, calls } = mockRunner();
+  const adapter = new PlanGatewayAdapter(
+    (cmd, args) => runner(cmd, args).then(() => ({ code: 0, stdout: listOutput, stderr: "" })),
+  );
+  adapter.setScope(OWNER, REPO);
+  const result = await adapter.execute({
+    summary: "Search Retrospective: (all)",
+    steps: [{
+      entity: "Retrospective",
+      operation: "search",
+      params: {},
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const listCall = calls.find((c) => c.args.includes("list"));
+  assert(listCall, "gh issue list should be called");
+  assertStringIncludes(listCall.args.join(" "), "--label type:Retrospective");
+});
+
+/**
+ * ユースケース: Retrospective の recordSprintKpt 操作が itemId なしでエラーを返すこと
+ * 検証意図: 記録Stepで itemId が必須であり、欠落時はエラーになることを確認する
+ */
+Deno.test("Retrospective recordSprintKpt - should fail without itemId", async () => {
+  const adapter = new PlanGatewayAdapter(mockRunner().runner);
+  adapter.setScope(OWNER, REPO);
+  const result = await adapter.execute({
+    summary: "Record Sprint KPT: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "recordSprintKpt",
+      params: { body: "## KPTA\n\n### Keep\n- Good" },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId");
+});
+
+/**
+ * ユースケース: Retrospective の recordSprintMetrics 操作が itemId なしでエラーを返すこと
+ * 検証意図: 記録Stepで itemId が必須であり、欠落時はエラーになることを確認する
+ */
+Deno.test("Retrospective recordSprintMetrics - should fail without itemId", async () => {
+  const adapter = new PlanGatewayAdapter(mockRunner().runner);
+  adapter.setScope(OWNER, REPO);
+  const result = await adapter.execute({
+    summary: "Record Sprint Metrics: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "recordSprintMetrics",
+      params: { body: "## Sprint Metrics\n- **Goal Achievement Score**: 5" },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "itemId");
+});
+
+// ======== Retrospective Board Field-Write Tests (AC-2) ========
+
+/** Retrospective Board へのフィールド書込テスト用モック。fieldCount 分のフィールド応答を生成する。 */
+function makeRetroBoardMock(
+  fieldCount: number,
+  failFieldIndex?: number,
+  options: { withBodyAppend?: boolean } = {},
+) {
+  let idx = 0;
+  const calls: { cmd: string; args: string[] }[] = [];
+  const responses: { code: number; stdout: string; stderr: string }[] = [
+    // 1: gh issue view <id> --json id
+    { code: 0, stdout: '{"id":"NODE_RETRO"}', stderr: "" },
+    // 2: gh api graphql getProjectIdQuery
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_RETRO"}}}}', stderr: "" },
+    // 3: gh api graphql addItemMutation
+    {
+      code: 0,
+      stdout: '{"data":{"addProjectV2ItemById":{"item":{"id":"ITEM_RETRO"}}}}',
+      stderr: "",
+    },
+  ];
+  for (let i = 0; i < fieldCount; i++) {
+    responses.push(
+      {
+        code: 0,
+        stdout: '{"data":{"organization":{"projectV2":{"field":{"id":"FIELD_RETRO"}}}}}',
+        stderr: "",
+      },
+      {
+        code: 0,
+        stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_RETRO"}}}}',
+        stderr: "",
+      },
+      failFieldIndex === i
+        ? { code: 1, stdout: "", stderr: `failed to set retro field ${i}` }
+        : { code: 0, stdout: "", stderr: "" },
+    );
+  }
+  if (options.withBodyAppend) {
+    // gh issue view <id> --json body（Body追記用の現在値取得）
+    responses.push({ code: 0, stdout: '{"body":"Existing"}', stderr: "" });
+    // gh issue edit <id> --body <newBody>
+    responses.push({ code: 0, stdout: "", stderr: "" });
+  }
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const r = responses[idx];
+    idx++;
+    return Promise.resolve(r ?? { code: 0, stdout: "", stderr: "" });
+  };
+  return { runner, calls };
+}
+
+const SAMPLE_SPRINT_KPT = {
+  keep: "#### Keep\n\n- Good retrospective",
+  problem: "#### Problem\n\n- Scope was unclear",
+  try: "#### Try\n\n- Define scope earlier",
+  advise: "#### Advise\n\n- Use checklists",
+};
+
+const SAMPLE_SPRINT_METRICS = {
+  summary: {
+    goalAchievementScore: 5,
+    estimationAccuracyScore: 4,
+    qualityIntegrityScore: 5,
+    collaborationDisciplineScore: 4,
+    velocity: 8,
+  },
+  goalAchievement: "Goals met",
+  estimationAccuracy: "Accurate",
+  qualityIntegrity: "High quality",
+  collaborationDiscipline: "Disciplined",
+  velocity: "Stable velocity",
+};
+
+const SAMPLE_SESSION_METRICS = {
+  summary: {
+    intentAlignmentScore: 5,
+    constraintAdherenceScore: 4,
+    contextExtractionScore: 5,
+    workSizeStabilityScore: 4,
+  },
+  intentAlignment: "Aligned",
+  constraintAdherence: "Compliant",
+  contextExtraction: "Extracted",
+  workSizeStability: "Stable",
+};
+
+/**
+ * ユースケース: Retrospective の recordSprintKpt が harness-kpt-* 4フィールドに書込むこと
+ * 検証意図: kpta の Keep/Problem/Try/Advise が4つの個別フィールドへ書き込まれ、成功を返すことを確認する
+ */
+Deno.test("Retrospective recordSprintKpt - should write kpta to 4 harness-kpt-* fields", async () => {
+  const mock = makeRetroBoardMock(4);
+  const adapter = new PlanGatewayAdapter(mock.runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99, 12);
+  const result = await adapter.execute({
+    summary: "Record Sprint KPT: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "recordSprintKpt",
+      params: { itemId: "101", kpta: SAMPLE_SPRINT_KPT },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const fieldCalls = mock.calls.filter((c) => c.args.some((a) => a.includes("fieldName=")));
+  assertEquals(fieldCalls.length, 4);
+  const joined = fieldCalls.map((c) => c.args.join(" ")).join("\n");
+  assertStringIncludes(joined, "harness-kpt-keep");
+  assertStringIncludes(joined, "harness-kpt-problem");
+  assertStringIncludes(joined, "harness-kpt-try");
+  assertStringIncludes(joined, "harness-kpt-advise");
+  const editCalls = mock.calls.filter((c) => c.args.includes("item-edit"));
+  assertEquals(editCalls.length, 4);
+  const editJoined = editCalls.map((c) => c.args.join(" ")).join("\n");
+  assertStringIncludes(editJoined, "Good retrospective");
+  assertStringIncludes(editJoined, "Scope was unclear");
+  assertStringIncludes(editJoined, "Define scope earlier");
+  assertStringIncludes(editJoined, "Use checklists");
+});
+
+/**
+ * ユースケース: Retrospective の recordSprintMetrics が harness-metrics-summary と5指標独立フィールドに書込むこと
+ * 検証意図: summary が snake_case ネスト JSON として書き込まれ、5指標ナラティブが独立フィールドへ書き込まれることを確認する
+ */
+Deno.test("Retrospective recordSprintMetrics - should write summary and 5 narrative fields", async () => {
+  const mock = makeRetroBoardMock(6);
+  const adapter = new PlanGatewayAdapter(mock.runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99, 12);
+  const result = await adapter.execute({
+    summary: "Record Sprint Metrics: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "recordSprintMetrics",
+      params: { itemId: "101", metrics: SAMPLE_SPRINT_METRICS },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const fieldCalls = mock.calls.filter((c) => c.args.some((a) => a.includes("fieldName=")));
+  assertEquals(fieldCalls.length, 6);
+  const joined = fieldCalls.map((c) => c.args.join(" ")).join("\n");
+  assertStringIncludes(joined, "harness-metrics-summary");
+  assertStringIncludes(joined, "harness-metrics-goal-achievement");
+  assertStringIncludes(joined, "harness-metrics-estimation-accuracy");
+  assertStringIncludes(joined, "harness-metrics-quality-integrity");
+  assertStringIncludes(joined, "harness-metrics-collaboration-discipline");
+  assertStringIncludes(joined, "harness-metrics-velocity");
+  const editCalls = mock.calls.filter((c) => c.args.includes("item-edit"));
+  assertEquals(editCalls.length, 6);
+  const editJoined = editCalls.map((c) => c.args.join(" ")).join("\n");
+  assertStringIncludes(editJoined, "goal_achievement_rate");
+  assertStringIncludes(editJoined, "velocity");
+  assertStringIncludes(editJoined, "Goals met");
+  assertStringIncludes(editJoined, "Stable velocity");
+});
+
+/**
+ * ユースケース: WorkPackage の recordSessionMetrics が harness-metrics-summary と4指標独立フィールドに書込むこと
+ * 検証意図: セッションメトリクスが新フィールド構成（summary＋4指標）で Sprint Board に書き込まれることを確認する
+ */
+Deno.test("WorkPackage recordSessionMetrics - should write new summary and 4 narrative fields", async () => {
+  const mock = makeRetroBoardMock(5);
+  const adapter = new PlanGatewayAdapter(mock.runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99);
+  const result = await adapter.execute({
+    summary: "Record session metrics: WP 51",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordSessionMetrics",
+      params: { itemId: "51", metrics: SAMPLE_SESSION_METRICS },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const fieldCalls = mock.calls.filter((c) => c.args.some((a) => a.includes("fieldName=")));
+  assertEquals(fieldCalls.length, 5);
+  const joined = fieldCalls.map((c) => c.args.join(" ")).join("\n");
+  assertStringIncludes(joined, "harness-metrics-summary");
+  assertStringIncludes(joined, "harness-metrics-intent-alignment");
+  assertStringIncludes(joined, "harness-metrics-constraint-adherence");
+  assertStringIncludes(joined, "harness-metrics-context-extraction");
+  assertStringIncludes(joined, "harness-metrics-work-size-stability");
+  const editCalls = mock.calls.filter((c) => c.args.includes("item-edit"));
+  assertEquals(editCalls.length, 5);
+  const editJoined = editCalls.map((c) => c.args.join(" ")).join("\n");
+  assertStringIncludes(editJoined, "intent_alignment_score");
+  assertStringIncludes(editJoined, "work_size_stability_score");
+  assertStringIncludes(editJoined, "Aligned");
+  assertStringIncludes(editJoined, "Stable");
+});
+
+// ======== Retrospective Failure-Path Tests (Phase3 review) ========
+
+/**
+ * ユースケース: Retrospective の recordSprintKpt がフィールド書込失敗時にエラーを返すこと
+ * 検証意図: フィールド書込のエラーが集約され、失敗が報告されることを確認する
+ */
+Deno.test("Retrospective recordSprintKpt - should report field write failure", async () => {
+  const mock = makeRetroBoardMock(4, 2);
+  const adapter = new PlanGatewayAdapter(mock.runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99, 12);
+  const result = await adapter.execute({
+    summary: "Record Sprint KPT: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "recordSprintKpt",
+      params: { itemId: "101", kpta: SAMPLE_SPRINT_KPT },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "failed to set retro field 2");
+});
+
+/**
+ * ユースケース: Retrospective の recordSprintMetrics がフィールド書込失敗時にエラーを返すこと
+ * 検証意図: summary 書込のエラーが報告されることを確認する
+ */
+Deno.test("Retrospective recordSprintMetrics - should report field write failure", async () => {
+  const mock = makeRetroBoardMock(6, 0);
+  const adapter = new PlanGatewayAdapter(mock.runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99, 12);
+  const result = await adapter.execute({
+    summary: "Record Sprint Metrics: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "recordSprintMetrics",
+      params: { itemId: "101", metrics: SAMPLE_SPRINT_METRICS },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "failed to set retro field 0");
+});
+
+/**
+ * ユースケース: Retrospective の recordSprintKpt が body 指定時に Issue Body へ追記すること
+ * 検証意図: フィールド書込に加え、params.body が handleUpdateItem で反映されることを確認する
+ */
+Deno.test("Retrospective recordSprintKpt - should append body to Issue body", async () => {
+  const mock = makeRetroBoardMock(4, undefined, { withBodyAppend: true });
+  const adapter = new PlanGatewayAdapter(mock.runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99, 12);
+  const result = await adapter.execute({
+    summary: "Record Sprint KPT: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "recordSprintKpt",
+      params: {
+        itemId: "101",
+        kpta: SAMPLE_SPRINT_KPT,
+        body: "## KPTA\n\n### Keep\n- Good retrospective",
+      },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const bodyEdit = mock.calls.find((c) => c.args.includes("--body"));
+  assert(bodyEdit, "gh issue edit --body should be called for body append");
+  assertStringIncludes(bodyEdit.args.join(" "), "Good retrospective");
+});
+
+/**
+ * ユースケース: Retrospective の recordSprintKpt が body のみ（コメントStep）でコメントを追加すること
+ * 検証意図: kpta 欠落時は handleAddComment で変更理由コメントが追加されることを確認する
+ */
+Deno.test("Retrospective recordSprintKpt - should add comment when only body provided", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  const result = await adapter.execute({
+    summary: "Record Sprint KPT: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "recordSprintKpt",
+      params: { itemId: "101", body: "## Record Sprint KPT\n\n理由" },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const commentCall = calls.find((c) => c.args.includes("comment"));
+  assert(commentCall, "gh issue comment should be called");
+  assertStringIncludes(commentCall.args.join(" "), "101");
+});
+
+/**
+ * ユースケース: Retrospective の recordSprintMetrics が body のみ（コメントStep）でコメントを追加すること
+ * 検証意図: metrics 欠落時は handleAddComment で変更理由コメントが追加されることを確認する
+ */
+Deno.test("Retrospective recordSprintMetrics - should add comment when only body provided", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  const result = await adapter.execute({
+    summary: "Record Sprint Metrics: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "recordSprintMetrics",
+      params: { itemId: "101", body: "## Record Sprint Metrics\n\n理由" },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const commentCall = calls.find((c) => c.args.includes("comment"));
+  assert(commentCall, "gh issue comment should be called");
+  assertStringIncludes(commentCall.args.join(" "), "101");
+});
+
+/**
+ * ユースケース: Retrospective の recordSprintKpt がボード未設定時でも成功を返すこと
+ * 検証意図: retrospectiveBoardNumber 未設定時はフィールド書込をスキップし、成功を返すことを確認する
+ */
+Deno.test("Retrospective recordSprintKpt - should succeed without board number", async () => {
+  const { runner } = mockRunner();
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  const result = await adapter.execute({
+    summary: "Record Sprint KPT: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "recordSprintKpt",
+      params: { itemId: "101", kpta: SAMPLE_SPRINT_KPT },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+});
+
+/**
+ * ユースケース: WorkPackage の recordSessionMetrics がフィールド書込失敗時にエラーを返すこと
+ * 検証意図: セッションメトリクスの書込エラーが集約され報告されることを確認する
+ */
+Deno.test("WorkPackage recordSessionMetrics - should report field write failure", async () => {
+  const mock = makeRetroBoardMock(5, 3);
+  const adapter = new PlanGatewayAdapter(mock.runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99);
+  const result = await adapter.execute({
+    summary: "Record session metrics: WP 51",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordSessionMetrics",
+      params: { itemId: "51", metrics: SAMPLE_SESSION_METRICS },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "failed to set retro field 3");
+});
+
+/**
+ * ユースケース: Retrospective の recordSprintKpt が addItemToProject 失敗時に lookup フォールバックで書込むこと
+ * 検証意図: addItemToProject が例外を投げる場合、projectItems の GraphQL lookup で projectItemNodeId を解決し書込むことを確認する
+ */
+Deno.test("Retrospective recordSprintKpt - should fallback to projectItems lookup", async () => {
+  let idx = 0;
+  const calls: { cmd: string; args: string[] }[] = [];
+  const responses: { code: number; stdout: string; stderr: string }[] = [
+    // 1: gh issue view <id> --json id
+    { code: 0, stdout: '{"id":"NODE_RETRO"}', stderr: "" },
+    // 2: gh api graphql getProjectIdQuery
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_RETRO"}}}}', stderr: "" },
+    // 3: gh api graphql addItemMutation → 非 already-on-project エラーで throw
+    { code: 0, stdout: '{"errors":[{"message":"Rate limit exceeded"}]}', stderr: "" },
+    // 4: gh api graphql lookup で既存 projectItem を解決
+    {
+      code: 0,
+      stdout:
+        '{"data":{"repository":{"issue":{"projectItems":{"nodes":[{"id":"ITEM_LOOKUP","project":{"number":12}}]}}}}}',
+      stderr: "",
+    },
+    // 5-7: フィールド1 (resolveFieldId, resolveProjectNodeId, item-edit)
+    {
+      code: 0,
+      stdout: '{"data":{"organization":{"projectV2":{"field":{"id":"FIELD_RETRO"}}}}}',
+      stderr: "",
+    },
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_RETRO"}}}}', stderr: "" },
+    { code: 0, stdout: "", stderr: "" },
+    // 8-10: フィールド2
+    {
+      code: 0,
+      stdout: '{"data":{"organization":{"projectV2":{"field":{"id":"FIELD_RETRO"}}}}}',
+      stderr: "",
+    },
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_RETRO"}}}}', stderr: "" },
+    { code: 0, stdout: "", stderr: "" },
+    // 11-13: フィールド3
+    {
+      code: 0,
+      stdout: '{"data":{"organization":{"projectV2":{"field":{"id":"FIELD_RETRO"}}}}}',
+      stderr: "",
+    },
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_RETRO"}}}}', stderr: "" },
+    { code: 0, stdout: "", stderr: "" },
+    // 14-16: フィールド4
+    {
+      code: 0,
+      stdout: '{"data":{"organization":{"projectV2":{"field":{"id":"FIELD_RETRO"}}}}}',
+      stderr: "",
+    },
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_RETRO"}}}}', stderr: "" },
+    { code: 0, stdout: "", stderr: "" },
+  ];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const r = responses[idx];
+    idx++;
+    return Promise.resolve(r ?? { code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99, 12);
+  const result = await adapter.execute({
+    summary: "Record Sprint KPT: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "recordSprintKpt",
+      params: { itemId: "101", kpta: SAMPLE_SPRINT_KPT },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const itemEditCalls = calls.filter((c) => c.args.includes("item-edit"));
+  assertEquals(itemEditCalls.length, 4);
+  const lookupCall = calls.find((c) => c.args.some((a) => a.includes("projectItems")));
+  assert(lookupCall, "projectItems lookup should be called");
+});

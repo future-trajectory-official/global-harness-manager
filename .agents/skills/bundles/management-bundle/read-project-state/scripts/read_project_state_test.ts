@@ -355,27 +355,37 @@ Deno.test("read_project_state - Sprint search default state=all returns mileston
 });
 
 /**
- * @description Retrospective の search / find が明示的な「未実装」エラーを返すこと
- * @verify 出力に "Retrospective: not yet implemented in gateway layer" が含まれること
+ * @description Retrospective の search が issue list を発行し一覧を返すこと
+ * @verify 出力に success: true と issue list の結果が含まれ、type:Retrospective ラベルで検索されること
  */
-for (const operation of ["search", "find"] as const) {
-  Deno.test(`read_project_state - Retrospective ${operation} returns not-implemented error`, async () => {
-    await withMockScript(
-      {
-        entityType: "Retrospective",
-        operation,
-        params: operation === "find" ? { itemId: "42" } : {},
-      },
-      (result) => {
-        assertEquals(result.code, 0);
-        assertStringIncludes(
-          result.stdout,
-          "Retrospective: not yet implemented in gateway layer",
-        );
-      },
-    );
-  });
-}
+Deno.test("read_project_state - Retrospective search returns list", async () => {
+  await withMockScript(
+    { entityType: "Retrospective", operation: "search", params: {} },
+    (result) => {
+      assertEquals(result.code, 0);
+      assertStringIncludes(result.stdout, '"success": true');
+      assertStringIncludes(result.stdout, '"operation": "search"');
+      assertStringIncludes(result.callLog, "type:Retrospective");
+    },
+  );
+});
+
+/**
+ * @description Retrospective の find が issue view を発行し詳細を返すこと
+ * @verify 出力に success: true と指定 Issue の詳細が含まれること
+ */
+Deno.test("read_project_state - Retrospective find returns details", async () => {
+  await withMockScript(
+    { entityType: "Retrospective", operation: "find", params: { itemId: "42" } },
+    (result) => {
+      assertEquals(result.code, 0);
+      assertStringIncludes(result.stdout, '"success": true');
+      assertStringIncludes(result.stdout, '"operation": "view"');
+      assertStringIncludes(result.stdout, '"itemId": "42"');
+      assertStringIncludes(result.callLog, "issue view 42");
+    },
+  );
+});
 
 /**
  * @description Epic / Feature / WorkPackage / Review の search が issue list を発行し一覧を返すこと

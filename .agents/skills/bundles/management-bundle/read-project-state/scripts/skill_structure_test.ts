@@ -82,15 +82,15 @@ Deno.test({
 
 /**
  * ユースケース: エラー時の表示規則が定義されていることの検証。
- * 検証意図: 対象外エラー（Vision/ProductGoal の search）・未実装エラー
- * （Retrospective）・検索0件・code不明などのエラー時の振る舞いが定義されていることを保証する。
+ * 検証意図: 対象外エラー（Vision/ProductGoal の search）・検索0件・code不明などの
+ * エラー時の振る舞いが定義されていることを保証する。Retrospective は Gateway 実装済みのため
+ * エラー扱いではない。
  */
 Deno.test({
   name: "reference.md should define error handling display rules",
   fn: async () => {
     const content = await Deno.readTextFile(REFERENCE_MD);
     assertExists(content.match(/対象外/), "unsupported search error not defined");
-    assertExists(content.match(/Retrospective/), "Retrospective not-implemented error not defined");
     assertExists(content.match(/0件/), "zero-result handling not defined");
     assertExists(content.match(/code不明/), "unknown code handling not defined");
   },

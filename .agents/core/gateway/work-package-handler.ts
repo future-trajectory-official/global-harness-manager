@@ -309,31 +309,153 @@ export class WorkPackageHandler {
           error: "itemId is required",
         });
       }
-      if (params.body && this.adapter.sprintBoardNumber) {
-        try {
-          const nodeResult = await this.adapter.runCommand("gh", [
-            "issue",
-            "view",
+      const metrics = params.metrics as
+        | {
+          summary?: {
+            intentAlignmentScore?: number;
+            constraintAdherenceScore?: number;
+            contextExtractionScore?: number;
+            workSizeStabilityScore?: number;
+          };
+          intentAlignment?: string;
+          constraintAdherence?: string;
+          contextExtraction?: string;
+          workSizeStability?: string;
+        }
+        | undefined;
+      const fields: Array<[string, string]> = [];
+      if (metrics?.summary) {
+        const summaryJson = JSON.stringify({
+          intent_alignment_score: metrics.summary.intentAlignmentScore ?? 0,
+          constraint_adherence_score: metrics.summary.constraintAdherenceScore ?? 0,
+          context_extraction_score: metrics.summary.contextExtractionScore ?? 0,
+          work_size_stability_score: metrics.summary.workSizeStabilityScore ?? 0,
+        });
+        fields.push(["harness-metrics-summary", summaryJson]);
+      }
+      if (metrics?.intentAlignment) {
+        fields.push(["harness-metrics-intent-alignment", metrics.intentAlignment]);
+      }
+      if (metrics?.constraintAdherence) {
+        fields.push(["harness-metrics-constraint-adherence", metrics.constraintAdherence]);
+      }
+      if (metrics?.contextExtraction) {
+        fields.push(["harness-metrics-context-extraction", metrics.contextExtraction]);
+      }
+      if (metrics?.workSizeStability) {
+        fields.push(["harness-metrics-work-size-stability", metrics.workSizeStability]);
+      }
+      if (fields.length > 0 && this.adapter.sprintBoardNumber) {
+        const nodeResult = await this.adapter.runCommand("gh", [
+          "issue",
+          "view",
+          itemId,
+          "--json",
+          "id",
+          ...this.adapter.buildRepoArg(),
+        ]);
+        if (nodeResult.code !== 0) {
+          return Promise.resolve({
+            operation: "recordSessionMetrics",
+            success: false,
             itemId,
-            "--json",
-            "id",
-            ...this.adapter.buildRepoArg(),
-          ]);
-          if (nodeResult.code === 0) {
-            const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
-            const { projectItemNodeId } = await this.adapter.addItemToProject(
-              nodeData.id,
-              this.adapter.sprintBoardNumber,
-            );
-            const metrics = params.metrics;
-            await this.adapter.setTextFieldValue(
-              projectItemNodeId,
-              this.adapter.sprintBoardNumber,
-              "harness-metrics",
-              metrics ? JSON.stringify(metrics) : String(params.body),
-            );
+            error: nodeResult.stderr,
+          });
+        }
+        let nodeData: { id: string };
+        try {
+          nodeData = JSON.parse(nodeResult.stdout) as { id: string };
+        } catch {
+          return Promise.resolve({
+            operation: "recordSessionMetrics",
+            success: false,
+            itemId,
+            error: "Failed to parse issue view output",
+          });
+        }
+        let projectItemNodeId: string;
+        try {
+          ({ projectItemNodeId } = await this.adapter.addItemToProject(
+            nodeData.id,
+            this.adapter.sprintBoardNumber,
+          ));
+        } catch {
+          const owned = this.adapter.scopeOwner;
+          const repod = this.adapter.scopeRepository;
+          if (!owned || !repod) {
+            return Promise.resolve({
+              operation: "recordSessionMetrics",
+              success: false,
+              itemId,
+              error: "scope owner/repository is not resolved",
+            });
           }
-        } catch { /* ok */ }
+          const lookup =
+            `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
+          const lr = await this.adapter.runCommand("gh", [
+            "api",
+            "graphql",
+            "-f",
+            `query=${lookup}`,
+            "-f",
+            `owner=${owned}`,
+            "-f",
+            `repo=${repod}`,
+            "-F",
+            `num=${parseInt(itemId, 10)}`,
+          ]);
+          if (lr.code !== 0) {
+            return Promise.resolve({
+              operation: "recordSessionMetrics",
+              success: false,
+              itemId,
+              error: lr.stderr,
+            });
+          }
+          const ld = JSON.parse(lr.stdout) as {
+            data?: {
+              repository?: {
+                issue?: {
+                  projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
+                };
+              };
+            };
+          };
+          const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
+            n.project.number === this.adapter.sprintBoardNumber!
+          );
+          if (!matched) {
+            return Promise.resolve({
+              operation: "recordSessionMetrics",
+              success: false,
+              itemId,
+              error: `WP #${itemId} is not on Sprint Board #${this.adapter.sprintBoardNumber}`,
+            });
+          }
+          projectItemNodeId = matched.id;
+        }
+        const errors: string[] = [];
+        for (const [fieldName, value] of fields) {
+          const result = await this.adapter.setTextFieldValue(
+            projectItemNodeId,
+            this.adapter.sprintBoardNumber,
+            fieldName,
+            value,
+          );
+          if (!result.success) {
+            errors.push(`${fieldName}: ${result.error ?? "unknown error"}`);
+          }
+        }
+        if (errors.length > 0) {
+          return Promise.resolve({
+            operation: "recordSessionMetrics",
+            success: false,
+            itemId,
+            error: errors.join("; "),
+          });
+        }
+      }
+      if (params.body && this.adapter.sprintBoardNumber) {
         return await this.adapter.handleUpdateItem({ itemId, bodyAppend: params.body });
       }
       return Promise.resolve({ operation: "recordSessionMetrics", success: true, itemId });

@@ -39,7 +39,7 @@ deno run -A .agents/skills/bundles/management-bundle/read-project-state/scripts/
 | ProductBacklogItem | あり   | あり |                                                                                              |
 | WorkPackage        | あり   | あり |                                                                                              |
 | Review             | あり   | あり |                                                                                              |
-| Retrospective      | あり   | あり | 未実装。実行時に `not yet implemented in gateway layer` エラーを返す                         |
+| Retrospective      | あり   | あり |                                                                                              |
 | Scope              | なし   | なし | 検索・閲覧ともに不可（INVALID_INPUT）                                                        |
 
 - **search 対象外 Entity**（Vision / ProductGoal）を search で呼んだ場合:
@@ -47,8 +47,6 @@ deno run -A .agents/skills/bundles/management-bundle/read-project-state/scripts/
   を返す。
 - **Sprint search** の `state` は `open` / `closed` / `all` のみ指定可能。
   次スプリント番号の把握には `state: "closed"` で最新完了スプリントを確認する。
-- **Retrospective** を search / find で呼んだ場合:
-  `Retrospective: not yet implemented in gateway layer` を返す。
 
 ## params キー一覧
 
