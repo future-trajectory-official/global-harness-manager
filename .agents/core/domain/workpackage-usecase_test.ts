@@ -88,11 +88,16 @@ function makeAnalysis(): ProcessAnalysis {
 
 function makeMetrics(): SessionMetrics {
   return {
-    intentAlignmentRate: 5,
-    constraintAdherenceScore: 4,
-    contextExtractionQuality: 4,
-    workSizeStability: 3,
-    comment: "Good session",
+    summary: {
+      intentAlignmentScore: 5,
+      constraintAdherenceScore: 4,
+      contextExtractionScore: 4,
+      workSizeStabilityScore: 3,
+    },
+    intentAlignment: "Aligned well with the goal",
+    constraintAdherence: "Followed constraints strictly",
+    contextExtraction: "Captured context accurately",
+    workSizeStability: "Work size remained stable",
   };
 }
 

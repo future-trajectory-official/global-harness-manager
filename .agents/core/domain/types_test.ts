@@ -123,11 +123,12 @@ Deno.test("types - Step should support all entity types with valid operations", 
     { entity: "Review", operation: "view", params: {} },
     { entity: "Review", operation: "search", params: {} },
     { entity: "Retrospective", operation: "plan", params: {} },
-    { entity: "Retrospective", operation: "execute", params: {} },
+    { entity: "Retrospective", operation: "recordSprintKpt", params: {} },
+    { entity: "Retrospective", operation: "recordSprintMetrics", params: {} },
     { entity: "Retrospective", operation: "view", params: {} },
     { entity: "Retrospective", operation: "search", params: {} },
   ];
-  assertEquals(steps.length, 42);
+  assertEquals(steps.length, 43);
   for (const step of steps) {
     assertEquals(typeof step.entity, "string");
     assertEquals(typeof step.operation, "string");
@@ -300,16 +301,28 @@ Deno.test("types - OverallReviewResult should support all judgment values", () =
   assertEquals(conditional.judgment, "conditional");
 });
 
-Deno.test("types - SessionMetrics should have numeric fields 1-5", () => {
+Deno.test("types - SessionMetrics should have summary and narrative fields", () => {
   const metrics: SessionMetrics = {
-    intentAlignmentRate: 4,
-    constraintAdherenceScore: 5,
-    contextExtractionQuality: 3,
-    workSizeStability: 4,
-    comment: "Good session",
+    summary: {
+      intentAlignmentScore: 4,
+      constraintAdherenceScore: 5,
+      contextExtractionScore: 3,
+      workSizeStabilityScore: 4,
+    },
+    intentAlignment: "Aligned well with the goal",
+    constraintAdherence: "Followed constraints strictly",
+    contextExtraction: "Captured context accurately",
+    workSizeStability: "Work size remained stable",
   };
-  assertEquals(metrics.intentAlignmentRate, 4);
-  assertEquals(metrics.comment, "Good session");
+  assertEquals(metrics.summary.intentAlignmentScore, 4);
+  assertEquals(metrics.summary.constraintAdherenceScore, 5);
+  assertEquals(metrics.summary.contextExtractionScore, 3);
+  assertEquals(metrics.summary.workSizeStabilityScore, 4);
+  assertEquals(metrics.intentAlignment, "Aligned well with the goal");
+  assertEquals(metrics.constraintAdherence, "Followed constraints strictly");
+  assertEquals(metrics.contextExtraction, "Captured context accurately");
+  assertEquals(metrics.workSizeStability, "Work size remained stable");
+  assertEquals("comment" in metrics, false);
 });
 
 Deno.test("types - KeepProblemTryAdvice should have all fields", () => {
@@ -325,13 +338,21 @@ Deno.test("types - KeepProblemTryAdvice should have all fields", () => {
 
 Deno.test("types - SprintMetrics should extend Metrics", () => {
   const sm: SprintMetrics = {
-    goalAchievementRate: 90,
-    estimationAccuracy: 80,
-    qualityIntegrity: 85,
-    collaborationDiscipline: 95,
-    velocity: 10,
+    summary: {
+      goalAchievementScore: 5,
+      estimationAccuracyScore: 4,
+      qualityIntegrityScore: 4,
+      collaborationDisciplineScore: 5,
+      velocity: 10,
+    },
+    goalAchievement: "Goals fully achieved",
+    estimationAccuracy: "Estimation close",
+    qualityIntegrity: "Quality maintained",
+    collaborationDiscipline: "Discipline followed",
+    velocity: "Stable velocity",
   };
-  assertEquals(sm.velocity, 10);
+  assertEquals(sm.summary.velocity, 10);
+  assertEquals(sm.velocity, "Stable velocity");
 });
 
 Deno.test("types - EffortRecord should have numeric fields", () => {
