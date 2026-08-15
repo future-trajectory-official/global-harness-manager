@@ -286,7 +286,13 @@ export type ReviewOperation =
   | "search";
 
 /** Retrospective エンティティの操作種別。RetrospectiveValidator.RetrospectiveOperation と対応。 */
-export type RetrospectiveOperation = "plan" | "execute" | "archive" | "view" | "search";
+export type RetrospectiveOperation =
+  | "plan"
+  | "recordSprintKpt"
+  | "recordSprintMetrics"
+  | "archive"
+  | "view"
+  | "search";
 
 /** Scope エンティティの操作種別。スコープ解決を表す。 */
 export type ScopeOperation = "resolve";
@@ -649,13 +655,27 @@ export interface WorkPackageStatement {
 export interface WorkPackageIdentifier extends Identifier {
 }
 
-/** セッションの協働指標。各スコアは1〜5。 */
-export interface SessionMetrics {
-  readonly intentAlignmentRate: number;
+/**
+ * セッションメトリクスの数値サマリ。各スコアは1〜5。
+ * harness-metrics-summary に格納する際は、Gateway層で snake_case（intent_alignment_score 等）に変換して書込む。
+ */
+export interface SessionMetricsSummary {
+  readonly intentAlignmentScore: number;
   readonly constraintAdherenceScore: number;
-  readonly contextExtractionQuality: number;
-  readonly workSizeStability: number;
-  readonly comment: string;
+  readonly contextExtractionScore: number;
+  readonly workSizeStabilityScore: number;
+}
+
+/**
+ * セッションの協働指標。数値サマリと4指標それぞれのナラティブで構成する。
+ * 数値（summary）とナラティブ（独立フィールド）を分離して保持する（design-spec 5.4）。
+ */
+export interface SessionMetrics {
+  readonly summary: SessionMetricsSummary;
+  readonly intentAlignment: string;
+  readonly constraintAdherence: string;
+  readonly contextExtraction: string;
+  readonly workSizeStability: string;
 }
 
 /** WP のプロセス証跡。 */
@@ -734,13 +754,30 @@ export interface ReviewSearchCondition extends SearchCondition {
 export interface Metrics {
 }
 
-/** スプリント全体のメトリクス。各指標はパーセント値または実数。 */
-export interface SprintMetrics extends Metrics {
-  readonly goalAchievementRate: number;
-  readonly estimationAccuracy: number;
-  readonly qualityIntegrity: number;
-  readonly collaborationDiscipline: number;
+/**
+ * スプリントメトリクスの数値サマリ。各指標は1-5スコア、Velocityはウェイト換算値。
+ * harness-metrics-summary に格納する際は、Gateway層で snake_case ネスト構造
+ * （{"goal_achievement_rate":{"score":N}, "velocity":{"value":N}}）に変換して書込む。
+ */
+export interface SprintMetricsSummary {
+  readonly goalAchievementScore: number;
+  readonly estimationAccuracyScore: number;
+  readonly qualityIntegrityScore: number;
+  readonly collaborationDisciplineScore: number;
   readonly velocity: number;
+}
+
+/**
+ * スプリント全体のメトリクス。数値サマリ（1-5スコア＋Velocity換算値）と5指標それぞれのナラティブで構成する。
+ * 数値（summary）とナラティブ（独立フィールド）を分離して保持する（design-spec 5.4）。
+ */
+export interface SprintMetrics extends Metrics {
+  readonly summary: SprintMetricsSummary;
+  readonly goalAchievement: string;
+  readonly estimationAccuracy: string;
+  readonly qualityIntegrity: string;
+  readonly collaborationDiscipline: string;
+  readonly velocity: string;
 }
 
 /** KPTA（Keep/Problem/Try/Advise）形式の振り返り。 */

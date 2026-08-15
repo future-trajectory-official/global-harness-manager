@@ -16,9 +16,10 @@ function openStateOnlyRule(from: RetrospectiveData, label: string): ValidationRe
 /** Retrospective エンティティに対する全操作種別。RetrospectiveUseCase の公開メソッド名に対応する。 */
 export type RetrospectiveOperation =
   | "plan"
-  | "execute"
+  | "recordSprintKpt"
+  | "recordSprintMetrics"
   | "archive"
-  | "find"
+  | "view"
   | "search";
 
 type RuleFn = (
@@ -31,8 +32,12 @@ type RuleFn = (
 const ROUTE: Record<RetrospectiveOperation, RuleFn> = {
   plan: () => VALID,
 
-  execute(_op, from, _to) {
-    return openStateOnlyRule(from, "実行");
+  recordSprintKpt(_op, from, _to) {
+    return openStateOnlyRule(from, "スプリントKPTの記録");
+  },
+
+  recordSprintMetrics(_op, from, _to) {
+    return openStateOnlyRule(from, "スプリントメトリクスの記録");
   },
 
   archive(_op, from, _to) {
@@ -53,7 +58,7 @@ const ROUTE: Record<RetrospectiveOperation, RuleFn> = {
     return VALID;
   },
 
-  find: () => VALID,
+  view: () => VALID,
   search: () => VALID,
 };
 

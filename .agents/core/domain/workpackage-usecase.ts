@@ -64,11 +64,14 @@ function formatSessionMetricsBody(metrics: SessionMetrics): string {
   const lines: string[] = [];
   lines.push("## Session Metrics");
   lines.push("");
-  lines.push(`- **Intent Alignment Rate**: ${metrics.intentAlignmentRate}`);
-  lines.push(`- **Constraint Adherence Score**: ${metrics.constraintAdherenceScore}`);
-  lines.push(`- **Context Extraction Quality**: ${metrics.contextExtractionQuality}`);
+  lines.push(`- **Intent Alignment Score**: ${metrics.summary.intentAlignmentScore}`);
+  lines.push(`- **Constraint Adherence Score**: ${metrics.summary.constraintAdherenceScore}`);
+  lines.push(`- **Context Extraction Score**: ${metrics.summary.contextExtractionScore}`);
+  lines.push(`- **Work Size Stability Score**: ${metrics.summary.workSizeStabilityScore}`);
+  lines.push(`- **Intent Alignment**: ${metrics.intentAlignment}`);
+  lines.push(`- **Constraint Adherence**: ${metrics.constraintAdherence}`);
+  lines.push(`- **Context Extraction**: ${metrics.contextExtraction}`);
   lines.push(`- **Work Size Stability**: ${metrics.workSizeStability}`);
-  lines.push(`- **Comment**: ${metrics.comment}`);
   return lines.join("\n");
 }
 

@@ -26,6 +26,7 @@ function scopeStep(identifier: { scope: EntityScope }): Step {
 import {
   assertIdDefined,
   assertReferenceDefined,
+  assertSprintMetrics,
   assertStringNonEmpty,
   assertTitleNonEmpty,
 } from "./validation.ts";
@@ -58,17 +59,62 @@ function formatKptaBody(kpta: KeepProblemTryAdvice): string {
   return lines.join("\n");
 }
 
-/** スプリントメトリクスの本文をMarkdown形式で生成する。5指標（達成率・正確性・品質・規律・ベロシティ）を表示する。 */
+/** スプリントメトリクスの本文をMarkdown形式で生成する。5指標（達成度・正確性・品質・規律・ベロシティ）のスコアとナラティブを表示する。 */
 function formatMetricsBody(metrics: SprintMetrics): string {
   const lines: string[] = [];
   lines.push("## Sprint Metrics");
   lines.push("");
-  lines.push(`- **Goal Achievement Rate**: ${metrics.goalAchievementRate}%`);
-  lines.push(`- **Estimation Accuracy**: ${metrics.estimationAccuracy}%`);
-  lines.push(`- **Quality Integrity**: ${metrics.qualityIntegrity}%`);
-  lines.push(`- **Collaboration Discipline**: ${metrics.collaborationDiscipline}%`);
+  lines.push(`- **Goal Achievement Score**: ${metrics.summary.goalAchievementScore}`);
+  lines.push(`- **Estimation Accuracy Score**: ${metrics.summary.estimationAccuracyScore}`);
+  lines.push(`- **Quality Integrity Score**: ${metrics.summary.qualityIntegrityScore}`);
+  lines.push(
+    `- **Collaboration Discipline Score**: ${metrics.summary.collaborationDisciplineScore}`,
+  );
+  lines.push(`- **Velocity Value**: ${metrics.summary.velocity}`);
+  lines.push(`- **Goal Achievement**: ${metrics.goalAchievement}`);
+  lines.push(`- **Estimation Accuracy**: ${metrics.estimationAccuracy}`);
+  lines.push(`- **Quality Integrity**: ${metrics.qualityIntegrity}`);
+  lines.push(`- **Collaboration Discipline**: ${metrics.collaborationDiscipline}`);
   lines.push(`- **Velocity**: ${metrics.velocity}`);
   return lines.join("\n");
+}
+
+/**
+ * Retrospective の記録操作（recordSprintKpt / recordSprintMetrics）の Plan を生成する。
+ * 「記録Step（構造化params書込）＋変更理由コメントStep」の3Step構成を共通化する。
+ */
+function buildRecordPlan(options: {
+  identifier: RetrospectiveIdentifier;
+  operation: "recordSprintKpt" | "recordSprintMetrics";
+  summary: string;
+  body: string;
+  writeParams: Record<string, unknown>;
+  commentTitle: string;
+  reason: ChangeReason;
+}): Plan {
+  return {
+    summary: options.summary,
+    steps: [
+      scopeStep(options.identifier),
+      {
+        entity: "Retrospective",
+        operation: options.operation,
+        params: {
+          itemId: options.identifier.code,
+          body: options.body,
+          ...options.writeParams,
+        },
+      },
+      {
+        entity: "Retrospective",
+        operation: options.operation,
+        params: {
+          itemId: options.identifier.code,
+          body: formatEditComment(options.commentTitle, options.reason.description),
+        },
+      },
+    ],
+  };
 }
 
 /**
@@ -90,10 +136,16 @@ export interface RetrospectiveUseCase {
   /** Retrospective Issue を新規作成する。対象スプリントを紐づける。 */
   plan(identifier: RetrospectiveIdentifier, sprint: SprintIdentifier): Plan;
 
-  /** Retrospective を実行し、KPTA とスプリントメトリクスを記録する。 */
-  execute(
+  /** スプリントKPT（Keep/Problem/Try/Advise）を記録する。KPTは harness-kpt-* の個別フィールドに保存される。 */
+  recordSprintKpt(
     identifier: RetrospectiveIdentifier,
     kpta: KeepProblemTryAdvice,
+    reason: ChangeReason,
+  ): Plan;
+
+  /** スプリントメトリクス（5指標）を記録する。summary と5指標ナラティブ独立フィールドに保存される。 */
+  recordSprintMetrics(
+    identifier: RetrospectiveIdentifier,
     metrics: SprintMetrics,
     reason: ChangeReason,
   ): Plan;
@@ -131,50 +183,43 @@ export const retrospectiveUseCase: RetrospectiveUseCase & {
             body: formatRetroBody(sprint),
           },
         },
-        {
-          entity: "Retrospective",
-          operation: "execute",
-          params: {
-            itemId: identifier.code,
-            body: `Retrospective planned for ${sprint.title.value}`,
-          },
-        },
       ],
     };
   },
 
-  execute(identifier, kpta, metrics, reason): Plan {
+  recordSprintKpt(identifier, kpta, reason): Plan {
     assertTitleNonEmpty(identifier.title, "Retrospective title");
-    assertIdDefined(identifier.id, "execute a retrospective");
+    assertIdDefined(identifier.id, "record a sprint KPT");
     assertStringNonEmpty(kpta.keep, "KPTA keep");
     assertStringNonEmpty(kpta.problem, "KPTA problem");
     assertStringNonEmpty(kpta.try, "KPTA try");
     assertStringNonEmpty(kpta.advise, "KPTA advise");
     assertStringNonEmpty(reason.description, "ChangeReason description");
-    return {
-      summary: `Execute retrospective: ${identifier.title.value}`,
-      steps: [
-        scopeStep(identifier),
-        {
-          entity: "Retrospective",
-          operation: "execute",
-          params: {
-            itemId: identifier.code,
-            body: `${formatKptaBody(kpta)}\n\n${formatMetricsBody(metrics)}`,
-            kpta,
-            metrics,
-          },
-        },
-        {
-          entity: "Retrospective",
-          operation: "execute",
-          params: {
-            itemId: identifier.code,
-            body: formatEditComment("Execute", reason.description),
-          },
-        },
-      ],
-    };
+    return buildRecordPlan({
+      identifier,
+      operation: "recordSprintKpt",
+      summary: `Record Sprint KPT: ${identifier.title.value}`,
+      body: formatKptaBody(kpta),
+      writeParams: { kpta },
+      commentTitle: "Record Sprint KPT",
+      reason,
+    });
+  },
+
+  recordSprintMetrics(identifier, metrics, reason): Plan {
+    assertTitleNonEmpty(identifier.title, "Retrospective title");
+    assertIdDefined(identifier.id, "record sprint metrics");
+    assertStringNonEmpty(reason.description, "ChangeReason description");
+    assertSprintMetrics(metrics);
+    return buildRecordPlan({
+      identifier,
+      operation: "recordSprintMetrics",
+      summary: `Record Sprint Metrics: ${identifier.title.value}`,
+      body: formatMetricsBody(metrics),
+      writeParams: { metrics },
+      commentTitle: "Record Sprint Metrics",
+      reason,
+    });
   },
 
   archive(identifier): Plan {
