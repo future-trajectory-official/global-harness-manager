@@ -240,14 +240,14 @@ Deno.test("retrospectiveUseCase - recordSprintMetrics should throw for negative 
   );
 });
 
-Deno.test("retrospectiveUseCase - archive should return Plan with archive + archive", () => {
+Deno.test("retrospectiveUseCase - archive should return Plan with archive step only", () => {
   const plan = retrospectiveUseCase.archive(makeIdentifier());
   assertEquals(plan.summary, "Archive retrospective: Sprint 15 Retrospective");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "archive");
-  assertEquals(plan.steps[2].operation, "archive");
+  assertEquals(plan.steps[1].params.state, "closed");
 });
 
 Deno.test("retrospectiveUseCase - archive should throw for undefined id", () => {
