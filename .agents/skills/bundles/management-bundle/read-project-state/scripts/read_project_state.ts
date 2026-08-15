@@ -62,13 +62,11 @@ export interface Executable {
  * - useCase: Plan 実行用の UseCase（getUseCaseFor の二重マップを廃止）
  * - search: 一覧検索。単一インスタンスEntityでは未提供
  * - find: 詳細閲覧
- * - notImplemented: Gateway 未登録で未実装の Entity を明示するフラグ
  */
 interface OperationDispatch {
   useCase: Executable;
   search?: (params: Record<string, unknown>) => Plan;
   find: (params: Record<string, unknown>) => Plan;
-  notImplemented?: boolean;
 }
 
 /**
@@ -251,7 +249,6 @@ const dispatcher: Record<EntityType, OperationDispatch> = {
   },
   Retrospective: {
     useCase: retrospectiveUseCase,
-    notImplemented: true,
     search: (params) => {
       const condition = buildSearchCondition("Retrospective", "Retrospective", params, {
         statusSupported: false,
@@ -296,9 +293,6 @@ async function executeAndFormat(
   plan: Plan,
 ): Promise<unknown> {
   const dispatch = dispatcher[input.entityType];
-  if (dispatch.notImplemented) {
-    return { success: false, error: `${input.entityType}: not yet implemented in gateway layer` };
-  }
   const result = await dispatch.useCase.executePlan(plan);
   const step = result.getStep(input.entityType, input.operation === "find" ? "view" : "search");
   if (step) {

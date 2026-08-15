@@ -57,7 +57,6 @@ Labels: <labels>
 | 状況                              | 表示                                                                                        |
 | --------------------------------- | ------------------------------------------------------------------------------------------- |
 | search 対象外 Entity              | `search is not supported for <Entity>: single-instance by business rule. Use find instead.` |
-| Retrospective 未実装              | `Retrospective: not yet implemented in gateway layer`                                       |
 | 検索0件                           | `該当する<EntityType>が見つかりませんでした`                                                |
 | code不明（find で itemId 未指定） | `INVALID_INPUT: find for <Entity> requires itemId (Issue number)`                           |
 | 不明な EntityType / operation     | `INVALID_INPUT: ...`                                                                        |
@@ -75,5 +74,4 @@ Labels: <labels>
 
 - **search 対象外**（単一インスタンス）: Vision / ProductGoal
 - **Sprint search**: state 指定（open / closed / all）でスプリント一覧を解決できる
-- **未実装**（Gateway 未登録）: Retrospective
 - **検索・閲覧とも不可**: Scope
