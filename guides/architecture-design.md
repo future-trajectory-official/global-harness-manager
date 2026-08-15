@@ -782,12 +782,22 @@ interface WorkPackageIdentifier extends Identifier {
  * セッションメトリクス（Domain層のオブジェクト操作時の構造）。
  * 記録時は 1024バイト制限のため、`harness-metrics-summary`（数値JSONのみ）と4指標のナラティブ
  * 独立フィールドに分離して書き込む。詳細は design-spec.md 5.2 / 5.3 を参照。
+ * summary の各スコアは1〜5。harness-metrics-summary への書込時は Gateway 層で
+ * snake_case（intent_alignment_score 等）に変換する。
  */
+interface SessionMetricsSummary {
+  readonly intentAlignmentScore: number;
+  readonly constraintAdherenceScore: number;
+  readonly contextExtractionScore: number;
+  readonly workSizeStabilityScore: number;
+}
+
 interface SessionMetrics {
-  readonly intentAlignment: MetricScore;
-  readonly constraintAdherence: MetricScore;
-  readonly contextExtraction: MetricScore;
-  readonly workSizeStability: MetricScore;
+  readonly summary: SessionMetricsSummary;
+  readonly intentAlignment: string;
+  readonly constraintAdherence: string;
+  readonly contextExtraction: string;
+  readonly workSizeStability: string;
 }
 
 interface WorkPackageProcessEvidence extends ProcessEvidence {
@@ -854,37 +864,34 @@ interface Metrics {
  * スプリントメトリクス（Domain層のオブジェクト操作時の構造）。
  *
  * 【スキーマの使い分け（PO確定）】
- * - オブジェクト操作時（Domain層）: 各指標を { score, narrative }（Velocity は { value, narrative }）
- *   のペアで保持する。score/value は数値、narrative は定性的な説明。
+ * - オブジェクト操作時（Domain層）: summary（各指標のスコアとVelocity換算値）と5指標それぞれの
+ *   ナラティブ（string）を分離して保持する。
  * - 記録時（Projects V2 への書き込み）: 1024バイト制限（TEXTフィールド）のため、
  *   `harness-metrics-summary`（数値JSONのみ）と5指標のナラティブ独立フィールドに分離して書き込む。
  *   詳細は design-spec.md 5.2 / 5.3 を参照。
  */
+interface SprintMetricsSummary {
+  readonly goalAchievementScore: number; // 1〜5
+  readonly estimationAccuracyScore: number; // 1〜5
+  readonly qualityIntegrityScore: number; // 1〜5
+  readonly collaborationDisciplineScore: number; // 1〜5
+  readonly velocity: number; // ΣPBI(実感サイズ × ウェイト換算値)
+}
+
 interface SprintMetrics extends Metrics {
-  readonly goalAchievementRate: MetricScore;
-  readonly estimationAccuracy: MetricScore;
-  readonly qualityIntegrity: MetricScore;
-  readonly collaborationDiscipline: MetricScore;
-  readonly velocity: MetricValue;
-}
-
-/** 1〜5スコア＋ナラティブ（Goal Achievement / Estimation Accuracy / Quality Integrity / Collaboration Discipline） */
-interface MetricScore {
-  readonly score: number; // 1〜5
-  readonly narrative: string;
-}
-
-/** ウェイト換算値＋ナラティブ（Velocity。スコアは持たない） */
-interface MetricValue {
-  readonly value: number; // ΣPBI(実感サイズ × ウェイト換算値)
-  readonly narrative: string;
+  readonly summary: SprintMetricsSummary;
+  readonly goalAchievement: string;
+  readonly estimationAccuracy: string;
+  readonly qualityIntegrity: string;
+  readonly collaborationDiscipline: string;
+  readonly velocity: string;
 }
 
 interface KeepProblemTryAdvice {
   readonly keep: string;
   readonly problem: string;
   readonly try: string;
-  readonly advise?: string; // 任意（省略時は harness-kpt-advise を更新しない）
+  readonly advise: string;
 }
 
 interface RetrospectiveIdentifier extends Identifier {
