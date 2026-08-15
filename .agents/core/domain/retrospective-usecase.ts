@@ -237,14 +237,6 @@ export const retrospectiveUseCase: RetrospectiveUseCase & {
             state: "closed",
           },
         },
-        {
-          entity: "Retrospective",
-          operation: "archive",
-          params: {
-            itemId: identifier.code,
-            body: formatEditComment("Archive", `Archived ${identifier.title.value}`),
-          },
-        },
       ],
     };
   },
