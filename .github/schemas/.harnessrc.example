@@ -1,0 +1,8 @@
+{
+  "_comment": "GitHub Project V2 のボード番号を保持する設定ファイルのリファレンス。実値は setup-github-projects が .harnessrc に自動生成する。キー構成・型・意味を公開する。このファイルはテンプレートのため、<number> を実ボード番号へ置き換えること（このままでは JSON として無効）。JSONキー名の正の定義は guides/architecture-design.md 第7章、ボード名・harness-* フィールドの定義は guides/design-spec.md 5.3 を参照。",
+  "projects": {
+    "productBacklog": <number>,
+    "sprintBoard": <number>,
+    "retrospectiveBoard": <number>
+  }
+}
