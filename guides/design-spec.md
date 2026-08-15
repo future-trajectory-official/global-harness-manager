@@ -991,8 +991,9 @@ V2のTEXTフィールド制限）であり、4分割により全文保存が可�
 > 各指標の定性的な説明（ナラティブ）は、`harness-metrics-goal-achievement` /
 > `harness-metrics-estimation-accuracy` / `harness-metrics-quality-integrity` /
 > `harness-metrics-collaboration-discipline` / `harness-metrics-velocity` の各独立フィールドに
-> **必ず記録する**（数値とナラティブの二重保存を避けるため、ナラティブは独立フィールドに一元化）。
-> 特に Velocity は数値（`value`）のみでなく、乖離要因・文脈をナラティブで残す
+> **必ず記録する**（ナラティブの信頼できる情報源は独立フィールドに一元化。Issue Body への表示は
+> あくまで人間向けの補助表現であり、5.4 の従表現に従う）。 特に Velocity
+> は数値（`value`）のみでなく、乖離要因・文脈をナラティブで残す
 > （数値のゲーム化・目的化を防ぐため）。ナラティブ独立フィールドの上限は 1,024文字（Projects V2
 > のTEXTフィールド制限）。
 
@@ -1075,12 +1076,12 @@ V2のTEXTフィールド制限）であり、4分割により全文保存が可�
 - **従**: Issue Body / Comments の Markdown —
   GitHubを直接確認したい場合に備えた補助的な人間可読表現。完全性は保証せず、あくまで参照用。
 
-| 情報                 | AI向け表現（主）                                                      | 人間向け表現（従）                      | 信頼できる情報源  |
-| -------------------- | --------------------------------------------------------------------- | --------------------------------------- | ----------------- |
-| タイトル             | Projects V2 Title                                                     | Issue Title                             | Issue（自動同期） |
-| KPT                  | Projects V2 `harness-kpt-keep/problem/try/advise`                     | Issue Body（ベストエフォート）          | Projects V2       |
-| セッションメトリクス | Projects V2 `harness-metrics-summary` と4指標ナラティブ独立フィールド | —（ナラティブは独立フィールドに一元化） | Projects V2       |
-| スプリントメトリクス | Projects V2 `harness-metrics-summary` と5指標ナラティブ独立フィールド | —（ナラティブは独立フィールドに一元化） | Projects V2       |
+| 情報                 | AI向け表現（主）                                                      | 人間向け表現（従）                                     | 信頼できる情報源  |
+| -------------------- | --------------------------------------------------------------------- | ------------------------------------------------------ | ----------------- |
+| タイトル             | Projects V2 Title                                                     | Issue Title                                            | Issue（自動同期） |
+| KPT                  | Projects V2 `harness-kpt-keep/problem/try/advise`                     | Issue Body（ベストエフォート）                         | Projects V2       |
+| セッションメトリクス | Projects V2 `harness-metrics-summary` と4指標ナラティブ独立フィールド | Issue Body（ベストエフォートで数値＋ナラティブを表示） | Projects V2       |
+| スプリントメトリクス | Projects V2 `harness-metrics-summary` と5指標ナラティブ独立フィールド | Issue Body（ベストエフォートで数値＋ナラティブを表示） | Projects V2       |
 
 #### 同期ルール
 

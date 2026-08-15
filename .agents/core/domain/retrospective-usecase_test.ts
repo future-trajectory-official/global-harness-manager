@@ -40,11 +40,18 @@ function makeKpta(overrides?: Partial<KeepProblemTryAdvice>): KeepProblemTryAdvi
 
 function makeMetrics(overrides?: Partial<SprintMetrics>): SprintMetrics {
   return {
-    goalAchievementRate: 80,
-    estimationAccuracy: 75,
-    qualityIntegrity: 90,
-    collaborationDiscipline: 85,
-    velocity: 6,
+    summary: {
+      goalAchievementScore: 4,
+      estimationAccuracyScore: 3,
+      qualityIntegrityScore: 5,
+      collaborationDisciplineScore: 4,
+      velocity: 6,
+    },
+    goalAchievement: "Goals largely achieved",
+    estimationAccuracy: "Estimation slightly off",
+    qualityIntegrity: "Quality maintained",
+    collaborationDiscipline: "Discipline well followed",
+    velocity: "Velocity stable with minor variance",
     ...overrides,
   };
 }
@@ -53,15 +60,14 @@ function makeReason(description = "Completed retrospective"): ChangeReason {
   return { description };
 }
 
-Deno.test("retrospectiveUseCase - plan should return Plan with plan + execute", () => {
+Deno.test("retrospectiveUseCase - plan should return Plan with plan", () => {
   const plan = retrospectiveUseCase.plan(makeIdentifier(), makeSprint());
   assertEquals(plan.summary, "Plan retrospective: Sprint 15 Retrospective");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "plan");
   assertEquals(plan.steps[1].params.body, "## Sprint Retrospective\n\n- **Sprint**: Sprint 15");
-  assertEquals(plan.steps[2].operation, "execute");
 });
 
 Deno.test("retrospectiveUseCase - plan should throw for empty title", () => {
@@ -72,28 +78,38 @@ Deno.test("retrospectiveUseCase - plan should throw for empty title", () => {
   );
 });
 
-Deno.test("retrospectiveUseCase - execute should return Plan with execute + execute", () => {
-  const plan = retrospectiveUseCase.execute(
-    makeIdentifier(),
+Deno.test("retrospectiveUseCase - recordSprintKpt should return Plan with recordSprintKpt + recordSprintKpt", () => {
+  const plan = retrospectiveUseCase.recordSprintKpt(
+    makeIdentifier({ code: "retro-1" }),
     makeKpta(),
-    makeMetrics(),
     makeReason(),
   );
-  assertEquals(plan.summary, "Execute retrospective: Sprint 15 Retrospective");
+  assertEquals(plan.summary, "Record Sprint KPT: Sprint 15 Retrospective");
   assertEquals(plan.steps.length, 3);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
-  assertEquals(plan.steps[1].operation, "execute");
-  assertEquals(plan.steps[2].operation, "execute");
+  assertEquals(plan.steps[1].operation, "recordSprintKpt");
+  assertEquals(plan.steps[1].params.itemId, "retro-1");
+  const kpta = plan.steps[1].params.kpta as KeepProblemTryAdvice;
+  assertEquals(kpta.keep, "Good communication");
+  assertEquals(kpta.problem, "Context loss on handoff");
+  assertEquals(kpta.try, "Document decisions");
+  assertEquals(kpta.advise, "Use ADR for major decisions");
+  const body = plan.steps[1].params.body as string;
+  assertEquals(body.includes("## KPTA"), true);
+  assertEquals(body.includes("### Keep\nGood communication"), true);
+  assertEquals(body.includes("### Problem\nContext loss on handoff"), true);
+  assertEquals(body.includes("### Try\nDocument decisions"), true);
+  assertEquals(body.includes("### Advise\nUse ADR for major decisions"), true);
+  assertEquals(plan.steps[2].operation, "recordSprintKpt");
 });
 
-Deno.test("retrospectiveUseCase - execute should throw for undefined id", () => {
+Deno.test("retrospectiveUseCase - recordSprintKpt should throw for undefined id", () => {
   assertThrows(
     () =>
-      retrospectiveUseCase.execute(
+      retrospectiveUseCase.recordSprintKpt(
         makeIdentifier({ id: undefined }),
         makeKpta(),
-        makeMetrics(),
         makeReason(),
       ),
     Error,
@@ -101,26 +117,87 @@ Deno.test("retrospectiveUseCase - execute should throw for undefined id", () => 
   );
 });
 
-Deno.test("retrospectiveUseCase - execute should throw for empty kpta keep", () => {
+Deno.test("retrospectiveUseCase - recordSprintKpt should throw for empty reason", () => {
   assertThrows(
-    () =>
-      retrospectiveUseCase.execute(
-        makeIdentifier(),
-        makeKpta({ keep: "" }),
-        makeMetrics(),
-        makeReason(),
-      ),
+    () => retrospectiveUseCase.recordSprintKpt(makeIdentifier(), makeKpta(), makeReason("")),
     Error,
     "INVALID_INPUT",
   );
 });
 
-Deno.test("retrospectiveUseCase - execute should throw for empty kpta problem", () => {
+Deno.test("retrospectiveUseCase - recordSprintKpt should throw for empty kpta keep", () => {
   assertThrows(
     () =>
-      retrospectiveUseCase.execute(
+      retrospectiveUseCase.recordSprintKpt(makeIdentifier(), makeKpta({ keep: "" }), makeReason()),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
+Deno.test("retrospectiveUseCase - recordSprintKpt should throw for empty kpta problem", () => {
+  assertThrows(
+    () =>
+      retrospectiveUseCase.recordSprintKpt(
         makeIdentifier(),
         makeKpta({ problem: "" }),
+        makeReason(),
+      ),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
+Deno.test("retrospectiveUseCase - recordSprintKpt should throw for empty kpta try", () => {
+  assertThrows(
+    () =>
+      retrospectiveUseCase.recordSprintKpt(makeIdentifier(), makeKpta({ try: "" }), makeReason()),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
+Deno.test("retrospectiveUseCase - recordSprintKpt should throw for empty kpta advise", () => {
+  assertThrows(
+    () =>
+      retrospectiveUseCase.recordSprintKpt(
+        makeIdentifier(),
+        makeKpta({ advise: "" }),
+        makeReason(),
+      ),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
+Deno.test("retrospectiveUseCase - recordSprintMetrics should return Plan with recordSprintMetrics + recordSprintMetrics", () => {
+  const plan = retrospectiveUseCase.recordSprintMetrics(
+    makeIdentifier({ code: "retro-1" }),
+    makeMetrics(),
+    makeReason(),
+  );
+  assertEquals(plan.summary, "Record Sprint Metrics: Sprint 15 Retrospective");
+  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps[0].entity, "Scope");
+  assertEquals(plan.steps[0].operation, "resolve");
+  assertEquals(plan.steps[1].operation, "recordSprintMetrics");
+  assertEquals(plan.steps[1].params.itemId, "retro-1");
+  const metrics = plan.steps[1].params.metrics as SprintMetrics;
+  assertEquals(metrics.summary.goalAchievementScore, 4);
+  assertEquals(metrics.summary.velocity, 6);
+  assertEquals(metrics.goalAchievement, "Goals largely achieved");
+  const body = plan.steps[1].params.body as string;
+  assertEquals(body.includes("## Sprint Metrics"), true);
+  assertEquals(body.includes("**Goal Achievement Score**: 4"), true);
+  assertEquals(body.includes("**Velocity Value**: 6"), true);
+  assertEquals(body.includes("**Goal Achievement**: Goals largely achieved"), true);
+  assertEquals(plan.steps[2].operation, "recordSprintMetrics");
+});
+
+Deno.test("retrospectiveUseCase - recordSprintMetrics should throw for undefined id", () => {
+  assertThrows(
+    () =>
+      retrospectiveUseCase.recordSprintMetrics(
+        makeIdentifier({ id: undefined }),
         makeMetrics(),
         makeReason(),
       ),
@@ -129,13 +206,20 @@ Deno.test("retrospectiveUseCase - execute should throw for empty kpta problem", 
   );
 });
 
-Deno.test("retrospectiveUseCase - execute should throw for empty kpta try", () => {
+Deno.test("retrospectiveUseCase - recordSprintMetrics should throw for empty reason", () => {
+  assertThrows(
+    () => retrospectiveUseCase.recordSprintMetrics(makeIdentifier(), makeMetrics(), makeReason("")),
+    Error,
+    "INVALID_INPUT",
+  );
+});
+
+Deno.test("retrospectiveUseCase - recordSprintMetrics should throw for empty narrative", () => {
   assertThrows(
     () =>
-      retrospectiveUseCase.execute(
+      retrospectiveUseCase.recordSprintMetrics(
         makeIdentifier(),
-        makeKpta({ try: "" }),
-        makeMetrics(),
+        makeMetrics({ goalAchievement: "" }),
         makeReason(),
       ),
     Error,
@@ -143,13 +227,12 @@ Deno.test("retrospectiveUseCase - execute should throw for empty kpta try", () =
   );
 });
 
-Deno.test("retrospectiveUseCase - execute should throw for empty kpta advise", () => {
+Deno.test("retrospectiveUseCase - recordSprintMetrics should throw for negative score", () => {
   assertThrows(
     () =>
-      retrospectiveUseCase.execute(
+      retrospectiveUseCase.recordSprintMetrics(
         makeIdentifier(),
-        makeKpta({ keep: "" }),
-        makeMetrics(),
+        makeMetrics({ summary: { ...makeMetrics().summary, goalAchievementScore: -1 } }),
         makeReason(),
       ),
     Error,

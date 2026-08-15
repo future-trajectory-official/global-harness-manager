@@ -12,11 +12,16 @@ import { workPackageUseCase } from "../../../../../core/domain/workpackage-useca
 Deno.test("record_metrics - should generate plan with all fields", () => {
   const identifier = wpId("Test WP", "node-id", "42");
   const metrics: SessionMetrics = {
-    intentAlignmentRate: 5,
-    constraintAdherenceScore: 4,
-    contextExtractionQuality: 3,
-    workSizeStability: 5,
-    comment: "Good session",
+    summary: {
+      intentAlignmentScore: 5,
+      constraintAdherenceScore: 4,
+      contextExtractionScore: 3,
+      workSizeStabilityScore: 5,
+    },
+    intentAlignment: "Aligned well",
+    constraintAdherence: "Followed constraints",
+    contextExtraction: "Captured context",
+    workSizeStability: "Stable size",
   };
   const plan = workPackageUseCase.recordSessionMetrics(identifier, metrics);
   assertEquals(plan.steps.length, 2);
@@ -33,11 +38,16 @@ Deno.test("record_metrics - should generate plan with all fields", () => {
 Deno.test("record_metrics - should throw for missing identifier id", () => {
   const identifier = wpId("Test WP");
   const metrics: SessionMetrics = {
-    intentAlignmentRate: 5,
-    constraintAdherenceScore: 5,
-    contextExtractionQuality: 5,
-    workSizeStability: 5,
-    comment: "",
+    summary: {
+      intentAlignmentScore: 5,
+      constraintAdherenceScore: 5,
+      contextExtractionScore: 5,
+      workSizeStabilityScore: 5,
+    },
+    intentAlignment: "",
+    constraintAdherence: "",
+    contextExtraction: "",
+    workSizeStability: "",
   };
   assertThrows(
     () => workPackageUseCase.recordSessionMetrics(identifier, metrics),
@@ -48,40 +58,50 @@ Deno.test("record_metrics - should throw for missing identifier id", () => {
 
 /**
  * @description 全スコアがMarkdown形式でbodyに正しくフォーマットされること
- * @verify body文字列に全スコア値とコメントが含まれていること
+ * @verify body文字列に全スコア値とナラティブが含まれていること
  */
 Deno.test("record_metrics - should include body with all scores", () => {
   const identifier = wpId("Test WP", "node-id", "42");
   const metrics: SessionMetrics = {
-    intentAlignmentRate: 3,
-    constraintAdherenceScore: 4,
-    contextExtractionQuality: 2,
-    workSizeStability: 5,
-    comment: "Needs improvement on context extraction",
+    summary: {
+      intentAlignmentScore: 3,
+      constraintAdherenceScore: 4,
+      contextExtractionScore: 2,
+      workSizeStabilityScore: 5,
+    },
+    intentAlignment: "Aligned moderately",
+    constraintAdherence: "Followed constraints",
+    contextExtraction: "Needs improvement on context extraction",
+    workSizeStability: "Stable size",
   };
   const plan = workPackageUseCase.recordSessionMetrics(identifier, metrics);
   const body = plan.steps[1].params.body;
   assertEquals(typeof body, "string");
   const bodyStr = body as string;
-  assertEquals(bodyStr.includes("**Intent Alignment Rate**: 3"), true);
+  assertEquals(bodyStr.includes("**Intent Alignment Score**: 3"), true);
   assertEquals(bodyStr.includes("**Constraint Adherence Score**: 4"), true);
-  assertEquals(bodyStr.includes("**Context Extraction Quality**: 2"), true);
-  assertEquals(bodyStr.includes("**Work Size Stability**: 5"), true);
+  assertEquals(bodyStr.includes("**Context Extraction Score**: 2"), true);
+  assertEquals(bodyStr.includes("**Work Size Stability Score**: 5"), true);
   assertEquals(bodyStr.includes("Needs improvement"), true);
 });
 
 /**
- * @description commentが空文字でも正しくPlanが生成されること
+ * @description ナラティブが空文字でも正しくPlanが生成されること
  * @verify operationが"recordSessionMetrics"であること
  */
-Deno.test("record_metrics - should handle empty comment", () => {
+Deno.test("record_metrics - should handle empty narratives", () => {
   const identifier = wpId("Test WP", "node-id", "42");
   const metrics: SessionMetrics = {
-    intentAlignmentRate: 5,
-    constraintAdherenceScore: 5,
-    contextExtractionQuality: 5,
-    workSizeStability: 5,
-    comment: "",
+    summary: {
+      intentAlignmentScore: 5,
+      constraintAdherenceScore: 5,
+      contextExtractionScore: 5,
+      workSizeStabilityScore: 5,
+    },
+    intentAlignment: "",
+    constraintAdherence: "",
+    contextExtraction: "",
+    workSizeStability: "",
   };
   const plan = workPackageUseCase.recordSessionMetrics(identifier, metrics);
   assertEquals(plan.steps.length, 2);
@@ -96,11 +116,11 @@ const scriptPath = getSkillScriptPath(
 
 const validInput = JSON.stringify({
   identifier: { title: "WP サンプル", id: "42", code: "wp-42" },
-  intentAlignmentRate: 5,
+  intentAlignmentScore: 5,
   constraintAdherenceScore: 4,
-  contextExtractionQuality: 3,
-  workSizeStability: 5,
-  comment: "dry-run 検証",
+  contextExtractionScore: 3,
+  workSizeStabilityScore: 5,
+  intentAlignment: "dry-run 検証",
 });
 
 /**

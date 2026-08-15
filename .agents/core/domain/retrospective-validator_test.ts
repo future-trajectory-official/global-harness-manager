@@ -24,11 +24,18 @@ function makeRetroData(overrides?: Partial<RetrospectiveData>): RetrospectiveDat
       advise: "Use ADR",
     },
     metrics: {
-      goalAchievementRate: 80,
-      estimationAccuracy: 75,
-      qualityIntegrity: 90,
-      collaborationDiscipline: 85,
-      velocity: 6,
+      summary: {
+        goalAchievementScore: 4,
+        estimationAccuracyScore: 3,
+        qualityIntegrityScore: 5,
+        collaborationDisciplineScore: 4,
+        velocity: 6,
+      },
+      goalAchievement: "Goals largely achieved",
+      estimationAccuracy: "Estimation slightly off",
+      qualityIntegrity: "Quality maintained",
+      collaborationDiscipline: "Discipline well followed",
+      velocity: "Velocity stable with minor variance",
     },
     state: "open",
     ...overrides,
@@ -43,19 +50,34 @@ Deno.test("RetroValidator - plan should always be VALID", () => {
   assertEquals(result, VALID);
 });
 
-// ======== execute ========
+// ======== recordSprintKpt ========
 
-Deno.test("RetroValidator - execute should be VALID for open state", () => {
+Deno.test("RetroValidator - recordSprintKpt should be VALID for open state", () => {
   const from = makeRetroData();
-  const result = retrospectiveValidator.validate("execute", from, from);
+  const result = retrospectiveValidator.validate("recordSprintKpt", from, from);
   assertEquals(result, VALID);
 });
 
-Deno.test("RetroValidator - execute should be INVALID for closed state", () => {
+Deno.test("RetroValidator - recordSprintKpt should be INVALID for closed state", () => {
   const from = makeRetroData({ state: "closed" });
-  const result = retrospectiveValidator.validate("execute", from, from);
+  const result = retrospectiveValidator.validate("recordSprintKpt", from, from);
   assertEquals(result.valid, false);
-  assertEquals(result.errors[0], "実行はopen状態のRetrospectiveのみ可能です");
+  assertEquals(result.errors[0], "スプリントKPTの記録はopen状態のRetrospectiveのみ可能です");
+});
+
+// ======== recordSprintMetrics ========
+
+Deno.test("RetroValidator - recordSprintMetrics should be VALID for open state", () => {
+  const from = makeRetroData();
+  const result = retrospectiveValidator.validate("recordSprintMetrics", from, from);
+  assertEquals(result, VALID);
+});
+
+Deno.test("RetroValidator - recordSprintMetrics should be INVALID for closed state", () => {
+  const from = makeRetroData({ state: "closed" });
+  const result = retrospectiveValidator.validate("recordSprintMetrics", from, from);
+  assertEquals(result.valid, false);
+  assertEquals(result.errors[0], "スプリントメトリクスの記録はopen状態のRetrospectiveのみ可能です");
 });
 
 // ======== archive ========
@@ -86,11 +108,11 @@ Deno.test("RetroValidator - archive should be INVALID without metrics", () => {
   assertEquals(result.errors[0], "metricsが未設定のRetrospectiveはアーカイブできません");
 });
 
-// ======== find / search ========
+// ======== view / search ========
 
-Deno.test("RetroValidator - find should always be VALID", () => {
+Deno.test("RetroValidator - view should always be VALID", () => {
   const from = makeRetroData();
-  const result = retrospectiveValidator.validate("find", from, from);
+  const result = retrospectiveValidator.validate("view", from, from);
   assertEquals(result, VALID);
 });
 

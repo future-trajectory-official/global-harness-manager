@@ -51,3 +51,47 @@ export function assertEffortSummary(
     }
   }
 }
+
+/**
+ * スプリントメトリクス（SprintMetrics）の数値サマリとナラティブを検証する。
+ * - summary の各スコア（1-5）と velocity が正の有限数であること
+ * - 5指標それぞれのナラティブが空でないこと
+ */
+export function assertSprintMetrics(
+  metrics: {
+    summary: {
+      goalAchievementScore: number;
+      estimationAccuracyScore: number;
+      qualityIntegrityScore: number;
+      collaborationDisciplineScore: number;
+      velocity: number;
+    };
+    goalAchievement: string;
+    estimationAccuracy: string;
+    qualityIntegrity: string;
+    collaborationDiscipline: string;
+    velocity: string;
+  },
+): void {
+  const label = "SprintMetrics";
+  for (const [key, value] of Object.entries(metrics.summary)) {
+    if (!Number.isFinite(value) || value < 0) {
+      throw new Error(
+        `INVALID_INPUT: ${label}.summary.${key} must be a finite non-negative number`,
+      );
+    }
+  }
+  for (
+    const [key, value] of Object.entries({
+      goalAchievement: metrics.goalAchievement,
+      estimationAccuracy: metrics.estimationAccuracy,
+      qualityIntegrity: metrics.qualityIntegrity,
+      collaborationDiscipline: metrics.collaborationDiscipline,
+      velocity: metrics.velocity,
+    })
+  ) {
+    if (!value || value.trim() === "") {
+      throw new Error(`INVALID_INPUT: ${label}.${key} must not be empty`);
+    }
+  }
+}
