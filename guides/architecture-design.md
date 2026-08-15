@@ -1298,12 +1298,12 @@ sequenceDiagram
     else 存在しない
         Domain->>GW: createBoard("Product Backlog", owner)
         GW->>GH: gh project create
-        GH-->>GW: BoardOutput {id: 12, name: "Product Backlog"}
+        GH-->>GW: BoardOutput {id: 13, name: "Product Backlog"}
         GW-->>Domain: BoardOutput
-        Domain-->>Skill: BoardOutput {id: 12, name: "Product Backlog"}
+        Domain-->>Skill: BoardOutput {id: 13, name: "Product Backlog"}
     end
 
-    Skill->>GW: writeConfig(.harnessrc, {projects: {productBacklog: 10, sprint: 11}})
+    Skill->>GW: writeConfig(.harnessrc, {projects: {productBacklog: 10, sprintBoard: 11, retrospectiveBoard: 12}})
     GW->>GH: (ファイルI/O - ローカル)
     GW-->>Skill: OK
     Skill-->>User: "Project IDを自動解決しました"
@@ -1315,9 +1315,11 @@ sequenceDiagram
 
 ```json
 {
+  "_comment": "GitHub Project V2 のボード番号を保持する設定ファイル。setup-github-projects スキルが自動生成し、Gateway 層（composition-root.ts）が読み込む。追跡対象外のため、キー構成の公開は .harnessrc.example を参照。JSONキー名の正の定義は本ファイル（第7章）、ボード名・harness-* フィールドの定義は guides/design-spec.md 5.3 を参照。",
   "projects": {
     "productBacklog": 10,
-    "sprint": 11
+    "sprintBoard": 11,
+    "retrospectiveBoard": 12
   }
 }
 ```
@@ -1326,11 +1328,12 @@ sequenceDiagram
 
 ```json
 {
+  "_comment": "GitHub Project V2 のボード番号を保持する設定ファイルのリファレンス。実値は setup-github-projects が .harnessrc に自動生成する。キー構成・型・意味を公開する。このファイルはテンプレートのため、<number> を実ボード番号へ置き換えること（このままでは JSON として無効）。JSONキー名の正の定義は guides/architecture-design.md 第7章、ボード名・harness-* フィールドの定義は guides/design-spec.md 5.3 を参照。",
   "projects": {
-    "productBacklog": 10,
-    "sprint": 11
-  },
-  "_comment": "このファイルは手動編集時のリファレンスです。通常は setup-github-projects が自動生成します。"
+    "productBacklog": <number>,
+    "sprintBoard": <number>,
+    "retrospectiveBoard": <number>
+  }
 }
 ```
 
