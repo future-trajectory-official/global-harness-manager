@@ -15,6 +15,7 @@ import { identify } from "../domain/types.ts";
 import type { PlanGateway } from "../domain/plan-gateway.ts";
 import { ProductBacklogItemHandler } from "./product-backlog-item-handler.ts";
 import { WorkPackageHandler } from "./work-package-handler.ts";
+import { RetrospectiveHandler } from "./retrospective-handler.ts";
 
 export type CommandRunner = (cmd: string, args: string[]) => Promise<ExecuteResult>;
 
@@ -63,7 +64,11 @@ export interface PlanResult extends ExecutionResult {
 export class PlanGatewayAdapter implements PlanGateway {
   private readonly stepHandlers = new Map<EntityType, Map<StepOperation, OperationHandler>>();
   private resolvedScope: EntityScope | null = null;
-  private projectConfig: { productBacklogBoardNumber?: number; sprintBoardNumber?: number } = {};
+  private projectConfig: {
+    productBacklogBoardNumber?: number;
+    sprintBoardNumber?: number;
+    retrospectiveBoardNumber?: number;
+  } = {};
 
   constructor(
     readonly runCommand: CommandRunner = (cmd, args) => executeCommand({ cmd, args }),
@@ -240,6 +245,9 @@ export class PlanGatewayAdapter implements PlanGateway {
 
     // === WorkPackage 操作の登録 ===
     new WorkPackageHandler(this).register(this.stepHandlers);
+
+    // === Retrospective 操作の登録 ===
+    new RetrospectiveHandler(this).register(this.stepHandlers);
   }
 
   /** テスト用にscopeを直接設定する。通常はScope.resolve Stepで設定される。 */
@@ -257,11 +265,21 @@ export class PlanGatewayAdapter implements PlanGateway {
     return this.projectConfig.sprintBoardNumber;
   }
 
+  /** Retrospective Board のプロジェクト番号。Handlerから参照される。 */
+  get retrospectiveBoardNumber(): number | undefined {
+    return this.projectConfig.retrospectiveBoardNumber;
+  }
+
   /** Project V2 ボード番号を設定する。テスト用および初期化時に使用する。 */
-  setProjectBoardNumbers(productBacklog?: number, sprint?: number): void {
+  setProjectBoardNumbers(
+    productBacklog?: number,
+    sprint?: number,
+    retrospective?: number,
+  ): void {
     this.projectConfig = {
       productBacklogBoardNumber: productBacklog,
       sprintBoardNumber: sprint,
+      retrospectiveBoardNumber: retrospective,
     };
   }
 
