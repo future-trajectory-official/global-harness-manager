@@ -1,6 +1,6 @@
 ---
 name: evaluate-sprint-metrics
-description: スプリント全体のベロシティの安定性、テスト品質の健全性、プロセス規律の遵守状況、およびセッションメトリクス履歴の集計・推移評価を行う。
+description: スプリント全体のベロシティの安定性、テスト品質の健全性、プロセス規律の遵守状況、およびセッションメトリクス履歴の集計・推移評価を行う。評価結果の永続化は record-sprint-metrics（sprint-end の Phase 7）が担う。
 tags:
   trigger:
     - sprint-end
@@ -11,6 +11,11 @@ tags:
 # evaluate-sprint-metrics
 
 スプリント全体の協働と開発の品質を定量的に測定し、推移を分析するための専用スキルです。
+
+**責務の境界**:
+本スキルはスプリントの**定量評価・分析**（4指標の採点、予実ギャップ分析、サマリーの提示）を担います。
+評価結果の対象スプリントへの**永続化（記録）**は `record-sprint-metrics`（sprint-end の Phase
+7）が担うため、 本スキルでは記録実行を伴いません。
 
 ## 🚀 Quick-Start (実行手順)
 
