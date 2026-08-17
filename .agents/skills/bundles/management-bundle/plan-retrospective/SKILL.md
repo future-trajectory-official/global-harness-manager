@@ -1,16 +1,16 @@
 ---
 name: plan-retrospective
-description: スプリント終了時に、対象スプリントの振り返りを作成する。
+description: スプリント開始時に、スプリント終了時の記録（KPT・評価）に備えて振り返りを作成する。
 tags:
   - trigger: plan-retrospective
   - trigger: create-retrospective
-  - trigger: sprint-end
+  - trigger: sprint-start
   - category: management
 ---
 
 # plan-retrospective
 
-スプリント終了時に、対象スプリントの**振り返り**を新規作成します。作成した振り返りに、後続の
+スプリント開始時に、対象スプリントの**振り返り**を新規作成します。作成した振り返りに、スプリント終了時に
 `record-sprint-kpt`（KPT記録）と
 `record-sprint-metrics`（スプリント評価の記録）で内容を記録していきます。
 
