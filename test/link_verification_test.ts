@@ -62,7 +62,6 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
       "designer.md",
       "README.md",
       "metrics-guide.md",
-      "retrospective-guide.md",
       "review-guide.md",
       "metrics.jsonl",
     ];
