@@ -37,7 +37,7 @@ Deno.test("record_sprint_metrics - recordSprintMetrics builds correct plan", () 
     VALID_INPUT.metrics,
     VALID_INPUT.reason,
   ) as Plan;
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[1].operation, "recordSprintMetrics");
   const params = plan.steps[1].params as { itemId: string; metrics: typeof VALID_INPUT.metrics };
   assertEquals(params.itemId, "670");

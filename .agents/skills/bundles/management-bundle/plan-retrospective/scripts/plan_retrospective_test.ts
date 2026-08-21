@@ -6,7 +6,7 @@ import { validateInput } from "./plan_retrospective.ts";
 
 /**
  * @description plan が正しい Plan（Retrospective plan操作）を生成すること
- * @verify step数=2、operation が "plan"、title/body が反映されること
+ * @verify step数=2、operation が "plan"、title/body/sprint が反映されること
  */
 Deno.test("plan_retrospective - plan operation builds correct plan", () => {
   const scope = { owner: "future-trajectory-official", repository: "global-harness-manager" };
@@ -17,9 +17,10 @@ Deno.test("plan_retrospective - plan operation builds correct plan", () => {
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[1].entity, "Retrospective");
   assertEquals(plan.steps[1].operation, "plan");
-  const params = plan.steps[1].params as { title: string; body: string };
+  const params = plan.steps[1].params as { title: string; body: string; sprint: string };
   assertEquals(params.title, "Sprint 20 Retrospective");
-  assertEquals(params.body.includes("**Sprint**: Sprint 20"), true);
+  assertEquals(params.body, "");
+  assertEquals(params.sprint, "Sprint 20");
 });
 
 /**

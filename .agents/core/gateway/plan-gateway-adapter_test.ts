@@ -3916,10 +3916,11 @@ Deno.test("ProductBacklogItem unassignFromFeature - should remove parent via Gra
 // ======== Retrospective Integration Tests ========
 
 /**
- * ユースケース: Retrospective の plan 操作が type:Retrospective ラベルで Issue を作成すること
- * 検証意図: handleCreateItem が type:Retrospective で呼ばれ、gh issue create --label type:Retrospective が発行されることを確認する
+ * ユースケース: Retrospective の plan 操作が type:Retrospective ラベル＋Milestone（Sprint）で Issue を作成すること
+ * 検証意図: handleCreateItem が type:Retrospective で呼ばれ、gh issue create --label type:Retrospective と
+ *           --milestone <sprint> が発行されることを確認する
  */
-Deno.test("Retrospective plan - should create issue with type:Retrospective label", async () => {
+Deno.test("Retrospective plan - should create issue with type:Retrospective label and milestone", async () => {
   const { runner, calls } = mockRunner();
   const adapter = new PlanGatewayAdapter(runner);
   adapter.setScope(OWNER, REPO);
@@ -3930,7 +3931,8 @@ Deno.test("Retrospective plan - should create issue with type:Retrospective labe
       operation: "plan",
       params: {
         title: "Sprint 20 Retrospective",
-        body: "## Sprint Retrospective\n\n- **Sprint**: Sprint 20",
+        body: "",
+        sprint: "Sprint 20",
       },
     }],
   });
@@ -3939,6 +3941,53 @@ Deno.test("Retrospective plan - should create issue with type:Retrospective labe
   const createCall = calls.find((c) => c.args.includes("create"));
   assert(createCall, "gh issue create should be called");
   assertStringIncludes(createCall.args.join(" "), "--label type:Retrospective");
+  assertStringIncludes(createCall.args.join(" "), "--milestone Sprint 20");
+});
+
+/**
+ * ユースケース: Retrospective の plan 操作が作成した Issue を Retrospective Board へ追加すること
+ * 検証意図: retrospectiveBoardNumber が設定されている場合、addItemToProject が呼ばれることを確認する
+ */
+Deno.test("Retrospective plan - should add created issue to Retrospective Board", async () => {
+  let idx = 0;
+  const calls: { cmd: string; args: string[] }[] = [];
+  const responses: { code: number; stdout: string; stderr: string }[] = [
+    // 1: gh issue create
+    { code: 0, stdout: "https://github.com/my-org/my-repo/issues/101", stderr: "" },
+    // 2: gh issue view <id> --json id
+    { code: 0, stdout: '{"id":"NODE_RETRO"}', stderr: "" },
+    // 3: gh api graphql getProjectIdQuery
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_RETRO"}}}}', stderr: "" },
+    // 4: gh api graphql addItemMutation
+    {
+      code: 0,
+      stdout: '{"data":{"addProjectV2ItemById":{"item":{"id":"ITEM_RETRO"}}}}',
+      stderr: "",
+    },
+  ];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return Promise.resolve(responses[idx++] ?? { code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99, 12);
+  const result = await adapter.execute({
+    summary: "Plan retrospective: Sprint 20 Retrospective",
+    steps: [{
+      entity: "Retrospective",
+      operation: "plan",
+      params: {
+        title: "Sprint 20 Retrospective",
+        body: "",
+        sprint: "Sprint 20",
+      },
+    }],
+  });
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  const addCall = calls.find((c) => c.args.some((a) => a.includes("addProjectV2ItemById")));
+  assert(addCall, "addItemToProject should be called");
 });
 
 /**

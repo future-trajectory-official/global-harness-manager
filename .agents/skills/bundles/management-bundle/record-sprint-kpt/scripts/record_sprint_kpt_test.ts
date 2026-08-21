@@ -33,7 +33,7 @@ Deno.test("record_sprint_kpt - recordSprintKpt builds correct plan", () => {
     VALID_INPUT.kpta,
     VALID_INPUT.reason,
   ) as Plan;
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[1].operation, "recordSprintKpt");
   const params = plan.steps[1].params as { itemId: string; kpta: typeof VALID_INPUT.kpta };
   assertEquals(params.itemId, "670");
