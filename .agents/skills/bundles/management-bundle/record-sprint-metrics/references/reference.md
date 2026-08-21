@@ -65,9 +65,9 @@
 
 ### dry-run 出力の解釈
 
-`resolvedTarget` が解決された対象を、`steps` に含まれる記録ステップの `params` が記録内容と
-変更理由を示す。`code` 未指定の dry-run では `resolvedTarget` に `{"note":"実行時に検索します"}`
-が入る（dry-run は検索を実行しない）。
+`resolvedTarget` が解決された対象を、`steps` に含まれる記録ステップの `params` が記録内容を示す。
+`code` 未指定の dry-run では `resolvedTarget` に `{"note":"実行時に検索します"}` が入る（dry-run
+は検索を実行しない）。
 
 ```json
 {
@@ -80,6 +80,7 @@
       "operation": "recordSprintMetrics",
       "params": {
         "itemId": "670",
+        "body": "## Sprint Metrics\n\n### Goal Achievement\n- score: 5\n- narrative: ...\n\n### Estimation Accuracy\n- score: 4\n- narrative: ...",
         "metrics": {
           "summary": {
             "goalAchievementScore": 5,
@@ -90,11 +91,6 @@
           }
         }
       }
-    },
-    {
-      "entity": "Retrospective",
-      "operation": "recordSprintMetrics",
-      "params": { "itemId": "670", "body": "## Record Sprint Metrics\n\n<変更理由>" }
     }
   ]
 }
@@ -106,7 +102,6 @@
 📋 Plan: <summary>
   • 対象: <title> (#<code>)
   • 記録: 5指標（目標達成度 / 見積精度 / 品質維持 / 協働規律 / ベロシティ）
-  • 変更履歴: <reason.description>
 ```
 
 ### 実行例

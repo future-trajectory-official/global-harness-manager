@@ -67,7 +67,8 @@ Deno.test("retrospectiveUseCase - plan should return Plan with plan", () => {
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "plan");
-  assertEquals(plan.steps[1].params.body, "## Sprint Retrospective\n\n- **Sprint**: Sprint 15");
+  assertEquals(plan.steps[1].params.body, "");
+  assertEquals(plan.steps[1].params.sprint, "Sprint 15");
 });
 
 Deno.test("retrospectiveUseCase - plan should throw for empty title", () => {
@@ -78,14 +79,14 @@ Deno.test("retrospectiveUseCase - plan should throw for empty title", () => {
   );
 });
 
-Deno.test("retrospectiveUseCase - recordSprintKpt should return Plan with recordSprintKpt + recordSprintKpt", () => {
+Deno.test("retrospectiveUseCase - recordSprintKpt should return Plan with recordSprintKpt step", () => {
   const plan = retrospectiveUseCase.recordSprintKpt(
     makeIdentifier({ code: "retro-1" }),
     makeKpta(),
     makeReason(),
   );
   assertEquals(plan.summary, "Record Sprint KPT: Sprint 15 Retrospective");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "recordSprintKpt");
@@ -101,7 +102,6 @@ Deno.test("retrospectiveUseCase - recordSprintKpt should return Plan with record
   assertEquals(body.includes("### Problem\nContext loss on handoff"), true);
   assertEquals(body.includes("### Try\nDocument decisions"), true);
   assertEquals(body.includes("### Advise\nUse ADR for major decisions"), true);
-  assertEquals(plan.steps[2].operation, "recordSprintKpt");
 });
 
 Deno.test("retrospectiveUseCase - recordSprintKpt should throw for undefined id", () => {
@@ -169,14 +169,14 @@ Deno.test("retrospectiveUseCase - recordSprintKpt should throw for empty kpta ad
   );
 });
 
-Deno.test("retrospectiveUseCase - recordSprintMetrics should return Plan with recordSprintMetrics + recordSprintMetrics", () => {
+Deno.test("retrospectiveUseCase - recordSprintMetrics should return Plan with recordSprintMetrics step", () => {
   const plan = retrospectiveUseCase.recordSprintMetrics(
     makeIdentifier({ code: "retro-1" }),
     makeMetrics(),
     makeReason(),
   );
   assertEquals(plan.summary, "Record Sprint Metrics: Sprint 15 Retrospective");
-  assertEquals(plan.steps.length, 3);
+  assertEquals(plan.steps.length, 2);
   assertEquals(plan.steps[0].entity, "Scope");
   assertEquals(plan.steps[0].operation, "resolve");
   assertEquals(plan.steps[1].operation, "recordSprintMetrics");
@@ -187,10 +187,12 @@ Deno.test("retrospectiveUseCase - recordSprintMetrics should return Plan with re
   assertEquals(metrics.goalAchievement, "Goals largely achieved");
   const body = plan.steps[1].params.body as string;
   assertEquals(body.includes("## Sprint Metrics"), true);
-  assertEquals(body.includes("**Goal Achievement Score**: 4"), true);
-  assertEquals(body.includes("**Velocity Value**: 6"), true);
-  assertEquals(body.includes("**Goal Achievement**: Goals largely achieved"), true);
-  assertEquals(plan.steps[2].operation, "recordSprintMetrics");
+  assertEquals(body.includes("### Goal Achievement"), true);
+  assertEquals(body.includes("- score: 4"), true);
+  assertEquals(body.includes("- narrative: Goals largely achieved"), true);
+  assertEquals(body.includes("### Velocity"), true);
+  assertEquals(body.includes("- value: 6"), true);
+  assertEquals(body.includes("- narrative: Velocity stable with minor variance"), true);
 });
 
 Deno.test("retrospectiveUseCase - recordSprintMetrics should throw for undefined id", () => {

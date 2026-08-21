@@ -31,13 +31,12 @@ import {
   assertTitleNonEmpty,
 } from "./validation.ts";
 
-/** Retrospective Issue の初期本文を生成する。スプリント情報をヘッダーとして記述する。 */
-function formatRetroBody(sprint: SprintIdentifier): string {
-  const lines: string[] = [];
-  lines.push("## Sprint Retrospective");
-  lines.push("");
-  lines.push(`- **Sprint**: ${sprint.title.value}`);
-  return lines.join("\n");
+/**
+ * Retrospective Issue の初期本文を生成する。
+ * タイトルと Milestone 紐付けでスプリントが特定できるため、本文は最小限とする。
+ */
+function formatRetroBody(_sprint: SprintIdentifier): string {
+  return "";
 }
 
 /** KPTA（Keep/Problem/Try/Advise）の本文をMarkdown形式で生成する。 */
@@ -59,29 +58,52 @@ function formatKptaBody(kpta: KeepProblemTryAdvice): string {
   return lines.join("\n");
 }
 
-/** スプリントメトリクスの本文をMarkdown形式で生成する。5指標（達成度・正確性・品質・規律・ベロシティ）のスコアとナラティブを表示する。 */
+/**
+ * スプリントメトリクスの本文をMarkdown形式で生成する。
+ * 5指標（達成度・正確性・品質・規律・ベロシティ）を「### 指標名 / - score|value: n / - narrative: 文章」の
+ * 構造化形式で表示する。SprintMetrics オブジェクトの構造（summary の score と各ナラティブ）をそのまま反映する。
+ */
 function formatMetricsBody(metrics: SprintMetrics): string {
   const lines: string[] = [];
   lines.push("## Sprint Metrics");
   lines.push("");
-  lines.push(`- **Goal Achievement Score**: ${metrics.summary.goalAchievementScore}`);
-  lines.push(`- **Estimation Accuracy Score**: ${metrics.summary.estimationAccuracyScore}`);
-  lines.push(`- **Quality Integrity Score**: ${metrics.summary.qualityIntegrityScore}`);
-  lines.push(
-    `- **Collaboration Discipline Score**: ${metrics.summary.collaborationDisciplineScore}`,
-  );
-  lines.push(`- **Velocity Value**: ${metrics.summary.velocity}`);
-  lines.push(`- **Goal Achievement**: ${metrics.goalAchievement}`);
-  lines.push(`- **Estimation Accuracy**: ${metrics.estimationAccuracy}`);
-  lines.push(`- **Quality Integrity**: ${metrics.qualityIntegrity}`);
-  lines.push(`- **Collaboration Discipline**: ${metrics.collaborationDiscipline}`);
-  lines.push(`- **Velocity**: ${metrics.velocity}`);
+  const items: Array<{ name: string; value: string | number; narrative: string }> = [
+    {
+      name: "Goal Achievement",
+      value: metrics.summary.goalAchievementScore,
+      narrative: metrics.goalAchievement,
+    },
+    {
+      name: "Estimation Accuracy",
+      value: metrics.summary.estimationAccuracyScore,
+      narrative: metrics.estimationAccuracy,
+    },
+    {
+      name: "Quality Integrity",
+      value: metrics.summary.qualityIntegrityScore,
+      narrative: metrics.qualityIntegrity,
+    },
+    {
+      name: "Collaboration Discipline",
+      value: metrics.summary.collaborationDisciplineScore,
+      narrative: metrics.collaborationDiscipline,
+    },
+    { name: "Velocity", value: metrics.summary.velocity, narrative: metrics.velocity },
+  ];
+  items.forEach((item, i) => {
+    if (i > 0) lines.push("");
+    lines.push(`### ${item.name}`);
+    const key = item.name === "Velocity" ? "value" : "score";
+    lines.push(`- ${key}: ${item.value}`);
+    lines.push(`- narrative: ${item.narrative}`);
+  });
   return lines.join("\n");
 }
 
 /**
  * Retrospective の記録操作（recordSprintKpt / recordSprintMetrics）の Plan を生成する。
- * 「記録Step（構造化params書込）＋変更理由コメントStep」の3Step構成を共通化する。
+ * 記録Step（構造化params書込＋Body追記）のみの2Step構成。
+ * 変更理由コメントは不要（投入タイミングや後からの軌道修正がないため）なので追加しない。
  */
 function buildRecordPlan(options: {
   identifier: RetrospectiveIdentifier;
@@ -89,8 +111,6 @@ function buildRecordPlan(options: {
   summary: string;
   body: string;
   writeParams: Record<string, unknown>;
-  commentTitle: string;
-  reason: ChangeReason;
 }): Plan {
   return {
     summary: options.summary,
@@ -103,14 +123,6 @@ function buildRecordPlan(options: {
           itemId: options.identifier.code,
           body: options.body,
           ...options.writeParams,
-        },
-      },
-      {
-        entity: "Retrospective",
-        operation: options.operation,
-        params: {
-          itemId: options.identifier.code,
-          body: formatEditComment(options.commentTitle, options.reason.description),
         },
       },
     ],
@@ -181,6 +193,7 @@ export const retrospectiveUseCase: RetrospectiveUseCase & {
           params: {
             title: identifier.title.value,
             body: formatRetroBody(sprint),
+            sprint: sprint.title.value,
           },
         },
       ],
@@ -201,8 +214,6 @@ export const retrospectiveUseCase: RetrospectiveUseCase & {
       summary: `Record Sprint KPT: ${identifier.title.value}`,
       body: formatKptaBody(kpta),
       writeParams: { kpta },
-      commentTitle: "Record Sprint KPT",
-      reason,
     });
   },
 
@@ -217,8 +228,6 @@ export const retrospectiveUseCase: RetrospectiveUseCase & {
       summary: `Record Sprint Metrics: ${identifier.title.value}`,
       body: formatMetricsBody(metrics),
       writeParams: { metrics },
-      commentTitle: "Record Sprint Metrics",
-      reason,
     });
   },
 
@@ -278,12 +287,3 @@ export const retrospectiveUseCase: RetrospectiveUseCase & {
     return await _executePlan(plan, _gateway);
   },
 };
-
-/** 操作コメントの本文を生成する。Markdown の H2 見出しで操作名と詳細を記述する。 */
-function formatEditComment(operation: string, detail: string): string {
-  const lines: string[] = [];
-  lines.push(`## ${operation}`);
-  lines.push("");
-  lines.push(detail);
-  return lines.join("\n");
-}

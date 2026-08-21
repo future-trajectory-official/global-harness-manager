@@ -217,7 +217,8 @@ Goalに対する達成状況を検証・承認するための概念。スプリ�
 - **要件**: effort集計、予実差分析、スプリントメトリクスの構造化記録
 - **必要な属性**:
   - タイトル
-  - 本文（振り返り詳細。Keep / Problem / Try / Advise）
+  - 本文（振り返り詳細。KPT（Keep / Problem / Try /
+    Advise）とスプリントメトリクス5指標の人間向け表示）
   - 所属スプリント
   - スプリントKPT（Keep / Problem / Try / Advise）
   - スプリントメトリクス（Goal Achievement Rate / Estimation Accuracy / Quality Integrity /
@@ -228,17 +229,17 @@ Goalに対する達成状況を検証・承認するための概念。スプリ�
 3.2節の要件を満たすため、各概念をGitHubのどの仕組み（Issue / Milestone / Projects
 V2）で実現するかを決定します。選定理由は「デフォルトIssueで対応できること」と「不足しているため追加の仕組みが必要なこと」を区別して示します。
 
-| 概念          | 必要な要件                                                        | GitHub上の表現                               | 選定理由                                                                                                                                                                                                                                                                                        |
-| ------------- | ----------------------------------------------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Vision        | 理念の永続保存。変更時はバージョン追跡                            | Issue + Comments                             | IssueのTitle+Body+Labelで静的な情報保持は十分。変更時はComment追記で版管理できる                                                                                                                                                                                                                |
-| Product Goal  | ゴール文の保持と変更履歴                                          | Issue + Comments                             | Title+Body+Labelで保持。変更履歴はCommentの時系列で自動管理。Bodyに変遷一覧を集約                                                                                                                                                                                                               |
-| Sprint Goal   | タイムボックス＋名称＋説明＋全スプリント成果物との紐付け          | **Milestone**                                | Milestoneがタイムボックス（期限）を標準提供。descriptionにGoalを記載。IssueにMilestoneを設定するだけで全成果物（PBI/WP/Review/Retrospective）が自動紐付け。Issue単体ではスプリント成果物の横断的なグルーピングができない                                                                        |
-| Epic          | 名称＋説明＋子Featureの束ねる親子関係                             | Issue + sub-issues                           | Title+Body+Labelで十分。sub-issuesで子Featureを束ねられる。Projects V2は不要                                                                                                                                                                                                                    |
-| Feature       | 名称＋説明＋親Epic＋子PBIの双方向親子関係                         | Issue + sub-issues + `--parent`              | Title+Body+Labelで十分。親Epicは`--parent`、子PBIはsub-issuesで紐付け。Projects V2は不要                                                                                                                                                                                                        |
-| PBI           | 名称＋説明＋状態管理＋サイズ記録＋スプリント所属＋親Feature＋子WP | Issue + Milestone + Projects V2 + sub-issues | Title+Body+Label+Comment+Milestone+sub-issuesで基本情報はカバーできるが、**状態とサイズを構造化フィールドで管理できない**。Projects V2のStatus（Todo/InProgress/Done）で状態を、カスタムフィールド（`harness-size-*`）でサイズを構造化保存する                                                  |
-| WP            | 名称＋成果物＋親PBI＋effort＋乖離理由＋順序                       | Issue + Projects V2 + sub-issues + Comments  | Title+Body+Label+sub-issues+Commentsで基本情報はカバーできるが、**effort値と乖離理由と順序を構造化フィールドで管理できない**。Projects V2のカスタムフィールド（`harness-effort-summary` / `harness-variance-review-*` / `harness-sequence`）で構造化保存する                                    |
-| Review        | 名称＋達成度＋PBIサマリ＋承認状態                                 | Issue + Comments                             | Title+Body+Label+Commentで基本情報はカバーできる。カスタムフィールド不要（レビュー結果はBodyのMarkdownで管理）                                                                                                                                                                                  |
-| Retrospective | 名称＋KPT項目＋スプリントメトリクス                               | Issue + Projects V2 + Comments               | Title+Body+Label+Commentで基本情報はカバーできるが、**KPTとメトリクスを構造化フィールドで管理できない**。カスタムフィールド（`harness-kpt-keep` / `harness-kpt-problem` / `harness-kpt-try` / `harness-kpt-advise` / `harness-metrics-summary`＋5指標ナラティブ独立フィールド）で構造化保存する |
+| 概念          | 必要な要件                                                        | GitHub上の表現                               | 選定理由                                                                                                                                                                                                                                                                                                                       |
+| ------------- | ----------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Vision        | 理念の永続保存。変更時はバージョン追跡                            | Issue + Comments                             | IssueのTitle+Body+Labelで静的な情報保持は十分。変更時はComment追記で版管理できる                                                                                                                                                                                                                                               |
+| Product Goal  | ゴール文の保持と変更履歴                                          | Issue + Comments                             | Title+Body+Labelで保持。変更履歴はCommentの時系列で自動管理。Bodyに変遷一覧を集約                                                                                                                                                                                                                                              |
+| Sprint Goal   | タイムボックス＋名称＋説明＋全スプリント成果物との紐付け          | **Milestone**                                | Milestoneがタイムボックス（期限）を標準提供。descriptionにGoalを記載。IssueにMilestoneを設定するだけで全成果物（PBI/WP/Review/Retrospective）が自動紐付け。Issue単体ではスプリント成果物の横断的なグルーピングができない                                                                                                       |
+| Epic          | 名称＋説明＋子Featureの束ねる親子関係                             | Issue + sub-issues                           | Title+Body+Labelで十分。sub-issuesで子Featureを束ねられる。Projects V2は不要                                                                                                                                                                                                                                                   |
+| Feature       | 名称＋説明＋親Epic＋子PBIの双方向親子関係                         | Issue + sub-issues + `--parent`              | Title+Body+Labelで十分。親Epicは`--parent`、子PBIはsub-issuesで紐付け。Projects V2は不要                                                                                                                                                                                                                                       |
+| PBI           | 名称＋説明＋状態管理＋サイズ記録＋スプリント所属＋親Feature＋子WP | Issue + Milestone + Projects V2 + sub-issues | Title+Body+Label+Comment+Milestone+sub-issuesで基本情報はカバーできるが、**状態とサイズを構造化フィールドで管理できない**。Projects V2のStatus（Todo/InProgress/Done）で状態を、カスタムフィールド（`harness-size-*`）でサイズを構造化保存する                                                                                 |
+| WP            | 名称＋成果物＋親PBI＋effort＋乖離理由＋順序                       | Issue + Projects V2 + sub-issues + Comments  | Title+Body+Label+sub-issues+Commentsで基本情報はカバーできるが、**effort値と乖離理由と順序を構造化フィールドで管理できない**。Projects V2のカスタムフィールド（`harness-effort-summary` / `harness-variance-review-*` / `harness-sequence`）で構造化保存する                                                                   |
+| Review        | 名称＋達成度＋PBIサマリ＋承認状態                                 | Issue + Comments                             | Title+Body+Label+Commentで基本情報はカバーできる。カスタムフィールド不要（レビュー結果はBodyのMarkdownで管理）                                                                                                                                                                                                                 |
+| Retrospective | 名称＋KPT項目＋スプリントメトリクス＋スプリント所属               | Issue + Milestone + Projects V2              | Title+Body+Labelで基本情報はカバーできるが、**KPTとメトリクスを構造化フィールドで管理できない**。カスタムフィールド（`harness-kpt-keep` / `harness-kpt-problem` / `harness-kpt-try` / `harness-kpt-advise` / `harness-metrics-summary`＋5指標ナラティブ独立フィールド）で構造化保存する。スプリント所属は Milestone で紐付ける |
 
 ### 3.4. 概念間の階層関係
 
@@ -414,14 +415,14 @@ V2のどのフィールドにマッピングするかは、**第5章（5.2節 Ty
 
 #### Retrospective
 
-| 操作                                                        | 入力                          | 副作用（変化する属性）                                                                                                 | 呼出ワークフロー                               | 出力                        |
-| ----------------------------------------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | --------------------------- |
-| **計画する**（枠作成、`plan`）                              | スプリント                    | Retrospective Issueが作成される（枠作成。スプリント開始時）                                                            | `sprint-start`（レビュー計画と同時に枠作成）   | —                           |
-| **スプリントKPTを記録する**（`recordSprintKpt`）            | Keep, Problem, Try, Advise    | スプリントKPTが `harness-kpt-keep` / `harness-kpt-problem` / `harness-kpt-try` / `harness-kpt-advise` に個別記録される | `sprint-end`（レトロスペクティブ実施フェーズ） | —                           |
-| **スプリントメトリクスを記録する**（`recordSprintMetrics`） | スプリントメトリクス（5指標） | スプリントメトリクスが `harness-metrics-summary` と5指標ナラティブ独立フィールドに記録される                           | `sprint-end`（レトロスペクティブ実施フェーズ） | —                           |
-| **保管する**（`archive`）                                   | —                             | RetrospectiveのIssueがクローズされる（スプリント終了時）                                                               | `sprint-end`（アーカイブフェーズ）             | —                           |
-| **特定する**（`find`）                                      | 識別子                        | —                                                                                                                      | —                                              | 該当Retrospective           |
-| **探す**（`search`）                                        | 条件（任意）                  | —                                                                                                                      | —                                              | 条件に合うRetrospective一覧 |
+| 操作                                                        | 入力                          | 副作用（変化する属性）                                                                                                         | 呼出ワークフロー                               | 出力                        |
+| ----------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- | --------------------------- |
+| **計画する**（枠作成、`plan`）                              | スプリント                    | Retrospective Issueが作成される（枠作成。スプリント開始時）。Sprint（Milestone）に紐付けられ、Retrospective Board に追加される | `sprint-start`（レビュー計画と同時に枠作成）   | —                           |
+| **スプリントKPTを記録する**（`recordSprintKpt`）            | Keep, Problem, Try, Advise    | スプリントKPTが `harness-kpt-keep` / `harness-kpt-problem` / `harness-kpt-try` / `harness-kpt-advise` に個別記録される         | `sprint-end`（レトロスペクティブ実施フェーズ） | —                           |
+| **スプリントメトリクスを記録する**（`recordSprintMetrics`） | スプリントメトリクス（5指標） | スプリントメトリクスが `harness-metrics-summary` と5指標ナラティブ独立フィールドに記録される                                   | `sprint-end`（レトロスペクティブ実施フェーズ） | —                           |
+| **保管する**（`archive`）                                   | —                             | RetrospectiveのIssueがクローズされる（スプリント終了時）                                                                       | `sprint-end`（アーカイブフェーズ）             | —                           |
+| **特定する**（`find`）                                      | 識別子                        | —                                                                                                                              | —                                              | 該当Retrospective           |
+| **探す**（`search`）                                        | 条件（任意）                  | —                                                                                                                              | —                                              | 条件に合うRetrospective一覧 |
 
 > **操作分離の意図**: 従来の「実施する（execute）」一発で KPT
 > とメトリクスを同時に書き込む方式を廃止し、 スプリントKPT記録 / スプリントメトリクス記録
@@ -892,20 +893,24 @@ V2のTEXTフィールド制限）であり、4分割により全文保存が可�
 | スプリントKPT（Problem）                         | Body      | **V2:Custom**: `harness-kpt-problem` (Text)                      |
 | スプリントKPT（Try）                             | Body      | **V2:Custom**: `harness-kpt-try` (Text)                          |
 | スプリントKPT（Advise）                          | Body      | **V2:Custom**: `harness-kpt-advise` (Text)                       |
-| スプリントメトリクス（summary）                  | Comment   | **V2:Custom**: `harness-metrics-summary` (Text / JSON)           |
-| スプリントメトリクス（Goal Achievement）         | Comment   | **V2:Custom**: `harness-metrics-goal-achievement` (Text)         |
-| スプリントメトリクス（Estimation Accuracy）      | Comment   | **V2:Custom**: `harness-metrics-estimation-accuracy` (Text)      |
-| スプリントメトリクス（Quality Integrity）        | Comment   | **V2:Custom**: `harness-metrics-quality-integrity` (Text)        |
-| スプリントメトリクス（Collaboration Discipline） | Comment   | **V2:Custom**: `harness-metrics-collaboration-discipline` (Text) |
-| スプリントメトリクス（Velocity）                 | Comment   | **V2:Custom**: `harness-metrics-velocity` (Text)                 |
+| スプリントメトリクス（summary）                  | Body      | **V2:Custom**: `harness-metrics-summary` (Text / JSON)           |
+| スプリントメトリクス（Goal Achievement）         | Body      | **V2:Custom**: `harness-metrics-goal-achievement` (Text)         |
+| スプリントメトリクス（Estimation Accuracy）      | Body      | **V2:Custom**: `harness-metrics-estimation-accuracy` (Text)      |
+| スプリントメトリクス（Quality Integrity）        | Body      | **V2:Custom**: `harness-metrics-quality-integrity` (Text)        |
+| スプリントメトリクス（Collaboration Discipline） | Body      | **V2:Custom**: `harness-metrics-collaboration-discipline` (Text) |
+| スプリントメトリクス（Velocity）                 | Body      | **V2:Custom**: `harness-metrics-velocity` (Text)                 |
 | 種別（`type:Retrospective`）                     | Label     | Labels                                                           |
 | スプリント                                       | Milestone | Milestone                                                        |
 
 <details>
 <summary>Body推奨構造</summary>
 
+Body は人間向けの補助表現（従表現）であり、KPT とスプリントメトリクスが**追記形式**で記録される。
+`recordSprintKpt` で「## KPTA」、`recordSprintMetrics` で「## Sprint Metrics」が空行区切りで
+セクション追記される。
+
 ```markdown
-## スプリントふりかえり
+## KPTA
 
 ### Keep
 
@@ -922,39 +927,40 @@ V2のTEXTフィールド制限）であり、4分割により全文保存が可�
 ### Advise
 
 [人間とAIの双方に向けた成長のためのアドバイス]
+
+## Sprint Metrics
+
+### Goal Achievement
+
+- score: [1-5]
+- narrative: [Goal Achievementのナラティブ]
+
+### Estimation Accuracy
+
+- score: [1-5]
+- narrative: [Estimation Accuracyのナラティブ]
+
+### Quality Integrity
+
+- score: [1-5]
+- narrative: [Quality Integrityのナラティブ]
+
+### Collaboration Discipline
+
+- score: [1-5]
+- narrative: [Collaboration Disciplineのナラティブ]
+
+### Velocity
+
+- value: [ΣPBI(実感サイズ*ウェイト換算値)]
+- narrative: [Velocityのナラティブ]
 ```
 
-</details>
-
-<details>
-<summary>Comment推奨構造</summary>
-
-```markdown
-## スプリントメトリクス
-
-### Goal Achievement Rate (ゴール達成率)
-
-[1-5の数値]
-
-### Estimation Accuracy (見積もり精度)
-
-[1-5の数値]
-
-### Quality Integrity (品質健全性)
-
-[1-5の数値]
-
-### Collaboration Discipline (協働品質とプロセス規律)
-
-[1-5の数値]
-
-### Velocity (規模消化力)
-
-[ΣPBI(実感サイズ*ウェイト換算値)]
-```
-
-> ナラティブ（定性説明）は Comment には記載せず、各 `harness-metrics-*` 独立フィールドに
-> 記録する（数値とナラティブの二重保存を避けるため）。
+> **数値・ナラティブの信頼できる情報源は構造化フィールド**（`harness-kpt-*` / `harness-metrics-*`）
+> であり、Body はあくまで人間向けの補助表現である（5.4
+> の従表現に従う）。ナラティブの二重保存を避ける ため、各 `harness-metrics-*`
+> 独立フィールドに必ず記録する。記録時の変更理由コメントは付与しない
+> （投入タイミングや後からの軌道修正がないため）。
 
 </details>
 

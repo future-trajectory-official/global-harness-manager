@@ -22,7 +22,8 @@
 ### dry-run 出力の解釈
 
 `steps` に含まれる作成ステップの `params` が、実際に作成される振り返りのタイトル（`title`）と
-本文（`body`）を示す。
+本文（`body`）、および Milestone（`sprint`）を示す。本文はタイトルと Milestone 紐付けで
+スプリントが特定できるため空（`""`）であり、`sprint` で対象スプリント（Milestone）に紐付ける。
 
 ```json
 {
@@ -35,7 +36,8 @@
       "operation": "plan",
       "params": {
         "title": "Sprint 20 Retrospective",
-        "body": "## Sprint Retrospective\n\n- **Sprint**: Sprint 20"
+        "body": "",
+        "sprint": "Sprint 20"
       }
     }
   ]
@@ -47,7 +49,7 @@
 ```
 📋 Plan: <summary>
   • 対象: <title>
-  • 操作: 振り返りを新規作成
+  • 操作: 振り返りを新規作成（Sprint N に紐付け）
 ```
 
 ### 実行例

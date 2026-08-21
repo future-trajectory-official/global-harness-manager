@@ -483,6 +483,11 @@ Domain層が `SprintIdentifier.number` を "Sprint N"
 > 旧操作 `execute`（実施する）を KPT 記録とメトリクス記録の2操作に分割した背景（操作分離の意図）は
 > design-spec.md 4.2 を参照。
 
+> `plan`（計画する）は Issue の作成に加え、引数の `SprintIdentifier` を Milestone として設定して
+> Sprint に紐付け、作成した Issue を Retrospective Board に追加する。`recordSprintKpt` /
+> `recordSprintMetrics` は構造化フィールドへの書込と Issue Body へのセクション追記（KPTA / Sprint
+> Metrics）を行う。変更理由コメントは付与しない。
+
 ### 3.3. Domain層 → Gateway層 公開API
 
 #### 概念とインターフェース型の対応
