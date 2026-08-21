@@ -70,9 +70,9 @@ Deno.test("Retrospective skills are integrated into sprint workflows", async () 
 
   // 2. sprint-end の各フェーズが対応スキルを参照し、マクロタイミングを宣言している
   const expectedPhases: Record<string, { phase: number; timing: string }> = {
-    "record-sprint-kpt": { phase: 5, timing: "実施する" },
-    "record-sprint-metrics": { phase: 7, timing: "実施する" },
-    "archive-retrospective": { phase: 8, timing: "保管する" },
+    "record-sprint-kpt": { phase: 4, timing: "実施する" },
+    "record-sprint-metrics": { phase: 6, timing: "実施する" },
+    "archive-retrospective": { phase: 7, timing: "保管する" },
   };
   for (const skill of RETRO_SKILLS) {
     const { phase, timing } = expectedPhases[skill];
@@ -107,14 +107,14 @@ Deno.test("Retrospective skills are integrated into sprint workflows", async () 
 
   // 5. フェーズ番号が1から連番で、各フェーズの「次のフェーズ」参照が N+1 であること
   const phaseNumbers = [...endPhases.keys()].sort((a, b) => a - b);
-  assertEquals(phaseNumbers.length, 12, "sprint-end.md must have 12 phases");
+  assertEquals(phaseNumbers.length, 11, "sprint-end.md must have 11 phases");
   for (let n = 1; n <= phaseNumbers.length; n++) {
     assert(
       phaseNumbers.includes(n),
       `sprint-end.md phases must be sequential and include Phase ${n}`,
     );
   }
-  for (let n = 1; n < 12; n++) {
+  for (let n = 1; n < 11; n++) {
     const body = normalize(endPhases.get(n));
     assert(
       body.includes(normalize(`次のフェーズ（Phase ${n + 1}`)),
