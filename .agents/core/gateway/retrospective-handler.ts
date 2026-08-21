@@ -16,9 +16,19 @@ export class RetrospectiveHandler {
   register(stepHandlers: Map<EntityType, Map<StepOperation, OperationHandler>>): void {
     const handlers = new Map<StepOperation, OperationHandler>();
 
-    /** plan 操作: type:Retrospective ラベルで Issue を作成する。 */
+    /** plan 操作: type:Retrospective ラベルで Issue を作成し、Retrospective Board へ追加する。 */
     handlers.set("plan", async (_op, params) => {
-      return await this.adapter.handleCreateItem({ ...params, type: "Retrospective" });
+      const result = await this.adapter.handleCreateItem({ ...params, type: "Retrospective" });
+      if (!result.success || !result.itemId) return result;
+      if (result.nodeId && this.adapter.retrospectiveBoardNumber) {
+        try {
+          await this.adapter.addItemToProject(
+            result.nodeId,
+            this.adapter.retrospectiveBoardNumber,
+          );
+        } catch { /* ok */ }
+      }
+      return result;
     });
 
     /** recordSprintKpt 操作: itemId 検証後、KPT の記録または変更理由コメントを処理する。 */

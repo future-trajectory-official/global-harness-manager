@@ -1874,7 +1874,8 @@ export class PlanGatewayAdapter implements PlanGateway {
       return { operation: "update", success: false, error: "Failed to parse gh output" };
     }
     const currentBody = parsed.body ?? "";
-    const newBody = currentBody + "\n" + bodyAppend;
+    // 既存本文と追記内容の間に空行を入れて Markdown 構造（見出し・リスト）の連結崩れを防ぐ。
+    const newBody = currentBody ? `${currentBody}\n\n${bodyAppend}` : bodyAppend;
     const args = ["issue", "edit", itemId, "--body", newBody, ...this.buildRepoArg()];
     if (title) args.push("--title", title);
     const result = await this.runCommand("gh", args);
