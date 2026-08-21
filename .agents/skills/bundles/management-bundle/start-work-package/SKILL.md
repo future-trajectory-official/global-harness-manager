@@ -22,7 +22,14 @@ tags:
 1. **介入の記録**:
    初回計画提案から計画承認までに発生したPOからの軌道修正・方針変更指示を、介入履歴として記録する。
 
-2. **見積りの算出**:
+2. **介入の定義の確認**:
+   見積りを算出する前に、[介入の定義（backlog-guidelines 2.2.1）](/guides/backlog-guidelines.md)
+   を引用し、「何が介入としてカウントされるか」を確認してから見積りに進むこと。
+   - 介入 =
+     意図の修正指示・制約/ルールの違反指摘・アプローチの軌道修正（進行指示や単純な肯定応答は含まない）
+   - この定義に基づき、計画前見積（initial_estimate）と計画後見積（planned_estimate）の差を解釈する
+
+3. **見積りの算出**:
    - まず、対象WPの**既存の計画前見積**を確認する。`read-project-state`
      スキルを呼び出して該当WPを閲覧する。
      ```bash
@@ -35,9 +42,9 @@ tags:
    - 計画後見積の定義と算出方法は [guides/backlog-guidelines.md](/guides/backlog-guidelines.md) の
      **2.2.1** に従うこと。
 
-3. **見積りの提示と了承**: 算出した見積りをPOに提示し、了承を得る。
+4. **見積りの提示と了承**: 算出した見積りをPOに提示し、了承を得る。
 
-4. **見積りの記録**: 見積りを記録する。事前に `--dry-run` でPlanを確認し、PO承認後に本実行すること。
+5. **見積りの記録**: 見積りを記録する。事前に `--dry-run` でPlanを確認し、PO承認後に本実行すること。
    ```bash
    echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/estimate_planned_effort.ts --dry-run
    echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/estimate_planned_effort.ts
@@ -46,9 +53,9 @@ tags:
    [references/reference.md](/.agents/skills/bundles/management-bundle/start-work-package/references/reference.md)
    を参照すること。
 
-5. **着手の了承**: POに開始の了承を得る。
+6. **着手の了承**: POに開始の了承を得る。
 
-6. **着手の記録**: 着手を記録する。事前に `--dry-run` でPlanを確認し、PO承認後に本実行すること。
+7. **着手の記録**: 着手を記録する。事前に `--dry-run` でPlanを確認し、PO承認後に本実行すること。
    ```bash
    echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/start_wp.ts --dry-run
    echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/start_wp.ts
@@ -57,7 +64,7 @@ tags:
    [references/reference.md](/.agents/skills/bundles/management-bundle/start-work-package/references/reference.md)
    を参照すること。
 
-7. **親PBIの昇格判定**: 着手したWPが**最初のWP**（親PBI配下で最初の着手）かを確認する。
+8. **親PBIの昇格判定**: 着手したWPが**最初のWP**（親PBI配下で最初の着手）かを確認する。
    - 該当WPを view して親PBIを特定し、親PBI配下の全WP（兄弟WP）を subIssues で列挙する。
      ```bash
      echo '{"entityType":"WorkPackage","operation":"find","params":{"itemId":<着手WP番号>}}' \
@@ -77,4 +84,4 @@ tags:
      ```
    - 注意: 親PBIへ直接着手して不整合を起こさないよう、親PBI昇格は本手順の判定に従うこと。
 
-8. **結果報告**: 見積り値と着手完了、および親PBI昇格の要否・実行結果をPOに報告する。
+9. **結果報告**: 見積り値と着手完了、および親PBI昇格の要否・実行結果をPOに報告する。

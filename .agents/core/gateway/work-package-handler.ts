@@ -1,6 +1,21 @@
 import type { EntityType, StepOperation } from "../domain/types.ts";
 import type { OperationHandler, PlanGatewayAdapter } from "./plan-gateway-adapter.ts";
 
+/**
+ * `harness-effort-summary` JSON テキストに計画後見積（planned_estimate）が記録されているか判定する。
+ * JSON が空・不正・planned_estimate 欠落の場合は false を返す。
+ */
+export function hasPlannedEstimate(effortSummaryText: string | null | undefined): boolean {
+  if (!effortSummaryText) return false;
+  let data: Record<string, number> = {};
+  try {
+    data = JSON.parse(effortSummaryText) as Record<string, number>;
+  } catch {
+    return false;
+  }
+  return data.planned_estimate !== undefined && data.planned_estimate !== null;
+}
+
 export class WorkPackageHandler {
   constructor(private readonly adapter: PlanGatewayAdapter) {}
 
@@ -59,6 +74,8 @@ export class WorkPackageHandler {
       }
       const milestoneMissing = await this.requireMilestone(itemId, "start");
       if (milestoneMissing) return milestoneMissing;
+      const estimateMissing = await this.requirePlannedEstimate(itemId);
+      if (estimateMissing) return estimateMissing;
       if (this.adapter.sprintBoardNumber) {
         await this.adapter.setBoardStatus(
           itemId,
@@ -658,6 +675,67 @@ export class WorkPackageHandler {
     return null;
   }
 
+  private async requirePlannedEstimate(
+    itemId: string,
+  ): Promise<{ operation: string; success: false; itemId: string; error: string } | null> {
+    const boardNumber = this.adapter.sprintBoardNumber;
+    if (!boardNumber) return null;
+    const projectItemNodeId = await this.resolveProjectItemNodeId(itemId, boardNumber);
+    if (!projectItemNodeId) return null;
+    const text = await this.adapter.readTextFieldValue(
+      projectItemNodeId,
+      boardNumber,
+      "harness-effort-summary",
+    );
+    if (!hasPlannedEstimate(text)) {
+      return {
+        operation: "start",
+        success: false,
+        itemId,
+        error:
+          `WP #${itemId} has no planned_estimate recorded: 先に start-work-package スキルで計画後見積（planned_estimate）を記録してください`,
+      };
+    }
+    return null;
+  }
+
+  private async resolveProjectItemNodeId(
+    itemId: string,
+    boardNumber: number,
+  ): Promise<string | null> {
+    const owned = this.adapter.scopeOwner;
+    const repod = this.adapter.scopeRepository;
+    if (!owned || !repod) return null;
+    const lookup =
+      `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
+    const lr = await this.adapter.runCommand("gh", [
+      "api",
+      "graphql",
+      "-f",
+      `query=${lookup}`,
+      "-f",
+      `owner=${owned}`,
+      "-f",
+      `repo=${repod}`,
+      "-F",
+      `num=${parseInt(itemId, 10)}`,
+    ]);
+    if (lr.code !== 0) return null;
+    const ld = JSON.parse(lr.stdout) as {
+      data?: {
+        repository?: {
+          issue?: {
+            projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
+          };
+        };
+      };
+    };
+    const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
+      n.project.number === boardNumber
+    );
+    return matched?.id ?? null;
+  }
+
   private async setEffortField(
     itemId: string,
     boardNumber: number,
@@ -678,38 +756,9 @@ export class WorkPackageHandler {
     try {
       ({ projectItemNodeId } = await this.adapter.addItemToProject(nodeData.id, boardNumber));
     } catch {
-      const owned = this.adapter.scopeOwner;
-      const repod = this.adapter.scopeRepository;
-      if (!owned || !repod) return;
-      const lookup =
-        `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
-      const lr = await this.adapter.runCommand("gh", [
-        "api",
-        "graphql",
-        "-f",
-        `query=${lookup}`,
-        "-f",
-        `owner=${owned}`,
-        "-f",
-        `repo=${repod}`,
-        "-F",
-        `num=${parseInt(itemId, 10)}`,
-      ]);
-      if (lr.code !== 0) return;
-      const ld = JSON.parse(lr.stdout) as {
-        data?: {
-          repository?: {
-            issue?: {
-              projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
-            };
-          };
-        };
-      };
-      const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
-        n.project.number === boardNumber
-      );
-      if (!matched) return;
-      projectItemNodeId = matched.id;
+      const resolved = await this.resolveProjectItemNodeId(itemId, boardNumber);
+      if (!resolved) return;
+      projectItemNodeId = resolved;
     }
     const text = await this.adapter.readTextFieldValue(
       projectItemNodeId,
