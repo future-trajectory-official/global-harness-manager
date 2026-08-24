@@ -31,7 +31,9 @@ GUARD:REQUIRED_TASKS
 - Phase 2: Foreach (AC[].count) ACベースの開発
   - ac-checkpoint-implementation
   - hybrid-triage-commit
-- Phase 3: リファクタリングと品質検証
+- Phase 3: コードレビューと品質検証
+  - sub-agent:cross-role-review
+  - レビュー指摘対応
   - refactoring-loop
   - quality-verification
   - hybrid-triage-commit
@@ -68,11 +70,22 @@ GUARD:NOTE この GUARD ブロックはテンプレートの不変契約を宣�
 - **計画後見積 (想定介入回数)**: [N] 回
 - **完了時実績**: 0
 
-### 💬 介入履歴と理由
+### 💬 介入履歴
 
-<!-- POからの明示的な方針変更・軌道修正指示があった場合のみ追記。
-     介入の定義は backlogs-guidelines.md を参照。
-     AIの自律的な手戻りやテスト修正は含めない。 -->
+| # | フェーズ       | 種別 | 内容 |
+| - | -------------- | ---- | ---- |
+| 1 | 計画立案〜承認 | -    | -    |
+| 2 | 実装           | -    | -    |
+
+#### 傾向分析
+
+- **全体**: 介入 N 回（計画:N, 実装:N）
+- **主な課題**: -
+- **改善アクション**: -
+
+### ✅ セッション成果
+
+-
 ```
 
 ---
@@ -88,17 +101,32 @@ GUARD:NOTE この GUARD ブロックはテンプレートの不変契約を宣�
 
 ### Phase 2: Foreach (AC[].count) ACベースの開発
 
-ACごとに「実装→WIP保存」を1セットとして逐次実行する：
+ACごとに「実装→WIP保存→**停止・報告**」を1セットとして逐次実行する：
+
+<!--
+停止・報告ルール: 各AC完了時に必ず停止し、POへ以下を報告して次の指示を待つ。
+- 報告内容: ①何が実装できたか ②テスト結果 ③次のACの予定
+- POの指示を待たずに次ACへ進んではならない。
+-->
 
 - [ ] **[skill:ac-checkpoint-implementation] (AC-1)**: [AC-1の内容]
 - [ ] **[skill:hybrid-triage-commit] (wip)**: AC-1完了をWIP保存
+- [ ] **[停止・報告]**: AC-1の成果・テスト結果・次AC予定をPOに報告し、指示を待つ
 - [ ] **[skill:ac-checkpoint-implementation] (AC-2)**: [AC-2の内容]
 - [ ] **[skill:hybrid-triage-commit] (wip)**: AC-2完了をWIP保存
+- [ ] **[停止・報告]**: AC-2の成果・テスト結果・次AC予定をPOに報告し、指示を待つ
 - [ ] ...（以降、AC数に応じて展開）
 
-### Phase 3: リファクタリングと品質検証
+### Phase 3: コードレビューと品質検証
 
-- [ ] **[skill:refactoring-loop]**: コードの内部構造を改善
+- [ ] **[sub-agent:cross-role-review]**: サブエージェントによるコードレビュー
+  - [ ] `git diff origin/<base>` を取得し、4ロール（Architect / Developer / Tester / Refactor）の
+        Task tool サブエージェントを**独立並列起動**する
+  - [ ] 各エージェントは自ロールのルールファイル（`.agents/rules/*.md`）を読み、コード差分をレビュー
+  - [ ] AI が4件のレビュー報告を取りまとめ、指摘を **Critical / Medium / Minor** に分類してPOに提示
+  - [ ] PO が対応する指摘を選択 → AI が修正を実施
+- [ ] **[対応]**: レビュー指摘の修正（PO選択分を実装）
+- [ ] **[skill:refactoring-loop]**: コード内部構造の改善（挙動不変）
 - [ ] **[skill:quality-verification]**: `deno task qa` 完全版品質検証
 - [ ] **[skill:hybrid-triage-commit] (triage)**: WIPコミットの解体とアトミックコミット再構築
 

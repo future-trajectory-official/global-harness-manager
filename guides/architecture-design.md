@@ -347,6 +347,10 @@ archive等）は理由を必要としない。
 L2で定義された全9概念に対応するDomain IFを設ける。命名は **UseCase**
 とし、業務ユースケースの集合体であることを明示する。
 
+> **`find` / `search` の出力について**: 下表では全操作の出力を `Plan`
+> としている。これはDomain層のDIP原則（外部依存ゼロ）に基づく。Domain層の全メソッドは一貫して
+> `Plan`（「これから行う操作の設計図」）を返し、実際のエンティティデータ（`Data`）はGateway層がPlanを実行した結果として取得される。操作から直接Dataが返るのはシステム全体のフロー（L2設計）の話であり、Domain層のインターフェースとしてはPlan返却で統一する。
+
 | L2概念        | Domain IF型                 | 備考                         |
 | ------------- | --------------------------- | ---------------------------- |
 | Vision        | `VisionUseCase`             | ビジョンライフサイクル管理   |
@@ -363,52 +367,53 @@ L2で定義された全9概念に対応するDomain IFを設ける。命名は *
 
 **VisionUseCase** — Visionの管理
 
-| L2操作名     | 公開操作名(英) | 入力                                                              | 出力         |
-| ------------ | -------------- | ----------------------------------------------------------------- | ------------ |
-| 掲げる       | `establish`    | `VisionIdentifier`, `VisionStatement`, `Outcomes`                 | `Plan`       |
-| 方針転換する | `pivot`        | `VisionIdentifier`, `VisionStatement`, `Outcomes`, `ChangeReason` | `Plan`       |
-| 確認する     | `find`         | `VisionIdentifier`                                                | `VisionData` |
+| L2操作名     | 公開操作名(英) | 入力                                                              | 出力   |
+| ------------ | -------------- | ----------------------------------------------------------------- | ------ |
+| 掲げる       | `establish`    | `VisionIdentifier`, `VisionStatement`, `Outcomes`                 | `Plan` |
+| 方針転換する | `pivot`        | `VisionIdentifier`, `VisionStatement`, `Outcomes`, `ChangeReason` | `Plan` |
+| 確認する     | `find`         | `VisionIdentifier`                                                | `Plan` |
 
 **ProductGoalUseCase** — Product Goalの管理
 
-| L2操作名     | 公開操作名(英) | 入力                                                            | 出力              |
-| ------------ | -------------- | --------------------------------------------------------------- | ----------------- |
-| 設定する     | `set`          | `ProductGoalIdentifier`, `ProductGoalStatement`                 | `Plan`            |
-| 方針転換する | `pivot`        | `ProductGoalIdentifier`, `ProductGoalStatement`, `ChangeReason` | `Plan`            |
-| 確認する     | `find`         | `ProductGoalIdentifier`                                         | `ProductGoalData` |
+| L2操作名     | 公開操作名(英) | 入力                                                            | 出力   |
+| ------------ | -------------- | --------------------------------------------------------------- | ------ |
+| 設定する     | `set`          | `ProductGoalIdentifier`, `ProductGoalStatement`                 | `Plan` |
+| 方針転換する | `pivot`        | `ProductGoalIdentifier`, `ProductGoalStatement`, `ChangeReason` | `Plan` |
+| 確認する     | `find`         | `ProductGoalIdentifier`                                         | `Plan` |
 
 **SprintUseCase** — Sprint（Milestone）の管理
 
 Domain層が `SprintIdentifier.number` を "Sprint N"
 形式のマイルストーン名に変換する。この変換は命名ルールに基づくドメインロジックであり、Gateway層に渡す前にDomain層内で行う。
 
-| L2操作名       | 公開操作名(英) | 入力                                | 出力         |
-| -------------- | -------------- | ----------------------------------- | ------------ |
-| 開始する       | `start`        | `SprintIdentifier`                  | `Plan`       |
-| 終了する       | `end`          | `SprintIdentifier`                  | `Plan`       |
-| 目標を設定する | `setGoal`      | `SprintIdentifier`, `GoalStatement` | `Plan`       |
-| 期限を設定する | `setDueDate`   | `SprintIdentifier`, `Date`          | `Plan`       |
-| 特定する       | `find`         | `SprintIdentifier`                  | `SprintData` |
+| L2操作名       | 公開操作名(英) | 入力                                | 出力   |
+| -------------- | -------------- | ----------------------------------- | ------ |
+| 開始する       | `start`        | `SprintIdentifier`                  | `Plan` |
+| 終了する       | `end`          | `SprintIdentifier`                  | `Plan` |
+| 目標を設定する | `setGoal`      | `SprintIdentifier`, `GoalStatement` | `Plan` |
+| 期限を設定する | `setDueDate`   | `SprintIdentifier`, `Date`          | `Plan` |
+| 特定する       | `find`         | `SprintIdentifier`                  | `Plan` |
 
 **EpicUseCase** — Epicの管理
 
-| L2操作名   | 公開操作名(英) | 入力                                              | 出力             |
-| ---------- | -------------- | ------------------------------------------------- | ---------------- |
-| 定義する   | `define`       | `EpicIdentifier`, `EpicStatement`                 | `Plan`           |
-| 再定義する | `revise`       | `EpicIdentifier`, `EpicStatement`, `ChangeReason` | `Plan`           |
-| 特定する   | `find`         | `EpicIdentifier`                                  | `EpicData`       |
-| 探す       | `search`       | `EpicSearchCondition`                             | `List<EpicData>` |
+| L2操作名       | 公開操作名(英)  | 入力                                              | 出力   |
+| -------------- | --------------- | ------------------------------------------------- | ------ |
+| 定義する       | `define`        | `EpicIdentifier`, `EpicStatement`                 | `Plan` |
+| 再定義する     | `revise`        | `EpicIdentifier`, `EpicStatement`, `ChangeReason` | `Plan` |
+| 特定する       | `find`          | `EpicIdentifier`                                  | `Plan` |
+| 探す           | `search`        | `EpicSearchCondition`                             | `Plan` |
+| 階層を表示する | `showHierarchy` | `EpicIdentifier`                                  | `Plan` |
 
 **FeatureUseCase** — Featureの管理
 
-| L2操作名       | 公開操作名(英)     | 入力                                                       | 出力                |
-| -------------- | ------------------ | ---------------------------------------------------------- | ------------------- |
-| 定義する       | `define`           | `FeatureIdentifier`, `FeatureStatement`, `EpicIdentifier?` | `Plan`              |
-| 再定義する     | `revise`           | `FeatureIdentifier`, `FeatureStatement`, `ChangeReason`    | `Plan`              |
-| 所属する       | `assignToEpic`     | `FeatureIdentifier`, `EpicIdentifier`                      | `Plan`              |
-| 所属を解除する | `unassignFromEpic` | `FeatureIdentifier`                                        | `Plan`              |
-| 特定する       | `find`             | `FeatureIdentifier`                                        | `FeatureData`       |
-| 探す           | `search`           | `FeatureSearchCondition`                                   | `List<FeatureData>` |
+| L2操作名       | 公開操作名(英)     | 入力                                                       | 出力   |
+| -------------- | ------------------ | ---------------------------------------------------------- | ------ |
+| 定義する       | `define`           | `FeatureIdentifier`, `FeatureStatement`, `EpicIdentifier?` | `Plan` |
+| 再定義する     | `revise`           | `FeatureIdentifier`, `FeatureStatement`, `ChangeReason`    | `Plan` |
+| 所属する       | `assignToEpic`     | `FeatureIdentifier`, `EpicIdentifier`                      | `Plan` |
+| 所属を解除する | `unassignFromEpic` | `FeatureIdentifier`                                        | `Plan` |
+| 特定する       | `find`             | `FeatureIdentifier`                                        | `Plan` |
+| 探す           | `search`           | `FeatureSearchCondition`                                   | `Plan` |
 
 **ProductBacklogItemUseCase** — PBIのライフサイクル管理
 
@@ -416,62 +421,72 @@ Domain層が `SprintIdentifier.number` を "Sprint N"
 `defineAcceptanceCriteria` で事前に定義されていても、`commit`
 されるまでは「未確定（Idea相当）」の状態を維持できる。
 
-| L2操作名           | 公開操作名(英)             | 入力                                                                                | 出力                           |
-| ------------------ | -------------------------- | ----------------------------------------------------------------------------------- | ------------------------------ |
-| 発案する           | `propose`                  | `ProductBacklogItemIdentifier`, `ProductBacklogItemStatement`, `FeatureIdentifier?` | `Plan`                         |
-| 修正する           | `revise`                   | `ProductBacklogItemIdentifier`, `ProductBacklogItemStatement`, `ChangeReason`       | `Plan`                         |
-| コミットする       | `commit`                   | `ProductBacklogItemIdentifier`, `SprintIdentifier`                                  | `Plan`                         |
-| 着手する           | `start`                    | `ProductBacklogItemIdentifier`                                                      | `Plan`                         |
-| 完了する           | `complete`                 | `ProductBacklogItemIdentifier`                                                      | `Plan`                         |
-| 保管する           | `archive`                  | `ProductBacklogItemIdentifier`                                                      | `Plan`                         |
-| 受入基準を定義する | `defineAcceptanceCriteria` | `ProductBacklogItemIdentifier`, `List<WorkPackageData>`                             | `Plan`                         |
-| 所属する           | `assignToFeature`          | `ProductBacklogItemIdentifier`, `FeatureIdentifier`                                 | `Plan`                         |
-| 所属解除する       | `unassignFromFeature`      | `ProductBacklogItemIdentifier`                                                      | `Plan`                         |
-| サイズ見積する     | `estimateSize`             | `ProductBacklogItemIdentifier`, `SizeVariance`                                      | `Plan`                         |
-| サイズ確定する     | `confirmSize`              | `ProductBacklogItemIdentifier`, `SizeVariance`                                      | `Plan`                         |
-| 分析記録する       | `recordAnalysis`           | `ProductBacklogItemIdentifier`, `ProcessAnalysis`                                   | `Plan`                         |
-| 特定する           | `find`                     | `ProductBacklogItemIdentifier`                                                      | `ProductBacklogItemData`       |
-| 探す               | `search`                   | `ProductBacklogItemSearchCondition`                                                 | `List<ProductBacklogItemData>` |
+| L2操作名           | 公開操作名(英)             | 入力                                                                                | 出力   |
+| ------------------ | -------------------------- | ----------------------------------------------------------------------------------- | ------ |
+| 発案する           | `propose`                  | `ProductBacklogItemIdentifier`, `ProductBacklogItemStatement`, `FeatureIdentifier?` | `Plan` |
+| 修正する           | `revise`                   | `ProductBacklogItemIdentifier`, `ProductBacklogItemStatement`, `ChangeReason`       | `Plan` |
+| コミットする       | `commit`                   | `ProductBacklogItemIdentifier`, `SprintIdentifier`                                  | `Plan` |
+| 着手する           | `start`                    | `ProductBacklogItemIdentifier`                                                      | `Plan` |
+| 完了する           | `complete`                 | `ProductBacklogItemIdentifier`                                                      | `Plan` |
+| 保管する           | `archive`                  | `ProductBacklogItemIdentifier`                                                      | `Plan` |
+| 受入基準を定義する | `defineAcceptanceCriteria` | `ProductBacklogItemIdentifier`, `List<WorkPackageData>`                             | `Plan` |
+| 所属する           | `assignToFeature`          | `ProductBacklogItemIdentifier`, `FeatureIdentifier`                                 | `Plan` |
+| 所属解除する       | `unassignFromFeature`      | `ProductBacklogItemIdentifier`                                                      | `Plan` |
+| サイズ見積する     | `estimateSize`             | `ProductBacklogItemIdentifier`, `SizeVariance`                                      | `Plan` |
+| サイズ確定する     | `confirmSize`              | `ProductBacklogItemIdentifier`, `SizeVariance`                                      | `Plan` |
+| 分析記録する       | `recordAnalysis`           | `ProductBacklogItemIdentifier`, `ProcessAnalysis`                                   | `Plan` |
+| 特定する           | `find`                     | `ProductBacklogItemIdentifier`                                                      | `Plan` |
+| 探す               | `search`                   | `ProductBacklogItemSearchCondition`                                                 | `Plan` |
 
 **WorkPackageUseCase** — WPのライフサイクル管理
 
-| L2操作名                       | 公開操作名(英)                   | 入力                                                                            | 出力                    |
-| ------------------------------ | -------------------------------- | ------------------------------------------------------------------------------- | ----------------------- |
-| 定義する                       | `define`                         | `WorkPackageIdentifier`, `WorkPackageStatement`, `ProductBacklogItemIdentifier` | `Plan`                  |
-| 修正する                       | `revise`                         | `WorkPackageIdentifier`, `WorkPackageStatement`, `ChangeReason`                 | `Plan`                  |
-| 着手する                       | `start`                          | `WorkPackageIdentifier`                                                         | `Plan`                  |
-| 完了する                       | `complete`                       | `WorkPackageIdentifier`                                                         | `Plan`                  |
-| 保管する                       | `archive`                        | `WorkPackageIdentifier`                                                         | `Plan`                  |
-| 所属する                       | `assignToProductBacklogItem`     | `WorkPackageIdentifier`, `ProductBacklogItemIdentifier`                         | `Plan`                  |
-| 所属解除する                   | `unassignFromProductBacklogItem` | `WorkPackageIdentifier`                                                         | `Plan`                  |
-| 労力の計画前見積をする         | `estimateInitialEffort`          | `WorkPackageIdentifier`, `EffortRecord`                                         | `Plan`                  |
-| 労力の計画後見積をする         | `estimatePlannedEffort`          | `WorkPackageIdentifier`, `EffortRecord`                                         | `Plan`                  |
-| 労力の完了時実績を記録する     | `recordActualEffort`             | `WorkPackageIdentifier`, `EffortRecord`                                         | `Plan`                  |
-| 分析記録する                   | `recordAnalysis`                 | `WorkPackageIdentifier`, `ProcessAnalysis`, `KeepProblemTryAdvice?`             | `Plan`                  |
-| セッションメトリクスを記録する | `recordSessionMetrics`           | `WorkPackageIdentifier`, `SessionMetrics`                                       | `Plan`                  |
-| 特定する                       | `find`                           | `WorkPackageIdentifier`                                                         | `WorkPackageData`       |
-| 探す                           | `search`                         | `WorkPackageSearchCondition`                                                    | `List<WorkPackageData>` |
+| L2操作名                       | 公開操作名(英)                   | 入力                                                                            | 出力   |
+| ------------------------------ | -------------------------------- | ------------------------------------------------------------------------------- | ------ |
+| 定義する                       | `define`                         | `WorkPackageIdentifier`, `WorkPackageStatement`, `ProductBacklogItemIdentifier` | `Plan` |
+| 修正する                       | `revise`                         | `WorkPackageIdentifier`, `WorkPackageStatement`, `ChangeReason`                 | `Plan` |
+| 着手する                       | `start`                          | `WorkPackageIdentifier`                                                         | `Plan` |
+| 完了する                       | `complete`                       | `WorkPackageIdentifier`                                                         | `Plan` |
+| 保管する                       | `archive`                        | `WorkPackageIdentifier`                                                         | `Plan` |
+| 所属する                       | `assignToProductBacklogItem`     | `WorkPackageIdentifier`, `ProductBacklogItemIdentifier`                         | `Plan` |
+| 所属解除する                   | `unassignFromProductBacklogItem` | `WorkPackageIdentifier`                                                         | `Plan` |
+| 労力の計画前見積をする         | `estimateInitialEffort`          | `WorkPackageIdentifier`, `EffortRecord`                                         | `Plan` |
+| 労力の計画後見積をする         | `estimatePlannedEffort`          | `WorkPackageIdentifier`, `EffortRecord`                                         | `Plan` |
+| 労力の完了時実績を記録する     | `recordActualEffort`             | `WorkPackageIdentifier`, `EffortRecord`                                         | `Plan` |
+| 分析記録する                   | `recordAnalysis`                 | `WorkPackageIdentifier`, `ProcessAnalysis`                                      | `Plan` |
+| KPTを記録する                  | `recordKpt`                      | `WorkPackageIdentifier`, `KeepProblemTryAdvice`                                 | `Plan` |
+| セッションメトリクスを記録する | `recordSessionMetrics`           | `WorkPackageIdentifier`, `SessionMetrics`                                       | `Plan` |
+| 特定する                       | `find`                           | `WorkPackageIdentifier`                                                         | `Plan` |
+| 探す                           | `search`                         | `WorkPackageSearchCondition`                                                    | `Plan` |
 
 **ReviewUseCase** — Reviewの管理
 
-| L2操作名 | 公開操作名(英) | 入力                                                                                               | 出力               |
-| -------- | -------------- | -------------------------------------------------------------------------------------------------- | ------------------ |
-| 計画する | `plan`         | `ReviewIdentifier`, `SprintIdentifier`                                                             | `Plan`             |
-| 改訂する | `revise`       | `ReviewIdentifier`, `removed?: AcceptanceCriterias`, `added?: AcceptanceCriterias`, `ChangeReason` | `Plan`             |
-| 報告する | `report`       | `ReviewData`                                                                                       | `Plan`             |
-| 保管する | `archive`      | `ReviewIdentifier`                                                                                 | `Plan`             |
-| 特定する | `find`         | `ReviewIdentifier`                                                                                 | `ReviewData`       |
-| 探す     | `search`       | `ReviewSearchCondition`                                                                            | `List<ReviewData>` |
+| L2操作名 | 公開操作名(英) | 入力                                                                                               | 出力   |
+| -------- | -------------- | -------------------------------------------------------------------------------------------------- | ------ |
+| 計画する | `plan`         | `ReviewIdentifier`, `SprintIdentifier`                                                             | `Plan` |
+| 改訂する | `revise`       | `ReviewIdentifier`, `removed?: AcceptanceCriterias`, `added?: AcceptanceCriterias`, `ChangeReason` | `Plan` |
+| 報告する | `report`       | `ReviewData`                                                                                       | `Plan` |
+| 保管する | `archive`      | `ReviewIdentifier`                                                                                 | `Plan` |
+| 特定する | `find`         | `ReviewIdentifier`                                                                                 | `Plan` |
+| 探す     | `search`       | `ReviewSearchCondition`                                                                            | `Plan` |
 
 **RetrospectiveUseCase** — Retrospective（振り返り）の管理
 
-| L2操作名 | 公開操作名(英) | 入力                                                                               | 出力                      |
-| -------- | -------------- | ---------------------------------------------------------------------------------- | ------------------------- |
-| 計画する | `plan`         | `RetrospectiveIdentifier`, `SprintIdentifier`                                      | `Plan`                    |
-| 実施する | `execute`      | `RetrospectiveIdentifier`, `KeepProblemTryAdvice`, `SprintMetrics`, `ChangeReason` | `Plan`                    |
-| 保管する | `archive`      | `RetrospectiveIdentifier`                                                          | `Plan`                    |
-| 特定する | `find`         | `RetrospectiveIdentifier`                                                          | `RetrospectiveData`       |
-| 探す     | `search`       | `RetrospectiveSearchCondition`                                                     | `List<RetrospectiveData>` |
+| L2操作名                 | 公開操作名(英)        | 入力                                              | 出力   |
+| ------------------------ | --------------------- | ------------------------------------------------- | ------ |
+| 計画する（枠作成）       | `plan`                | `RetrospectiveIdentifier`, `SprintIdentifier`     | `Plan` |
+| スプリントKPT記録        | `recordSprintKpt`     | `RetrospectiveIdentifier`, `KeepProblemTryAdvice` | `Plan` |
+| スプリントメトリクス記録 | `recordSprintMetrics` | `RetrospectiveIdentifier`, `SprintMetrics`        | `Plan` |
+| 保管する                 | `archive`             | `RetrospectiveIdentifier`                         | `Plan` |
+| 特定する                 | `find`                | `RetrospectiveIdentifier`                         | `Plan` |
+| 探す                     | `search`              | `RetrospectiveSearchCondition`                    | `Plan` |
+
+> 旧操作 `execute`（実施する）を KPT 記録とメトリクス記録の2操作に分割した背景（操作分離の意図）は
+> design-spec.md 4.2 を参照。
+
+> `plan`（計画する）は Issue の作成に加え、引数の `SprintIdentifier` を Milestone として設定して
+> Sprint に紐付け、作成した Issue を Retrospective Board に追加する。`recordSprintKpt` /
+> `recordSprintMetrics` は構造化フィールドへの書込と Issue Body へのセクション追記（KPTA / Sprint
+> Metrics）を行う。変更理由コメントは付与しない。
 
 ### 3.3. Domain層 → Gateway層 公開API
 
@@ -540,6 +555,11 @@ interface List<T> {
 
 interface ChangeReason {
   readonly description: string;
+}
+
+interface ChangeEntry {
+  readonly reason: ChangeReason;
+  readonly timestamp: Date;
 }
 
 class Size {
@@ -638,6 +658,7 @@ interface Outcomes {
 interface VisionData {
   readonly statement: VisionStatement;
   readonly outcomes: Outcomes;
+  readonly changeHistory?: readonly ChangeEntry[];
 }
 
 // ======== Product Goal系 ========
@@ -648,12 +669,12 @@ interface GoalStatement {
 
 interface ProductGoalData {
   readonly statement: GoalStatement;
+  readonly changeHistory?: readonly ChangeEntry[];
 }
 
 // ======== Sprint系 ========
 
 interface SprintIdentifier extends Identifier {
-  readonly number: number;
 }
 
 interface SprintData {
@@ -762,12 +783,26 @@ interface WorkPackageStatement {
 interface WorkPackageIdentifier extends Identifier {
 }
 
-interface SessionMetrics {
-  readonly intentAlignmentRate: number;
+/**
+ * セッションメトリクス（Domain層のオブジェクト操作時の構造）。
+ * 記録時は 1024バイト制限のため、`harness-metrics-summary`（数値JSONのみ）と4指標のナラティブ
+ * 独立フィールドに分離して書き込む。詳細は design-spec.md 5.2 / 5.3 を参照。
+ * summary の各スコアは1〜5。harness-metrics-summary への書込時は Gateway 層で
+ * snake_case（intent_alignment_score 等）に変換する。
+ */
+interface SessionMetricsSummary {
+  readonly intentAlignmentScore: number;
   readonly constraintAdherenceScore: number;
-  readonly contextExtractionQuality: number;
-  readonly workSizeStability: number;
-  readonly comment: string;
+  readonly contextExtractionScore: number;
+  readonly workSizeStabilityScore: number;
+}
+
+interface SessionMetrics {
+  readonly summary: SessionMetricsSummary;
+  readonly intentAlignment: string;
+  readonly constraintAdherence: string;
+  readonly contextExtraction: string;
+  readonly workSizeStability: string;
 }
 
 interface WorkPackageProcessEvidence extends ProcessEvidence {
@@ -792,7 +827,6 @@ interface WorkPackageSearchCondition extends SearchCondition {
 // ======== Review系 ========
 
 interface ReviewStatement {
-  readonly sprintNumber: number;
   readonly environment: string;
 }
 
@@ -802,13 +836,8 @@ interface AcGroup {
   readonly acJudgments: readonly AcJudgment[];
 }
 
-interface AcJudgment {
-  readonly acNumber: string;
-  readonly description: string;
-  readonly judgment: "unchecked" | "pass" | "conditional" | "fail" | "removed";
-  readonly evidence?: string;
-  readonly note?: string;
-}
+// AcceptanceCriteria と同一構造。型エイリアスとして統一。
+type AcJudgment = AcceptanceCriteria;
 
 interface OverallReviewResult {
   readonly judgment: "pass" | "conditional" | "fail";
@@ -821,6 +850,7 @@ interface ReviewIdentifier extends Identifier {
 interface ReviewData {
   readonly identifier: ReviewIdentifier;
   readonly statement: ReviewStatement;
+  readonly sprint: SprintIdentifier;
   readonly plannedAcGroups: readonly AcGroup[];
   readonly postPlanAcGroups?: readonly AcGroup[];
   readonly overallResult?: OverallReviewResult;
@@ -835,12 +865,31 @@ interface ReviewSearchCondition extends SearchCondition {
 interface Metrics {
 }
 
+/**
+ * スプリントメトリクス（Domain層のオブジェクト操作時の構造）。
+ *
+ * 【スキーマの使い分け（PO確定）】
+ * - オブジェクト操作時（Domain層）: summary（各指標のスコアとVelocity換算値）と5指標それぞれの
+ *   ナラティブ（string）を分離して保持する。
+ * - 記録時（Projects V2 への書き込み）: 1024バイト制限（TEXTフィールド）のため、
+ *   `harness-metrics-summary`（数値JSONのみ）と5指標のナラティブ独立フィールドに分離して書き込む。
+ *   詳細は design-spec.md 5.2 / 5.3 を参照。
+ */
+interface SprintMetricsSummary {
+  readonly goalAchievementScore: number; // 1〜5
+  readonly estimationAccuracyScore: number; // 1〜5
+  readonly qualityIntegrityScore: number; // 1〜5
+  readonly collaborationDisciplineScore: number; // 1〜5
+  readonly velocity: number; // ΣPBI(実感サイズ × ウェイト換算値)
+}
+
 interface SprintMetrics extends Metrics {
-  readonly goalAchievementRate: number;
-  readonly estimationAccuracy: number;
-  readonly qualityIntegrity: number;
-  readonly collaborationDiscipline: number;
-  readonly velocity: number;
+  readonly summary: SprintMetricsSummary;
+  readonly goalAchievement: string;
+  readonly estimationAccuracy: string;
+  readonly qualityIntegrity: string;
+  readonly collaborationDiscipline: string;
+  readonly velocity: string;
 }
 
 interface KeepProblemTryAdvice {
@@ -907,11 +956,13 @@ sequenceDiagram
     else 実実行モード
         Skill->>Domain: UseCase.operation(inputs)
         Domain-->>Skill: Plan
-        Skill->>Gateway: PlanGateway.execute(Plan)
+        Note over Domain: PlanGateway.execute(Plan)<br/>（DIにより注入されたGateway実装を呼び出し）
+        Domain->>Gateway: execute(Plan)
         Note over Gateway: Stepごとに<br/>適切なハンドラにルーティング
         Gateway->>External: gh CLI / API呼び出し
         External-->>Gateway: 実行結果
-        Gateway-->>Skill: ExecutionResult
+        Gateway-->>Domain: ExecutionResult
+        Domain-->>Skill: 実行結果の要約
         Note over Skill: 結果を解釈・整形
         Skill-->>User: 実行完了を報告
     end
@@ -1090,10 +1141,11 @@ sequenceDiagram
     participant Gateway as Gateway層
 
     User->>Skill: セッション終了 / スプリント終了
-    Skill->>Domain: find(WP#5) / get(PBI#3)
-    Domain->>Gateway: PlanGateway.execute(Plan)
+    Skill->>Domain: find(WP#5)
+    Note over Domain: PlanGateway.execute(Plan)<br/>（DI注入されたGatewayで実行）
+    Domain->>Gateway: execute(Plan)
     Gateway-->>Domain: WorkPackageData / ProductBacklogItemData
-    Domain-->>Skill: Data（effort, sizeVariance等の数値）
+    Domain-->>Skill: データ
 
     Note over Skill: AIが数値を解釈<br/>ProcessAnalysisを生成
 
@@ -1258,12 +1310,12 @@ sequenceDiagram
     else 存在しない
         Domain->>GW: createBoard("Product Backlog", owner)
         GW->>GH: gh project create
-        GH-->>GW: BoardOutput {id: 12, name: "Product Backlog"}
+        GH-->>GW: BoardOutput {id: 13, name: "Product Backlog"}
         GW-->>Domain: BoardOutput
-        Domain-->>Skill: BoardOutput {id: 12, name: "Product Backlog"}
+        Domain-->>Skill: BoardOutput {id: 13, name: "Product Backlog"}
     end
 
-    Skill->>GW: writeConfig(.harnessrc, {projects: {productBacklog: 10, sprint: 11}})
+    Skill->>GW: writeConfig(.harnessrc, {projects: {productBacklog: 10, sprintBoard: 11, retrospectiveBoard: 12}})
     GW->>GH: (ファイルI/O - ローカル)
     GW-->>Skill: OK
     Skill-->>User: "Project IDを自動解決しました"
@@ -1275,9 +1327,11 @@ sequenceDiagram
 
 ```json
 {
+  "_comment": "GitHub Project V2 のボード番号を保持する設定ファイル。setup-github-projects スキルが自動生成し、Gateway 層（composition-root.ts）が読み込む。追跡対象外のため、キー構成の公開は .harnessrc.example を参照。JSONキー名の正の定義は本ファイル（第7章）、ボード名・harness-* フィールドの定義は guides/design-spec.md 5.3 を参照。",
   "projects": {
     "productBacklog": 10,
-    "sprint": 11
+    "sprintBoard": 11,
+    "retrospectiveBoard": 12
   }
 }
 ```
@@ -1286,11 +1340,12 @@ sequenceDiagram
 
 ```json
 {
+  "_comment": "GitHub Project V2 のボード番号を保持する設定ファイルのリファレンス。実値は setup-github-projects が .harnessrc に自動生成する。キー構成・型・意味を公開する。このファイルはテンプレートのため、<number> を実ボード番号へ置き換えること（このままでは JSON として無効）。JSONキー名の正の定義は guides/architecture-design.md 第7章、ボード名・harness-* フィールドの定義は guides/design-spec.md 5.3 を参照。",
   "projects": {
-    "productBacklog": 10,
-    "sprint": 11
-  },
-  "_comment": "このファイルは手動編集時のリファレンスです。通常は setup-github-projects が自動生成します。"
+    "productBacklog": <number>,
+    "sprintBoard": <number>,
+    "retrospectiveBoard": <number>
+  }
 }
 ```
 
@@ -1351,24 +1406,24 @@ V2カスタムフィールド含む）は保持され、子WPもClosed状態で�
 
 #### PBI
 
-| フィールド                    | アーカイブ前 | アーカイブ後                                                |
-| ----------------------------- | ------------ | ----------------------------------------------------------- |
-| Issue状態                     | Open         | **Closed**                                                  |
-| Title / Body                  | 設定済み     | 変化なし                                                    |
-| Projects V2 Status            | Done         | Done（変化なし）                                            |
-| Projects V2カスタムフィールド | 設定済み     | **保持**（`harness-size-*`, `harness-efforts-analysis` 等） |
-| 子WP                          | 全WPがDone   | 全WPが **Closed**                                           |
-| マイルストーン                | 設定済み     | 変化なし                                                    |
+| フィールド                    | アーカイブ前 | アーカイブ後                                              |
+| ----------------------------- | ------------ | --------------------------------------------------------- |
+| Issue状態                     | Open         | **Closed**                                                |
+| Title / Body                  | 設定済み     | 変化なし                                                  |
+| Projects V2 Status            | Done         | Done（変化なし）                                          |
+| Projects V2カスタムフィールド | 設定済み     | **保持**（`harness-size-*`, `harness-effort-summary` 等） |
+| 子WP                          | 全WPがDone   | 全WPが **Closed**                                         |
+| マイルストーン                | 設定済み     | 変化なし                                                  |
 
 #### WP
 
-| フィールド                    | アーカイブ前                       | アーカイブ後                                                 |
-| ----------------------------- | ---------------------------------- | ------------------------------------------------------------ |
-| Issue状態                     | Done（Open維持）→ スプリント終了時 | **Closed**                                                   |
-| Projects V2 Status            | Done                               | Done（変化なし）                                             |
-| Projects V2カスタムフィールド | 設定済み                           | **保持**（`harness-efforts-analysis`, `harness-metrics` 等） |
-| processEvidence               | 設定済み                           | 変化なし                                                     |
-| sessionMetrics                | 設定済み                           | 変化なし                                                     |
+| フィールド                    | アーカイブ前                       | アーカイブ後                                                                                                           |
+| ----------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Issue状態                     | Done（Open維持）→ スプリント終了時 | **Closed**                                                                                                             |
+| Projects V2 Status            | Done                               | Done（変化なし）                                                                                                       |
+| Projects V2カスタムフィールド | 設定済み                           | **保持**（`harness-effort-summary`, `harness-metrics-summary` とセッションメトリクス4指標ナラティブ独立フィールド 等） |
+| processEvidence               | 設定済み                           | 変化なし                                                                                                               |
+| sessionMetrics                | 設定済み                           | 変化なし                                                                                                               |
 
 #### Review / Retrospective
 

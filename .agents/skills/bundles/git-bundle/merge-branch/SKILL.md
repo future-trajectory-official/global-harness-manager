@@ -2,7 +2,10 @@
 name: merge-branch
 description: ユーザーの承認後にGitHubのPull Requestをマージし、ローカル環境を同期・クリーンアップします。
 tags:
-  - trigger: merge-pr, merge-branch, complete-work-package, finish-pr
+  - trigger: merge-pr
+  - trigger: merge-branch
+  - trigger: complete-work-package
+  - trigger: finish-pr
   - category: git
   - constraints: requires-gh-cli, requires-user-approval
 ---

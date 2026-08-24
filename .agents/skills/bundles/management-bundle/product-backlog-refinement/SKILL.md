@@ -1,61 +1,79 @@
 ---
 name: product-backlog-refinement
-description: プロダクトオーナー（ユーザー）と対話しながら、バックログの精査、優先順位付け、および機能要件の壁打ちを行う。
+description: プロダクトオーナーと対話しながら、バックログの精査、優先順位付け、およびPBIの確定を行う。
 tags:
-  trigger:
-    - backlog-refinement
-    - prioritize-pbi
-    - scope-adjustment
-  category: management
-  constraints: no-development
+  - trigger: product-backlog-refinement
+  - trigger: backlog-refinement
+  - trigger: prioritize-pbi
+  - category: management
 ---
 
-# 📋 プロダクトバックログリファインメント
+# product-backlog-refinement
 
-このスキルは、実装作業を一旦停止し、**「今後どのような機能を作るか」「何から順番に着手するべきか」**のプロジェクト管理に専念するためのものです。
+スプリントプランニングの文脈でPOと対話しながら、今回のスプリントに含めるPBIを選定・確定する。各操作の入力形式と実行コマンドは
+[references/reference.md](/.agents/skills/bundles/management-bundle/product-backlog-refinement/references/reference.md)
+を参照。
 
-## 🎯 スキルの目的
+## 操作スクリプト
 
-- ユーザー（プロダクトオーナー =
-  PO）との対話を通じ、システムへの新規要望や課題を整理（ヒアリング）する。
-- 指名された自身の役割の視点から、要望に対する「実現難易度」「設計の整合性」「既存システムへの影響」等のフィードバックを行う。
-- POの意思決定をもとにPBIの優先順位を決め、次のスプリントで何をするかを明確にする。
+| 操作         | スクリプト             | 用途                                                         |
+| ------------ | ---------------------- | ------------------------------------------------------------ |
+| PBI検索      | `search_pbi.ts`        | 既存PBIをスプリント番号・ステータスで検索（keywordは未実装） |
+| PBI発案      | `propose_pbi.ts`       | 新規PBIをIdea状態でIssue作成                                 |
+| サイズ見積り | `estimate_pbi_size.ts` | PBIのサイズ（XS/S/M/L/XL）を記録                             |
+| PBI更新      | `update_pbi.ts`        | PBIのサマリー・成果物・証明方法を更新する                    |
 
-## 🔄 実施フロー
+## 制約
 
-1. **現状把握 (Assess)**
-   - **プロダクトバックログ** ([product-backlog.md](/.agents/management/product-backlog.md))
-     を読み込み、これまでの完了済みPBIと現在の課題を把握する。
-   - **Epic Master** ([epic-master.md](/.agents/management/epic-master.md))
-     を読み込み、プロジェクトにおける各エピックやフィーチャーの進捗状況を把握する。
-   - **運用ガイドライン** ([backlog-guidelines.md](/guides/backlog-guidelines.md))
-     を読み込み、見積り基準（T シャツサイズ）やステータス管理ルールを確認する。
+- 各操作のJSON入力形式と必須フィールドは
+  [references/reference.md](/.agents/skills/bundles/management-bundle/product-backlog-refinement/references/reference.md)
+  で確認すること。
+- `--dry-run` でPlan内容を確認してから本実行に移ること。
 
-2. **要件定義・壁打ち (Refine)**
-   - **【PBI深掘りディスカッション】**
-     深掘りの目的は実装の確実性を向上させ、見積もり精度とスプリント予測可能性を高めることです。
-     各候補PBIに対して、スコープ可視化・技術的不確実性・サイズ感検証・依存関係の4観点から深掘りを行います。
-     詳細な問いかけ例と運用ガイドは [references/pbi-deep-dive.md](/guides/pbi-deep-dive.md) を参照。
-     深掘りの結果、技術的不確実性が高い場合は `WP_0`（スパイクWP）をバックログに記録し、
-     品質投資・不確実性の分離としてPOと合意します。
-   - ユーザーからの要望やビジョンに対し、複数のアプローチや提案（Epic
-     分割など）をリスト化して提示する。
+## Quick-Start
 
-3. **優先順位付けとスプリントゴールの定義 (Prioritize & Goal Setting)**
-   - 既存の PBI
-     を見直し、価値が低下した要望や、現段階で「今後やらなくてもよくなったもの（不要・廃止）」を洗い出し、バックログから除外（またはアーカイブ）する。
-   - 残りの提案の中から、ユーザーに「どれを一番優先するか」の決定を依頼する。
-   - 次回のスプリントで「すぐに着手・完了」させる対象と、将来のロードマップを明確に切り分ける。
-   - **【重要】**
-     着手対象が決定したら、「今回のスプリントが終わった時、ユーザーにどんな価値（Outcome）が生まれるのか」という
-     **スプリントゴール** を明確に言語化し、POと合意する。
+### Step 1: PBI検索（候補確認）
 
-4. **ドキュメントの更新と完了宣言 (Documenting)**
-   - 決定した優先順位、除外するアイテム、スプリントゴール、および機能の詳細を、バックログファイルに反映する。
-   - 更新が完了したら、期待される結果を満たしたことを示すため、更新エビデンス（更新されたバックログの差分など）を提示して終了する。
+[search_pbi.ts の入力](/.agents/skills/bundles/management-bundle/product-backlog-refinement/references/reference.md#search_pbits--pbi検索)
+を参考に、既存PBIを条件検索する。
 
-## ⚠️ 注意事項
+```bash
+echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/search_pbi.ts
+```
 
-- 本スキルを実行中は、**いかなるプログラムの実装や PR 作成、環境操作も行わないこと**（"No
-  Development" ルール）。
-- あくまで「指名された自身の専門役割」として、ユーザーの意思決定支援に徹すること。
+<!-- STOP -->
+
+### Step 2: PBI発案（新規立案）
+
+候補にないPBIが必要な場合、
+[propose_pbi.ts の入力](/.agents/skills/bundles/management-bundle/product-backlog-refinement/references/reference.md#propose_pbits--pbi発案)
+に従い発案する。
+
+```bash
+echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/propose_pbi.ts --dry-run
+```
+
+ユーザー承認後に `--dry-run` を外して本実行。
+
+<!-- STOP -->
+
+### Step 3: サイズ見積り
+
+各PBIに
+[estimate_pbi_size.ts の入力](/.agents/skills/bundles/management-bundle/product-backlog-refinement/references/reference.md#estimate_pbi_sizets--サイズ見積り)
+でサイズを設定する。
+
+```bash
+echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/estimate_pbi_size.ts
+```
+
+<!-- STOP -->
+
+### Step 4: PBI更新
+
+[update_pbi.ts の入力](/.agents/skills/bundles/management-bundle/product-backlog-refinement/references/reference.md#update_pbits--pbi更新)
+でPBIのサマリー・成果物・証明方法を更新する。
+
+```bash
+echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/update_pbi.ts --dry-run
+```

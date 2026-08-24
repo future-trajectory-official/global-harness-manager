@@ -1,0 +1,7 @@
+# .agents/context/ 配下の git 追跡制御（ネスト型 .gitignore）
+
+# product.md はリポジトリ固有用語（利用者編集）のため追跡対象外
+product.md
+
+# 構造見本（.example）は追跡対象として保持する
+!product.md.example

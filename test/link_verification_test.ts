@@ -43,8 +43,6 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
     const knownFiles = [
       "product-backlog.md",
       "backlog-guidelines.md",
-      "VISION.md",
-      "epic-master.md",
       "architect.md",
       "developer.md",
       "scrum-master.md",
@@ -64,7 +62,6 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
       "designer.md",
       "README.md",
       "metrics-guide.md",
-      "retrospective-guide.md",
       "review-guide.md",
       "metrics.jsonl",
     ];

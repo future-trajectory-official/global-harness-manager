@@ -11,12 +11,15 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 
 ## 1. 成果確認フェーズ
 
-### 1-1. 実績の要約
+**開始条件**:
+POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
+
+### 1-1. 実績effortの記録
 
 - **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
 - **実行スキル**:
-  `[summarize-session-outcomes](/.agents/skills/bundles/management-bundle/summarize-session-outcomes/SKILL.md)`
-- **成果物**: 「Session Outcome Summary」報告
+  `[record-work-package-effort](/.agents/skills/bundles/management-bundle/record-work-package-effort/SKILL.md)`
+- **内容**: セッションの実績effort（介入回数）と乖離理由をGitHub Issueに記録します。
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
 
@@ -26,11 +29,14 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 
 ## 2. 内省（リフレクション）フェーズ
 
+**開始条件**:
+POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
+
 ### 2-1. 共進化 KPT
 
 - **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
 - **実行スキル**:
-  `[kpt-session-reflection](/.agents/skills/bundles/management-bundle/kpt-session-reflection/SKILL.md)`
+  `[record-work-package-kpt](/.agents/skills/bundles/management-bundle/record-work-package-kpt/SKILL.md)`
 - **成果物**: 「Session Reflection (KPT)」報告
 - **重要**: AI から人間への建設的なフィードバックを真摯に受け止め、次回の協働品質向上に繋げます。
 
@@ -42,12 +48,15 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 
 ## 3. 計測と記録フェーズ
 
+**開始条件**:
+POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
+
 ### 3-1. 協働メトリクスの記録
 
 - **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
 - **実行スキル**:
-  `[record-session-metrics](/.agents/skills/bundles/management-bundle/record-session-metrics/SKILL.md)`
-- **成果物**: `metrics.jsonl` へのデータ蓄積と傾向レポートの出力
+  `[record-work-package-metrics](/.agents/skills/bundles/management-bundle/record-work-package-metrics/SKILL.md)`
+- **成果物**: GitHub Issueへのセッションメトリクス記録
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
 
@@ -57,12 +66,15 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 
 ## 4. 完了フェーズ
 
-### 4-1. バックログ更新
+**開始条件**:
+POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
+
+### 4-1. WP完了
 
 - **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
 - **実行スキル**:
-  `[update-backlog](/.agents/skills/bundles/management-bundle/update-backlog/SKILL.md)`
-- **内容**: セッションの成果に基づき、PBI のステータスを更新（Done への移動や、残PBIの整理）します。
+  `[complete-work-package](/.agents/skills/bundles/management-bundle/complete-work-package/SKILL.md)`
+- **内容**: WPをDone状態に遷移し、兄弟WPが全完了している場合は親PBIも完了します。
 
 ### 4-2. セッションアーティファクトのクリーンアップ
 
