@@ -76,11 +76,13 @@ function hasUncommittedChanges(): boolean {
 
 /**
  * 全変更をWIPコミットとして保存する。
- * git add -A で全変更をステージングし、"[wip] savepoint" メッセージでコミットする。
+ * git add -A で全変更をステージングし、"chore(wip): セーブポイント" メッセージでコミットする。
+ * ※ 本リポジトリは commit-msg フックで Conventional Commits 形式（type: 内容）を強制するため
+ *   "[wip]" 形式は拒否される。内容に日本語文字を含める必要がある。
  */
 function commitAllAsWip(): void {
   runGit(["add", "-A"]);
-  const result = runGit(["commit", "-m", "wip: セーブポイント"]);
+  const result = runGit(["commit", "-m", "chore(wip): セーブポイント"]);
   if (result.code === 0) {
     console.log(result.stdout);
   } else {

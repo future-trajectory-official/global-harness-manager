@@ -35,7 +35,7 @@ AIエージェントに「人間と同じようにこまめに思考を切り替
 ```mermaid
 graph TD
     A[開発開始: Phase 2] --> B(マイルストーン達成/テスト通過)
-    B --> C[WIP一時コミット: git commit -m '[wip] savepoint']
+    B --> C[WIP一時コミット: git commit -m 'chore(wip): セーブポイント']
     C --> D{開発完了?}
     D -- No --> B
     D -- Yes: Phase 3 --> E[トリアージ開始: version-control-specialist 起動]
@@ -50,7 +50,10 @@ graph TD
 
 - 開発フェーズ（Phase
   2）の実行中、テストが新しくパスした瞬間や、重要なファイル書き換えが成功した瞬間ごとに、WIP専用ブランチ上で
-  `git commit -m "[wip] savepoint"` などの一時的なセーブポイントを作成します。
+  `git commit -m "chore(wip): セーブポイント"` などの一時的なセーブポイントを作成します。
+- **注記**: 本リポジトリは commit-msg フックで Conventional Commits
+  形式（`type: 内容`）を強制するため、 `[wip]` 形式は拒否される。WIP でも `chore(wip): <日本語>`
+  形式で記録すること。フックは内容に日本語文字を含むことを必須とする。
 - **効果**: 途中で試行錯誤が失敗したりコードが壊れた場合、いつでも `git checkout`
   で過去の動いていた状態に切り戻す（Revertability）ことができ、AIの認知的不安を解消します。
 
