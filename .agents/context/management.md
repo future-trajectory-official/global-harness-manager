@@ -166,6 +166,19 @@ PBIを分解した最小の実装単位。1セッションで1つのWPを完了�
 
 状態は原則として単方向（Idea → Todo → InProgress → Done）で遷移する。
 
+> **表記と機械値の区別** 本文の状態名（`Todo` / `InProgress` /
+> `Done`）は**人間が読む正表記**であり、PascalCase（スペースなし）で統一する。
+> 一方、システム上の機械値には次の2種類があり、**いずれも本文表記とは別物**として扱う：
+>
+> - **内部Stage値**:
+>   `"idea" | "todo" | "inProgress" | "done"`（ローワーキャメル。状態遷移機械ロジック・型定義で使用）
+> - **ProjectV2 Statusラベル**: `"Todo" / "In Progress" / "Done"`（GitHub ProjectV2
+>   のデフォルトラベル。`inProgress`→`In Progress` に対応）
+>
+> よって `InProgress`（正表記）と
+> `In Progress`（ProjectV2ラベル）は**スペースの有無で区別**される別物である。ドキュメント上の正表記は
+> `InProgress` を維持し、機械値（`In Progress`）は上記のとおり括弧で明記する。
+
 ### 3.1 PBI の状態遷移
 
 ```

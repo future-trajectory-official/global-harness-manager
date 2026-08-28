@@ -894,7 +894,7 @@ V2のTEXTフィールド制限）であり、4分割により全文保存が可�
 | スプリントKPT（Try）                             | Body      | **V2:Custom**: `harness-kpt-try` (Text)                          |
 | スプリントKPT（Advise）                          | Body      | **V2:Custom**: `harness-kpt-advise` (Text)                       |
 | スプリントメトリクス（summary）                  | Body      | **V2:Custom**: `harness-metrics-summary` (Text / JSON)           |
-| スプリントメトリクス（Goal Achievement）         | Body      | **V2:Custom**: `harness-metrics-goal-achievement` (Text)         |
+| スプリントメトリクス（Goal Achievement Rate）    | Body      | **V2:Custom**: `harness-metrics-goal-achievement` (Text)         |
 | スプリントメトリクス（Estimation Accuracy）      | Body      | **V2:Custom**: `harness-metrics-estimation-accuracy` (Text)      |
 | スプリントメトリクス（Quality Integrity）        | Body      | **V2:Custom**: `harness-metrics-quality-integrity` (Text)        |
 | スプリントメトリクス（Collaboration Discipline） | Body      | **V2:Custom**: `harness-metrics-collaboration-discipline` (Text) |
@@ -930,10 +930,10 @@ Body は人間向けの補助表現（従表現）であり、KPT とスプリ�
 
 ## Sprint Metrics
 
-### Goal Achievement
+### Goal Achievement Rate
 
 - score: [1-5]
-- narrative: [Goal Achievementのナラティブ]
+- narrative: [Goal Achievement Rate のナラティブ]
 
 ### Estimation Accuracy
 

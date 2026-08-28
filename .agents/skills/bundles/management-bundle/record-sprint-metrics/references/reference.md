@@ -80,7 +80,7 @@
       "operation": "recordSprintMetrics",
       "params": {
         "itemId": "670",
-        "body": "## Sprint Metrics\n\n### Goal Achievement\n- score: 5\n- narrative: ...\n\n### Estimation Accuracy\n- score: 4\n- narrative: ...",
+        "body": "## Sprint Metrics\n\n### Goal Achievement Rate\n- score: 5\n- narrative: ...\n\n### Estimation Accuracy\n- score: 4\n- narrative: ...",
         "metrics": {
           "summary": {
             "goalAchievementScore": 5,
