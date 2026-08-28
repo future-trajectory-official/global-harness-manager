@@ -23,10 +23,12 @@ tags:
 
 ### wip モード（開発中）
 
-意味は問わない。動いたらセーブする。
+意味は問わない。動いたらセーブする。 ※ 本リポジトリは commit-msg フックで Conventional Commits
+形式（`type: 内容`）を強制するため、 `[wip]` 形式は拒否される。WIP でも `chore(wip): <日本語>` （例:
+`chore(wip): セーブポイント`）形式で記録すること。※ フックは内容に日本語文字を含むことを必須とする。
 
 ```bash
-git add -A && git commit -m "[wip] <savepoint>"
+git add -A && git commit -m "chore(wip): セーブポイント"
 ```
 
 ### triage モード（プッシュ直前）
