@@ -14,6 +14,22 @@ description: セッションの成果を要約し、内省（KPT）とメトリ�
 **開始条件**:
 POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
 
+### 1-0. 用語の同期
+
+- **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
+- **実行スキル**:
+  `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
+- **入力（前提）**: `.agents/context/management.md`（必須）/ `.agents/context/product.md`（任意）
+- **内容**: セッション終了時に用語集（管理概念・プロジェクト固有の用語）を読み、共有言語として PO
+  に確認します。※ 開始時（assess-context）で確立した共有言語を、終了時の振り返り前に再確認し、
+  用語解釈の齟齬を残さないために設置している。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+---
+
 ### 1-1. 実績effortの記録
 
 - **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
