@@ -62,6 +62,11 @@ echo '{"wpTitle":"Implement login UI","parentPbi":{"title":"Login feature","id":
 
 WPの計画前effort見積り（initialEstimate）を記録する。
 
+> 本セクションの `initialEstimate`（camelCase）はスクリプト入力・ドメイン層の機械キー。 GitHub
+> Issue体・集計出力では snake_case（`initial_estimate`）となる（`read-project-state` 等）。
+> 両者は同一概念のレイヤー別キーであり形式は変更しない（機械値）。変換規則は
+> `record-pbi-effort-analysis` （キー名変換）を参照。
+
 ### 入力パラメータ
 
 | パラメータ        | 型                  | 必須 | 説明                                                                                                              |

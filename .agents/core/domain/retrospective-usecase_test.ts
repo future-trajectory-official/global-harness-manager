@@ -187,7 +187,7 @@ Deno.test("retrospectiveUseCase - recordSprintMetrics should return Plan with re
   assertEquals(metrics.goalAchievement, "Goals largely achieved");
   const body = plan.steps[1].params.body as string;
   assertEquals(body.includes("## Sprint Metrics"), true);
-  assertEquals(body.includes("### Goal Achievement"), true);
+  assertEquals(body.includes("### Goal Achievement Rate"), true);
   assertEquals(body.includes("- score: 4"), true);
   assertEquals(body.includes("- narrative: Goals largely achieved"), true);
   assertEquals(body.includes("### Velocity"), true);

@@ -69,7 +69,7 @@ function formatMetricsBody(metrics: SprintMetrics): string {
   lines.push("");
   const items: Array<{ name: string; value: string | number; narrative: string }> = [
     {
-      name: "Goal Achievement",
+      name: "Goal Achievement Rate",
       value: metrics.summary.goalAchievementScore,
       narrative: metrics.goalAchievement,
     },

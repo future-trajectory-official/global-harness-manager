@@ -26,6 +26,32 @@ description: スプリントの終了プロセス（レビューのアーカイ�
 
 ## Phase 1: スプリントレビューのアーカイブ (Archive Sprint Review)
 
+### Phase 1-0. 用語の同期
+
+スプリント終了時に使う管理概念とプロジェクト固有の用語を読み、共有言語として確認します。 ※
+スプリント開始時（sprint-start
+の用語同期）で確立した共有言語を、終了時の各分析・振り返りの前に再確認し、
+用語解釈の齟齬を残さないために設置している。
+
+- **読み込むペルソナ**: `[scrum-master.md](/.agents/rules/scrum-master.md)`
+  (進行・ファシリテーション)
+- **実行するスキル**:
+  `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
+- **入力（前提条件）**: `.agents/context/management.md`（必須）/
+  `.agents/context/product.md`（任意）。
+- **期待される結果（終了条件）**:
+  1. 用語集（管理概念・プロジェクト固有の用語）が出典別に要約提示されていること。
+  2. 提示した語彙が本スプリントの共有言語として PO に確認されていること。
+
+**停止指示**: 用語同期の結果を PO に提示し、共有言語として確認を得た上で次のステップへ進む。PO
+の次の指示を待て。
+
+<!-- STOP -->
+
+---
+
+### Phase 1-1. スプリントレビューのアーカイブ
+
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
