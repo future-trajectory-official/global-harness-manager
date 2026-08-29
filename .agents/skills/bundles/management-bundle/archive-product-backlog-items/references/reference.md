@@ -61,5 +61,3 @@ echo '{"identifier":{"title":"Sprint-End-Persistence","id":"I_kwDOR5-zI88AAAABKc
 - スクリプトは「stdin パース・UseCase呼び出し・結果表示」の3役割のみを担当する
 - GitHub 操作は既存 UseCase（`archive`）のみを経由し、Gateway の既存 `archive` ハンドラーが
   closeItem を再利用する
-- ローカルファイル（[product-backlog.md](/.agents/management/product-backlog.md) /
-  [product-backlog-archive.md](/.agents/management/product-backlog-archive.md)）には一切書き込まない
