@@ -23,7 +23,7 @@ AIは `define-acceptance-criteria`
 スプリントバックログの**最下部（最後）**に、以下の形式でレビュー検証PBIを追加します。
 
 ```markdown
-### [TODO] [SprintReview]/Sprint-N-Review-Verification
+### [Todo] [SprintReview]/Sprint-N-Review-Verification
 
 - **概要**: スプリント N の全PBIの受入基準 (AC) が達成されていることを、
   サンドボックス環境上での実機デモおよびエビデンスに基づいて PO と共に客観的に検証・承認する。
