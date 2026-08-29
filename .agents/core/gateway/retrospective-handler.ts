@@ -1,6 +1,7 @@
 import type { EntityType, StepOperation } from "../domain/types.ts";
 import type { KeepProblemTryAdvice, SprintMetrics } from "../domain/types.ts";
 import type { OperationHandler, PlanGatewayAdapter } from "./plan-gateway-adapter.ts";
+import { FIELD, type FieldRef, fieldRef } from "./field-registry.ts";
 
 /**
  * Retrospective エンティティの全操作ハンドラーを登録する専用ハンドラー。
@@ -114,11 +115,13 @@ export class RetrospectiveHandler {
     itemId: string,
     kpta: KeepProblemTryAdvice,
   ): Promise<{ operation: string; success: boolean; itemId: string; error?: string }> {
-    const fields: Array<[string, string]> = [];
-    if (kpta.keep) fields.push(["harness-kpt-keep", kpta.keep]);
-    if (kpta.problem) fields.push(["harness-kpt-problem", kpta.problem]);
-    if (kpta.try) fields.push(["harness-kpt-try", kpta.try]);
-    if (kpta.advise) fields.push(["harness-kpt-advise", kpta.advise]);
+    const fields: Array<[FieldRef, string]> = [];
+    if (kpta.keep) fields.push([fieldRef("retrospectiveBoard", FIELD.kptKeep), kpta.keep]);
+    if (kpta.problem) {
+      fields.push([fieldRef("retrospectiveBoard", FIELD.kptProblem), kpta.problem]);
+    }
+    if (kpta.try) fields.push([fieldRef("retrospectiveBoard", FIELD.kptTry), kpta.try]);
+    if (kpta.advise) fields.push([fieldRef("retrospectiveBoard", FIELD.kptAdvise), kpta.advise]);
     const result = await this.writeFields(itemId, fields);
     return { operation: "recordSprintKpt", ...result };
   }
@@ -135,7 +138,7 @@ export class RetrospectiveHandler {
     itemId: string,
     metrics: SprintMetrics,
   ): Promise<{ operation: string; success: boolean; itemId: string; error?: string }> {
-    const fields: Array<[string, string]> = [];
+    const fields: Array<[FieldRef, string]> = [];
     const s = metrics.summary;
     const summaryJson = JSON.stringify({
       goal_achievement_rate: { score: s.goalAchievementScore },
@@ -144,20 +147,34 @@ export class RetrospectiveHandler {
       collaboration_discipline: { score: s.collaborationDisciplineScore },
       velocity: { value: s.velocity },
     });
-    fields.push(["harness-metrics-summary", summaryJson]);
+    fields.push([fieldRef("retrospectiveBoard", FIELD.metricsSummary), summaryJson]);
     if (metrics.goalAchievement) {
-      fields.push(["harness-metrics-goal-achievement", metrics.goalAchievement]);
+      fields.push([
+        fieldRef("retrospectiveBoard", FIELD.metricsGoalAchievement),
+        metrics.goalAchievement,
+      ]);
     }
     if (metrics.estimationAccuracy) {
-      fields.push(["harness-metrics-estimation-accuracy", metrics.estimationAccuracy]);
+      fields.push([
+        fieldRef("retrospectiveBoard", FIELD.metricsEstimationAccuracy),
+        metrics.estimationAccuracy,
+      ]);
     }
     if (metrics.qualityIntegrity) {
-      fields.push(["harness-metrics-quality-integrity", metrics.qualityIntegrity]);
+      fields.push([
+        fieldRef("retrospectiveBoard", FIELD.metricsQualityIntegrity),
+        metrics.qualityIntegrity,
+      ]);
     }
     if (metrics.collaborationDiscipline) {
-      fields.push(["harness-metrics-collaboration-discipline", metrics.collaborationDiscipline]);
+      fields.push([
+        fieldRef("retrospectiveBoard", FIELD.metricsCollaborationDiscipline),
+        metrics.collaborationDiscipline,
+      ]);
     }
-    if (metrics.velocity) fields.push(["harness-metrics-velocity", metrics.velocity]);
+    if (metrics.velocity) {
+      fields.push([fieldRef("retrospectiveBoard", FIELD.metricsVelocity), metrics.velocity]);
+    }
     const result = await this.writeFields(itemId, fields);
     return { operation: "recordSprintMetrics", ...result };
   }
@@ -167,12 +184,12 @@ export class RetrospectiveHandler {
    * Issue の node-id を解決し、Retrospective Board に追加してから各フィールドを設定する。
    * ボード番号が未設定の場合は何もせず成功を返す。
    * @param itemId - 対象 Issue 番号
-   * @param fields - [フィールド名, 値] の配列
+   * @param fields - [FieldRef, 値] の配列
    * @returns 成功時は { success: true, itemId }、失敗時は { success: false, error }
    */
   private async writeFields(
     itemId: string,
-    fields: Array<[string, string]>,
+    fields: Array<[FieldRef, string]>,
   ): Promise<{ success: boolean; itemId: string; error?: string }> {
     if (fields.length === 0 || !this.adapter.retrospectiveBoardNumber) {
       return { success: true, itemId };
@@ -194,67 +211,27 @@ export class RetrospectiveHandler {
     } catch {
       return { success: false, itemId, error: "Failed to parse issue view output" };
     }
-    let projectItemNodeId: string;
-    try {
-      ({ projectItemNodeId } = await this.adapter.addItemToProject(
-        nodeData.id,
-        this.adapter.retrospectiveBoardNumber,
-      ));
-    } catch {
-      const owned = this.adapter.scopeOwner;
-      const repod = this.adapter.scopeRepository;
-      if (!owned || !repod) {
-        return { success: false, itemId, error: "scope owner/repository is not resolved" };
-      }
-      const lookup =
-        `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
-      const lr = await this.adapter.runCommand("gh", [
-        "api",
-        "graphql",
-        "-f",
-        `query=${lookup}`,
-        "-f",
-        `owner=${owned}`,
-        "-f",
-        `repo=${repod}`,
-        "-F",
-        `num=${parseInt(itemId, 10)}`,
-      ]);
-      if (lr.code !== 0) {
-        return { success: false, itemId, error: lr.stderr };
-      }
-      const ld = JSON.parse(lr.stdout) as {
-        data?: {
-          repository?: {
-            issue?: {
-              projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
-            };
-          };
-        };
+    const projectItemNodeId = await this.adapter.resolveProjectItemOnBoard(
+      itemId,
+      nodeData.id,
+      "retrospectiveBoard",
+    );
+    if (!projectItemNodeId) {
+      return {
+        success: false,
+        itemId,
+        error: `Retrospective #${itemId} is not on Board #${this.adapter.retrospectiveBoardNumber}`,
       };
-      const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
-        n.project.number === this.adapter.retrospectiveBoardNumber!
-      );
-      if (!matched) {
-        return {
-          success: false,
-          itemId,
-          error:
-            `Retrospective #${itemId} is not on Board #${this.adapter.retrospectiveBoardNumber}`,
-        };
-      }
-      projectItemNodeId = matched.id;
     }
     const errors: string[] = [];
     for (const [fieldName, value] of fields) {
       const result = await this.adapter.setTextFieldValue(
         projectItemNodeId,
-        this.adapter.retrospectiveBoardNumber,
         fieldName,
         value,
       );
       if (!result.success) {
-        errors.push(`${fieldName}: ${result.error ?? "unknown error"}`);
+        errors.push(`${fieldName.fieldName}: ${result.error ?? "unknown error"}`);
       }
     }
     if (errors.length > 0) {

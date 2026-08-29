@@ -1,5 +1,12 @@
-import type { EntityType, StepOperation } from "../domain/types.ts";
+import type { EntityType, Stage, StepOperation } from "../domain/types.ts";
 import type { OperationHandler, PlanGatewayAdapter } from "./plan-gateway-adapter.ts";
+import {
+  FIELD,
+  type FieldRef,
+  fieldRef,
+  type HarnessFieldConstant,
+  statusRef,
+} from "./field-registry.ts";
 
 /**
  * `harness-effort-summary` JSON テキストに計画後見積（planned_estimate）が記録されているか判定する。
@@ -60,8 +67,8 @@ export class WorkPackageHandler {
       if (this.adapter.sprintBoardNumber) {
         await this.adapter.setBoardStatus(
           itemId,
-          this.adapter.sprintBoardNumber,
-          String(params.stage ?? "todo"),
+          statusRef("sprintBoard"),
+          (params.stage as Stage) ?? "todo",
         );
       }
       return Promise.resolve({ operation: "commit", success: true, itemId });
@@ -79,8 +86,8 @@ export class WorkPackageHandler {
       if (this.adapter.sprintBoardNumber) {
         await this.adapter.setBoardStatus(
           itemId,
-          this.adapter.sprintBoardNumber,
-          String(params.stage ?? "inProgress"),
+          statusRef("sprintBoard"),
+          (params.stage as Stage) ?? "inProgress",
         );
       }
       return Promise.resolve({ operation: "start", success: true, itemId });
@@ -100,8 +107,8 @@ export class WorkPackageHandler {
       if (this.adapter.sprintBoardNumber) {
         await this.adapter.setBoardStatus(
           itemId,
-          this.adapter.sprintBoardNumber,
-          String(params.stage ?? "done"),
+          statusRef("sprintBoard"),
+          (params.stage as Stage) ?? "done",
         );
       }
       return Promise.resolve({ operation: "complete", success: true, itemId });
@@ -157,7 +164,6 @@ export class WorkPackageHandler {
         try {
           await this.setEffortField(
             itemId,
-            this.adapter.sprintBoardNumber,
             "initial_estimate",
             effort,
           );
@@ -180,7 +186,6 @@ export class WorkPackageHandler {
         try {
           await this.setEffortField(
             itemId,
-            this.adapter.sprintBoardNumber,
             "planned_estimate",
             effort,
           );
@@ -201,7 +206,7 @@ export class WorkPackageHandler {
       const effort = params.effortActual;
       if (effort !== undefined && this.adapter.sprintBoardNumber) {
         try {
-          await this.setEffortField(itemId, this.adapter.sprintBoardNumber, "actual", effort);
+          await this.setEffortField(itemId, "actual", effort);
         } catch { /* ok */ }
       }
       return Promise.resolve({ operation: "recordActualEffort", success: true, itemId });
@@ -249,66 +254,30 @@ export class WorkPackageHandler {
           return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
         }
         const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
-        let projectItemNodeId: string;
-        try {
-          ({ projectItemNodeId } = await this.adapter.addItemToProject(
-            nodeData.id,
-            this.adapter.sprintBoardNumber,
-          ));
-        } catch {
-          const lookupQuery =
-            `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
-          const lr = await this.adapter.runCommand("gh", [
-            "api",
-            "graphql",
-            "-f",
-            `query=${lookupQuery}`,
-            "-f",
-            `owner=${this.adapter.scopeOwner}`,
-            "-f",
-            `repo=${this.adapter.scopeRepository}`,
-            "-F",
-            `num=${parseInt(itemId, 10)}`,
-          ]);
-          if (lr.code === 0) {
-            const ld = JSON.parse(lr.stdout) as {
-              data?: {
-                repository?: {
-                  issue?: {
-                    projectItems?: {
-                      nodes: Array<{ id: string; project: { number: number } }>;
-                    };
-                  };
-                };
-              };
-            };
-            const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
-              n.project.number === this.adapter.sprintBoardNumber!
-            );
-            if (!matched) {
-              return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
-            }
-            projectItemNodeId = matched.id;
-          } else return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
+        const projectItemNodeId = await this.adapter.resolveProjectItemOnBoard(
+          itemId,
+          nodeData.id,
+          "sprintBoard",
+        );
+        if (!projectItemNodeId) {
+          return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
         }
         const parsed = JSON.parse(body) as Record<string, unknown>;
-        const writes: Array<{ field: string; value: string }> = [];
+        const writes: Array<{ field: FieldRef; value: string }> = [];
         for (
           const [key, field] of Object.entries({
-            planning_variance_review: "harness-variance-review-planning",
-            execution_variance_review: "harness-variance-review-execution",
-            improvement_suggestions: "harness-improvement-suggestions",
-          } as Record<string, string>)
+            planning_variance_review: FIELD.varianceReviewPlanning,
+            execution_variance_review: FIELD.varianceReviewExecution,
+            improvement_suggestions: FIELD.improvementSuggestions,
+          } as Record<string, HarnessFieldConstant>)
         ) {
           if (parsed[key] !== undefined) {
-            writes.push({ field, value: String(parsed[key]) });
+            writes.push({ field: fieldRef("sprintBoard", field), value: String(parsed[key]) });
           }
         }
-        const boardNumber = this.adapter.sprintBoardNumber!;
         await Promise.all(writes.map((w) =>
           this.adapter.setTextFieldValue(
             projectItemNodeId,
-            boardNumber,
             w.field,
             w.value,
           )
@@ -340,7 +309,7 @@ export class WorkPackageHandler {
           workSizeStability?: string;
         }
         | undefined;
-      const fields: Array<[string, string]> = [];
+      const fields: Array<[FieldRef, string]> = [];
       if (metrics?.summary) {
         const summaryJson = JSON.stringify({
           intent_alignment_score: metrics.summary.intentAlignmentScore ?? 0,
@@ -348,19 +317,31 @@ export class WorkPackageHandler {
           context_extraction_score: metrics.summary.contextExtractionScore ?? 0,
           work_size_stability_score: metrics.summary.workSizeStabilityScore ?? 0,
         });
-        fields.push(["harness-metrics-summary", summaryJson]);
+        fields.push([fieldRef("sprintBoard", FIELD.metricsSummary), summaryJson]);
       }
       if (metrics?.intentAlignment) {
-        fields.push(["harness-metrics-intent-alignment", metrics.intentAlignment]);
+        fields.push([
+          fieldRef("sprintBoard", FIELD.metricsIntentAlignment),
+          metrics.intentAlignment,
+        ]);
       }
       if (metrics?.constraintAdherence) {
-        fields.push(["harness-metrics-constraint-adherence", metrics.constraintAdherence]);
+        fields.push([
+          fieldRef("sprintBoard", FIELD.metricsConstraintAdherence),
+          metrics.constraintAdherence,
+        ]);
       }
       if (metrics?.contextExtraction) {
-        fields.push(["harness-metrics-context-extraction", metrics.contextExtraction]);
+        fields.push([
+          fieldRef("sprintBoard", FIELD.metricsContextExtraction),
+          metrics.contextExtraction,
+        ]);
       }
       if (metrics?.workSizeStability) {
-        fields.push(["harness-metrics-work-size-stability", metrics.workSizeStability]);
+        fields.push([
+          fieldRef("sprintBoard", FIELD.metricsWorkSizeStability),
+          metrics.workSizeStability,
+        ]);
       }
       if (fields.length > 0 && this.adapter.sprintBoardNumber) {
         const nodeResult = await this.adapter.runCommand("gh", [
@@ -390,77 +371,28 @@ export class WorkPackageHandler {
             error: "Failed to parse issue view output",
           });
         }
-        let projectItemNodeId: string;
-        try {
-          ({ projectItemNodeId } = await this.adapter.addItemToProject(
-            nodeData.id,
-            this.adapter.sprintBoardNumber,
-          ));
-        } catch {
-          const owned = this.adapter.scopeOwner;
-          const repod = this.adapter.scopeRepository;
-          if (!owned || !repod) {
-            return Promise.resolve({
-              operation: "recordSessionMetrics",
-              success: false,
-              itemId,
-              error: "scope owner/repository is not resolved",
-            });
-          }
-          const lookup =
-            `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
-          const lr = await this.adapter.runCommand("gh", [
-            "api",
-            "graphql",
-            "-f",
-            `query=${lookup}`,
-            "-f",
-            `owner=${owned}`,
-            "-f",
-            `repo=${repod}`,
-            "-F",
-            `num=${parseInt(itemId, 10)}`,
-          ]);
-          if (lr.code !== 0) {
-            return Promise.resolve({
-              operation: "recordSessionMetrics",
-              success: false,
-              itemId,
-              error: lr.stderr,
-            });
-          }
-          const ld = JSON.parse(lr.stdout) as {
-            data?: {
-              repository?: {
-                issue?: {
-                  projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
-                };
-              };
-            };
-          };
-          const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
-            n.project.number === this.adapter.sprintBoardNumber!
-          );
-          if (!matched) {
-            return Promise.resolve({
-              operation: "recordSessionMetrics",
-              success: false,
-              itemId,
-              error: `WP #${itemId} is not on Sprint Board #${this.adapter.sprintBoardNumber}`,
-            });
-          }
-          projectItemNodeId = matched.id;
+        const projectItemNodeId = await this.adapter.resolveProjectItemOnBoard(
+          itemId,
+          nodeData.id,
+          "sprintBoard",
+        );
+        if (!projectItemNodeId) {
+          return Promise.resolve({
+            operation: "recordSessionMetrics",
+            success: false,
+            itemId,
+            error: `WP #${itemId} is not on Sprint Board #${this.adapter.sprintBoardNumber}`,
+          });
         }
         const errors: string[] = [];
         for (const [fieldName, value] of fields) {
           const result = await this.adapter.setTextFieldValue(
             projectItemNodeId,
-            this.adapter.sprintBoardNumber,
             fieldName,
             value,
           );
           if (!result.success) {
-            errors.push(`${fieldName}: ${result.error ?? "unknown error"}`);
+            errors.push(`${fieldName.fieldName}: ${result.error ?? "unknown error"}`);
           }
         }
         if (errors.length > 0) {
@@ -490,12 +422,12 @@ export class WorkPackageHandler {
       const kpt = params.kpt as
         | { keep?: string; problem?: string; try?: string; advise?: string }
         | undefined;
-      const fields: Array<[string, string]> = [];
+      const fields: Array<[FieldRef, string]> = [];
       if (kpt) {
-        if (kpt.keep) fields.push(["harness-kpt-keep", kpt.keep]);
-        if (kpt.problem) fields.push(["harness-kpt-problem", kpt.problem]);
-        if (kpt.try) fields.push(["harness-kpt-try", kpt.try]);
-        if (kpt.advise) fields.push(["harness-kpt-advise", kpt.advise]);
+        if (kpt.keep) fields.push([fieldRef("sprintBoard", FIELD.kptKeep), kpt.keep]);
+        if (kpt.problem) fields.push([fieldRef("sprintBoard", FIELD.kptProblem), kpt.problem]);
+        if (kpt.try) fields.push([fieldRef("sprintBoard", FIELD.kptTry), kpt.try]);
+        if (kpt.advise) fields.push([fieldRef("sprintBoard", FIELD.kptAdvise), kpt.advise]);
       }
       if (fields.length === 0 || !this.adapter.sprintBoardNumber) {
         return Promise.resolve({ operation: "recordKpt", success: true, itemId });
@@ -517,77 +449,28 @@ export class WorkPackageHandler {
         });
       }
       const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
-      let projectItemNodeId: string;
-      try {
-        ({ projectItemNodeId } = await this.adapter.addItemToProject(
-          nodeData.id,
-          this.adapter.sprintBoardNumber,
-        ));
-      } catch {
-        const owned = this.adapter.scopeOwner;
-        const repod = this.adapter.scopeRepository;
-        if (!owned || !repod) {
-          return Promise.resolve({
-            operation: "recordKpt",
-            success: false,
-            itemId,
-            error: "scope owner/repository is not resolved",
-          });
-        }
-        const lookup =
-          `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
-        const lr = await this.adapter.runCommand("gh", [
-          "api",
-          "graphql",
-          "-f",
-          `query=${lookup}`,
-          "-f",
-          `owner=${owned}`,
-          "-f",
-          `repo=${repod}`,
-          "-F",
-          `num=${parseInt(itemId, 10)}`,
-        ]);
-        if (lr.code !== 0) {
-          return Promise.resolve({
-            operation: "recordKpt",
-            success: false,
-            itemId,
-            error: lr.stderr,
-          });
-        }
-        const ld = JSON.parse(lr.stdout) as {
-          data?: {
-            repository?: {
-              issue?: {
-                projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
-              };
-            };
-          };
-        };
-        const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
-          n.project.number === this.adapter.sprintBoardNumber!
-        );
-        if (!matched) {
-          return Promise.resolve({
-            operation: "recordKpt",
-            success: false,
-            itemId,
-            error: `WP #${itemId} is not on Sprint Board #${this.adapter.sprintBoardNumber}`,
-          });
-        }
-        projectItemNodeId = matched.id;
+      const projectItemNodeId = await this.adapter.resolveProjectItemOnBoard(
+        itemId,
+        nodeData.id,
+        "sprintBoard",
+      );
+      if (!projectItemNodeId) {
+        return Promise.resolve({
+          operation: "recordKpt",
+          success: false,
+          itemId,
+          error: `WP #${itemId} is not on Sprint Board #${this.adapter.sprintBoardNumber}`,
+        });
       }
       const errors: string[] = [];
       for (const [fieldName, value] of fields) {
         const result = await this.adapter.setTextFieldValue(
           projectItemNodeId,
-          this.adapter.sprintBoardNumber,
           fieldName,
           value,
         );
         if (!result.success) {
-          errors.push(`${fieldName}: ${result.error ?? "unknown error"}`);
+          errors.push(`${fieldName.fieldName}: ${result.error ?? "unknown error"}`);
         }
       }
       if (errors.length > 0) {
@@ -684,8 +567,7 @@ export class WorkPackageHandler {
     if (!projectItemNodeId) return null;
     const text = await this.adapter.readTextFieldValue(
       projectItemNodeId,
-      boardNumber,
-      "harness-effort-summary",
+      fieldRef("sprintBoard", FIELD.effortSummary),
     );
     if (!hasPlannedEstimate(text)) {
       return {
@@ -738,7 +620,6 @@ export class WorkPackageHandler {
 
   private async setEffortField(
     itemId: string,
-    boardNumber: number,
     key: string,
     value: unknown,
   ): Promise<void> {
@@ -752,18 +633,15 @@ export class WorkPackageHandler {
     ]);
     if (nodeResult.code !== 0) return;
     const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
-    let projectItemNodeId: string;
-    try {
-      ({ projectItemNodeId } = await this.adapter.addItemToProject(nodeData.id, boardNumber));
-    } catch {
-      const resolved = await this.resolveProjectItemNodeId(itemId, boardNumber);
-      if (!resolved) return;
-      projectItemNodeId = resolved;
-    }
+    const projectItemNodeId = await this.adapter.resolveProjectItemOnBoard(
+      itemId,
+      nodeData.id,
+      "sprintBoard",
+    );
+    if (!projectItemNodeId) return;
     const text = await this.adapter.readTextFieldValue(
       projectItemNodeId,
-      boardNumber,
-      "harness-effort-summary",
+      fieldRef("sprintBoard", FIELD.effortSummary),
     );
     let data: Record<string, number> = {};
     try {
@@ -772,8 +650,7 @@ export class WorkPackageHandler {
     data[key] = Number(value);
     await this.adapter.setTextFieldValue(
       projectItemNodeId,
-      boardNumber,
-      "harness-effort-summary",
+      fieldRef("sprintBoard", FIELD.effortSummary),
       JSON.stringify(data),
     );
   }

@@ -7,6 +7,7 @@ import type {
   ExecutionResult,
   FeatureData,
   Plan,
+  Stage,
   Step,
   StepOperation,
   StepResult,
@@ -16,6 +17,7 @@ import type { PlanGateway } from "../domain/plan-gateway.ts";
 import { ProductBacklogItemHandler } from "./product-backlog-item-handler.ts";
 import { WorkPackageHandler } from "./work-package-handler.ts";
 import { RetrospectiveHandler } from "./retrospective-handler.ts";
+import { type BoardKey, FIELD, type FieldRef } from "./field-registry.ts";
 
 export type CommandRunner = (cmd: string, args: string[]) => Promise<ExecuteResult>;
 
@@ -284,6 +286,63 @@ export class PlanGatewayAdapter implements PlanGateway {
   }
 
   /**
+   * Issue をボードに追加し、その project item node id を解決する。
+   * ボードへ既に追加済みの場合は既存項目を探索して返す。解決不能な場合は null を返す。
+   * 各ハンドラーで重複していた「addItemToProject → catch → lookup → スキップ判定」を
+   * ここへ共通化する。
+   *
+   * @param itemId - Issue 番号（lookup 用）
+   * @param issueNodeId - Issue の node id（add 用）
+   * @param boardKey - 対象ボード識別子
+   * @returns project item node id、または null（追加・解決に失敗）
+   */
+  async resolveProjectItemOnBoard(
+    itemId: string,
+    issueNodeId: string,
+    boardKey: BoardKey,
+  ): Promise<string | null> {
+    const boardNumber = this.boardNumberForKey(boardKey);
+    if (boardNumber === undefined) return null;
+    try {
+      const { projectItemNodeId } = await this.addItemToProject(issueNodeId, boardNumber);
+      return projectItemNodeId;
+    } catch {
+      // add 失敗時は既存項目を探索して解決を試みる
+      const owned = this.scopeOwner;
+      const repod = this.scopeRepository;
+      if (!owned || !repod) return null;
+      const lookup =
+        `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
+      const lr = await this.runCommand("gh", [
+        "api",
+        "graphql",
+        "-f",
+        `query=${lookup}`,
+        "-f",
+        `owner=${owned}`,
+        "-f",
+        `repo=${repod}`,
+        "-F",
+        `num=${parseInt(itemId, 10)}`,
+      ]);
+      if (lr.code !== 0) return null;
+      const ld = JSON.parse(lr.stdout) as {
+        data?: {
+          repository?: {
+            issue?: {
+              projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
+            };
+          };
+        };
+      };
+      const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
+        n.project.number === boardNumber
+      );
+      return matched?.id ?? null;
+    }
+  }
+
+  /**
    * Issue を Project V2 ボードに追加する。
    * @returns プロジェクト上の item node id
    */
@@ -409,10 +468,11 @@ export class PlanGatewayAdapter implements PlanGateway {
 
   /** プロジェクトV2の単一選択フィールドのオプション名からIDを解決する。 */
   async resolveSingleSelectOptionId(
-    projectNumber: number,
-    fieldName: string,
+    ref: FieldRef,
     optionName: string,
   ): Promise<string | undefined> {
+    const projectNumber = this.resolveRefBoardNumber(ref);
+    if (projectNumber === undefined) return;
     const owner = this.resolvedScope?.owner;
     if (!owner) return undefined;
     const result = await this.runCommand("gh", [
@@ -425,7 +485,7 @@ export class PlanGatewayAdapter implements PlanGateway {
       "-F",
       `number=${projectNumber}`,
       "-f",
-      `field=${fieldName}`,
+      `field=${ref.fieldName}`,
     ]);
     if (result.code !== 0) return undefined;
     try {
@@ -505,15 +565,40 @@ export class PlanGatewayAdapter implements PlanGateway {
     }
   }
 
+  /** FieldRef の boardKey に対応するボード番号を projectConfig から解決する。 */
+  /** BoardKey に対応するボード番号を projectConfig から解決する。 */
+  private boardNumberForKey(boardKey: BoardKey): number | undefined {
+    switch (boardKey) {
+      case "productBacklog":
+        return this.projectConfig.productBacklogBoardNumber;
+      case "sprintBoard":
+        return this.projectConfig.sprintBoardNumber;
+      case "retrospectiveBoard":
+        return this.projectConfig.retrospectiveBoardNumber;
+    }
+  }
+
+  /** FieldRef の boardKey に対応するボード番号を projectConfig から解決する。 */
+  private resolveRefBoardNumber(ref: FieldRef): number | undefined {
+    return this.boardNumberForKey(ref.boardKey);
+  }
+
   /** Project V2 フィールドに単一選択値を設定する。 */
   async setSingleSelectFieldValue(
     projectItemNodeId: string,
-    projectNumber: number,
-    fieldName: string,
+    ref: FieldRef,
     optionId: string,
   ): Promise<StepResult> {
+    const projectNumber = this.resolveRefBoardNumber(ref);
+    if (projectNumber === undefined) {
+      return {
+        operation: "updateField",
+        success: false,
+        error: `Board "${ref.boardKey}" not configured`,
+      };
+    }
     const [resolved1, resolved2] = await Promise.all([
-      this.resolveFieldId(projectNumber, fieldName),
+      this.resolveFieldId(projectNumber, ref.fieldName),
       this.resolveProjectNodeId(projectNumber),
     ]);
     if ("error" in resolved1) {
@@ -541,14 +626,25 @@ export class PlanGatewayAdapter implements PlanGateway {
   }
 
   /** IssueのV2ボード上のStatusを設定する（stage値→V2 Status名に自動変換）。 */
-  async setBoardStatus(itemId: string, boardNumber: number, stage: string): Promise<void> {
-    const stageToStatus: Record<string, string> = {
+  async setBoardStatus(itemId: string, ref: FieldRef, stage: Stage): Promise<void> {
+    const boardNumber = this.resolveRefBoardNumber(ref);
+    if (boardNumber === undefined) {
+      logger.warn(
+        `[setBoardStatus] Board "${ref.boardKey}" is not configured; status update skipped`,
+      );
+      return;
+    }
+    const stageToStatus: Record<Stage, string> = {
       todo: "Todo",
       inProgress: "In Progress",
       done: "Done",
+      idea: "Idea",
     };
     const statusName = stageToStatus[stage];
-    if (!statusName) return;
+    if (!statusName) {
+      logger.warn(`[setBoardStatus] Unknown stage "${stage}"; status update skipped`);
+      return;
+    }
     const nodeResult = await this.runCommand("gh", [
       "issue",
       "view",
@@ -557,27 +653,38 @@ export class PlanGatewayAdapter implements PlanGateway {
       "id",
       ...this.buildRepoArg(),
     ]);
-    if (nodeResult.code !== 0) return;
+    if (nodeResult.code !== 0) {
+      logger.warn(`[setBoardStatus] Failed to resolve issue node id: ${nodeResult.stderr}`);
+      return;
+    }
     try {
       const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
       const { projectItemNodeId } = await this.addItemToProject(nodeData.id, boardNumber);
-      const optionId = await this.resolveSingleSelectOptionId(boardNumber, "Status", statusName);
-      if (optionId) {
-        await this.setSingleSelectFieldValue(projectItemNodeId, boardNumber, "Status", optionId);
+      const optionId = await this.resolveSingleSelectOptionId(ref, statusName);
+      if (!optionId) {
+        logger.warn(
+          `[setBoardStatus] Status option "${statusName}" not found on board "${ref.boardKey}"`,
+        );
+        return;
       }
-    } catch {
-      // non-critical
+      const result = await this.setSingleSelectFieldValue(projectItemNodeId, ref, optionId);
+      if (!result.success) {
+        logger.warn(`[setBoardStatus] Failed to set status: ${result.error ?? "unknown error"}`);
+      }
+    } catch (e) {
+      logger.warn(
+        `[setBoardStatus] Status update failed: ${e instanceof Error ? e.message : String(e)}`,
+      );
     }
   }
 
   /** Project V2 アイテムのテキストフィールド値を読み取る。 */
   async readTextFieldValue(
     projectItemNodeId: string,
-    _projectNumber: number,
-    fieldName: string,
+    ref: FieldRef,
   ): Promise<string | undefined> {
     const query =
-      `query($item: ID!) { node(id: $item) { ... on ProjectV2Item { fv: fieldValueByName(name: "${fieldName}") { ... on ProjectV2ItemFieldTextValue { text } } } } }`;
+      `query($item: ID!) { node(id: $item) { ... on ProjectV2Item { fv: fieldValueByName(name: "${ref.fieldName}") { ... on ProjectV2ItemFieldTextValue { text } } } } }`;
     const result = await this.runCommand("gh", [
       "api",
       "graphql",
@@ -600,12 +707,19 @@ export class PlanGatewayAdapter implements PlanGateway {
   /** Project V2 フィールドに数値を設定する。 */
   async setNumberFieldValue(
     projectItemNodeId: string,
-    projectNumber: number,
-    fieldName: string,
+    ref: FieldRef,
     numberValue: number,
   ): Promise<StepResult> {
+    const projectNumber = this.resolveRefBoardNumber(ref);
+    if (projectNumber === undefined) {
+      return {
+        operation: "updateField",
+        success: false,
+        error: `Board "${ref.boardKey}" not configured`,
+      };
+    }
     const [resolved1, resolved2] = await Promise.all([
-      this.resolveFieldId(projectNumber, fieldName),
+      this.resolveFieldId(projectNumber, ref.fieldName),
       this.resolveProjectNodeId(projectNumber),
     ]);
     if ("error" in resolved1) {
@@ -635,12 +749,19 @@ export class PlanGatewayAdapter implements PlanGateway {
   /** Project V2 フィールドにテキスト値を設定する。 */
   async setTextFieldValue(
     projectItemNodeId: string,
-    projectNumber: number,
-    fieldName: string,
+    ref: FieldRef,
     text: string,
   ): Promise<StepResult> {
+    const projectNumber = this.resolveRefBoardNumber(ref);
+    if (projectNumber === undefined) {
+      return {
+        operation: "updateField",
+        success: false,
+        error: `Board "${ref.boardKey}" not configured`,
+      };
+    }
     const [resolved1, resolved2] = await Promise.all([
-      this.resolveFieldId(projectNumber, fieldName),
+      this.resolveFieldId(projectNumber, ref.fieldName),
       this.resolveProjectNodeId(projectNumber),
     ]);
     if ("error" in resolved1) {
@@ -1277,7 +1398,7 @@ export class PlanGatewayAdapter implements PlanGateway {
     if (this.resolvedScope) {
       try {
         const enrichQuery =
-          `query($owner: String!, $repo: String!, $number: Int!) { repository(owner: $owner, name: $repo) { issue(number: $number) { parent { ... on Issue { number title id } } milestone { number title } subIssues(first: 100) { nodes { ... on Issue { number title id } } } projectItems(first: 10) { nodes { id project { title number } sizeEst: fieldValueByName(name: "harness-size-estimate") { ... on ProjectV2ItemFieldSingleSelectValue { name } } sizeAct: fieldValueByName(name: "harness-size-actual") { ... on ProjectV2ItemFieldSingleSelectValue { name } } effort: fieldValueByName(name: "harness-effort-summary") { ... on ProjectV2ItemFieldTextValue { text } } status: fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } } } } } } }`;
+          `query($owner: String!, $repo: String!, $number: Int!) { repository(owner: $owner, name: $repo) { issue(number: $number) { parent { ... on Issue { number title id } } milestone { number title } subIssues(first: 100) { nodes { ... on Issue { number title id } } } projectItems(first: 10) { nodes { id project { title number } sizeEst: fieldValueByName(name: "${FIELD.sizeEstimate}") { ... on ProjectV2ItemFieldSingleSelectValue { name } } sizeAct: fieldValueByName(name: "${FIELD.sizeActual}") { ... on ProjectV2ItemFieldSingleSelectValue { name } } effort: fieldValueByName(name: "${FIELD.effortSummary}") { ... on ProjectV2ItemFieldTextValue { text } } status: fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } } } } } } }`;
         const gqlResult = await this.runCommand("gh", [
           "api",
           "graphql",
