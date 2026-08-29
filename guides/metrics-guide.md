@@ -85,5 +85,5 @@ Achievement / Estimation Accuracy / Quality Integrity / Collaboration Discipline
 > **記録先**: スプリントメトリクスは Retrospective Board に、`harness-metrics-summary`
 > （数値JSON）と5指標のナラティブ独立フィールド（`harness-metrics-goal-achievement` /
 > `harness-metrics-estimation-accuracy` / `harness-metrics-quality-integrity` /
-> `harness-metrics-collaboration-discipline` / `harness-metrics-velocity`）として記録する（詳細は
-> design-spec.md を参照）。
+> `harness-metrics-collaboration-discipline` / `harness-metrics-velocity`）として記録する（カスタム
+> フィールドの正の定義は `gateway/field-registry.ts` を参照）。

@@ -24,9 +24,6 @@ export * from "./shared/parse/markdown.ts";
 // エラーハンドリング (errorUtil)
 export * from "./shared/types/error.ts";
 
-// バックログスキーマ解決 (loadBacklogSchema, extractPbiBlock, buildArchiveCard, updateContents)
-export * from "./shared/parse/backlog-schema.ts";
-
 // フェーズゲート (phaseGate, extractLinksFromSkillMd, resolveReferencePath, checkReadStatus)
 export * from "./shared/workflow/phase-gate.ts";
 

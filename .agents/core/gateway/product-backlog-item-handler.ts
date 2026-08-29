@@ -1,5 +1,12 @@
-import type { EntityType, StepOperation } from "../domain/types.ts";
+import type { EntityType, Stage, StepOperation } from "../domain/types.ts";
 import type { OperationHandler, PlanGatewayAdapter } from "./plan-gateway-adapter.ts";
+import {
+  FIELD,
+  type FieldRef,
+  fieldRef,
+  type HarnessFieldConstant,
+  statusRef,
+} from "./field-registry.ts";
 
 export class ProductBacklogItemHandler {
   constructor(private readonly adapter: PlanGatewayAdapter) {}
@@ -37,8 +44,8 @@ export class ProductBacklogItemHandler {
       if (this.adapter.productBacklogBoardNumber) {
         await this.adapter.setBoardStatus(
           itemId,
-          this.adapter.productBacklogBoardNumber,
-          String(params.stage ?? "todo"),
+          statusRef("productBacklog"),
+          (params.stage as Stage) ?? "todo",
         );
       }
       return { operation: "commit", success: true, itemId };
@@ -50,8 +57,8 @@ export class ProductBacklogItemHandler {
       if (this.adapter.productBacklogBoardNumber) {
         await this.adapter.setBoardStatus(
           itemId,
-          this.adapter.productBacklogBoardNumber,
-          String(params.stage ?? "inProgress"),
+          statusRef("productBacklog"),
+          (params.stage as Stage) ?? "inProgress",
         );
       }
       return { operation: "start", success: true, itemId };
@@ -63,8 +70,8 @@ export class ProductBacklogItemHandler {
       if (this.adapter.productBacklogBoardNumber) {
         await this.adapter.setBoardStatus(
           itemId,
-          this.adapter.productBacklogBoardNumber,
-          String(params.stage ?? "done"),
+          statusRef("productBacklog"),
+          (params.stage as Stage) ?? "done",
         );
       }
       return { operation: "complete", success: true, itemId };
@@ -125,15 +132,13 @@ export class ProductBacklogItemHandler {
               this.adapter.productBacklogBoardNumber,
             );
             const optionId = await this.adapter.resolveSingleSelectOptionId(
-              this.adapter.productBacklogBoardNumber,
-              "harness-size-estimate",
+              fieldRef("productBacklog", FIELD.sizeEstimate),
               sizeVal,
             );
             if (optionId) {
               await this.adapter.setSingleSelectFieldValue(
                 projectItemNodeId,
-                this.adapter.productBacklogBoardNumber,
-                "harness-size-estimate",
+                fieldRef("productBacklog", FIELD.sizeEstimate),
                 optionId,
               );
             }
@@ -160,57 +165,23 @@ export class ProductBacklogItemHandler {
         if (nodeResult.code === 0) {
           try {
             const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
-            let projectItemNodeId: string;
-            try {
-              ({ projectItemNodeId } = await this.adapter.addItemToProject(
-                nodeData.id,
-                this.adapter.productBacklogBoardNumber,
-              ));
-            } catch {
-              const owned = this.adapter.scopeOwner;
-              const repod = this.adapter.scopeRepository;
-              if (!owned || !repod) return { operation: "confirmSize", success: true, itemId };
-              const lookup =
-                `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
-              const lr = await this.adapter.runCommand("gh", [
-                "api",
-                "graphql",
-                "-f",
-                `query=${lookup}`,
-                "-f",
-                `owner=${owned}`,
-                "-f",
-                `repo=${repod}`,
-                "-F",
-                `num=${parseInt(itemId, 10)}`,
-              ]);
-              if (lr.code !== 0) return { operation: "confirmSize", success: true, itemId };
-              const ld = JSON.parse(lr.stdout) as {
-                data?: {
-                  repository?: {
-                    issue?: {
-                      projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
-                    };
-                  };
-                };
-              };
-              const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
-                n.project.number === this.adapter.productBacklogBoardNumber!
-              );
-              if (!matched) return { operation: "confirmSize", success: true, itemId };
-              projectItemNodeId = matched.id;
+            const projectItemNodeId = await this.adapter.resolveProjectItemOnBoard(
+              itemId,
+              nodeData.id,
+              "productBacklog",
+            );
+            if (!projectItemNodeId) {
+              return { operation: "confirmSize", success: true, itemId };
             }
             if (sizeActual) {
               const optionId = await this.adapter.resolveSingleSelectOptionId(
-                this.adapter.productBacklogBoardNumber,
-                "harness-size-actual",
+                fieldRef("productBacklog", FIELD.sizeActual),
                 sizeActual,
               );
               if (optionId) {
                 await this.adapter.setSingleSelectFieldValue(
                   projectItemNodeId,
-                  this.adapter.productBacklogBoardNumber,
-                  "harness-size-actual",
+                  fieldRef("productBacklog", FIELD.sizeActual),
                   optionId,
                 );
               }
@@ -218,8 +189,7 @@ export class ProductBacklogItemHandler {
             if (varianceReason) {
               await this.adapter.setTextFieldValue(
                 projectItemNodeId,
-                this.adapter.productBacklogBoardNumber,
-                "harness-variance-review-size",
+                fieldRef("productBacklog", FIELD.varianceReviewSize),
                 varianceReason,
               );
             }
@@ -243,7 +213,7 @@ export class ProductBacklogItemHandler {
         this.adapter.scopeRepository
       ) {
         const query =
-          `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){subIssues(first:100){nodes{... on Issue{number projectItems(first:20){nodes{id project{number} effortField:fieldValueByName(name:"harness-effort-summary"){... on ProjectV2ItemFieldTextValue{text}}}}}}}}}}`;
+          `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){subIssues(first:100){nodes{... on Issue{number projectItems(first:20){nodes{id project{number} effortField:fieldValueByName(name:"${FIELD.effortSummary}"){... on ProjectV2ItemFieldTextValue{text}}}}}}}}}}`;
         const lr = await this.adapter.runCommand("gh", [
           "api",
           "graphql",
@@ -339,70 +309,36 @@ export class ProductBacklogItemHandler {
           return { operation: "recordAnalysis", success: true, itemId };
         }
         const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
-        let projectItemNodeId: string;
-        try {
-          ({ projectItemNodeId } = await this.adapter.addItemToProject(
-            nodeData.id,
-            this.adapter.productBacklogBoardNumber,
-          ));
-        } catch {
-          const owned = this.adapter.scopeOwner;
-          const repod = this.adapter.scopeRepository;
-          if (!owned || !repod) return { operation: "recordAnalysis", success: true, itemId };
-          const lookup =
-            `query($owner:String!,$repo:String!,$num:Int!){repository(owner:$owner,name:$repo){issue(number:$num){projectItems(first:20){nodes{id project{number}}}}}}`;
-          const lr = await this.adapter.runCommand("gh", [
-            "api",
-            "graphql",
-            "-f",
-            `query=${lookup}`,
-            "-f",
-            `owner=${owned}`,
-            "-f",
-            `repo=${repod}`,
-            "-F",
-            `num=${parseInt(itemId, 10)}`,
-          ]);
-          if (lr.code !== 0) return { operation: "recordAnalysis", success: true, itemId };
-          const ld = JSON.parse(lr.stdout) as {
-            data?: {
-              repository?: {
-                issue?: {
-                  projectItems?: { nodes: Array<{ id: string; project: { number: number } }> };
-                };
-              };
-            };
-          };
-          const matched = ld?.data?.repository?.issue?.projectItems?.nodes?.find((n) =>
-            n.project.number === this.adapter.productBacklogBoardNumber!
-          );
-          if (!matched) return { operation: "recordAnalysis", success: true, itemId };
-          projectItemNodeId = matched.id;
+        const projectItemNodeId = await this.adapter.resolveProjectItemOnBoard(
+          itemId,
+          nodeData.id,
+          "productBacklog",
+        );
+        if (!projectItemNodeId) {
+          return { operation: "recordAnalysis", success: true, itemId };
         }
         const parsed = JSON.parse(body) as Record<string, unknown>;
-        const writes: Array<{ field: string; value: string }> = [];
+        const writes: Array<{ field: FieldRef; value: string }> = [];
         if (parsed.wp_effort_summary !== undefined) {
           writes.push({
-            field: "harness-effort-summary",
+            field: fieldRef("productBacklog", FIELD.effortSummary),
             value: JSON.stringify(parsed.wp_effort_summary),
           });
         }
         for (
           const [key, field] of Object.entries({
-            planning_variance_review: "harness-variance-review-planning",
-            execution_variance_review: "harness-variance-review-execution",
-            improvement_suggestions: "harness-improvement-suggestions",
-          } as Record<string, string>)
+            planning_variance_review: FIELD.varianceReviewPlanning,
+            execution_variance_review: FIELD.varianceReviewExecution,
+            improvement_suggestions: FIELD.improvementSuggestions,
+          } as Record<string, HarnessFieldConstant>)
         ) {
           if (parsed[key] !== undefined) {
-            writes.push({ field, value: String(parsed[key]) });
+            writes.push({ field: fieldRef("productBacklog", field), value: String(parsed[key]) });
           }
         }
-        const boardNumber = this.adapter.productBacklogBoardNumber!;
         await Promise.all(writes.map((w) =>
           this.adapter.setTextFieldValue(
             projectItemNodeId,
-            boardNumber,
             w.field,
             w.value,
           )

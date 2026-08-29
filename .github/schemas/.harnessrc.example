@@ -1,8 +1,32 @@
 {
-  "_comment": "GitHub Project V2 のボード番号を保持する設定ファイルのリファレンス。実値は setup-github-projects が .harnessrc に自動生成する。キー構成・型・意味を公開する。このファイルはテンプレートのため、<number> を実ボード番号へ置き換えること（このままでは JSON として無効）。JSONキー名の正の定義は guides/architecture-design.md 第7章、ボード名・harness-* フィールドの定義は guides/design-spec.md 5.3 を参照。",
+  "_comment": "GitHub Project V2 のボード番号を保持する設定ファイルのリファレンス。実値は setup-github-projects が .harnessrc に自動生成する。キー構成・型・意味を公開する。このファイルはテンプレートのため、<number> を実ボード番号へ置き換えること（このままでは JSON として無効）。ボード番号（projects）はアカウント・作成タイミングごとに異なるため追跡不可。フィールド名（fields）は不変で、正の定義は .agents/core/gateway/field-registry.ts を参照。",
   "projects": {
     "productBacklog": <number>,
     "sprintBoard": <number>,
     "retrospectiveBoard": <number>
+  },
+  "fields": {
+    "harness-size-estimate": "harness-size-estimate",
+    "harness-size-actual": "harness-size-actual",
+    "harness-effort-summary": "harness-effort-summary",
+    "harness-variance-review-size": "harness-variance-review-size",
+    "harness-variance-review-planning": "harness-variance-review-planning",
+    "harness-variance-review-execution": "harness-variance-review-execution",
+    "harness-improvement-suggestions": "harness-improvement-suggestions",
+    "harness-metrics-summary": "harness-metrics-summary",
+    "harness-metrics-intent-alignment": "harness-metrics-intent-alignment",
+    "harness-metrics-constraint-adherence": "harness-metrics-constraint-adherence",
+    "harness-metrics-context-extraction": "harness-metrics-context-extraction",
+    "harness-metrics-work-size-stability": "harness-metrics-work-size-stability",
+    "harness-metrics-goal-achievement": "harness-metrics-goal-achievement",
+    "harness-metrics-estimation-accuracy": "harness-metrics-estimation-accuracy",
+    "harness-metrics-quality-integrity": "harness-metrics-quality-integrity",
+    "harness-metrics-collaboration-discipline": "harness-metrics-collaboration-discipline",
+    "harness-metrics-velocity": "harness-metrics-velocity",
+    "harness-kpt-keep": "harness-kpt-keep",
+    "harness-kpt-problem": "harness-kpt-problem",
+    "harness-kpt-try": "harness-kpt-try",
+    "harness-kpt-advise": "harness-kpt-advise",
+    "harness-sequence": "harness-sequence"
   }
 }

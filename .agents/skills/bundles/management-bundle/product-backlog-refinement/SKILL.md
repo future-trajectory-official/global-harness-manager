@@ -12,6 +12,8 @@ tags:
 
 スプリントプランニングの文脈でPOと対話しながら、今回のスプリントに含めるPBIを選定・確定する。各操作の入力形式と実行コマンドは
 [references/reference.md](/.agents/skills/bundles/management-bundle/product-backlog-refinement/references/reference.md)
+を参照。PBIの深掘りディスカッションの進め方は
+[references/pbi-deep-dive.md](/.agents/skills/bundles/management-bundle/product-backlog-refinement/references/pbi-deep-dive.md)
 を参照。
 
 ## 操作スクリプト

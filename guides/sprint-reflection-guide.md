@@ -50,7 +50,7 @@ POとの対話を通じて、見積もりと実績に乖離が発生した根本
 ### アーカイブカード・テンプレート
 
 ```markdown
-### [DONE] [EpicID/FeatureID]/pbi-name
+### [Done] [EpicID/FeatureID]/pbi-name
 
 - **完了日**: YYYY-MM-DD
 - **スプリント**: Sprint N

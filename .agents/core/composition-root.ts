@@ -2,6 +2,7 @@ import type { Plan } from "./domain/types.ts";
 import type { PlanGateway } from "./domain/plan-gateway.ts";
 import { executePlan } from "./domain/plan-executor.ts";
 import { PlanGatewayAdapter } from "./gateway/plan-gateway-adapter.ts";
+import { ProjectV2FieldRegistry } from "./gateway/project-field-registry.ts";
 import { initSprintUseCase } from "./domain/sprint-usecase.ts";
 import { initVisionUseCase } from "./domain/vision-usecase.ts";
 import { initProductGoalUseCase } from "./domain/product-goal-usecase.ts";
@@ -28,14 +29,11 @@ try {
   const harnessrcPath = `${import.meta.dirname ?? "."}/../../.github/schemas/.harnessrc`;
   const harnessrcRaw = Deno.readTextFileSync(harnessrcPath);
   const harnessrc = JSON.parse(harnessrcRaw);
-  const projects = harnessrc?.projects ?? {};
-  const productBacklog = typeof projects.productBacklog === "number"
-    ? projects.productBacklog
-    : undefined;
-  const sprintBoard = typeof projects.sprintBoard === "number" ? projects.sprintBoard : undefined;
-  const retrospectiveBoard = typeof projects.retrospectiveBoard === "number"
-    ? projects.retrospectiveBoard
-    : undefined;
+  const registry = ProjectV2FieldRegistry.getInstance();
+  registry.load({ projects: harnessrc?.projects ?? {}, fields: harnessrc?.fields ?? {} });
+  const productBacklog = registry.board("productBacklog");
+  const sprintBoard = registry.board("sprintBoard");
+  const retrospectiveBoard = registry.board("retrospectiveBoard");
   if (
     productBacklog !== undefined || sprintBoard !== undefined || retrospectiveBoard !== undefined
   ) {
