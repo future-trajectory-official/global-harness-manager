@@ -9,7 +9,7 @@ $DenoExe = Join-Path $BinDir "deno.exe"
 if (-Not (Test-Path $DenoExe)) {
     Write-Host "Downloading Deno ($DenoTarget)..."
     $DenoZip = Join-Path $BinDir "deno.zip"
-    Invoke-WebRequest -Uri "https://github.com/denoland/deno/releases/download/v2.0.2/deno-${DenoTarget}.zip" -OutFile $DenoZip
+    Invoke-WebRequest -Uri "https://github.com/denoland/deno/releases/download/v2.9.6/deno-${DenoTarget}.zip" -OutFile $DenoZip
     Expand-Archive -Path $DenoZip -DestinationPath $BinDir -Force
     Remove-Item $DenoZip
 }
