@@ -12,7 +12,7 @@ else echo "Unsupported architecture $ARCH_NAME"; exit 1; fi
 mkdir -p "$BIN_DIR"
 if [ ! -f "$BIN_DIR/deno" ]; then
     echo "Downloading Deno ($DENO_TARGET)..."
-    curl -sL "https://github.com/denoland/deno/releases/download/v2.0.2/deno-${DENO_TARGET}.zip" -o "$BIN_DIR/deno.zip"
+    curl -sL "https://github.com/denoland/deno/releases/download/v2.9.6/deno-${DENO_TARGET}.zip" -o "$BIN_DIR/deno.zip"
     unzip -q "$BIN_DIR/deno.zip" -d "$BIN_DIR" && rm "$BIN_DIR/deno.zip"
     chmod +x "$BIN_DIR/deno"
 fi

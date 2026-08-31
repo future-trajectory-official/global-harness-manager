@@ -122,7 +122,7 @@ ACごとに「実装→WIP保存→**停止・報告**」を1セットとして�
 - [ ] **[sub-agent:cross-role-review]**: サブエージェントによるコードレビュー
   - [ ] `git diff origin/<base>` を取得し、4ロール（Architect / Developer / Tester / Refactor）の
         Task tool サブエージェントを**独立並列起動**する
-  - [ ] 各エージェントは自ロールのルールファイル（`.agents/rules/*.md`）を読み、コード差分をレビュー
+  - [ ] 各エージェントは自ロールのルールファイル（`.opencode/agents/*.md`）を読み、コード差分をレビュー
   - [ ] AI が4件のレビュー報告を取りまとめ、指摘を **Critical / Medium / Minor** に分類してPOに提示
   - [ ] PO が対応する指摘を選択 → AI が修正を実施
 - [ ] **[対応]**: レビュー指摘の修正（PO選択分を実装）
