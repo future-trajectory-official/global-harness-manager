@@ -33,8 +33,8 @@ interface SkillInfo {
   bundle: string;
 }
 
-function extractFrontmatter(text: string): Record<string, unknown> | null {
-  const match = text.match(/^---\s*\n([\s\S]*?)\n---/);
+export function extractFrontmatter(text: string): Record<string, unknown> | null {
+  const match = text.match(/^---\s*\n([\s\S]*?)(?=\n---|\n\.\.\.|\s*$)/);
   if (!match) return null;
   const frontmatter: Record<string, unknown> = {};
   for (const line of match[1].split("\n")) {
@@ -80,8 +80,7 @@ function parseSkillFrontmatter(filePath: string): SkillInfo | null {
   };
 }
 
-function collectRoles(rootDir: string): RoleInfo[] {
-  const rulesDir = `${rootDir}/.agents/rules`;
+export function collectRoles(rulesDir: string): RoleInfo[] {
   const roles: RoleInfo[] = [];
   for (const entry of Deno.readDirSync(rulesDir)) {
     if (!entry.isFile || !entry.name.endsWith(".md")) continue;
@@ -289,7 +288,7 @@ async function main(): Promise<void> {
     const productGoal = await fetchProductGoalFromGitHub(scope);
 
     const workspaceRoot = Deno.env.get("HARNESS_WORKSPACE_ROOT") ?? Deno.cwd();
-    const roles = collectRoles(workspaceRoot);
+    const roles = collectRoles(`${workspaceRoot}/.opencode/agents`);
     const skills = collectSkills(workspaceRoot);
 
     console.log(JSON.stringify({ vision, productGoal, roles, skills }, null, 2));
