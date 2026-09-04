@@ -15,7 +15,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 ### 1-0. 用語の同期
 
-- **ロール**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行役として開始)
+- **ロール**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行役として開始)
 - **実行スキル**:
   `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
 - **入力（前提）**: `.agents/context/management.md`（必須）/ `.agents/context/product.md`（任意）
@@ -32,7 +32,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 ### 1-1. ビジョンと保有スキルの宣言
 
-- **ロール**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行役として開始)
+- **ロール**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行役として開始)
 - **実行スキル**:
   `[assess-alignment](/.agents/skills/bundles/management-bundle/assess-alignment/SKILL.md)`
 - **成果物**: 「Vision & Capability Alignment Report」
@@ -53,7 +53,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 ### 2-1. 1セッション1Work Packageの絞り込み
 
-- **ロール**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (優先順位の調整)
+- **ロール**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (優先順位の調整)
 - **実行スキル**:
   `[select-work-package](/.agents/skills/bundles/management-bundle/select-work-package/SKILL.md)`
 - **成果物**: 「Session Task Identification」報告
@@ -98,7 +98,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 ### 4-1. 計画の承認と WP着手
 
-- **ロール**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (最終確認)
+- **ロール**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (最終確認)
 - **実行スキル**:
   `[start-work-package](/.agents/skills/bundles/management-bundle/start-work-package/SKILL.md)`
 - **セルフチェック**:

@@ -32,7 +32,7 @@ description: スプリントの開始プロセス（プロダクトゴール確�
 
 スプリントで使う管理概念とプロジェクト固有の用語を読み、共有言語として確立します。
 
-- **読み込むペルソナ**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
+- **読み込むペルソナ**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
   `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
 - **入力（前提条件）**: `.agents/context/management.md`（必須）/
@@ -51,8 +51,8 @@ description: スプリントの開始プロセス（プロダクトゴール確�
 ### Phase 1-1. プロダクトゴールの確認
 
 - **読み込むペルソナ**:
-  - `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ)
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
+  - `[po-coach.md](/.opencode/agents/po-coach.md)` (POコーチ)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
   `[assess-goal-continuation](/.agents/skills/bundles/management-bundle/assess-goal-continuation/SKILL.md)`
 - **入力（前提条件）**: 永続化されている最新の Product Goal。
@@ -81,8 +81,8 @@ description: スプリントの開始プロセス（プロダクトゴール確�
 
 POと対話しながら、プロダクトバックログを精査し、PBIの追加・変更・削除を行います。
 
-- **読み込むペルソナ**: `[po-coach.md](/.agents/rules/po-coach.md)` (POコーチ) および
-  `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
+- **読み込むペルソナ**: `[po-coach.md](/.opencode/agents/po-coach.md)` (POコーチ) および
+  `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
   `[product-backlog-refinement](/.agents/skills/bundles/management-bundle/product-backlog-refinement/SKILL.md)`
 - **入力（前提条件）**: 最新のプロダクトバックログ。
@@ -108,7 +108,7 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
 
 既存のエピック/フィーチャー分類階層を対話的に改善し、PBIを適切なフィーチャーに配置します。
 
-- **読み込むペルソナ**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
+- **読み込むペルソナ**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
   `[refine-classification-hierarchy](/.agents/skills/bundles/management-bundle/refine-classification-hierarchy/SKILL.md)`
 - **入力（前提条件）**: 既存のエピック/フィーチャー分類階層が存在すること。
@@ -132,7 +132,7 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
 
 リファインメントで定義されたスプリントゴールをもとに、スプリントを開始します。
 
-- **読み込むペルソナ**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
+- **読み込むペルソナ**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
   `[begin-sprint](/.agents/skills/bundles/management-bundle/begin-sprint/SKILL.md)`
 - **入力（前提条件）**: Phase 2 でスプリント番号・ゴールが確定済みであること。
@@ -156,7 +156,7 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
 
 リファインメント済みのPBIから今回のスプリントで着手するものを選定し、スプリントバックログを確定します。
 
-- **読み込むペルソナ**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
+- **読み込むペルソナ**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
   `[sprint-planning](/.agents/skills/bundles/management-bundle/sprint-planning/SKILL.md)`
 - **入力（前提条件）**: Phase 2 でリファインメントされたプロダクトバックログ。
@@ -179,9 +179,9 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
 各WPにはACと初期見積りを同時に設定した上で、スプリントに確定します。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
-  - `[tester.md](/.agents/rules/tester.md)` (テスト/品質保証)
-  - `[refactor.md](/.agents/rules/refactor.md)` (可読性・保守性・技術負債削減)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
+  - `[tester.md](/.opencode/agents/tester.md)` (テスト/品質保証)
+  - `[refactor.md](/.opencode/agents/refactor.md)` (可読性・保守性・技術負債削減)
 - **実行するスキル**:
   `[define-work-package](/.agents/skills/bundles/management-bundle/define-work-package/SKILL.md)`
 - **入力（前提条件）**: Phase 5 で確定されたPBI一覧。
@@ -213,8 +213,8 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
 エンティティを作成・永続化します。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
-  - `[tester.md](/.agents/rules/tester.md)` (品質検証・客観的エビデンス提示)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
+  - `[tester.md](/.opencode/agents/tester.md)` (品質検証・客観的エビデンス提示)
 - **実行するスキル**:
   `[plan-sprint-review](/.agents/skills/bundles/management-bundle/plan-sprint-review/SKILL.md)`
 - **入力（前提条件）**: Phase 6 で定義された全PBIのAC一覧。
@@ -240,7 +240,7 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
 マクロの呼出しタイミングは**計画する**です。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
   `[plan-retrospective](/.agents/skills/bundles/management-bundle/plan-retrospective/SKILL.md)`
 - **入力（前提条件）**:

@@ -16,7 +16,7 @@ Packageの特定と実装計画（`implementation_plan.md`）の承認が完了�
 
 ### 1-1. 開発環境のセットアップ
 
-- **ロール**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (すべての制約を遵守)
+- **ロール**: `[platform-engineer.md](/.opencode/agents/platform-engineer.md)` (すべての制約を遵守)
 - **実行スキル**:
   `[develop-environment-setup](/.agents/skills/bundles/development-bundle/develop-environment-setup/SKILL.md)`
 - **セルフチェック**:
@@ -32,7 +32,7 @@ Packageの特定と実装計画（`implementation_plan.md`）の承認が完了�
 
 ### 2-1. 作業ブランチの作成
 
-- **ロール**: `[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
+- **ロール**: `[version-control-specialist.md](/.opencode/agents/version-control-specialist.md)`
   (すべての制約を遵守)
 - **実行スキル**:
   `[initialize-branch](/.agents/skills/bundles/git-bundle/initialize-branch/SKILL.md)`
@@ -45,7 +45,7 @@ Packageの特定と実装計画（`implementation_plan.md`）の承認が完了�
 
 ### 2-2. インフラ・基盤実装とWIP保存
 
-- **ロール**: `[developer.md](/.agents/rules/developer.md)` (すべての制約を遵守)
+- **ロール**: `[developer.md](/.opencode/agents/developer.md)` (すべての制約を遵守)
 - **実行スキル**:
   `[hybrid-triage-commit](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
 - **セルフチェック**:
@@ -61,7 +61,7 @@ Packageの特定と実装計画（`implementation_plan.md`）の承認が完了�
 
 ### 2-3. TDDによる機能実装とWIP保存
 
-- **ロール**: `[developer.md](/.agents/rules/developer.md)` (すべての制約を遵守)
+- **ロール**: `[developer.md](/.opencode/agents/developer.md)` (すべての制約を遵守)
 - **実行スキル**:
   `[tdd-implementation](/.agents/skills/bundles/development-bundle/tdd-implementation/SKILL.md)`
 - **セルフチェック**:
@@ -82,7 +82,7 @@ Packageの特定と実装計画（`implementation_plan.md`）の承認が完了�
 
 ### 3-1. 網羅的な品質検証
 
-- **ロール**: `[tester.md](/.agents/rules/tester.md)` (すべての制約を遵守)
+- **ロール**: `[tester.md](/.opencode/agents/tester.md)` (すべての制約を遵守)
 - **セルフチェック**:
   - [ ] **[原則: Verification Integrity]** 修正箇所だけでなく、必ず `deno task qa`
         を一括実行し、プロジェクト全体の静的解析・型チェック・全テストが完璧にグリーン（合格）であることを確認したか。
@@ -95,7 +95,7 @@ Packageの特定と実装計画（`implementation_plan.md`）の承認が完了�
 
 ### 3-2. 軽度のリファクタリング（仕上げ）
 
-- **ロール**: `[refactor.md](/.agents/rules/refactor.md)` (すべての制約を遵守)
+- **ロール**: `[refactor.md](/.opencode/agents/refactor.md)` (すべての制約を遵守)
 - **セルフチェック**:
   - [ ] 実装したコードに冗長な箇所や命名の不備がないか見直し、洗練させたか。
   - [ ] リファクタリング後も、全てのテストがグリーンであることを再確認したか。
@@ -110,7 +110,7 @@ Packageの特定と実装計画（`implementation_plan.md`）の承認が完了�
 
 ### 4-1. コミット履歴のトリアージと再構築
 
-- **ロール**: `[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
+- **ロール**: `[version-control-specialist.md](/.opencode/agents/version-control-specialist.md)`
   (すべての制約を遵守)
 - **実行スキル**:
   `[hybrid-triage-commit](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
@@ -131,7 +131,7 @@ Packageの特定と実装計画（`implementation_plan.md`）の承認が完了�
 
 ### 4-2. PR作成と報告
 
-- **ロール**: `[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
+- **ロール**: `[version-control-specialist.md](/.opencode/agents/version-control-specialist.md)`
   (すべての制約を遵守)
 - **実行スキル**:
   `[create-pull-request](/.agents/skills/bundles/git-bundle/create-pull-request/SKILL.md)`
@@ -145,7 +145,7 @@ Packageの特定と実装計画（`implementation_plan.md`）の承認が完了�
 
 ### 4-3. マージとクリーンアップ
 
-- **ロール**: `[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
+- **ロール**: `[version-control-specialist.md](/.opencode/agents/version-control-specialist.md)`
   (すべての制約を遵守)
 - **実行スキル**: `[merge-branch](/.agents/skills/bundles/git-bundle/merge-branch/SKILL.md)`
 - **セルフチェック**:

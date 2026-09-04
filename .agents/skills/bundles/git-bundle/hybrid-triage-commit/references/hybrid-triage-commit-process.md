@@ -60,7 +60,7 @@ graph TD
 ### 2. ポストトリアージによる「歴史の編纂」 (プッシュ直前)
 
 - 開発およびすべてのローカル検証（fmt / lint）が完了した完了フェーズ（Phase
-  3）の冒頭で、`[version-control-specialist.md](/.agents/rules/version-control-specialist.md)`
+  3）の冒頭で、`[version-control-specialist.md](/.opencode/agents/version-control-specialist.md)`
   ロールを呼び出し、`[hybrid-triage-commit](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
   スキル（`triage` モード）を実行します。
 - ベースブランチから新しくブランチを作成し、WIPブランチとの `git diff` を俯瞰します。
