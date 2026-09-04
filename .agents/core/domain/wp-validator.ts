@@ -170,14 +170,6 @@ const ROUTE: Record<WpOperation, RuleFn> = {
         errors: ["計画見積もりの設定は着手後(inProgress, open)のみ可能です"],
       };
     }
-    const planned = to.processEvidence?.effort?.plannedEstimate;
-    const initial = from.processEvidence?.effort?.initialEstimate;
-    if (planned !== undefined && initial !== undefined && planned < initial) {
-      return {
-        valid: false,
-        errors: ["計画見積もりは初期見積もり以上である必要があります"],
-      };
-    }
     return VALID;
   },
   recordActualEffort(_op, from, to) {

@@ -144,7 +144,7 @@ export interface WorkPackageUseCase {
     effort: EffortRecord,
   ): Plan;
 
-  /** WPの計画見積もり（plannedEstimate）を記録する。着手後(inProgress)のみ設定可能。planned >= initial 必須。既存WPを対象とし、code（Issue番号）から node-id を内部解決して操作する。 */
+  /** WPの計画見積もり（plannedEstimate）を記録する。着手後(inProgress)のみ設定可能。initial に対する上方・下方修正とも許容（backlog-guidelines 2.2.1）。既存WPを対象とし、code（Issue番号）から node-id を内部解決して操作する。 */
   estimatePlannedEffort(
     identifier: WorkPackageIdentifier,
     effort: EffortRecord,

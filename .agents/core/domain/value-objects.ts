@@ -29,7 +29,9 @@ export function createEffortRecord(initialEstimate: number): EffortRecord {
 
 /**
  * EffortRecord に plannedEstimate を設定した新しいオブジェクトを返す。元のオブジェクトは不変。
- * plannedEstimate は initialEstimate 以上である必要がある（計画時に想定より減ることは想定しない）。
+ * plannedEstimate は initialEstimate に対し上方・下方どちらの修正も許容する
+ * （guides/backlog-guidelines.md 2.2.1「計画前見積を上方または下方に修正した値となる」）。
+ * 妥当な検証は0以上の数値であることのみ。
  */
 export function withPlannedEstimate(
   record: EffortRecord,
@@ -38,11 +40,6 @@ export function withPlannedEstimate(
   if (!Number.isFinite(plannedEstimate) || plannedEstimate < 0) {
     throw new Error(
       `INVALID_INPUT: plannedEstimate は0以上の数値である必要があります (received: ${plannedEstimate})`,
-    );
-  }
-  if (plannedEstimate < record.initialEstimate) {
-    throw new Error(
-      `INVALID_INPUT: plannedEstimate (${plannedEstimate}) は initialEstimate (${record.initialEstimate}) 以上である必要があります`,
     );
   }
   return { ...record, plannedEstimate };
