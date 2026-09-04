@@ -3,6 +3,7 @@ import { visionUseCase } from "../../../../../core/domain/vision-usecase.ts";
 import { productGoalUseCase } from "../../../../../core/domain/product-goal-usecase.ts";
 import { identify } from "../../../../../core/domain/types.ts";
 import type { EntityScope } from "../../../../../core/domain/types.ts";
+import { collectRoles, extractFrontmatter } from "./assess_alignment.ts";
 
 function makeScope(): EntityScope {
   return { owner: "test-org", repository: "test-repo" };
@@ -45,26 +46,57 @@ Deno.test("assess-alignment: dry-run は search + view の 2 Plan 構造を持�
   assertEquals(viewPlan.steps[1].params.itemId, "<itemId>");
 });
 
-Deno.test("assess-alignment: YAML frontmatter 抽出が正しい形式を返す", () => {
+Deno.test("assess-alignment: extractFrontmatter が閉じ --- 付きで正しく抽出する", () => {
   const sampleMd = `---
 name: test-role
 description: テスト用ロール
-tags:
-  - trigger: test
 ---
 # Content`;
 
-  // extractFrontmatter は非公開だが、関数の動作を inline で検証
-  const match = sampleMd.match(/^---\s*\n([\s\S]*?)\n---/);
-  assertEquals(match !== null, true);
-  const lines = match![1].split("\n");
-  const fm: Record<string, string> = {};
-  for (const line of lines) {
-    const idx = line.indexOf(":");
-    if (idx !== -1) fm[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+  const fm = extractFrontmatter(sampleMd);
+  assertEquals(fm !== null, true);
+  assertEquals(fm!.name, "test-role");
+  assertEquals(fm!.description, "テスト用ロール");
+});
+
+Deno.test("assess-alignment: extractFrontmatter が閉じ --- 無し（OpenCode形式）でも抽出する", () => {
+  const sampleMd = `---
+description: アジャイルプロセスを円滑化する
+mode: all
+permission:
+  read: allow
+prompt: |
+  ## 役割
+  あなたはスクラムマスター`;
+
+  const fm = extractFrontmatter(sampleMd);
+  assertEquals(fm !== null, true);
+  assertEquals(fm!.description, "アジャイルプロセスを円滑化する");
+});
+
+Deno.test("assess-alignment: collectRoles が name 無しでも basename を使いロールを収集する", () => {
+  const tmpDir = Deno.makeTempDirSync();
+  try {
+    Deno.writeTextFileSync(
+      `${tmpDir}/scrum-master.md`,
+      `---
+description: アジャイルプロセスを円滑化する
+---
+
+# role body`,
+    );
+    Deno.writeTextFileSync(
+      `${tmpDir}/not-a-role.txt`,
+      "description: 無視されるべきファイル\n",
+    );
+
+    const roles = collectRoles(tmpDir);
+    assertEquals(roles.length, 1);
+    assertEquals(roles[0].name, "scrum-master");
+    assertEquals(roles[0].description, "アジャイルプロセスを円滑化する");
+  } finally {
+    Deno.removeSync(tmpDir, { recursive: true });
   }
-  assertEquals(fm.name, "test-role");
-  assertEquals(fm.description, "テスト用ロール");
 });
 
 Deno.test("assess-alignment: 不正な JSON のパースに失敗する", () => {

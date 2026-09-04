@@ -2,14 +2,15 @@
   "compilerOptions": {
     "lib": ["deno.window", "deno.ns"]
   },
+  "exclude": [".opencode/node_modules"],
   "tasks": {
     "test": "deno test -A --parallel",
     "test:cov": "deno test -A --parallel --coverage=cov_profile && deno coverage cov_profile",
     "lint": "deno lint",
     "fmt": "deno fmt",
-    "check": "deno check **/*.ts",
-    "qa": "deno fmt --check && deno lint && deno check **/*.ts && deno task validate:jsdoc && deno task test",
-    "qa:cov": "deno fmt --check && deno lint && deno check **/*.ts && deno task validate:jsdoc && rm -rf cov_profile && deno test -A --parallel --coverage=cov_profile && deno coverage cov_profile",
+    "check": "deno check \"**/*.ts\" \"!.opencode/node_modules/**\"",
+    "qa": "deno fmt --check && deno lint && deno check \"**/*.ts\" \"!.opencode/node_modules/**\" && deno task validate:jsdoc && deno task test",
+    "qa:cov": "deno fmt --check && deno lint && deno check \"**/*.ts\" \"!.opencode/node_modules/**\" && deno task validate:jsdoc && rm -rf cov_profile && deno test -A --parallel --coverage=cov_profile && deno coverage cov_profile",
     "setup-hooks": "deno run -A .agents/skills/bundles/workspace-bundle/setup-harness-env/scripts/setup-hooks.ts",
     "validate-task": "deno run -A .agents/skills/bundles/management-bundle/session-planning/scripts/validate-task.ts --template .agents/management/task-template.md",
     "phase-gate": "deno run -A .agents/core/shared/workflow/phase-gate.ts",
