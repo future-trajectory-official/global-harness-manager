@@ -1,4 +1,4 @@
-import { assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import {
   getManagementPath,
   getSkillAssetPath,
@@ -9,11 +9,32 @@ import {
 } from "./constants.ts";
 
 /**
- * constants - PROJECT_ROOT が正しく定義されていることを検証する。
- * プロジェクト名 "global-harness-manager" がパスに含まれていることを確認する。
+ * constants - PROJECT_ROOT がチェックアウト先ディレクトリ名に依存せず解決されることを検証する。
+ * 構造的要求（絶対パスであり直下に .agents を持つ）で判定し、サンドボックス内の実行にも耐える。
  */
 Deno.test("constants - PROJECT_ROOT should be defined", () => {
-  assertStringIncludes(PROJECT_ROOT, "global-harness-manager");
+  assert(
+    PROJECT_ROOT.startsWith("/") || /^[A-Za-z]:[\\/]/.test(PROJECT_ROOT),
+    `PROJECT_ROOT must be absolute: ${PROJECT_ROOT}`,
+  );
+});
+
+/**
+ * constants - PROJECT_ROOT の直下に .agents が存在する（構造的不変条件）。
+ * 存在しない場合は解決先の誤りを明示メッセージで報告する。
+ */
+Deno.test("constants - PROJECT_ROOT contains the .agents directory", async () => {
+  const agentsDir = `${PROJECT_ROOT.replace(/[/\\]+$/, "")}/.agents`;
+  let isDirectory = false;
+  try {
+    isDirectory = (await Deno.stat(agentsDir)).isDirectory;
+  } catch {
+    isDirectory = false;
+  }
+  assert(
+    isDirectory,
+    `PROJECT_ROOT (${PROJECT_ROOT}) must resolve to a directory containing .agents`,
+  );
 });
 
 /**
