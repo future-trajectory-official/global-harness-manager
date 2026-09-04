@@ -33,7 +33,7 @@ description: スプリントの終了プロセス（レビューのアーカイ�
 の用語同期）で確立した共有言語を、終了時の各分析・振り返りの前に再確認し、
 用語解釈の齟齬を残さないために設置している。
 
-- **読み込むペルソナ**: `[scrum-master.md](/.agents/rules/scrum-master.md)`
+- **読み込むペルソナ**: `[scrum-master.md](/.opencode/agents/scrum-master.md)`
   (進行・ファシリテーション)
 - **実行するスキル**:
   `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
@@ -53,7 +53,7 @@ description: スプリントの終了プロセス（レビューのアーカイ�
 ### Phase 1-1. スプリントレビューのアーカイブ
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
   `[archive-sprint-review](/.agents/skills/bundles/management-bundle/archive-sprint-review/SKILL.md)`
 - **入力（前提条件）**: 本スプリントのレビュー検証が完了済みであること。
@@ -75,7 +75,7 @@ description: スプリントの終了プロセス（レビューのアーカイ�
 対象PBI配下の全WPのeffort（initial/planned/actual）を集計し、計画乖離・実行乖離の分析結果を対象PBIに記録します。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
   `[record-pbi-effort-analysis](/.agents/skills/bundles/management-bundle/record-pbi-effort-analysis/SKILL.md)`
 - **入力（前提条件）**: スプリント内のPBI配下のWPが全て完了（`[DONE]`）しており、 effort実績（計画前
@@ -102,7 +102,7 @@ description: スプリントの終了プロセス（レビューのアーカイ�
 対象PBIの実感サイズを確定し、見積サイズとの乖離理由を対象PBIに記録します。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
   `[record-pbi-size-analysis](/.agents/skills/bundles/management-bundle/record-pbi-size-analysis/SKILL.md)`
 - **入力（前提条件）**: 対象PBIの見積サイズが対象PBIに記録されていること。
@@ -129,7 +129,7 @@ description: スプリントの終了プロセス（レビューのアーカイ�
 KPT（Keep / Problem / Try / Advise）を記録します。マクロの呼出しタイミングは**実施する**です。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
   `[record-sprint-kpt](/.agents/skills/bundles/management-bundle/record-sprint-kpt/SKILL.md)`
 - **入力（前提条件）**: 対象スプリントの振り返りが作成済みであること（`/sprint-start` の Phase 8
@@ -158,8 +158,8 @@ KPT（Keep / Problem / Try / Advise）を記録します。マクロの呼出し
 スプリントの説明に記録します。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行)
-  - `[platform-engineer.md](/.agents/rules/platform-engineer.md)` (スクリプト実行・集計)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行)
+  - `[platform-engineer.md](/.opencode/agents/platform-engineer.md)` (スクリプト実行・集計)
 - **実行するスキル**:
   `[record-sprint-velocity](/.agents/skills/bundles/management-bundle/record-sprint-velocity/SKILL.md)`
 - **入力（前提条件）**: 対象スプリントのPBIに実感サイズが対象PBIに記録されていること。
@@ -189,7 +189,7 @@ KPT（Keep / Problem / Try / Advise）を記録します。マクロの呼出し
 ベロシティ）を記録します。マクロの呼出しタイミングは**実施する**です。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
   `[record-sprint-metrics](/.agents/skills/bundles/management-bundle/record-sprint-metrics/SKILL.md)`
 - **入力（前提条件）**: 対象スプリントの振り返りが作成済みであること（`/sprint-start` の Phase 8
@@ -219,7 +219,7 @@ KPT（Keep / Problem / Try / Advise）を記録します。マクロの呼出し
 （アーカイブ）します。マクロの呼出しタイミングは**保管する**です。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
   `[archive-retrospective](/.agents/skills/bundles/management-bundle/archive-retrospective/SKILL.md)`
 - **入力（前提条件）**: 対象スプリントの振り返りが作成済みであること（`plan-retrospective`
@@ -247,7 +247,7 @@ KPT（Keep / Problem / Try / Advise）を記録します。マクロの呼出し
 PBI**（子先にクローズ）です。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
   `[archive-product-backlog-items](/.agents/skills/bundles/management-bundle/archive-product-backlog-items/SKILL.md)`
 - **入力（前提条件）**: アーカイブ対象のPBI/WPが `[DONE]`（done, open）状態であること。
@@ -274,8 +274,8 @@ PBI**（子先にクローズ）です。
 スプリント中の実行ログを分析し、スキルの発見性・再利用性向上、および不要な重複スキルのクリーンアップを自律的に提案・実行します。
 
 - **読み込むペルソナ**:
-  - `[skill-writer.md](/.agents/rules/skill-writer.md)` (スキル定義の最適化)
-  - `[technical-advisor.md](/.agents/rules/technical-advisor.md)` (中長期的な保守性の担保)
+  - `[skill-writer.md](/.opencode/agents/skill-writer.md)` (スキル定義の最適化)
+  - `[technical-advisor.md](/.opencode/agents/technical-advisor.md)` (中長期的な保守性の担保)
 - **実行するスキル**:
   `[skill-optimizer](/.agents/skills/bundles/meta-bundle/skill-optimizer/SKILL.md)`
 - **入力（前提条件）**: スプリント中のセッションログ、振り返りでの改善Try。
@@ -299,7 +299,7 @@ PBI**（子先にクローズ）です。
 
 すべてのスプリント後処理が完了したことを確認し、スプリントを終了状態にします。
 
-- **読み込むペルソナ**: `[scrum-master.md](/.agents/rules/scrum-master.md)` (スクラムマスター)
+- **読み込むペルソナ**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
   `[conclude-sprint](/.agents/skills/bundles/management-bundle/conclude-sprint/SKILL.md)`
 - **入力（前提条件）**: Phase 1〜9
@@ -324,7 +324,7 @@ PBI**（子先にクローズ）です。
 
 スプリントの完了を宣言し、次回スプリントに向けてキャッシュ、一時ファイル、記憶フォルダの退避を行い、環境をステートレスにクリアします。
 
-- **読み込むペルソナ**: `[platform-engineer.md](/.agents/rules/platform-engineer.md)`
+- **読み込むペルソナ**: `[platform-engineer.md](/.opencode/agents/platform-engineer.md)`
   (環境クリーンアップ)
 - **実行するスキル**:
   `[stateless-reset](/.agents/skills/bundles/meta-bundle/stateless-reset/SKILL.md)`

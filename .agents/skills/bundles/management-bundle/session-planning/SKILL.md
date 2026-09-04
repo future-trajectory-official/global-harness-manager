@@ -51,7 +51,7 @@ description: 特定されたWork Packageと文脈に最も適した専門ロー�
    `technical-advisor` を使用します。
 
 2. **ルールファイル参照（推奨）**: 該当するロールのルールファイル（例:
-   `/.agents/rules/architect.md`）を参照し、そのロール固有の検視点を理解します。
+   `/.opencode/agents/architect.md`）を参照し、そのロール固有の検視点を理解します。
 
 3. **懸念点の抽出**: 各ロールの視点から、計画のリスク・トレードオフ・改善点を抽出します。
 

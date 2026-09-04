@@ -110,14 +110,14 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
         // file:// 記法は GitHub やマークダウンプレビューでリンクが壊れるため禁止
         if (link.startsWith("file://")) {
           issues.push(
-            `[Forbidden Link Format] In ${relativePath}: "file://" format is forbidden in document links: "${link}". Use workspace root relative path (e.g. "/.agents/rules/tester.md").`,
+            `[Forbidden Link Format] In ${relativePath}: "file://" format is forbidden in document links: "${link}". Use workspace root relative path (e.g. "/.opencode/agents/tester.md").`,
           );
           continue;
         }
         // カレント相対パス (./ や ../) は GitHub やマークダウンプレビューで壊れるため禁止
         if (link.startsWith("./") || link.startsWith("../")) {
           issues.push(
-            `[Forbidden Link Format] In ${relativePath}: Relative path "${link}" starting with "./" or "../" is forbidden in document links. Use workspace root relative path (e.g. "/.agents/rules/tester.md").`,
+            `[Forbidden Link Format] In ${relativePath}: Relative path "${link}" starting with "./" or "../" is forbidden in document links. Use workspace root relative path (e.g. "/.opencode/agents/tester.md").`,
           );
           continue;
         }
@@ -125,7 +125,7 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
         // ワークスペースルートからの絶対パス（/ 始まり）を必須とする
         if (!link.startsWith("/")) {
           issues.push(
-            `[Bare Relative Path] In ${relativePath}: Bare relative path "${link}" is forbidden. Use workspace root relative path starting with "/" (e.g. "/.agents/rules/tester.md").`,
+            `[Bare Relative Path] In ${relativePath}: Bare relative path "${link}" is forbidden. Use workspace root relative path starting with "/" (e.g. "/.opencode/agents/tester.md").`,
           );
           continue;
         }

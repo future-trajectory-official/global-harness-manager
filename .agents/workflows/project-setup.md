@@ -12,7 +12,7 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 ## 1. フェーズA: リポジトリ準備 (Repository Preparation)
 
 **責務**: 仕事の情報を管理するリポジトリを確保し、GitHubとの通信経路を確立する。 **ロール**:
-本フェーズの全ステップは `[platform-engineer.md](/.agents/rules/platform-engineer.md)`
+本フェーズの全ステップは `[platform-engineer.md](/.opencode/agents/platform-engineer.md)`
 (すべての制約を遵守) で実行すること。
 
 ### 1-1. ホスト環境構築
@@ -112,8 +112,9 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 ## 2. フェーズB: プロセス統一 (Process Standardization)
 
 **責務**: AI開発のルール・スキルをプロジェクトに適用し、一貫性のある開発プロセスを確立する。
-**ロール**: 本フェーズの全ステップは `[platform-engineer.md](/.agents/rules/platform-engineer.md)`
-(すべての制約を遵守) で実行すること。
+**ロール**: 本フェーズの全ステップは
+`[platform-engineer.md](/.opencode/agents/platform-engineer.md)` (すべての制約を遵守)
+で実行すること。
 
 ### 2-1. ルールの同期
 
@@ -141,8 +142,9 @@ description: 新規プロジェクト発足と既存プロジェクト参加の�
 
 ## 3. 検証フェーズ
 
-**ロール**: 本フェーズの全ステップは `[platform-engineer.md](/.agents/rules/platform-engineer.md)`
-(すべての制約を遵守) で実行すること。
+**ロール**: 本フェーズの全ステップは
+`[platform-engineer.md](/.opencode/agents/platform-engineer.md)` (すべての制約を遵守)
+で実行すること。
 
 ### 3-1. 通信経路の疎通確認
 

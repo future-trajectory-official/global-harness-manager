@@ -24,8 +24,8 @@ description: スプリントレビューを意識合わせから検証実行ま�
 POとレビューの目的・スコープを共有し、認識を揃えます。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
-  - `[tester.md](/.agents/rules/tester.md)` (品質検証・客観的エビデンス提示)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
+  - `[tester.md](/.opencode/agents/tester.md)` (品質検証・客観的エビデンス提示)
 - **入力（前提条件）**:
   対象スプリントのスプリントゴール、スプリントにコミットされたPBI一覧、各PBIに紐づくWPとAC。
 - **手続き**:
@@ -53,8 +53,8 @@ POとレビューの目的・スコープを共有し、認識を揃えます。
 検証計画と現在のバックログ構成の整合性を確認し、必要に応じて計画を更新します。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
-  - `[tester.md](/.agents/rules/tester.md)` (品質検証・客観的エビデンス提示)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
+  - `[tester.md](/.opencode/agents/tester.md)` (品質検証・客観的エビデンス提示)
 - **実行するスキル**:
   `[revise-sprint-review](/.agents/skills/bundles/management-bundle/revise-sprint-review/SKILL.md)`
 - **入力（前提条件）**: Phase 1 完了。
@@ -77,8 +77,8 @@ POとレビューの目的・スコープを共有し、認識を揃えます。
 各ACの検証をPOと協働で実行し、結果を記録します。
 
 - **読み込むペルソナ**:
-  - `[scrum-master.md](/.agents/rules/scrum-master.md)` (進行・ファシリテーション)
-  - `[tester.md](/.agents/rules/tester.md)` (品質検証・客観的エビデンス提示)
+  - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
+  - `[tester.md](/.opencode/agents/tester.md)` (品質検証・客観的エビデンス提示)
 - **実行するスキル**:
   `[execute-sprint-review](/.agents/skills/bundles/management-bundle/execute-sprint-review/SKILL.md)`
 - **入力（前提条件）**: Phase 2 完了（検証計画が最新であること）。

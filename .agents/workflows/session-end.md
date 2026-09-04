@@ -16,7 +16,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 ### 1-0. 用語の同期
 
-- **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
+- **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
 - **実行スキル**:
   `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
 - **入力（前提）**: `.agents/context/management.md`（必須）/ `.agents/context/product.md`（任意）
@@ -32,7 +32,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 ### 1-1. 実績effortの記録
 
-- **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
+- **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
 - **実行スキル**:
   `[record-work-package-effort](/.agents/skills/bundles/management-bundle/record-work-package-effort/SKILL.md)`
 - **内容**: セッションの実績effort（介入回数）と乖離理由をGitHub Issueに記録します。
@@ -50,7 +50,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 ### 2-1. 共進化 KPT
 
-- **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
+- **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
 - **実行スキル**:
   `[record-work-package-kpt](/.agents/skills/bundles/management-bundle/record-work-package-kpt/SKILL.md)`
 - **成果物**: 「Session Reflection (KPT)」報告
@@ -69,7 +69,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 ### 3-1. 協働メトリクスの記録
 
-- **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
+- **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
 - **実行スキル**:
   `[record-work-package-metrics](/.agents/skills/bundles/management-bundle/record-work-package-metrics/SKILL.md)`
 - **成果物**: GitHub Issueへのセッションメトリクス記録
@@ -87,14 +87,14 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 ### 4-1. WP完了
 
-- **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
+- **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
 - **実行スキル**:
   `[complete-work-package](/.agents/skills/bundles/management-bundle/complete-work-package/SKILL.md)`
 - **内容**: WPをDone状態に遷移し、兄弟WPが全完了している場合は親PBIも完了します。
 
 ### 4-2. セッションアーティファクトのクリーンアップ
 
-- **ロール**: 進行役（例：`[scrum-master.md](/.agents/rules/scrum-master.md)`）
+- **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
 - **実行内容**:
   - `.session/` ディレクトリが存在するか確認する（例: `ls .session/` または `test -d .session/`）。
   - 存在する場合:
