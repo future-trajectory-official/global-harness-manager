@@ -92,12 +92,10 @@ Deno.test("value-objects - withPlannedEstimate should throw for negative", () =>
   );
 });
 
-Deno.test("value-objects - withPlannedEstimate should throw when less than initialEstimate", () => {
-  assertThrows(
-    () => withPlannedEstimate(createEffortRecord(3), 1),
-    Error,
-    "initialEstimate",
-  );
+Deno.test("value-objects - withPlannedEstimate should allow less than initialEstimate", () => {
+  const updated = withPlannedEstimate(createEffortRecord(3), 1);
+  assertEquals(updated.initialEstimate, 3);
+  assertEquals(updated.plannedEstimate, 1);
 });
 
 Deno.test("value-objects - withPlannedEstimate should allow equal to initialEstimate", () => {

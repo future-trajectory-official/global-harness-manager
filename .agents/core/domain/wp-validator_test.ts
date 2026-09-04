@@ -266,7 +266,7 @@ runTests("estimateInitialEffort - 禁止", [
 ]);
 
 // =================================================================
-// estimatePlannedEffort: (inProgress,open) かつ planned >= initial
+// estimatePlannedEffort: (inProgress,open) のみ（planned と initial の大小は問わない）
 // =================================================================
 
 runTests("estimatePlannedEffort - 許可", [
@@ -300,6 +300,21 @@ runTests("estimatePlannedEffort - 許可", [
     }),
     expected: { valid: true },
   },
+  {
+    name: "(inProgress,open) planned<initial は許可（下方修正許容・backlog-guidelines 2.2.1）",
+    operation: "estimatePlannedEffort",
+    from: makeWpData({
+      stage: "inProgress",
+      state: "open",
+      processEvidence: { effort: { initialEstimate: 5 } },
+    }),
+    to: makeWpData({
+      stage: "inProgress",
+      state: "open",
+      processEvidence: { effort: { initialEstimate: 5, plannedEstimate: 3 } },
+    }),
+    expected: { valid: true },
+  },
 ]);
 
 runTests("estimatePlannedEffort - 禁止", [
@@ -315,21 +330,6 @@ runTests("estimatePlannedEffort - 禁止", [
     operation: "estimatePlannedEffort",
     from: makeWp("done", "open"),
     to: makeWp("done", "open"),
-    expected: { valid: false },
-  },
-  {
-    name: "(inProgress,open) planned<initial は禁止",
-    operation: "estimatePlannedEffort",
-    from: makeWpData({
-      stage: "inProgress",
-      state: "open",
-      processEvidence: { effort: { initialEstimate: 5 } },
-    }),
-    to: makeWpData({
-      stage: "inProgress",
-      state: "open",
-      processEvidence: { effort: { initialEstimate: 5, plannedEstimate: 3 } },
-    }),
     expected: { valid: false },
   },
 ]);
