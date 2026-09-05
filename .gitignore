@@ -9,6 +9,10 @@
 /config/*
 !/config/*.example
 
+# OpenCode プロジェクト設定 (ルート実体はユーザーローカル、配布は config/opencode.json.example)
+/opencode.json
+/opencode.jsonc
+
 # ログと一時ファイル
 *.log
 /tmp/

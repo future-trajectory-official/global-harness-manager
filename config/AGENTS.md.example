@@ -38,6 +38,8 @@ POに「過剰かも」と言われるまでは、AIが知る最善のデザイ�
    - 対応するワークフローファイル（例: `session-start.md`,
      `session-end.md`）が存在する場合、**必ずその手順に従うこと**
    - ワークフロー内の `<!-- STOP -->` マーカーに到達したら、必ず停止しPOの指示を待つこと
+   - OpenCodeではワークフローは `.opencode/commands/` のスラッシュコマンドとして配布される。
+     コマンドは入口であり、手順の単一の正は `.agents/workflows/<name>.md` を参照すること
 
 2. **スキル読み込み義務**:
    - `skill` ツールを使用する際は、**必ず SKILL.md の内容を精読してから**実行すること
@@ -48,16 +50,19 @@ POに「過剰かも」と言われるまでは、AIが知る最善のデザイ�
    - `// turbo-all` マーカーがあっても、ワークフローの手順が優先される場合はワークフローに従うこと
    - スキルの手順を「参考」としてではなく「ルール」として読むこと
 
-3. **プロジェクト独自ディレクトリ構造（Antigravity規約）**:
-   - 本プロジェクトは **Antigravity（GoogleのAIエージェントフレームワーク）**
-     の規約に基づき、以下の独自ディレクトリ構造を使用している：
+3. **プロジェクト独自ディレクトリ構造（Antigravity由来 × OpenCode対応）**:
+   - 本プロジェクトは2層構造（Antigravity規約由来の `.agents/` 層と、OpenCode統合用
+     `.opencode/` 層）からなる独自ディレクトリ構造を使用している：
      - `.agents/skills/` - スキル定義（SKILL.md）
-     - `.agents/rules/` - ロール定義（scrum-master.md等）
-     - `.agents/workflows/` - ワークフロー定義（session-end.md等）
+     - `.opencode/agents/` - ロール定義（scrum-master.md等：Antigravityペルソナの変換先）
+     - `.opencode/commands/` - ワークフローの入口コマンド（session-start.md等）
+     - `.agents/workflows/` - ワークフロー定義（session-end.md等：手順の単一の正）
      - `.agents/core/` - コアモジュール
      - `.agents/management/` - 管理用ファイル（backlog等）
    - これらのディレクトリの存在を認識し、適切に使用すること
-   - **注意**: OpenCode/Claude Codeの標準仕様ではなく、本プロジェクト独自のAntigravity規約である
+   - **注意**: `.opencode/` は OpenCode
+     プラットフォーム統合の標準層、`.agents/` は本プロジェクト独自の規約層であり、OpenCode/Claude
+     Codeの標準仕様ではない
 
 ## ツール制約: glob/grep は dot ディレクトリを検索不可
 
