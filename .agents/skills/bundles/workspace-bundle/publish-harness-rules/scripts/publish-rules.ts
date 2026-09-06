@@ -12,10 +12,52 @@ import { parseArgs } from "@std/cli/parse-args";
  * .agents/rules/*.md を指定のプロジェクトへ配布するスクリプト
  */
 
+/** 配布対象プラットフォームの識別子 */
+type Platform = "antigravity" | "opencode";
+
+/** プラットフォームごとのグローバルプロンプト設定 */
+interface PlatformConfig {
+  promptPath: string;
+  templateName: string;
+}
+
+/**
+ * プラットフォームごとの出力先パスとテンプレート名の対応表。
+ * syncGlobalPrompt は本対応表から出力先・テンプレートを解決する。
+ * --platform の許容値も本対応表のキーから導出される（単一情報源）。
+ */
+const PLATFORM_CONFIGS: Record<Platform, PlatformConfig> = {
+  antigravity: {
+    promptPath: "~/.gemini/GEMINI.md",
+    templateName: "GEMINI.md.template",
+  },
+  opencode: {
+    promptPath: "~/.config/opencode/AGENTS.md",
+    templateName: "AGENTS.md.template",
+  },
+};
+
+/**
+ * --platform 引数の値を検証し、解決されたプラットフォームを返却します。
+ * @param value parseArgs による --platform の指定値（省略時は undefined）
+ * @returns 解決されたプラットフォーム（省略時は "antigravity" にフォールバック）
+ * @throws {Error} ホワイトリスト外の値が指定された場合、許容値を列挙したエラーをスローする
+ */
+function resolvePlatform(value: string | undefined): Platform {
+  if (value === undefined) {
+    return "antigravity";
+  }
+  const keys = Object.keys(PLATFORM_CONFIGS);
+  if (Object.hasOwn(PLATFORM_CONFIGS, value)) {
+    return value as Platform;
+  }
+  throw new Error(`Invalid --platform "${value}". Expected: ${keys.join(" | ")}`);
+}
+
 async function main() {
   try {
     const args = parseArgs(Deno.args, {
-      string: ["lang", "os"],
+      string: ["lang", "os", "platform"],
       boolean: ["dry-run", "force", "append"],
       alias: { d: "dry-run", f: "force" },
     });
@@ -25,6 +67,10 @@ async function main() {
     let lang = args["lang"];
     let osEnv = args["os"];
     const isAppend = args["append"] || false;
+
+    // 配布対象プラットフォームの解決（未指定は antigravity = 後方互換）
+    // 解決自体は同期の有無にかかわらず fail-fast で行う
+    const platform = resolvePlatform(args["platform"]);
 
     // 設定ファイルからのプリセット読み込み (引数がない場合)
     if (!lang || !osEnv) {
@@ -41,9 +87,11 @@ async function main() {
       }
     }
 
-    // GEMINI.md 同期処理 (引数またはプリセットが指定されている場合のみ実行)
+    // グローバルプロンプト同期処理（platformにより GEMINI.md / AGENTS.md を選択）
+    // 引数またはプリセットが指定されている場合のみ実行
     if (lang || osEnv) {
-      await syncGlobalPrompt(lang, osEnv, isAppend, isDryRun);
+      logger.info(`Selected platform: ${platform}`);
+      await syncGlobalPrompt(platform, lang, osEnv, isAppend, isDryRun);
     }
 
     const configPath = pathUtil.resolvePath("config/publish-rules-targets.md");
@@ -131,17 +179,26 @@ async function syncAgentsMd(isDryRun: boolean) {
 }
 
 /**
- * ~/.gemini/GEMINI.md をテンプレートに基づいて構築・同期します
+ * プラットフォームごとのグローバルプロンプトファイル
+ * （antigravity: ~/.gemini/GEMINI.md / opencode: ~/.config/opencode/AGENTS.md）を、
+ * PLATFORM_CONFIGS が示すテンプレートに基づいて構築・同期します。
+ * @param platform 出力先とテンプレートを選択する配布対象プラットフォーム
+ * @param lang 言語設定（"ja" 以外は英語として扱う）
+ * @param osEnv OS 環境設定（wsl / linux。その他は未実装エラー）
+ * @param append 既存ファイルへ安全セクションを追記するかどうか
+ * @param isDryRun true の場合、実際の書き込みは行いません
  */
 async function syncGlobalPrompt(
+  platform: Platform,
   lang: string | undefined,
   osEnv: string | undefined,
   append: boolean,
   isDryRun: boolean,
 ) {
-  const geminiPath = pathUtil.expandHome("~/.gemini/GEMINI.md");
+  const config = PLATFORM_CONFIGS[platform];
+  const promptPath = pathUtil.expandHome(config.promptPath);
   const templatePath = pathUtil.resolvePath(
-    ".agents/skills/bundles/workspace-bundle/publish-harness-rules/references/GEMINI.md.template",
+    `.agents/skills/bundles/workspace-bundle/publish-harness-rules/references/${config.templateName}`,
   );
 
   if (osEnv && osEnv !== "wsl" && osEnv !== "linux") {
@@ -168,12 +225,17 @@ async function syncGlobalPrompt(
     },
   };
 
+  // 言語説明文のマッピング定義（ENV_DESCRIPTIONS と対称）
+  const LANG_DESCRIPTIONS: Record<"ja" | "en", string> = {
+    ja:
+      "チャット内の応答やプログレスメッセージ、成果物のプラン、タスク、ウォークスルーを日本語で表示する。",
+    en: "Display chat responses, progress messages, artifacts, tasks, and walkthroughs in English.",
+  };
+
   const currentLang = lang === "ja" ? "ja" : "en";
   const currentOs = (osEnv === "wsl" || osEnv === "linux") ? osEnv : "linux"; // デフォルトは linux
 
-  const langDesc = currentLang === "ja"
-    ? "チャット内の応答やプログレスメッセージ、成果物のプラン、タスク、ウォークスルーを日本語で表示する。"
-    : "Display chat responses, progress messages, artifacts, tasks, and walkthroughs in English.";
+  const langDesc = LANG_DESCRIPTIONS[currentLang];
 
   const envDesc = ENV_DESCRIPTIONS[currentOs][currentLang];
 
@@ -181,33 +243,37 @@ async function syncGlobalPrompt(
     .replace("{{LANGUAGE_DESCRIPTION}}", langDesc)
     .replace("{{ENVIRONMENT_DESCRIPTION}}", envDesc);
 
-  if (append && (await fsUtil.exists(geminiPath))) {
-    const currentContent = await fsUtil.readTextFile(geminiPath);
+  if (append && (await fsUtil.exists(promptPath))) {
+    const currentContent = await fsUtil.readTextFile(promptPath);
     if (currentContent.includes("Safety Guardrails")) {
-      logger.info("GEMINI.md already has safety guardrails. Skipping append.");
+      logger.info("Global prompt already has safety guardrails. Skipping append.");
     } else {
-      logger.info(`Appending safety guardrails to ${geminiPath}`);
-      // セーフティセクションを抽出して追記
-      const safetySectionMatch = templateContent.match(
-        /## Safety Guardrails & Context Sync[\s\S]*/,
-      );
+      logger.info(`Appending safety guardrails to ${promptPath}`);
+      // セーフティセクションを抽出して追記。
+      // 両テンプレート共通の接頭辞 `## Safety Guardrails` を行頭アンカー（^ + m）とする
+      // （GEMINI.md.template の `## Safety Guardrails & Context Sync` でも
+      //  AGENTS.md.template の `## Safety Guardrails` でも同一箇所から一致するため
+      //  プラットフォーム非依存で抽出できる）。
+      // 前提: `## Safety Guardrails` を接頭辞とする見出しは両テンプレート内で一意
+      // （最初の一致箇所が安全セクションの開始見出しであることが保証される）。
+      const safetySectionMatch = templateContent.match(/^## Safety Guardrails[\s\S]*/m);
       if (safetySectionMatch) {
         await fsUtil.writeTextFile(
-          geminiPath,
+          promptPath,
           currentContent + "\n\n" + safetySectionMatch[0],
           isDryRun,
         );
       }
     }
   } else {
-    logger.info(`${append ? "Creating" : "Overwriting"} ${geminiPath}`);
+    logger.info(`${append ? "Creating" : "Overwriting"} ${promptPath}`);
     // ディレクトリ作成
     if (!isDryRun) {
-      await Deno.mkdir(pathUtil.dirname(geminiPath), { recursive: true }).catch((e) => {
+      await Deno.mkdir(pathUtil.dirname(promptPath), { recursive: true }).catch((e) => {
         if (!(e instanceof Deno.errors.AlreadyExists)) throw e;
       });
     }
-    await fsUtil.writeTextFile(geminiPath, templateContent, isDryRun);
+    await fsUtil.writeTextFile(promptPath, templateContent, isDryRun);
   }
 }
 
