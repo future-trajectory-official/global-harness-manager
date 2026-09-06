@@ -92,7 +92,7 @@
 | スプリント層   | スプリントレビュー結果        | Issueコメント / Project V2 のカスタムフィールド                              | `/sprint-end` 実行時                           |
 | セッション層   | Work Package                  | 子Issue（sub-issue, `type:wp` ラベル）                                       | セッション開始時に通知                         |
 | セッション層   | セッション計画                | Issue body 内の AC チェックリスト                                            | `/session-start` の `session-planning` スキル  |
-| セッション層   | 実装進捗                      | 子Issueの Open/Close 状態                                                    | `/develop-work-package` でのAC完了時           |
+| セッション層   | 実装進捗                      | 子Issueの Open/Close 状態                                                    | task.md駆動の実装でのAC完了時                  |
 | セッション層   | セッション成果                | Issueコメント + Project V2 フィールド更新                                    | `/session-end` の `github-pbi-update` 等       |
 
 ### 2.2. ワークフロー別 GitHub 操作フロー
@@ -110,7 +110,7 @@
 2. 該当WPの Issue に実装計画（ACリスト）をコメント追記する
 3. PBI Issue の Status を `In Progress` に更新する
 
-#### `/develop-work-package`
+#### task.md駆動の実装
 
 1. AC完了に応じて子Issueを Close する
 2. PBI Issue の body 内 AC チェックボックスを更新する
