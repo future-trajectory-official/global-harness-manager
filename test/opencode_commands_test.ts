@@ -32,7 +32,6 @@ const SKILL_LINK_FILES: string[] = [
  * レジストリテストが wf 実走査との集合同値を強制する。
  */
 const STOP_BASELINE: Record<string, number> = {
-  "develop-work-package.md": 9,
   "kickoff.md": 6,
   "project-setup.md": 8,
   "refactoring.md": 10,
@@ -157,7 +156,8 @@ Deno.test("role references to the removed .agents/rules dir are eliminated", asy
 
 /**
  * 介入2置換先の実在性: 対象中の /.opencode/agents/<role>.md 参照がすべて実ファイルへ
- * 解決すること。total>=74 は 2026-09-04 実測74件（11ファイル）への下bound（置換漏れ捕捉）。
+ * 解決すること。total>=65 は develop-work-package ワークフロー削除（2026-09-06）後の
+ * 実測65件（74→9減）への下bound（置換漏れ捕捉）。
  */
 Deno.test("replaced role links resolve to existing .opencode/agents files", async () => {
   const workflows = await listWorkflowFiles();
@@ -174,7 +174,7 @@ Deno.test("replaced role links resolve to existing .opencode/agents files", asyn
       );
     }
   }
-  assert(total >= 74, `expected at least 74 replaced role links, found ${total}`);
+  assert(total >= 65, `expected at least 65 replaced role links, found ${total}`);
 });
 
 /**
