@@ -1,11 +1,16 @@
 ---
 name: hybrid-triage-commit
-description: 開発・リファクタリング中のWIP一時コミットと、完了後のアトミックコミット再構築（ポストトリアージ）を制御するスキル
+description: 開発・リファクタリング中のWIP一時コミットと、完了後のアトミックコミット再構築（ポストトリアージ）を制御するスキル。コミット実行・WIP保存・プッシュ前の局面では必ず想起し、「今回は不要」との独自判断でスキップしないこと（未精読でのスキップは規律違反として検出済み）。
 tags:
   trigger:
     - save-wip
     - triage-commit
     - git-commit
+    - wip-commit
+    - atomic-commit
+    - pre-push
+    - before-commit
+    - コミット前に
   category: git
   constraints: requires-git-repo
 ---

@@ -1,12 +1,15 @@
 ---
 name: read-project-state
-description: プロジェクトの状態（PBI/WP/Epic/Feature等の一覧検索・詳細閲覧）を読み取る。
+description: プロジェクトの状態（PBI/WP/Epic/Feature等の一覧検索・詳細閲覧）を読み取る。PBI/WP/Review等の状態読取は本スキルへ一律委譲し、gh api・gh issue・GraphQLへの直操作で代替しないこと（直操作は規律逸脱として検出済み）。
 tags:
   trigger:
     - read-project-state
     - project-state
     - read-pbi
     - read-wp
+    - read-parent-pbi
+    - project-item-detail
+    - gh直操作の代替
   category: management
 ---
 
