@@ -518,6 +518,11 @@ Deno.test("Integration: --platform alone (no lang/os) skips sync without artifac
     const mockHome = join(tempDir, "mock_home");
     await Deno.mkdir(mockHome, { recursive: true });
 
+    // プリセット設定の読み取り元（子プロセス cwd 基準の config/global-settings.md）を
+    // 隔離するため、カレントディレクトリを空の一時ワークスペースへ向ける
+    const mockWorkspace = join(tempDir, "empty_workspace");
+    await Deno.mkdir(mockWorkspace, { recursive: true });
+
     const scriptPath = getSkillScriptPath(
       PATHS.BUNDLES.ONBOARDING,
       "publish-harness-rules",
@@ -532,6 +537,7 @@ Deno.test("Integration: --platform alone (no lang/os) skips sync without artifac
         "--platform",
         "opencode",
       ],
+      cwd: mockWorkspace,
       env: {
         HOME: mockHome,
       },
