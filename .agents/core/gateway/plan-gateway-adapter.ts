@@ -1565,6 +1565,8 @@ export class PlanGatewayAdapter implements PlanGateway {
       "number,title,labels",
       "--state",
       state,
+      "--limit",
+      "100",
       ...this.buildRepoArg(),
     ];
     const sprintNumber = params.sprintNumber;
