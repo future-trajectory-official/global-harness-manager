@@ -1617,71 +1617,119 @@ export class PlanGatewayAdapter implements PlanGateway {
     const owner = this.resolvedScope?.owner;
     if (!owner) return { operation: "search", success: false, error: "Scope not resolved" };
 
-    // sprintNumber が指定されていれば、該当 Sprint に属する Issue 番号一覧を先に取得
-    let sprintIssueNumbers: Set<number> | undefined;
+    // ProjectV2 の `query` 引数（プロジェクトUIフィルタDSL）でサーバー側フィルタする。
+    // status と sprintNumber はスキル呼出時の引数（WorkPackageSearchCondition）をそのまま使う。
     const sprintNumber = params.sprintNumber;
-    if (sprintNumber !== undefined && sprintNumber !== "") {
-      const msResult = await this.runCommand("gh", [
-        "issue",
-        "list",
-        "--milestone",
-        `Sprint ${sprintNumber}`,
-        "--json",
-        "number",
-        "--state",
-        "all",
-        ...this.buildRepoArg(),
-      ]);
-      if (msResult.code === 0) {
-        const msData = parseJsonOutput(msResult.stdout);
-        if (Array.isArray(msData)) {
-          sprintIssueNumbers = new Set(msData.map((i: { number: number }) => i.number));
-        }
-      }
-    }
+    const isNoneStatus = status === "__none__";
 
-    const listResult = await this.runCommand("gh", [
-      "project",
-      "item-list",
-      String(boardNumber),
-      "--owner",
-      owner,
-      "--format",
-      "json",
-    ]);
-    if (listResult.code !== 0) {
-      return { operation: "search", success: false, error: listResult.stderr };
+    const filterParts: string[] = [];
+    if (!isNoneStatus) {
+      filterParts.push(`status:"${status}"`);
     }
-    try {
-      const data = JSON.parse(listResult.stdout) as {
-        items: Array<{
-          id: string;
-          content?: { number: number; title: string } | null;
-          status?: string | null;
-          labels?: Array<{ name: string }>;
-        }>;
-      };
-      const matched = data.items.filter((item) => {
-        if (!item.content) return false;
-        if (status === "__none__") {
-          if (item.status != null) return false;
-        } else {
-          if ((item.status ?? null) !== status) return false;
-        }
-        if (sprintIssueNumbers && !sprintIssueNumbers.has(item.content!.number)) return false;
-        return true;
-      });
+    if (sprintNumber !== undefined && sprintNumber !== "") {
+      filterParts.push(`milestone:"Sprint ${sprintNumber}"`);
+    }
+    const filterQuery = filterParts.join(" ");
+
+    const items = await this.#fetchProjectItems(owner, boardNumber, filterQuery);
+    if (items === null) {
       return {
         operation: "search",
-        success: true,
-        output: matched.map((item) => ({
-          number: item.content!.number,
-          title: item.content!.title,
-        })),
+        success: false,
+        error: "Failed to fetch project items via GraphQL",
       };
-    } catch (e) {
-      return { operation: "search", success: false, error: `Failed to parse project search: ${e}` };
     }
+
+    // `__none__`（status未設定）はクエリDSLで表現できないため、取得後にローカルで判定する。
+    const matched = items.filter((item) => {
+      if (isNoneStatus) {
+        if (item.status != null) return false;
+      } else {
+        if ((item.status ?? null) !== status) return false;
+      }
+      return true;
+    });
+    return {
+      operation: "search",
+      success: true,
+      output: matched.map((item) => ({ number: item.number, title: item.title })),
+    };
+  }
+
+  /**
+   * ProjectV2 ボードの項目を GraphQL で取得する。
+   * `ProjectV2.items` の `query` 引数（プロジェクトUIフィルタDSL）でサーバー側フィルタし、
+   * 必要なフィールド（Issue番号・タイトル・Status値）のみ取得する。ページネーション対応。
+   * @returns 取得した項目の配列。取得失敗時は null
+   */
+  async #fetchProjectItems(
+    owner: string,
+    boardNumber: number,
+    filterQuery: string,
+  ): Promise<Array<{ number: number; title: string; status: string | null }> | null> {
+    const query = `query($owner: String!, $number: Int!, $filter: String, $cursor: String) {
+      organization(login: $owner) {
+        projectV2(number: $number) {
+          items(first: 100, after: $cursor, query: $filter) {
+            pageInfo { hasNextPage endCursor }
+            nodes {
+              content { ... on Issue { number title } }
+              fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
+            }
+          }
+        }
+      }
+    }`;
+    const items: Array<{ number: number; title: string; status: string | null }> = [];
+    let cursor: string | null = null;
+    while (true) {
+      const args = [
+        "api",
+        "graphql",
+        "-f",
+        `query=${query}`,
+        "-f",
+        `owner=${owner}`,
+        "-F",
+        `number=${boardNumber}`,
+        "-f",
+        `filter=${filterQuery}`,
+      ];
+      if (cursor) {
+        args.push("-f", `cursor=${cursor}`);
+      }
+      const res = await this.runCommand("gh", args);
+      if (res.code !== 0) return null;
+      const parsed = parseJsonOutput(res.stdout) as {
+        data?: {
+          organization?: {
+            projectV2?: {
+              items?: {
+                pageInfo?: { hasNextPage?: boolean; endCursor?: string | null };
+                nodes?: Array<{
+                  content?: { number?: number; title?: string } | null;
+                  fieldValueByName?: { name?: string } | null;
+                }>;
+              };
+            };
+          };
+        };
+      };
+      const conn = parsed?.data?.organization?.projectV2?.items;
+      if (!conn) return null;
+      for (const node of conn.nodes ?? []) {
+        const number = node.content?.number;
+        const title = node.content?.title;
+        if (number === undefined || title === undefined) continue;
+        items.push({ number, title, status: node.fieldValueByName?.name ?? null });
+      }
+      if (conn.pageInfo?.hasNextPage && conn.pageInfo.endCursor) {
+        cursor = conn.pageInfo.endCursor;
+      } else {
+        break;
+      }
+    }
+    return items;
   }
 
   async #handleShowHierarchy(params: Record<string, unknown>): Promise<StepResult> {
