@@ -12,7 +12,7 @@
     "qa": "deno fmt --check && deno lint && deno check \"**/*.ts\" \"!.opencode/node_modules/**\" && deno task validate:jsdoc && deno task test",
     "qa:cov": "deno fmt --check && deno lint && deno check \"**/*.ts\" \"!.opencode/node_modules/**\" && deno task validate:jsdoc && rm -rf cov_profile && deno test -A --parallel --coverage=cov_profile && deno coverage cov_profile",
     "setup-hooks": "deno run -A .agents/skills/bundles/workspace-bundle/setup-harness-env/scripts/setup-hooks.ts",
-    "validate-task": "deno run -A .agents/skills/bundles/management-bundle/session-planning/scripts/validate-task.ts --template .agents/management/task-template.md",
+    "validate-task": "deno run -A .agents/skills/bundles/management-bundle/session-planning/scripts/validate-task.ts --template .opencode/skills/bundles/management-bundle/session-planning/references/task-template.md",
     "phase-gate": "deno run -A .agents/core/shared/workflow/phase-gate.ts",
     "validate:jsdoc": "deno run -A .agents/core/shared/validate/validate-jsdoc.ts"
   },
