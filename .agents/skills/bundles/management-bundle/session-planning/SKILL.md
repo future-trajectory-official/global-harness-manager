@@ -69,8 +69,9 @@ description: 特定されたWork Packageと文脈に最も適した専門ロー�
 
 6. **承認後の `task.md` 作成**:
 
-- PO の承認を得たら、[task-template.md](/.agents/management/task-template.md) を参照し、 `task.md`
-  をアーティファクトとして作成してください。
+- PO の承認を得たら、`task.md` をアーティファクトとして作成してください。テンプレートは
+  [task-template.md](/.opencode/skills/bundles/management-bundle/session-planning/references/task-template.md)
+  を参照してください。
 - **GUARD ブロックの除去**: `task-template.md` には `<!-- ... -->` で囲まれた GUARD ブロック
   （`GUARD:REQUIRED_H2` 等を含む）が定義されています。このブロックはテンプレート定義専用です。
   `task.md` を作成する際は、GUARD ブロック全体を必ず削除してください。削除せずに `task.md`
