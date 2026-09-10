@@ -1,6 +1,7 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import type { ExecuteResult } from "../shared/io/command.ts";
 import { PlanGatewayAdapter, upsertVelocitySection } from "./plan-gateway-adapter.ts";
+import { FIELD, HARNESS_FIELDS } from "./field-registry.ts";
 import type { Plan } from "../domain/types.ts";
 
 function mockRunner() {
@@ -2732,6 +2733,71 @@ Deno.test("WorkPackage view - should return issue details", async () => {
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
   assertStringIncludes(calls[0].args.join(" "), "issue view 51");
+});
+
+/**
+ * ユースケース: handleFindItem が ProjectV2 の全 harness-* フィールド（KPT・メトリクス等）を
+ *   projectItems[].fields として取得・公開すること
+ * 検証意図: 従来は size/effort/status のみだった取得対象を拡張し、セッションKPTやスプリント
+ *   メトリクス等の読み取りを可能にする（read-project-state の取得不足の解消）。
+ */
+Deno.test("WorkPackage view - should expose all harness ProjectV2 fields in projectItems", async () => {
+  const harness = HARNESS_FIELDS as readonly string[];
+  const kptKeepIndex = harness.indexOf(FIELD.kptKeep);
+  const metricsSummaryIndex = harness.indexOf(FIELD.metricsSummary);
+  const calls: { cmd: string; args: string[] }[] = [];
+  let callCount = 0;
+  const adapter = makeAdapter((cmd, args) => {
+    calls.push({ cmd, args });
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({
+          number: 51,
+          title: "WP_1",
+          body: "body",
+          labels: [{ name: "type:WP" }],
+          id: "node-wp-51",
+        }),
+        stderr: "",
+      });
+    }
+    const node: Record<string, unknown> = {
+      id: "pvti-51",
+      project: { title: "Sprint Board", number: 11 },
+      status: { name: "Done" },
+    };
+    node[`f${kptKeepIndex}`] = { text: "粒度が安定" };
+    node[`f${metricsSummaryIndex}`] = { text: '{"intent_alignment_score":4}' };
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({
+        data: { repository: { issue: { projectItems: { nodes: [node] } } } },
+      }),
+      stderr: "",
+    });
+  });
+  const plan: Plan = {
+    summary: "view WP",
+    steps: [{ entity: "WorkPackage", operation: "view", params: { itemId: "51" } }],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  // GraphQL enrich クエリが KPT フィールド名を SELECT していること
+  const gqlCall = calls.find((c) => c.args.join(" ").includes("api graphql"));
+  assert(gqlCall, "api graphql call should be issued");
+  assertStringIncludes(gqlCall!.args.join(" "), FIELD.kptKeep);
+  // 出力に fields マップとして反映されること
+  const output = result.stepResults[0].output as Record<string, unknown>;
+  const items = output.projectItems as Array<Record<string, unknown>>;
+  assertEquals(items.length, 1);
+  const fields = items[0].fields as Record<string, unknown>;
+  assertEquals(fields[FIELD.kptKeep], "粒度が安定");
+  assertEquals(fields[FIELD.metricsSummary], '{"intent_alignment_score":4}');
+  // V2 ビルトイン Status も fields に統合されること
+  assertEquals(fields["Status"], "Done");
 });
 
 // ===== Sprint recordVelocity =====

@@ -17,7 +17,7 @@ import type { PlanGateway } from "../domain/plan-gateway.ts";
 import { ProductBacklogItemHandler } from "./product-backlog-item-handler.ts";
 import { WorkPackageHandler } from "./work-package-handler.ts";
 import { RetrospectiveHandler } from "./retrospective-handler.ts";
-import { type BoardKey, FIELD, type FieldRef } from "./field-registry.ts";
+import { type BoardKey, type FieldRef, HARNESS_FIELDS, STATUS_FIELD } from "./field-registry.ts";
 
 export type CommandRunner = (cmd: string, args: string[]) => Promise<ExecuteResult>;
 
@@ -1397,8 +1397,11 @@ export class PlanGatewayAdapter implements PlanGateway {
 
     if (this.resolvedScope) {
       try {
+        const fieldSelections = HARNESS_FIELDS.map((name, index) =>
+          `f${index}: fieldValueByName(name: "${name}") { ... on ProjectV2ItemFieldTextValue { text } ... on ProjectV2ItemFieldSingleSelectValue { name } ... on ProjectV2ItemFieldNumberValue { number } }`
+        ).join(" ");
         const enrichQuery =
-          `query($owner: String!, $repo: String!, $number: Int!) { repository(owner: $owner, name: $repo) { issue(number: $number) { parent { ... on Issue { number title id } } milestone { number title } subIssues(first: 100) { nodes { ... on Issue { number title id } } } projectItems(first: 10) { nodes { id project { title number } sizeEst: fieldValueByName(name: "${FIELD.sizeEstimate}") { ... on ProjectV2ItemFieldSingleSelectValue { name } } sizeAct: fieldValueByName(name: "${FIELD.sizeActual}") { ... on ProjectV2ItemFieldSingleSelectValue { name } } effort: fieldValueByName(name: "${FIELD.effortSummary}") { ... on ProjectV2ItemFieldTextValue { text } } status: fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } } } } } } }`;
+          `query($owner: String!, $repo: String!, $number: Int!) { repository(owner: $owner, name: $repo) { issue(number: $number) { parent { ... on Issue { number title id } } milestone { number title } subIssues(first: 100) { nodes { ... on Issue { number title id } } } projectItems(first: 10) { nodes { id project { title number } status: fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } } ${fieldSelections} } } } } }`;
         const gqlResult = await this.runCommand("gh", [
           "api",
           "graphql",
@@ -1422,16 +1425,7 @@ export class PlanGatewayAdapter implements PlanGateway {
                     nodes: Array<{ number: number; title: string; id: string }> | null;
                   };
                   projectItems?: {
-                    nodes:
-                      | Array<{
-                        id: string;
-                        project: { title: string; number: number };
-                        sizeEst?: { name: string } | null;
-                        sizeAct?: { name: string } | null;
-                        effort?: { text: string } | null;
-                        status?: { name: string } | null;
-                      }>
-                      | null;
+                    nodes: Array<Record<string, unknown>> | null;
                   };
                 };
               };
@@ -1462,14 +1456,26 @@ export class PlanGatewayAdapter implements PlanGateway {
               ) => identify(scope, n.title, n.id, String(n.number)));
             }
             if (issue.projectItems?.nodes) {
-              output.projectItems = issue.projectItems.nodes.map((item) => ({
-                project: item.project,
-                itemId: item.id,
-                sizeEstimate: item.sizeEst?.name ?? null,
-                sizeActual: item.sizeAct?.name ?? null,
-                effort: item.effort?.text ?? null,
-                status: item.status?.name ?? null,
-              }));
+              output.projectItems = issue.projectItems.nodes.map((item) => {
+                const fields: Record<string, string | number> = {};
+                HARNESS_FIELDS.forEach((name, index) => {
+                  const raw = item[`f${index}`] as
+                    | { text?: string; name?: string; number?: number }
+                    | null
+                    | undefined;
+                  if (!raw) return;
+                  if (raw.text !== undefined) fields[name] = raw.text;
+                  else if (raw.name !== undefined) fields[name] = raw.name;
+                  else if (raw.number !== undefined) fields[name] = raw.number;
+                });
+                const status = item.status as { name?: string } | null | undefined;
+                if (status?.name !== undefined) fields[STATUS_FIELD] = status.name;
+                return {
+                  project: item.project as { title: string; number: number },
+                  itemId: item.id as string,
+                  fields,
+                };
+              });
             }
           }
         }

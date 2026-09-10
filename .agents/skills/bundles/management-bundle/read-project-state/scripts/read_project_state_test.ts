@@ -47,7 +47,7 @@ case "$1" in
     ;;
   api)
     if [ "$2" = "graphql" ]; then
-      echo '{"data":{"repository":{"issue":{"parent":{"number":10,"title":"Parent Epic","id":"node-10"},"milestone":{"number":19,"title":"Sprint 19"},"subIssues":{"nodes":[{"number":7,"title":"Child feature","id":"node-7"}]},"projectItems":{"nodes":[{"id":"pv-1","project":{"title":"Board","number":1},"sizeEst":{"name":"M"},"sizeAct":{"name":"M"},"effort":{"text":"{\\"initial_estimate\\":2,\\"planned_estimate\\":3}"},"status":{"name":"Todo"}}]}}}}}'
+      echo '{"data":{"repository":{"issue":{"parent":{"number":10,"title":"Parent Epic","id":"node-10"},"milestone":{"number":19,"title":"Sprint 19"},"subIssues":{"nodes":[{"number":7,"title":"Child feature","id":"node-7"}]},"projectItems":{"nodes":[{"id":"pv-1","project":{"title":"Board","number":1},"status":{"name":"Todo"},"f0":{"name":"M"},"f1":{"name":"M"},"f2":{"text":"{\\"initial_estimate\\":2,\\"planned_estimate\\":3}"}}]}}}}}'
       exit 0
     fi
     case "$2" in
@@ -222,8 +222,11 @@ Deno.test("read_project_state - find PBI enriches hierarchy via graphql", async 
       assertStringIncludes(result.stdout, '"children"');
       assertStringIncludes(result.stdout, "Child feature");
       assertStringIncludes(result.stdout, '"projectItems"');
-      assertStringIncludes(result.stdout, '"effort"');
+      // 全フィールド（harness-* と V2 ビルトイン Status）が fields マップに統合されること
+      assertStringIncludes(result.stdout, '"fields"');
+      assertStringIncludes(result.stdout, "harness-effort-summary");
       assertStringIncludes(result.stdout, '\\"initial_estimate\\":2');
+      assertStringIncludes(result.stdout, '"Status"');
     },
   );
 });
