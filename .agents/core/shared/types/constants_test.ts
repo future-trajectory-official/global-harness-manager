@@ -1,6 +1,5 @@
 import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import {
-  getManagementPath,
   getSkillAssetPath,
   getSkillDirPath,
   getSkillScriptPath,
@@ -53,11 +52,10 @@ Deno.test("constants - PATHS should have complete bundle definitions", () => {
 
 /**
  * constants - PATHS オブジェクトのルートパス定義が正しいことを検証する。
- * SKILLS_ROOT, MANAGEMENT, SCRIPTS の各パスが期待値を満たすことを確認する。
+ * SKILLS_ROOT, SCRIPTS の各パスが期待値を満たすことを確認する。
  */
 Deno.test("constants - PATHS should have correct root paths", () => {
   assertEquals(PATHS.SKILLS_ROOT, ".agents/skills/bundles");
-  assertEquals(PATHS.MANAGEMENT, ".agents/management");
   assertEquals(PATHS.SCRIPTS, "scripts");
 });
 
@@ -96,20 +94,6 @@ Deno.test("constants - getSkillAssetPath should return correct path (with and wi
     filePath,
     ".agents/skills/bundles/workspace-bundle/test-skill/assets/image.png",
   );
-});
-
-/**
- * constants - getManagementPath が管理ディレクトリおよび個別管理ファイルへの
- * パスを正しく返すことを検証する。引数あり・なしの両方を確認する。
- */
-Deno.test("constants - getManagementPath should return correct path (with and without file name)", () => {
-  // 引数なし
-  const dirPath = getManagementPath();
-  assertStringIncludes(dirPath, ".agents/management");
-
-  // 引数あり
-  const filePath = getManagementPath("product-backlog.md");
-  assertStringIncludes(filePath, ".agents/management/product-backlog.md");
 });
 
 // findProjectRoot のテストケース (POから求められた多角的な検証ケース)

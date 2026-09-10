@@ -53,7 +53,6 @@ export const PATHS = {
     DEVELOPMENT: "development-bundle",
     MANAGEMENT: "management-bundle",
   },
-  MANAGEMENT: ".agents/management",
   SCRIPTS: "scripts",
 } as const;
 
@@ -93,12 +92,4 @@ export function getSkillAssetPath(
 ): string {
   const base = join(getSkillDirPath(bundle, skillName), "assets");
   return assetName ? join(base, assetName) : base;
-}
-
-/**
- * 管理用テンプレートディレクトリの絶対パスを取得する
- */
-export function getManagementPath(fileName?: string): string {
-  const base = join(PROJECT_ROOT, PATHS.MANAGEMENT);
-  return fileName ? join(base, fileName) : base;
 }
