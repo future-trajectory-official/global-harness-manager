@@ -34,7 +34,7 @@ tags:
      スキルを呼び出して該当WPを閲覧する。
      ```bash
      echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
-     # → 出力の projectItems[].effort に計画前見積（initial_estimate）が記録されている
+     # → 出力の projectItems[].fields["harness-effort-summary"] に計画前見積（initial_estimate）が記録されている
      ```
      入力JSONの組み立て方は
      [references/reference.md](/.agents/skills/bundles/management-bundle/start-work-package/references/reference.md)
@@ -74,8 +74,8 @@ tags:
        | deno run -A .agents/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
      # → output.children で兄弟WP一覧（number）を確認
      ```
-   - 兄弟WP各々を view して Status を確認し、1件でも `In Progress` または `Done`
-     がある場合は、親PBIは既に昇格済みのため昇格しない。
+   - 兄弟WP各々を view して `projectItems[].fields["Status"]` を確認し、1件でも `In Progress` または
+     `Done` がある場合は、親PBIは既に昇格済みのため昇格しない。
    - 全兄弟WPが `Todo`（かつ今回のWPが最初の着手）の場合、親PBIを `InProgress` へ昇格する。事前に
      `--dry-run` でPlanを確認し、PO承認後に本実行すること。
      ```bash

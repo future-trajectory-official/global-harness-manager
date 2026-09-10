@@ -29,9 +29,10 @@ echo '{"entityType":"WorkPackage","operation":"find","params":{"itemId":"643"}}'
 
 ### 出力の解釈
 
-- 出力の `output.projectItems[].effort` に、当該WPの `harness-effort-summary`（JSON文字列）が入る。
-- `effort` をパースし、`initial_estimate` を**計画前見積（介入回数）**として採用する。
-- `effort` が空（`null`）の場合は計画前見積が未設定のため、その旨をPOに確認する。
+- 出力の `output.projectItems[].fields["harness-effort-summary"]` に、当該WPの
+  `harness-effort-summary`（JSON文字列）が入る。
+- 当該フィールドをパースし、`initial_estimate` を**計画前見積（介入回数）**として採用する。
+- 当該フィールドが未設定（キーなし）の場合は計画前見積が未設定のため、その旨をPOに確認する。
 - 計画前見積・計画後見積・完了時実績の定義と算出方法は
   [guides/backlog-guidelines.md](/guides/backlog-guidelines.md) の **2.2.1** に従う。
 
