@@ -34,7 +34,8 @@ echo '{"entityType":"WorkPackage","operation":"find","params":{"itemId":"643"}}'
 - 当該フィールドをパースし、`initial_estimate` を**計画前見積（介入回数）**として採用する。
 - 当該フィールドが未設定（キーなし）の場合は計画前見積が未設定のため、その旨をPOに確認する。
 - 計画前見積・計画後見積・完了時実績の定義と算出方法は
-  [guides/backlog-guidelines.md](/guides/backlog-guidelines.md) の **2.2.1** に従う。
+  [.opencode/guides/backlog-guidelines.md](/.opencode/guides/backlog-guidelines.md) の **2.2.1**
+  に従う。
 
 > **effort キーの形式（レイヤー別）**: 本セクションで扱う集計・出力値は snake_case
 > （`initial_estimate` / `planned_estimate` / `actual`、`read-project-state` 等）、スクリプト入力・

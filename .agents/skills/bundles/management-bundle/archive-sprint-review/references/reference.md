@@ -2,7 +2,8 @@
 
 ## 総合判定と対話パターン
 
-総合判定の意味や判定基準の詳細は `guides/design-spec.md`（Review の設計仕様）を参照すること。
+総合判定の意味や判定基準の詳細は
+[sprint-review-guidelines.md](/.opencode/guides/sprint-review-guidelines.md)（スプリントレビュー検証のガイドライン）を参照すること。
 
 ### 総合判定別のAI応答
 

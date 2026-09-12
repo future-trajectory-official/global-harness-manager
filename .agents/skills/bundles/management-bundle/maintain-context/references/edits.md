@@ -6,11 +6,11 @@
 
 ## 1. 編集対象と対象外
 
-| 対象                                 | 扱い         | 説明                                                        |
-| ------------------------------------ | ------------ | ----------------------------------------------------------- |
-| `.agents/context/product.md`         | **編集対象** | プロジェクト固有の用語。git追跡対象外・利用者編集           |
-| `.agents/context/management.md`      | 対象外       | ハーネスの管理概念。git追跡対象・不変配布。**編集禁止**     |
-| `.agents/context/product.md.example` | 対象外       | 構造見本。git追跡対象。**編集しない**（見本用語の混入防止） |
+| 対象                                   | 扱い         | 説明                                                        |
+| -------------------------------------- | ------------ | ----------------------------------------------------------- |
+| `.opencode/context/product.md`         | **編集対象** | プロジェクト固有の用語。git追跡対象外・利用者編集           |
+| `.opencode/context/management.md`      | 対象外       | ハーネスの管理概念。git追跡対象・不変配布。**編集禁止**     |
+| `.opencode/context/product.md.example` | 対象外       | 構造見本。git追跡対象。**編集しない**（見本用語の混入防止） |
 
 - 編集対象は **`product.md` のみ**。`.example`（構造見本）・`management.md`（不変）は変更しない。
 
@@ -35,11 +35,10 @@
 
 ```bash
 # management.md に変更がないこと
-git diff --name-only .agents/context/management.md
+git diff --name-only .opencode/context/management.md
 # → 空（出力なし）であれば OK。何か出力された場合は編集を取り消す。
 
-# product.md.example にも変更がないこと
-git diff --name-only .agents/context/product.md.example
+git diff --name-only .opencode/context/product.md.example
 # → 空（出力なし）であれば OK。
 ```
 

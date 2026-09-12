@@ -37,8 +37,8 @@ description: スプリントの終了プロセス（レビューのアーカイ�
   (進行・ファシリテーション)
 - **実行するスキル**:
   `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
-- **入力（前提条件）**: `.agents/context/management.md`（必須）/
-  `.agents/context/product.md`（任意）。
+- **入力（前提条件）**: `.opencode/context/management.md`（必須）/
+  `.opencode/context/product.md`（任意）。
 - **期待される結果（終了条件）**:
   1. 用語集（管理概念・プロジェクト固有の用語）が出典別に要約提示されていること。
   2. 提示した語彙が本スプリントの共有言語として PO に確認されていること。

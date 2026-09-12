@@ -30,7 +30,7 @@ export function createEffortRecord(initialEstimate: number): EffortRecord {
 /**
  * EffortRecord に plannedEstimate を設定した新しいオブジェクトを返す。元のオブジェクトは不変。
  * plannedEstimate は initialEstimate に対し上方・下方どちらの修正も許容する
- * （guides/backlog-guidelines.md 2.2.1「計画前見積を上方または下方に修正した値となる」）。
+ * （.opencode/guides/backlog-guidelines.md 2.2.1「計画前見積を上方または下方に修正した値となる」）。
  * 妥当な検証は0以上の数値であることのみ。
  */
 export function withPlannedEstimate(
