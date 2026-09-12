@@ -22,7 +22,9 @@
     "indentWidth": 2,
     "semiColons": true,
     "singleQuote": false,
-    "exclude": [".opencode"]
+    // .opencode/agents（ロール定義）と .opencode/commands（ワークフロー入口）は
+    // YAML frontmatter 保持のため fmt 対象外とする。
+    "exclude": [".opencode/agents", ".opencode/commands"]
   },
   "lint": {
     "rules": {

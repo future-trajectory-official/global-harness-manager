@@ -38,7 +38,7 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-
 - AIがセッション履歴等から実感サイズ（size_actual）を提案し、乖離理由（variance_reason）を整理する。
 - **実感サイズの判断基準**:
   実労力（介入回数）ではなく、PBIの実際の複雑さ・設計判断・アーキテクチャ変更の度合いに基づく。サイズ定義と判断基準は
-  [backlog-guidelines.md 2.2](/guides/backlog-guidelines.md) を参照（effort とは別概念）。
+  [backlog-guidelines.md 2.2](/.opencode/guides/backlog-guidelines.md) を参照（effort とは別概念）。
 - POと調整し、最終値を確定する。
 
 ### 3. PO承認と記録

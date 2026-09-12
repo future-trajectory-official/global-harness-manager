@@ -15,9 +15,9 @@ AI がプロジェクト固有の用語集 `product.md` に、固有用語を追
 
 ## 入力（前提）
 
-- `.agents/context/product.md` … 編集対象（利用者編集・git追跡対象外）。
-- `.agents/context/management.md` … 参照のみ。**編集禁止**。
-- `.agents/context/product.md.example` … 構造見本。**編集対象外**。
+- `.opencode/context/product.md` … 編集対象（利用者編集・git追跡対象外）。
+- `.opencode/context/management.md` … 参照のみ。**編集禁止**。
+- `.opencode/context/product.md.example` … 構造見本。**編集対象外**。
 
 ## 出力（実現すること）
 

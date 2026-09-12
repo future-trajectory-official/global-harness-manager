@@ -3,19 +3,35 @@ import { walk } from "https://deno.land/std@0.224.0/fs/walk.ts";
 
 const ROOT = Deno.cwd();
 
+// link_verification_test — プロジェクト内の全Markdownファイルのリンクとパス解決を検証する。
+// 内部リンクのデッドリンク検出、絶対パスの問題、外部URLの形式、および裸の相対パス（/ 始まり以外のリンク）を確認する。
+
 /**
- * link_verification_test — プロジェクト内の全Markdownファイルのリンクとパス解決を検証する。
- * 内部リンクのデッドリンク検出、絶対パスの問題、外部URLの形式、および裸の相対パス（/ 始まり以外のリンク）を確認する。
+ * 指定ルート配下から Markdown / example ファイルを再帰収集する。
+ */
+async function collectMarkdownFiles(root: string): Promise<string[]> {
+  const files: string[] = [];
+  for await (const entry of walk(`${ROOT}/${root}`, { exts: [".md", ".example"] })) {
+    if (entry.isFile) {
+      files.push(entry.path);
+    }
+  }
+  return files;
+}
+
+/**
+ * Markdown Link and Path Resolution Verification
  */
 Deno.test("Markdown Link and Path Resolution Verification", async () => {
   const issues: string[] = [];
-  const mdFiles: string[] = [];
 
   // ターゲットの Markdown ファイル一覧を取得（テンプレートファイル .example / .md.example も対象に含める）
-  for await (const entry of walk(`${ROOT}/.agents`, { exts: [".md", ".example"] })) {
-    if (entry.isFile) {
-      mdFiles.push(entry.path);
-    }
+  // 対象ディレクトリ: .agents（運用系）・.opencode/context（用語集）・.opencode/guides（運用ガイド）・.opencode/agents（ロール定義）
+  // 対象外: .opencode/commands（ワークフロー入口・別テストで検証）・.opencode/skills（配布物）
+  const scanRoots = [`.agents`, `.opencode/context`, `.opencode/guides`, `.opencode/agents`];
+  const mdFiles: string[] = [];
+  for (const root of scanRoots) {
+    mdFiles.push(...await collectMarkdownFiles(root));
   }
 
   // ルールやスキルなどのファイル名リスト（プレーンテキスト言及の検出用）
@@ -41,7 +57,10 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
     "designer.md",
     "README.md",
     "metrics-guide.md",
-    "review-guide.md",
+    "operations-guide.md",
+    "reflection-guide.md",
+    "sprint-reflection-guide.md",
+    "sprint-review-guidelines.md",
     "metrics.jsonl",
   ];
 
@@ -137,7 +156,10 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
         }
       } else {
         // 相対パスの場合
-        if (isWorkspaceRelative || targetPath.startsWith(".agents/")) {
+        if (
+          isWorkspaceRelative || targetPath.startsWith(".agents/") ||
+          targetPath.startsWith(".opencode/")
+        ) {
           // ワークスペースルートからの相対
           absoluteTarget = `${ROOT}/${targetPath}`;
         } else {

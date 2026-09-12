@@ -197,7 +197,7 @@ AI との協働において、コンテキストの汚染（迷走）を防ぎ�
 ## 3. 状態遷移
 
 PBI・WP の状態遷移（Idea → Todo → InProgress → Done）および管理概念としての定義は
-[context/management.md §3](/.agents/context/management.md#3-状態遷移) を**主**とし、
+[context/management.md §3](/.opencode/context/management.md#3-状態遷移) を**主**とし、
 本ガイドでは重複して定義しない。
 
 ## 4. 手続き (Procedures)

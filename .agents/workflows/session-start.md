@@ -18,7 +18,8 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 - **ロール**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行役として開始)
 - **実行スキル**:
   `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
-- **入力（前提）**: `.agents/context/management.md`（必須）/ `.agents/context/product.md`（任意）
+- **入力（前提）**: `.opencode/context/management.md`（必須）/
+  `.opencode/context/product.md`（任意）
 - **成果物**: 用語集の要約提示（管理概念・プロジェクト固有の用語）と共有言語の宣言
 - **セルフチェック**:
   - [ ] **[用語の同期]** 管理概念（9概念・状態遷移・指標・品質要件）を読み、共有言語として PO

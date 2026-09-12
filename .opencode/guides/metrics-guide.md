@@ -19,7 +19,7 @@ Achievement / Estimation Accuracy / Quality Integrity / Collaboration Discipline
 ### 2. Estimation Accuracy (見積もり精度)
 
 - **定義**: PBIの見積時Tシャツサイズ（具体的なポイント換算基準は
-  [backlog-guidelines.md の「2.2. PBI の見積り基準 (T-Shirt Size)」](/guides/backlog-guidelines.md)
+  [backlog-guidelines.md の「2.2. PBI の見積り基準 (T-Shirt Size)」](/.opencode/guides/backlog-guidelines.md)
   を参照）と、完了までに実際に要した労力（セッション数）の乖離度合い。
 - **採点基準**:
   - 1: 見積もりに対して実際の労力が極めて重かった、またはほぼ消化できなかった。
@@ -58,7 +58,7 @@ Achievement / Estimation Accuracy / Quality Integrity / Collaboration Discipline
 
 - **定義**: 完了したPBIの**実感サイズ（Tシャツサイズ）**をウェイト換算した値の集計による
   独自ベロシティ。ウェイト換算基準は
-  [backlog-guidelines.md の「2.2. PBI の見積り基準 (T-Shirt Size)」](/guides/backlog-guidelines.md)
+  [backlog-guidelines.md の「2.2. PBI の見積り基準 (T-Shirt Size)」](/.opencode/guides/backlog-guidelines.md)
   を参照。
 - **算出**: `ΣPBI(実感サイズ × ウェイト換算値)`
 - **スコアは不要**: Velocity は1〜5スコアで評価せず、ウェイト換算値（Σ）をそのまま記録する。

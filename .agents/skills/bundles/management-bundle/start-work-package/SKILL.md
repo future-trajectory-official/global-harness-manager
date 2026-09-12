@@ -23,7 +23,7 @@ tags:
    初回計画提案から計画承認までに発生したPOからの軌道修正・方針変更指示を、介入履歴として記録する。
 
 2. **介入の定義の確認**:
-   見積りを算出する前に、[介入の定義（backlog-guidelines 2.2.1）](/guides/backlog-guidelines.md)
+   見積りを算出する前に、[介入の定義（backlog-guidelines 2.2.1）](/.opencode/guides/backlog-guidelines.md)
    を引用し、「何が介入としてカウントされるか」を確認してから見積りに進むこと。
    - 介入 =
      意図の修正指示・制約/ルールの違反指摘・アプローチの軌道修正（進行指示や単純な肯定応答は含まない）
@@ -39,8 +39,9 @@ tags:
      入力JSONの組み立て方は
      [references/reference.md](/.agents/skills/bundles/management-bundle/start-work-package/references/reference.md)
      を参照すること。
-   - 計画後見積の定義と算出方法は [guides/backlog-guidelines.md](/guides/backlog-guidelines.md) の
-     **2.2.1** に従うこと。
+   - 計画後見積の定義と算出方法は
+     [.opencode/guides/backlog-guidelines.md](/.opencode/guides/backlog-guidelines.md) の **2.2.1**
+     に従うこと。
 
 4. **見積りの提示と了承**: 算出した見積りをPOに提示し、了承を得る。
 

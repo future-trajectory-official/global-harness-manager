@@ -7,7 +7,7 @@
 ### 1. KPTA の抽出
 
 KPTA（Keep / Problem / Try / Advise）の定義は
-[context/management.md §5.2](/.agents/context/management.md#52-kpt) を参照。
+[context/management.md §5.2](/.opencode/context/management.md#52-kpt) を参照。
 
 - **Keep (継続)**: 次回も継続すべき良い習慣やプラクティス。
 - **Problem (課題)**: 発生した問題、非効率、混乱の原因。

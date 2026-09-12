@@ -15,10 +15,10 @@ AI と人間が共通の言語で話せるよう、ハーネスの管理概念�
 
 ## 入力（前提）
 
-- `.agents/context/management.md` … ハーネスの管理概念。
-- `.agents/context/product.md` …
+- `.opencode/context/management.md` … ハーネスの管理概念。
+- `.opencode/context/product.md` …
   プロジェクト固有の用語。**未存在でもよい**（その場合はプロジェクト固有の用語は「未定義」扱い）。
-- ※ `.agents/context/product.md.example`（構造見本）は読まない。
+- ※ `.opencode/context/product.md.example`（構造見本）は読まない。
 
 ## 出力（実現すること）
 
@@ -28,7 +28,7 @@ AI と人間が共通の言語で話せるよう、ハーネスの管理概念�
 
 ## 実行手順
 
-1. `Read` で `.agents/context/management.md` を読み込む。続けて `.agents/context/product.md`
+1. `Read` で `.opencode/context/management.md` を読み込む。続けて `.opencode/context/product.md`
    を**存在する場合のみ**読み込む（未存在なら読み込みをスキップし「未定義」として扱う）。
 2. `references/reads.md` の規則に従い、用語を出典ごとに整理して要約・提示する。
    同リファレンスにのみ定義される「表示見出し」「未定義の場合の表現」「用語の出典」
@@ -37,8 +37,8 @@ AI と人間が共通の言語で話せるよう、ハーネスの管理概念�
 
 ## セッション中の扱い
 
-- 本用語集（`.agents/context/management.md` /
-  `.agents/context/product.md`）を**照合先**とする。セッションが
+- 本用語集（`.opencode/context/management.md` /
+  `.opencode/context/product.md`）を**照合先**とする。セッションが
   長くなりコンテキストが圧縮された後など、用語が曖昧になった場合は必要に応じて再参照する。
 - 用語の解釈が曖昧な場合は、用語集の**正式な用語名**を PO
   に示し、「この概念・考え方でよいか」と確認を取る。
