@@ -124,7 +124,7 @@ const REQUIRED_LOCAL_CONVENTION_KEYS = [
   ".session/plan.md",
   "[Phase",
   "[CRITICAL ACTION]",
-  ".agents/context",
+  ".opencode/context",
   "git push",
   "一括置換",
   "ホストOS",
@@ -148,7 +148,7 @@ Deno.test("T4 (AC4): local example hosts migrated harness conventions", async ()
 
 /**
  * ユースケース: 用語集参照が opencode.json.example の instructions と整合する（AC4）
- * 検証意図: instructions の全項目について、AGENTS.md（=local example の配布実体名）または .agents/context 連鎖がローカル規律で担保されることを総称的に検証し、用語集2ファイル（management.md / product.md）への言及とグローバル側の AGENTS.md 参照の成立を確認する
+ * 検証意図: instructions の全項目について、AGENTS.md（=local example の配布実体名）または .opencode/context 連鎖がローカル規律で担保されることを総称的に検証し、用語集2ファイル（management.md / product.md）への言及とグローバル側の AGENTS.md 参照の成立を確認する
  */
 Deno.test("T5 (AC4): glossary reference chain aligns with opencode.json.example", async () => {
   const instructionsJson = JSON.parse(
