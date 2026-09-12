@@ -3,7 +3,7 @@
 本ドキュメントは、Global Harness Manager の3階層スコープモデルを実際の開発現場で運用するための
 **L1（運用ガイド）** です。
 管理概念の**定義**（3階層スコープモデル・9概念・状態遷移・指標系・品質要件）は
-[context/management.md](/.agents/context/management.md)
+[context/management.md](/.opencode/context/management.md)
 を**主**とし、本ガイドは**運用**（ワークフロー・ GitHub
 上の表現・トラブルシューティング・責任者区分）に特化します。
 
