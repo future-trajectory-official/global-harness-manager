@@ -5,24 +5,107 @@ subtask: false
 
 # /session-end — セッション終了ワークフロー
 
-本コマンドはワークフロー `session-end` をメインセッションで実行するための入口です。
-**手順の単一の正は以下のワークフロー定義ファイルです。全文を読み、記載どおりにフェーズ進行すること。**
+本ワークフローは、セッションの成果を定量・定性的に振り返り、人間が AI
+をより効果的に管理するための気づきを蓄積するプロセスを定義します。
 
-@.agents/workflows/session-end.md
+---
 
-## 実行順序と状態遷移（呼出側の概要）
+## 1. 成果確認フェーズ
 
-| フェーズ | 実行スキル | 実行後の状態（業務用語） |
-| --- | --- | --- |
-| 1-0. 用語の同期 | assess-context | 終了時の振り返り前に共有言語をPOと再確認済み |
-| 1-1. 実績effortの記録 | record-work-package-effort | 実績effort（介入回数）と乖離理由がGitHub Issueに記録済み |
-| 2-1. 共進化 KPT | record-work-package-kpt | セッション振り返り（KPT）が記録済み |
-| 3-1. 協働メトリクスの記録 | record-work-package-metrics | セッションメトリクスがGitHub Issueに記録済み |
-| 4-1. WP完了 | complete-work-package | WPがDoneに遷移し、兄弟WP全完了なら親PBIも完了 |
-| 4-2. セッションアーティファクトのクリーンアップ | —（直操作） | `.session/` を完全削除し空ディレクトリ再作成（.gitkeep復元） |
+**開始条件**:
+POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
 
-## 遵守事項
+### 1-0. 用語の同期
 
-- ワークフロー内の `<!-- STOP -->` と停止指示は Opencode の機能ではなく AI への指示表記である。到達点で必ず報告し、PO の明示的な指示があるまで次のフェーズを先読みしない。
-- コマンドは呼出側の事情（実行順序・状態遷移）のみを表現する。各実行スキルの内部操作（手順・コマンド・JSON形式）には踏み込まない。
-- 並行実行を要する個所がある場合、コマンド自身はサブエージェントを起動せず、該当スキル側がサブエージェントの作成・実行を明示的に行う方針に従う（本ワークフローに並行実行個所なし；将来のスキル変更時もこの方針を維持する）。
+- **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
+- **実行スキル**:
+  `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
+- **入力（前提）**: `.opencode/context/management.md`（必須）/
+  `.opencode/context/product.md`（任意）
+- **内容**: セッション終了時に用語集（管理概念・プロジェクト固有の用語）を読み、共有言語として PO
+  に確認します。※ 開始時（assess-context）で確立した共有言語を、終了時の振り返り前に再確認し、
+  用語解釈の齟齬を残さないために設置している。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+---
+
+### 1-1. 実績effortの記録
+
+- **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
+- **実行スキル**:
+  `[record-work-package-effort](/.agents/skills/bundles/management-bundle/record-work-package-effort/SKILL.md)`
+- **内容**: セッションの実績effort（介入回数）と乖離理由をGitHub Issueに記録します。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+---
+
+## 2. 内省（リフレクション）フェーズ
+
+**開始条件**:
+POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
+
+### 2-1. 共進化 KPT
+
+- **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
+- **実行スキル**:
+  `[record-work-package-kpt](/.agents/skills/bundles/management-bundle/record-work-package-kpt/SKILL.md)`
+- **成果物**: 「Session Reflection (KPT)」報告
+- **重要**: AI から人間への建設的なフィードバックを真摯に受け止め、次回の協働品質向上に繋げます。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+---
+
+## 3. 計測と記録フェーズ
+
+**開始条件**:
+POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
+
+### 3-1. 協働メトリクスの記録
+
+- **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
+- **実行スキル**:
+  `[record-work-package-metrics](/.agents/skills/bundles/management-bundle/record-work-package-metrics/SKILL.md)`
+- **成果物**: GitHub Issueへのセッションメトリクス記録
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+---
+
+## 4. 完了フェーズ
+
+**開始条件**:
+POから「次のフェーズに進めて」または同等の明示的な指示があるまで、このフェーズの内容を先読み・実行してはならない。
+
+### 4-1. WP完了
+
+- **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
+- **実行スキル**:
+  `[complete-work-package](/.agents/skills/bundles/management-bundle/complete-work-package/SKILL.md)`
+- **内容**: WPをDone状態に遷移し、兄弟WPが全完了している場合は親PBIも完了します。
+
+### 4-2. セッションアーティファクトのクリーンアップ
+
+- **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
+- **実行内容**:
+  - `.session/` ディレクトリが存在するか確認する（例: `ls .session/` または `test -d .session/`）。
+  - 存在する場合:
+    1. `deno eval "Deno.removeSync('.session', {recursive: true})"` で `.session/`
+       を完全削除（クロスプラットフォーム）。
+    2. `mkdir -p .session/` で空のディレクトリを再作成。
+    3. `git checkout .session/.gitkeep` で追跡ファイルを復元。
+  - 存在しない場合: 何もせずスキップ（エラーにはしない）。
+- **注意**: このステップは Opencode 環境でのみ意味を持つ。Antigravity 環境では `.session/`
+  が存在しないため常にスキップされる。
+
+<!-- STOP -->
