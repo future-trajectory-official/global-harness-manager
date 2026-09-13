@@ -1,7 +1,7 @@
 import { assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
 const ROOT = new URL("../", import.meta.url).pathname;
-const WORKFLOWS_DIR = `${ROOT}.agents/workflows`;
+const COMMANDS_DIR = `${ROOT}.opencode/commands`;
 const ASSESS_CONTEXT_SKILL = "/.agents/skills/bundles/management-bundle/assess-context/SKILL.md";
 
 /**
@@ -30,7 +30,7 @@ Deno.test("assess-context is integrated at the beginning of the 4 lifecycle work
   ];
 
   for (const { file, isSprint } of targets) {
-    const content = await Deno.readTextFile(`${WORKFLOWS_DIR}/${file}`);
+    const content = await Deno.readTextFile(`${COMMANDS_DIR}/${file}`);
 
     // AC1: 対象ファイルに assess-context スキルへの参照が存在すること
     assert(
