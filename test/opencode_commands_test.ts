@@ -1,25 +1,37 @@
 /**
- * WP #689 ワークフローのコマンド化（.opencode/commands）検証テスト。
+ * WP #726 ワークフロー統合（.opencode/commands 集約）検証テスト。
+ *
+ * 単一の正は `.opencode/commands/*.md` 8本。`.agents/workflows/` は削除済みのため参照しない。
+ *
+ * fencedコードブロック禁止を設けない根拠:
+ * 新構造は自己完結手順であり、コードブロック自体が正当な手順内容である
+ * （例: project-setup.md の6件のフェンスマーカー＝3ブロックの認証・クローン手順）。
+ * 旧禁止は「ラッパーがスキル内部操作を転記すること」を対象としたものであり、
+ * ラッパー廃止により前提が消滅したため、禁止テストは復活させない。
  *
  * ワークフロー追加時の更新手順（プレイブック）:
- *   1. `.agents/workflows/` に wf を追加したら、対応する `.opencode/commands/<同名>.md`
- *      を本テンプレート（既存コマンドを複製）で作成する。AC1 の集合同値が自動的に要求する。
- *   2. 新規 wf の `<!-- STOP -->` 数を `rg -o '<!-- STOP -->' | wc -l` で実測し、
+ *   1. `.opencode/commands/<name>.md` を既存コマンドの複製で作成し、自己完結した手順
+ *      （STOPマーカー・フェーズ見出しを持ち、`@.agents/workflows/` 参照を持たない）とする。
+ *      末尾に `## 遵守事項` 3項（共有テンプレートと一字一句同一）を付与する。
+ *   2. 新規コマンドの `<!-- STOP -->` 数を `rg -o '<!-- STOP -->' | wc -l` で実測し、
  *      STOP_BASELINE へ登録する（未登録はレジストリテストが失敗させる）。
- *   3. コマンド本文は frontmatter（description 原文流用・subtask:false）＋ @ 参照＋
- *      フェーズ表＋遵守事項3項の構造を維持する（AC2〜AC5 と一貫性ガードが検証する）。
- *   4. 新規にロール定義を参照する場合は `/.opencode/agents/<role>.md` 実在下のみ可。
- * 反復集合は wf ディレクトリの動的走査から駆動されるため、追加で編集が必要な箇所は ② のみ。
+ *   3. コマンド本文は frontmatter（description 非空・subtask:false の2キーのみ）の構造を維持し、
+ *      新規 description を FRONTMATTER_SNAPSHOT へ登録する。
+ *   4. 新規コマンドのリーフフェーズ見出し一覧を PHASE_SNAPSHOT へ登録する。
+ *   5. 新規コマンドの `/.opencode/agents/`・`/.agents/skills/` 参照件数を実測し、
+ *      ROLE_LINK_COUNTS・SKILL_LINK_COUNTS へ登録する。
+ *   6. 新規にロール定義を参照する場合は `/.opencode/agents/<role>.md` 実在下のみ可。
+ * 反復集合は commands ディレクトリの動的走査から駆動されるため、追加で編集が必要な箇所は
+ * ②③④⑤のみ。
  */
 import { assert, assertEquals } from "@std/assert";
 import { parse } from "@std/yaml";
 
 const ROOT = new URL("../", import.meta.url).pathname;
-const WORKFLOWS_DIR = `${ROOT}.agents/workflows`;
 const COMMANDS_DIR = `${ROOT}.opencode/commands`;
 
 /**
- * 介入2でロールリンク置換を行ったスキル側ファイル（wf 以外）。
+ * 介入2でロールリンク置換を行ったスキル側ファイル（コマンド以外）。
  */
 const SKILL_LINK_FILES: string[] = [
   `${ROOT}.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md`,
@@ -27,9 +39,9 @@ const SKILL_LINK_FILES: string[] = [
 ];
 
 /**
- * ワークフロー別の `<!-- STOP -->` 数ベースライン（2026-09-04 実測）。
- * AC4「STOPマーカーは変更不要」の機械的担保。wf 追加時はプレイブック②で登録し、
- * レジストリテストが wf 実走査との集合同値を強制する。
+ * コマンド別の `<!-- STOP -->` 数ベースライン（2026-09-12 実測・旧 wf 値と同数）。
+ * 合計58。AC4「STOPマーカーは変更不要」の機械的担保。コマンド追加時はプレイブック②で登録し、
+ * レジストリテストが commands 実走査との集合同値を強制する。
  */
 const STOP_BASELINE: Record<string, number> = {
   "kickoff.md": 6,
@@ -40,6 +52,140 @@ const STOP_BASELINE: Record<string, number> = {
   "sprint-end.md": 12,
   "sprint-review.md": 3,
   "sprint-start.md": 9,
+};
+
+/**
+ * コマンド別の frontmatter description ベースライン（2026-09-13 実測・原文完全一致）。
+ * 旧 AC2 の厳密性（原文一致）を commands 単体に対して復活させる。
+ * description 変更時は本スナップショットとコマンド本文を同時に更新する。
+ */
+const FRONTMATTER_SNAPSHOT: Record<string, string> = {
+  "kickoff.md":
+    "プロジェクトの立ち上げ（キックオフ）を、情熱の検証から技術選定まで段階的に行い、開発開始の合意を形成するワークフロー。",
+  "project-setup.md":
+    "新規プロジェクト発足と既存プロジェクト参加の両方を統合し、リポジトリ準備からプロセス統一までの一貫したセットアップを行うワークフロー。",
+  "refactoring.md": "メトリクスとテストに基づく安全な構造改善サイクル",
+  "session-end.md": "セッションの成果を要約し、内省（KPT）とメトリクス記録を行うセッション終了儀式",
+  "session-start.md":
+    "価値観同期・Work Package特定・戦略策定を段階的に行う高度なセッション開始儀式",
+  "sprint-end.md":
+    "スプリントの終了プロセス（レビューのアーカイブ、effort分析、サイズ確定、スプリントKPT記録、ベロシティ記録、スプリント評価記録、振り返りのアーカイブ、完了PBI/WPのアーカイブ、自己スキル最適化、スプリント終了、ステートレスリセット）を安全に1ステップずつ実行するワークフロー。",
+  "sprint-review.md": "スプリントレビューを意識合わせから検証実行まで段階的に行うワークフロー",
+  "sprint-start.md":
+    "スプリントの開始プロセス（プロダクトゴール確認、プロダクトバックログリファインメント、分類階層改善、スプリント開始宣言、スプリントプランニング、作業分解、レビュー計画、振り返りの計画）を安全に1ステップずつ実行するワークフロー。",
+};
+
+/**
+ * コマンド別のリーフフェーズ見出しベースライン（2026-09-13 実測・正規化済み完全一致）。
+ * 旧 leafPhaseTitles 相当のロジックで抽出する。
+ * フェーズ増減時は本スナップショットとコマンド本文を同時に更新する。
+ */
+const PHASE_SNAPSHOT: Record<string, string[]> = {
+  "kickoff.md": [
+    "Phase 0. 構想と情熱の検証",
+    "Phase 1. ビジョンの策定",
+    "Phase 2. プロダクトゴールの定義",
+    "Phase 3. エピック/フィーチャー分類階層の設計",
+    "Phase 4. 技術スタックの選定",
+    "Phase 5. アライメントの最終検証",
+  ],
+  "project-setup.md": [
+    "1-1. ホスト環境構築",
+    "1-2. 前提要件チェック",
+    "1-3. 認証設定",
+    "1-4. SSH鍵の生成と登録",
+    "1-5. リポジトリの確保",
+    "2-1. ルールの同期",
+    "2-2. スキルの同期",
+    "3-1. 通信経路の疎通確認",
+  ],
+  "refactoring.md": [
+    "1-1. 事前メトリクスの測定",
+    "1-2. テストの健全性確認（中止判断）",
+    "2-1. 実行環境のセットアップ",
+    "2-2. 作業ブランチの作成",
+    "3-1. 安全な変更の適用とWIP保存",
+    "4-1. 厳格な回帰テスト",
+    "4-2. 事後メトリクスの測定と改善報告",
+    "5-1. コミット履歴のトリアージと再構築",
+    "5-2. PR作成と報告",
+    "5-3. マージとクリーンアップ",
+  ],
+  "session-end.md": [
+    "1-0. 用語の同期",
+    "1-1. 実績effortの記録",
+    "2-1. 共進化 KPT",
+    "3-1. 協働メトリクスの記録",
+    "4-1. WP完了",
+    "4-2. セッションアーティファクトのクリーンアップ",
+  ],
+  "session-start.md": [
+    "1-0. 用語の同期",
+    "1-1. ビジョンと保有スキルの宣言",
+    "2-1. 1セッション1Work Packageの絞り込み",
+    "3-1. 専門家による詳細設計",
+    "4-1. 計画の承認と WP着手",
+  ],
+  "sprint-end.md": [
+    "Phase 1-0. 用語の同期",
+    "Phase 1-1. スプリントレビューのアーカイブ",
+    "Phase 2. PBI effort分析",
+    "Phase 3. PBIサイズ実績の確定",
+    "Phase 4. スプリントKPTの記録",
+    "Phase 5. ベロシティ記録",
+    "Phase 6. スプリント評価の記録",
+    "Phase 7. 振り返りのアーカイブ",
+    "Phase 8. 完了PBI/WPのアーカイブ",
+    "Phase 9. 自己スキルオプティマイザー",
+    "Phase 10. スプリント終了",
+    "Phase 11. ステートレスリセットの検討",
+  ],
+  "sprint-review.md": [
+    "Phase 1. スプリントレビューの意識合わせ",
+    "Phase 2. アライメントチェック",
+    "Phase 3. スプリントレビュー実行",
+  ],
+  "sprint-start.md": [
+    "Phase 1-0. 用語の同期",
+    "Phase 1-1. プロダクトゴールの確認",
+    "Phase 2. プロダクトバックログリファインメント",
+    "Phase 3. 分類階層の改善とPBI配置",
+    "Phase 4. スプリント開始宣言",
+    "Phase 5. スプリントプランニング",
+    "Phase 6. 作業分解",
+    "Phase 7. スプリントレビュー計画",
+    "Phase 8. 振り返りの計画",
+  ],
+};
+
+/**
+ * コマンド別の `/.opencode/agents/` 参照件数ベースライン（2026-09-13 実測）。
+ * 旧 total>=65 は削除と追加の相殺を素通りさせるため、ファイル別完全一致で検証する。
+ */
+const ROLE_LINK_COUNTS: Record<string, number> = {
+  "kickoff.md": 6,
+  "project-setup.md": 3,
+  "refactoring.md": 10,
+  "session-end.md": 6,
+  "session-start.md": 4,
+  "sprint-end.md": 14,
+  "sprint-review.md": 6,
+  "sprint-start.md": 14,
+};
+
+/**
+ * コマンド別の `/.agents/skills/` 参照件数ベースライン（2026-09-13 実測）。
+ * sprint-end.md の reset.ts スクリプト参照1件を含む。
+ */
+const SKILL_LINK_COUNTS: Record<string, number> = {
+  "kickoff.md": 0,
+  "project-setup.md": 7,
+  "refactoring.md": 7,
+  "session-end.md": 5,
+  "session-start.md": 5,
+  "sprint-end.md": 13,
+  "sprint-review.md": 2,
+  "sprint-start.md": 10,
 };
 
 /**
@@ -65,13 +211,13 @@ async function readTarget(path: string): Promise<string> {
 }
 
 /**
- * .agents/workflows 直下のワークフローファイル名一覧（辞書順）。検証対象集合の単一の情報源。
+ * .opencode/commands 直下のコマンドファイル名一覧（辞書順）。検証対象集合の単一の情報源。
  *
  * @returns `*.md` ファイル名の配列
  */
-async function listWorkflowFiles(): Promise<string[]> {
+async function listCommandFiles(): Promise<string[]> {
   const names: string[] = [];
-  for await (const entry of Deno.readDir(WORKFLOWS_DIR)) {
+  for await (const entry of Deno.readDir(COMMANDS_DIR)) {
     if (entry.isFile && entry.name.endsWith(".md")) {
       names.push(entry.name);
     }
@@ -80,7 +226,7 @@ async function listWorkflowFiles(): Promise<string[]> {
 }
 
 /**
- * wf ファイル名（\`x.md\`）から基底名 \`x\` を返す。
+ * コマンドファイル名（`x.md`）から基底名 `x` を返す。
  *
  * @param file - `.md` 付きファイル名
  * @returns 拡張子を除いた基底名
@@ -90,45 +236,35 @@ function baseName(file: string): string {
 }
 
 /**
- * wf 本文の絶対パスを返す。
+ * コマンド本文の絶対パスを返す。
  *
- * @param file - `.md` 付き wf ファイル名
- * @returns WORKFLOWS_DIR 配下の絶対パス
- */
-function workflowPath(file: string): string {
-  return `${WORKFLOWS_DIR}/${file}`;
-}
-
-/**
- * wf に対応するコマンドファイルの絶対パスを返す。
- *
- * @param name - wf 基底名（拡張子なし）
+ * @param file - `.md` 付きコマンドファイル名
  * @returns COMMANDS_DIR 配下の絶対パス
  */
-function commandPath(name: string): string {
-  return `${COMMANDS_DIR}/${name}.md`;
+function commandPath(file: string): string {
+  return `${COMMANDS_DIR}/${file}`;
 }
 
 /**
- * レジストリ不変条件: STOP_BASELINE のキー集合と wf ディレクトリの実走査結果が
- * 集合同値であること。新規 wf の検証素通り（登録漏れ）を失敗として検出する。
+ * レジストリ不変条件: STOP_BASELINE のキー集合と commands ディレクトリの実走査結果が
+ * 集合同値であること。新規コマンドの検証素通り（登録漏れ）を失敗として検出する。
  */
-Deno.test("STOP baseline registry covers exactly the workflow set", async () => {
-  const workflows = await listWorkflowFiles();
+Deno.test("STOP baseline registry covers exactly the command set", async () => {
+  const commands = await listCommandFiles();
   assertEquals(
     Object.keys(STOP_BASELINE).sort(),
-    workflows,
-    "register new workflows in STOP_BASELINE with the measured STOP marker count (playbook step 2)",
+    commands,
+    "register new commands in STOP_BASELINE with the measured STOP marker count (playbook step 2)",
   );
 });
 
 /**
- * AC4不変条件: 各ワークフローの `<!-- STOP -->` 数がベースラインと一致する。
- * リンク置換等の機械編集が停止マーカー構造へ影響していないことを保証する。
+ * AC4不変条件: 各コマンドの `<!-- STOP -->` 数がベースラインと一致する。
+ * 移植前 wf 値（合計58）と同数を commands 側で保証する。
  */
-Deno.test("workflows keep the STOP marker baseline (AC4 invariance)", async () => {
+Deno.test("commands keep the STOP marker baseline (AC4 invariance)", async () => {
   for (const [file, expected] of Object.entries(STOP_BASELINE)) {
-    const content = await readTarget(workflowPath(file));
+    const content = await readTarget(commandPath(file));
     const count = (content.match(/<!-- STOP -->/g) ?? []).length;
     assertEquals(
       count,
@@ -139,12 +275,12 @@ Deno.test("workflows keep the STOP marker baseline (AC4 invariance)", async () =
 });
 
 /**
- * 介入2残存参照ゼロ化ガード: 置換対象（wf 実走査＋スキル2本）にルート絶対パス
+ * 介入2残存参照ゼロ化ガード: 置換対象（commands 実走査＋スキル2本）にルート絶対パス
  * `/.agents/rules/` への参照が残っていないこと。相対表記の配置説明は対象外。
  */
 Deno.test("role references to the removed .agents/rules dir are eliminated", async () => {
-  const workflows = await listWorkflowFiles();
-  const targets = [...workflows.map((file) => workflowPath(file)), ...SKILL_LINK_FILES];
+  const commands = await listCommandFiles();
+  const targets = [...commands.map((file) => commandPath(file)), ...SKILL_LINK_FILES];
   for (const path of targets) {
     const content = await readTarget(path);
     assert(
@@ -155,47 +291,76 @@ Deno.test("role references to the removed .agents/rules dir are eliminated", asy
 });
 
 /**
- * 介入2置換先の実在性: 対象中の /.opencode/agents/<role>.md 参照がすべて実ファイルへ
- * 解決すること。total>=65 は develop-work-package ワークフロー削除（2026-09-06）後の
- * 実測65件（74→9減）への下bound（置換漏れ捕捉）。
+ * 置換先の実在性: 対象中の /.opencode/agents/<role>.md 参照がすべて実ファイルへ
+ * 解決すること。件数は ROLE_LINK_COUNTS でファイル別完全一致を検証する
+ * （旧 total>=65 は削除と追加の相殺を素通りさせるマスク問題があるため）。
  */
 Deno.test("replaced role links resolve to existing .opencode/agents files", async () => {
-  const workflows = await listWorkflowFiles();
-  const targets = [...workflows.map((file) => workflowPath(file)), ...SKILL_LINK_FILES];
-  let total = 0;
+  const commands = await listCommandFiles();
+  const targets = [...commands.map((file) => commandPath(file)), ...SKILL_LINK_FILES];
   for (const path of targets) {
     const content = await readTarget(path);
     for (const match of content.matchAll(/\/\.opencode\/agents\/([a-z-]+)\.md/g)) {
       const target = `${ROOT}.opencode/agents/${match[1]}.md`;
-      total += 1;
       assert(
         (await Deno.stat(target)).isFile,
         `${path} links to missing role definition: ${target}`,
       );
     }
   }
-  assert(total >= 65, `expected at least 65 replaced role links, found ${total}`);
+  for (const file of commands) {
+    const content = await readTarget(commandPath(file));
+    const count = [...content.matchAll(/\/\.opencode\/agents\/[a-z-]+\.md/g)].length;
+    assertEquals(
+      count,
+      ROLE_LINK_COUNTS[file],
+      `${file} must keep exactly ${ROLE_LINK_COUNTS[file]} role links`,
+    );
+  }
 });
 
 /**
- * AC1: .agents/workflows/*.md の全ワークフローに対応するコマンドファイルが
- * .opencode/commands/ に集合同値で存在する（1ワークフロー1ファイル）。
- * 個数は wf 実走査に従うため、ワークフロー増減に対して固定値を持たない。
+ * スキル参照の実在性と件数: 対象中の /.agents/skills/ 参照がファイル別完全一致であること。
+ * 削除と追加の相殺を素通りさせないため合計数の下限値ではなく件数一致で検証する。
  */
-Deno.test("AC1 commands mirror workflows one-to-one", async () => {
-  const workflows = new Set((await listWorkflowFiles()).map((f) => baseName(f)));
-  assert(workflows.size > 0, "no workflows discovered; check WORKFLOWS_DIR");
-
-  const commands = new Set<string>();
-  for await (const entry of Deno.readDir(COMMANDS_DIR)) {
-    if (entry.isFile && entry.name.endsWith(".md")) {
-      commands.add(baseName(entry.name));
-    }
+Deno.test("skill links match per-file counts", async () => {
+  for (const file of await listCommandFiles()) {
+    const content = await readTarget(commandPath(file));
+    const count = [...content.matchAll(/\/\.agents\/skills\//g)].length;
+    assertEquals(
+      count,
+      SKILL_LINK_COUNTS[file],
+      `${file} must keep exactly ${SKILL_LINK_COUNTS[file]} skill links`,
+    );
   }
-  const missing = [...workflows].filter((name) => !commands.has(name));
-  const extra = [...commands].filter((name) => !workflows.has(name));
-  assertEquals(missing, [], `commands missing for workflows: ${missing.join(", ")}`);
-  assertEquals(extra, [], `commands without workflow: ${extra.join(", ")}`);
+});
+
+/**
+ * 自己完結性: 各コマンドは単一の正として自己完結した手順を持つ。
+ * STOPマーカーとフェーズ見出し（`## `）を持ち、`@.agents/workflows/` 参照を持たないこと。
+ * H1 は `# /<name> — <タイトル>` 書式であること。旧 AC1 鏡像対応の新構造相当ガード。
+ */
+Deno.test("commands are self-contained procedures", async () => {
+  const commands = await listCommandFiles();
+  assert(commands.length > 0, "no commands discovered; check COMMANDS_DIR");
+  for (const file of commands) {
+    const name = baseName(file);
+    const content = await readTarget(commandPath(file));
+    assert(
+      content.includes("<!-- STOP -->"),
+      `${name}.md must contain STOP markers as self-contained procedure`,
+    );
+    assert(
+      /^##\s+.+/m.test(content),
+      `${name}.md must have phase headings (## ...)`,
+    );
+    assert(
+      !content.includes("@.agents/workflows/"),
+      `${name}.md must not reference the removed @.agents/workflows/ path`,
+    );
+    const h1 = content.match(/^# (.+)$/m)?.[1] ?? "";
+    assert(h1.startsWith(`/${name} — `), `${name}.md H1 must start with "/${name} — "`);
+  }
 });
 
 /**
@@ -214,17 +379,14 @@ function parseFrontmatter(content: string): Record<string, unknown> {
 }
 
 /**
- * AC2: 各コマンドは Opencode 形式 frontmatter（description）を持ち、
+ * 各コマンドは Opencode 形式 frontmatter（description）を持ち、
  * subtask:false が明示設定されている。キーは description/subtask の2つのみ、
- * description は対応ワークフロー frontmatter の原文と完全一致であること。
+ * description は非空文字列であること（比較対象の workflow 原文は存在しない）。
  */
-Deno.test("AC2 frontmatter has original description and explicit subtask:false", async () => {
-  for (const file of await listWorkflowFiles()) {
+Deno.test("frontmatter has non-empty description and explicit subtask:false", async () => {
+  for (const file of await listCommandFiles()) {
     const name = baseName(file);
-    const [command, workflow] = await Promise.all([
-      readTarget(commandPath(name)),
-      readTarget(workflowPath(file)),
-    ]);
+    const command = await readTarget(commandPath(file));
     const fm = parseFrontmatter(command);
     assertEquals(
       Object.keys(fm).sort(),
@@ -232,18 +394,21 @@ Deno.test("AC2 frontmatter has original description and explicit subtask:false",
       `${name}.md must declare exactly description and subtask`,
     );
     assertEquals(fm.subtask, false, `${name}.md must set subtask: false explicitly`);
-    const wfDesc = parseFrontmatter(workflow).description;
-    assert(typeof wfDesc === "string" && wfDesc.length > 0, `${file} workflow lacks description`);
-    assertEquals(fm.description, wfDesc, `${name}.md description must copy workflow original`);
+    assert(
+      typeof fm.description === "string" && fm.description.length > 0,
+      `${name}.md must have a non-empty description`,
+    );
   }
 });
 
-/** フェーズ見出しと認められるラベルの前置パターン（番号付き Phase / 数値番号）。 */
+/**
+ * フェーズ見出しと認められるラベルの前置パターン（番号付き Phase / 数値番号）。
+ */
 const PHASE_LABEL_RE = /^(Phase [\d-]+|\d[\d.-]*\s)/;
 
 /**
- * ワークフロー見出しテキストをコマンド表記法へ正規化する。
- * 「Phase 2: 名称 (English)」型の**半角**括弧接尾（英語併記）を除去し、「: 」を「. 」へ揃える。
+ * コマンド見出しテキストを正規化する。
+ * 「Phase 2: 名称 (English)」型の半角括弧接尾（英語併記）を除去し、「: 」を「. 」へ揃える。
  * 全角括弧（例:「（中止判断）」）は意味内容を含むため保持する。
  *
  * @param heading - markdown 見出しのマーカー除去済みテキスト
@@ -254,14 +419,15 @@ function normalizePhaseLabel(heading: string): string {
 }
 
 /**
- * ワークフロー本文からリーフレベルのフェーズ見出しを抽出する。
+ * コマンド本文からリーフレベルのフェーズ見出しを抽出する。
  * ## 見出し直下に ### がある場合は ### のみを葉として採用（## はグループ扱い）。
- * 取りこぼしによる偽通過を許さないため、構造違反は例外ではなく失敗させる:
+ * 「ワークフローの進行ルール」「遵守事項」等の非フェーズ ## は葉に含めない。
+ * 取りこぼしによる偽通過を許さないため、構造違反は失敗させる:
  *   - `####` 以上の見出し出現 → 即失敗
  *   - ## のない ### / フェーズラベルでない ### → orphans として収集し失敗
- *   - 抽出葉が3件未満（全 wf の観測最小値）→ ヒューリスティック失効疑いで失敗
+ *   - 抽出葉が3件未満（全コマンドの観測最小値）→ ヒューリスティック失効疑いで失敗
  *
- * @param content - ワークフロー本文
+ * @param content - コマンド本文
  * @param label - エラーメッセージ用のファイル識別子
  * @returns 正規化されたリーフェーズラベルの配列
  */
@@ -278,8 +444,6 @@ function leafPhaseTitles(content: string, label: string): string[] {
     } else if (PHASE_LABEL_RE.test(current.label)) {
       leaves.push(current.label);
     }
-    // 子を持たない非フェーズ ##（例:「ワークフローの進行ルール」の導入部）は葉でも
-    // 違反でもなく、単にスキップする。### 側の規約違反はループ内で orphans 収集済み。
   };
   for (const line of content.split("\n")) {
     assert(!/^#{4,}\s/.test(line), `${label}: 見出し階層に #### 以上を使用しないこと: ${line}`);
@@ -300,9 +464,7 @@ function leafPhaseTitles(content: string, label: string): string[] {
   flush();
   assert(
     orphans.length === 0,
-    `${label}: フェーズ見出し規約に違反する構造（### の親欠落・非フェーズ ###・####以上）: ${
-      orphans.join(" / ")
-    }`,
+    `${label}: フェーズ見出し規約に違反する構造: ${orphans.join(" / ")}`,
   );
   assert(
     leaves.length >= 3,
@@ -310,95 +472,6 @@ function leafPhaseTitles(content: string, label: string): string[] {
   );
   return leaves;
 }
-
-/**
- * 正規表現メタ文字をエスケープする。
- *
- * @param text - リテラルとしてマッチングしたい文字列
- * @returns エスケープ済みパターン文字列
- */
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/**
- * コマンド本文から「実行順序と状態遷移（呼出側の概要）」セクションを切り出す。
- *
- * @param command - コマンド本文
- * @param name - エラーメッセージ用識別子
- * @returns セクションテキスト（概要見出しから次の ## まで）
- */
-function overviewSection(command: string, name: string): string {
-  const start = command.indexOf("## 実行順序と状態遷移（呼出側の概要）");
-  assert(start >= 0, `${name}.md missing phase overview section`);
-  const rest = command.slice(start);
-  const nextH2 = rest.indexOf("\n## ", 1);
-  return nextH2 >= 0 ? rest.slice(0, nextH2) : rest;
-}
-
-/**
- * AC3: 本文は呼出側の概要セクションを持ち、wf の全リーフェーズが**表行として**
- * 網羅される。@ 参照は実在ファイルで、「単一の正」「内部操作に踏み込まない」宣言を
- * 含み、fenced コードブロック（内部手順の転記と見なす）を含まない。
- */
-Deno.test("AC3 body covers caller-side phases and references workflow only", async () => {
-  for (const file of await listWorkflowFiles()) {
-    const name = baseName(file);
-    const [command, workflow] = await Promise.all([
-      readTarget(commandPath(name)),
-      readTarget(workflowPath(file)),
-    ]);
-    const overview = overviewSection(command, name);
-    assert(
-      command.includes(`@.agents/workflows/${file}`),
-      `${name}.md missing @ reference to workflow file`,
-    );
-    assert(
-      (await Deno.stat(workflowPath(file))).isFile,
-      `${name}.md @ reference target does not exist: ${file}`,
-    );
-    assert(command.includes("単一の正"), `${name}.md missing single-source-of-truth declaration`);
-    assert(command.includes("内部操作"), `${name}.md missing no-internals declaration`);
-    for (const label of leafPhaseTitles(workflow, name)) {
-      const rowRe = new RegExp(`^\\|[^\\n]*${escapeRegExp(label)}[^\\n]*\\|`, "m");
-      assert(rowRe.test(overview), `${name}.md phase table row missing: ${label}`);
-    }
-    assert(
-      !/^```/m.test(command),
-      `${name}.md must not transcribe skill internals (fenced blocks)`,
-    );
-  }
-});
-
-/**
- * AC4: 各コマンド本文は STOP マーカーが AI への指示表記であり PO 指示まで
- * 先読みしない旨を宣言する（ワークフロー側の STOP 構造不変は基線テストが担保）。
- */
-Deno.test("AC4 body declares STOP markers remain AI-facing instructions", async () => {
-  for (const file of await listWorkflowFiles()) {
-    const name = baseName(file);
-    const command = await readTarget(commandPath(name));
-    assert(command.includes("`<!-- STOP -->`"), `${name}.md must quote the STOP marker`);
-    assert(command.includes("Opencode の機能ではなく"), `${name}.md misdescribes STOP semantics`);
-    assert(command.includes("先読み"), `${name}.md must forbid lookahead before PO instruction`);
-  }
-});
-
-/**
- * AC5: 各コマンド本文は、並行実行を要する個所ではスキル側がサブエージェントの
- * 作成・実行を明示的に行う方針（コマンド自身は起動しない）を宣言する。
- */
-Deno.test("AC5 body declares in-skill subagent policy", async () => {
-  for (const file of await listWorkflowFiles()) {
-    const name = baseName(file);
-    const command = await readTarget(commandPath(name));
-    assert(command.includes("サブエージェント"), `${name}.md missing subagent policy`);
-    assert(
-      command.includes("コマンド自身はサブエージェントを起動せず"),
-      `${name}.md must state the command itself does not spawn subagents`,
-    );
-  }
-});
 
 /**
  * コマンド本文から「## 遵守事項」の箇条書き項目を抽出する。
@@ -419,24 +492,61 @@ function complianceItems(command: string): string[] {
 }
 
 /**
- * コマンド間一貫性ガード: 遵守事項は全コマンドで同一（ただし各項目末尾の全角括弧内は
- * wf 個別補足として許容し、除去して比較する）。H1 タイトルは
- * 「# /<name> — <タイトル>」書式で、余分な括弧接尾を含まないこと。
+ * FRONTMATTER_SNAPSHOT 不変条件: 各コマンドの description が承認済み原文と完全一致する。
+ * 旧 AC2 の厳密性（原文一致）を commands 単体スナップショットとして復活させる。
  */
-Deno.test("commands share identical compliance items and H1 format", async () => {
-  const strip = (item: string): string => item.replace(/（[^（）]*）。?\s*$/, "").trim();
-  let canonical: string[] | null = null;
-  for (const file of await listWorkflowFiles()) {
-    const name = baseName(file);
-    const command = await readTarget(commandPath(name));
-    const items = complianceItems(command).map(strip);
-    assert(items.length === 3, `${name}.md must have exactly 3 compliance items`);
-    const h1 = command.match(/^# (.+)$/m)?.[1] ?? "";
-    assert(h1.startsWith(`/${name} — `), `${name}.md H1 must start with "/${name} — "`);
-    assert(
-      !h1.includes("(") && !h1.includes("（"),
-      `${name}.md H1 must not carry a parenthetical suffix: ${h1}`,
+Deno.test("frontmatter descriptions match the approved snapshot", async () => {
+  const commands = await listCommandFiles();
+  assertEquals(
+    Object.keys(FRONTMATTER_SNAPSHOT).sort(),
+    commands,
+    "register new commands in FRONTMATTER_SNAPSHOT (playbook step 3)",
+  );
+  for (const file of commands) {
+    const command = await readTarget(commandPath(file));
+    const fm = parseFrontmatter(command);
+    assertEquals(
+      fm.description,
+      FRONTMATTER_SNAPSHOT[file],
+      `${file} description drifted from the approved snapshot`,
     );
+  }
+});
+
+/**
+ * PHASE_SNAPSHOT 不変条件: 各コマンドのリーフフェーズ見出し一覧が承認済みと完全一致する。
+ * 旧 leafPhaseTitles 相当のロジックを commands 向けに復活させた厳密ガード。
+ */
+Deno.test("commands keep the approved leaf phase baseline", async () => {
+  const commands = await listCommandFiles();
+  assertEquals(
+    Object.keys(PHASE_SNAPSHOT).sort(),
+    commands,
+    "register new commands in PHASE_SNAPSHOT (playbook step 4)",
+  );
+  for (const file of commands) {
+    const command = await readTarget(commandPath(file));
+    assertEquals(
+      leafPhaseTitles(command, file),
+      PHASE_SNAPSHOT[file],
+      `${file} leaf phases drifted from the approved snapshot`,
+    );
+  }
+});
+
+/**
+ * 遵守事項の一貫性: 8本同一3項＋STOP/単一の正/内部操作/サブエージェント宣言。
+ * 第1項は計数干渉回避のためリテラルでなく「STOP マーカー」と表記する。
+ */
+Deno.test("commands share identical compliance items and declare STOP/subagent policy", async () => {
+  const commands = await listCommandFiles();
+  assert(commands.length > 0, "no commands discovered; check COMMANDS_DIR");
+  let canonical: string[] | null = null;
+  for (const file of commands) {
+    const name = baseName(file);
+    const command = await readTarget(commandPath(file));
+    const items = complianceItems(command);
+    assertEquals(items.length, 3, `${name}.md must have exactly 3 compliance items`);
     if (canonical === null) {
       canonical = items;
     } else {
@@ -446,5 +556,18 @@ Deno.test("commands share identical compliance items and H1 format", async () =>
         `${name}.md compliance items drifted from the shared template`,
       );
     }
+    assert(command.includes("STOP"), `${name}.md must mention the STOP marker`);
+    assert(
+      command.includes("Opencode の機能ではなく"),
+      `${name}.md misdescribes STOP semantics`,
+    );
+    assert(command.includes("先読み"), `${name}.md must forbid lookahead before PO instruction`);
+    assert(command.includes("単一の正"), `${name}.md must declare the single source of truth`);
+    assert(command.includes("内部操作"), `${name}.md must declare no-internals policy`);
+    assert(command.includes("サブエージェント"), `${name}.md missing subagent policy`);
+    assert(
+      command.includes("コマンド自身はサブエージェントを起動せず"),
+      `${name}.md must state the command itself does not spawn subagents`,
+    );
   }
 });

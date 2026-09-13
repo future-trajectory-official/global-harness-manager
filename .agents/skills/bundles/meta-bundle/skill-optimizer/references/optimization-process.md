@@ -18,7 +18,7 @@
 
 ## 3. SKILL や Workflow のアップデート
 
-- 分析結果に基づき、対象スキルの `description` や `tags.trigger`、あるいは `.agents/workflows/`
+- 分析結果に基づき、対象スキルの `description` や `tags.trigger`、あるいは `.opencode/commands/`
   内の手順記述を更新します。
 - `description`
   は単なる機能説明ではなく「エージェントがどのような文脈でこのルールやスキルを想起すべきか」という視点で書き換えます。

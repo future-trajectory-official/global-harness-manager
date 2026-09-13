@@ -1,7 +1,7 @@
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
 const ROOT = new URL("../", import.meta.url).pathname;
-const WORKFLOWS_DIR = `${ROOT}.agents/workflows`;
+const COMMANDS_DIR = `${ROOT}.opencode/commands`;
 const OLD_SKILL_DIR = `${ROOT}.agents/skills/bundles/management-bundle/sprint-retrospective-kpt`;
 
 const RETRO_SKILLS = ["record-sprint-kpt", "record-sprint-metrics", "archive-retrospective"];
@@ -48,8 +48,8 @@ function normalize(markdown: string | undefined): string {
  * 【検証の意図】sprint-start Phase 8 と sprint-end Phase 5/7/8 の参照・タイミング・順序を検証する。
  */
 Deno.test("Retrospective skills are integrated into sprint workflows", async () => {
-  const sprintStart = await Deno.readTextFile(`${WORKFLOWS_DIR}/sprint-start.md`);
-  const sprintEnd = await Deno.readTextFile(`${WORKFLOWS_DIR}/sprint-end.md`);
+  const sprintStart = await Deno.readTextFile(`${COMMANDS_DIR}/sprint-start.md`);
+  const sprintEnd = await Deno.readTextFile(`${COMMANDS_DIR}/sprint-end.md`);
 
   const startPhases = splitPhases(sprintStart);
   const endPhases = splitPhases(sprintEnd);
