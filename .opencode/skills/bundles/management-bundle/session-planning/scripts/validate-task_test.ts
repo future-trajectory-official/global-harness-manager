@@ -576,3 +576,32 @@ Deno.test("checkInterventionHistory returns null for non-numeric actual value", 
   const result = checkInterventionHistory(TASK_NON_NUMERIC_ACTUAL);
   assertEquals(result, null);
 });
+
+// --- fixture-based tests (testdata/validate-task) ---
+
+/**
+ * validateTaskMd - fixture valid-task.md がバリデーションを通過することを検証する。
+ */
+Deno.test("validateTaskMd fixture valid-task.md passes", async () => {
+  const url = new URL(
+    "../../../../../test/testdata/validate-task/valid-task.md",
+    import.meta.url,
+  );
+  const content = await Deno.readTextFile(url);
+  const result = validateTaskMd(content);
+  assertEquals(result.valid, true);
+  assertEquals(result.errors.length, 0);
+});
+
+/**
+ * validateTaskMd - fixture invalid-task.md がバリデーションに失敗することを検証する。
+ */
+Deno.test("validateTaskMd fixture invalid-task.md fails", async () => {
+  const url = new URL(
+    "../../../../../test/testdata/validate-task/invalid-task.md",
+    import.meta.url,
+  );
+  const content = await Deno.readTextFile(url);
+  const result = validateTaskMd(content);
+  assertEquals(result.valid, false);
+});
