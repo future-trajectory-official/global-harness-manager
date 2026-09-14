@@ -10,8 +10,12 @@
   ```bash
   source ~/.bashrc
   ```
-- **PATH の確認**: `~/.bashrc` に `export PATH="$PATH:/home/{username}/global-harness-manager/bin"`
-  のような記述があるか確認してください。
+- **PATH の確認**: プロファイルに解決済みbinDirのexport行があるか確認してください。 解決は
+  `resolveBinDir()` の優先順位（`GLOBAL_HARNESS_BIN_DIR` > `HARNESS_DISTRIBUTE_BIN_DIR` >
+  `<root>/bin`）に従います。
+  - ローカル既定: `export PATH="$PATH:/home/{username}/global-harness-manager/bin"`
+  - 配布先指定時: `export PATH="$PATH:/home/{username}/.harness/bin"`
+  - どちらのbinを見るべきかは、セットアップ実行時に指定した環境変数で判断してください。
 
 ## 2. スクリプトの実行権限エラー
 
