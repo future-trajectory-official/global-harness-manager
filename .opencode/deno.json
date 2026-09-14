@@ -5,12 +5,12 @@
   "exclude": ["node_modules"],
   "tasks": {
     "test": "deno test -A --parallel",
-    "test:cov": "deno test -A --parallel --coverage=../cov_profile && deno coverage ../cov_profile",
+    "test:cov": "deno test -A --parallel --coverage=../cov_profile && deno coverage --exclude=\"node_modules\" ../cov_profile",
     "lint": "deno lint",
     "fmt": "deno fmt",
     "check": "deno check \"**/*.ts\" \"!node_modules/**\"",
     "qa": "deno fmt --check && deno lint && deno check \"**/*.ts\" \"!node_modules/**\" && deno task validate:jsdoc && deno task test",
-    "qa:cov": "deno fmt --check && deno lint && deno check \"**/*.ts\" \"!node_modules/**\" && deno task validate:jsdoc && rm -rf ../cov_profile && deno test -A --parallel --coverage=../cov_profile && deno coverage ../cov_profile",
+    "qa:cov": "deno fmt --check && deno lint && deno check \"**/*.ts\" \"!node_modules/**\" && deno task validate:jsdoc && rm -rf ../cov_profile && deno test -A --parallel --coverage=../cov_profile && deno coverage --exclude=\"node_modules\" ../cov_profile",
     "validate:jsdoc": "deno run -A core/shared/validate/validate-jsdoc.ts"
   },
   "imports": {
