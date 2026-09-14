@@ -1,0 +1,35 @@
+---
+name: check-harness-configs
+description: "[検証] オンボーディングや環境同期に必要な各種設定ファイル群が存在し、記入されているか事前診断するスキル"
+tags:
+  trigger:
+    - onboarding-check
+    - pre-check
+    - diagnostic
+  category: onboarding
+  constraints: none
+---
+
+# check-harness-configs
+
+グローバルハーネスの各スキルが動作するために必要となる設定ファイル（config）を一括検証します。
+
+## 主な機能
+
+- 必須設定ファイル（`identities.txt` 等）の存在および内容の有無をチェック。
+- 不備がある場合は異常終了（exit 1）し、後続のワークフローを停止させます。
+
+## 実行方法
+
+// turbo
+
+```bash
+deno run -A .opencode/skills/bundles/workspace-bundle/check-harness-configs/scripts/check_configs.ts
+```
+
+> [!TIP]
+> どのファイルが必要かは
+> [config-list.md](/.opencode/skills/bundles/workspace-bundle/check-harness-configs/references/config-list.md)
+> を、エラー時の修復方法は
+> [remediation-guide.md](/.opencode/skills/bundles/workspace-bundle/check-harness-configs/references/remediation-guide.md)
+> を参照してください。

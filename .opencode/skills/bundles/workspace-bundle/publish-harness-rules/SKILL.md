@@ -1,0 +1,52 @@
+---
+name: publish-harness-rules
+description: ワークスペース内のルールを定義に基づき、指定の他プロジェクトへ同期・コピーします。
+tags:
+  trigger:
+    - sync-rules
+    - update-global-prompt
+    - setup-harness
+  category: onboarding
+  constraints: none
+---
+
+# publish-harness-rules
+
+管理されている共有ルール（`.agents/rules/*.md`）を、ターゲットプロジェクトへと安全に同期します。
+
+## 機能
+
+- `config/publish-rules-targets.md` に基づく複数プロジェクトへの一括配信。
+- `--platform` に対応したグローバルシステムプロンプトの同期・自動構築
+  （antigravity→`~/.gemini/GEMINI.md` / opencode→`~/.config/opencode/AGENTS.md`。未指定は
+  antigravity）。
+- 配布先でのディレクトリ自動生成と Git 保護設定。
+
+## 実行方法
+
+1. `config/publish-rules-targets.md` を編集。
+2. スクリプトを実行。
+
+```bash
+# 全ルールの同期と GEMINI.md のセットアップ
+deno run -A .opencode/skills/bundles/workspace-bundle/publish-harness-rules/scripts/publish-rules.ts --lang ja --os wsl
+
+# OpenCode 向け（~/.config/opencode/AGENTS.md へ同期）
+deno run -A .opencode/skills/bundles/workspace-bundle/publish-harness-rules/scripts/publish-rules.ts --platform opencode --lang ja --os linux
+```
+
+3. （初回セットアップ時のみ）`config/AGENTS.md.example` がワークスペースルートへ `AGENTS.md`
+   として自動コピーされます（スクリプト内で未存在の場合のみ実行）。 既存の `AGENTS.md`
+   がある場合は上書きされません。明示的に更新したい場合は、
+   ファイルを削除してから再実行してください。
+
+> [!TIP]
+> 設定ファイルの書き方は
+> [target-config-format.md](/.opencode/skills/bundles/workspace-bundle/publish-harness-rules/references/target-config-format.md)
+> を、Git保護の仕組みは
+> [gitignore-protection.md](/.opencode/skills/bundles/workspace-bundle/publish-harness-rules/references/gitignore-protection.md)
+> を参照してください。
+
+## 前提要件
+
+- `.agents/rules/` に配信対象のファイルが存在すること。

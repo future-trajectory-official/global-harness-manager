@@ -80,20 +80,20 @@
 
 ### 2.1. 3層モデルとGitHub上の表現
 
-| 層             | 概念                          | GitHub上の表現                                                               | 作成タイミング                                 |
-| -------------- | ----------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------- |
-| プロジェクト層 | Vision / Product Goal         | リポジトリ内 `VISION.md` / `product-backlog.md` で管理（GitHub Issue対象外） | `/kickoff` 実行時                              |
-| プロジェクト層 | Epic / Feature（大規模PBI）   | Issue（`type:epic` / `type:feature` ラベル） + Project V2 の階層ビュー       | バックログリファインメント時                   |
-| プロジェクト層 | リリース管理                  | Milestone（プロジェクト全体の区切り）                                        | 必要に応じて手動作成                           |
-| スプリント層   | スプリント                    | Milestone（`Sprint N`）                                                      | `/sprint-start` の `github-sprint-init` スキル |
-| スプリント層   | スプリントにコミットされたPBI | Issue（`type:PBI` ラベル） + Milestone に紐付け                              | `/sprint-start` の `github-pbi-commit` スキル  |
-| スプリント層   | PBIの状態管理                 | Project V2 内蔵Status（Todo / In Progress / Done）                           | 各ワークフローで自動更新                       |
-| スプリント層   | PBIのアーカイブ               | DONEのPBI Issue を Close（`github-pbi-archive`）                             | `/sprint-end` 実行時                           |
-| スプリント層   | スプリントレビュー結果        | Issueコメント / Project V2 のカスタムフィールド                              | `/sprint-end` 実行時                           |
-| セッション層   | Work Package                  | 子Issue（sub-issue, `type:wp` ラベル）                                       | セッション開始時に通知                         |
-| セッション層   | セッション計画                | Issue body 内の AC チェックリスト                                            | `/session-start` の `session-planning` スキル  |
-| セッション層   | 実装進捗                      | 子Issueの Open/Close 状態                                                    | task.md駆動の実装でのAC完了時                  |
-| セッション層   | セッション成果                | Issueコメント + Project V2 フィールド更新                                    | `/session-end` の `github-pbi-update` 等       |
+| 層             | 概念                          | GitHub上の表現                                                         | 作成タイミング                                 |
+| -------------- | ----------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------- |
+| プロジェクト層 | Vision / Product Goal         | GitHub Issue で管理                                                    | `/kickoff` 実行時                              |
+| プロジェクト層 | Epic / Feature（大規模PBI）   | Issue（`type:epic` / `type:feature` ラベル） + Project V2 の階層ビュー | バックログリファインメント時                   |
+| プロジェクト層 | リリース管理                  | Milestone（プロジェクト全体の区切り）                                  | 必要に応じて手動作成                           |
+| スプリント層   | スプリント                    | Milestone（`Sprint N`）                                                | `/sprint-start` の `github-sprint-init` スキル |
+| スプリント層   | スプリントにコミットされたPBI | Issue（`type:PBI` ラベル） + Milestone に紐付け                        | `/sprint-start` の `github-pbi-commit` スキル  |
+| スプリント層   | PBIの状態管理                 | Project V2 内蔵Status（Todo / In Progress / Done）                     | 各ワークフローで自動更新                       |
+| スプリント層   | PBIのアーカイブ               | DONEのPBI Issue を Close（`github-pbi-archive`）                       | `/sprint-end` 実行時                           |
+| スプリント層   | スプリントレビュー結果        | Issueコメント / Project V2 のカスタムフィールド                        | `/sprint-end` 実行時                           |
+| セッション層   | Work Package                  | 子Issue（sub-issue, `type:wp` ラベル）                                 | セッション開始時に通知                         |
+| セッション層   | セッション計画                | Issue body 内の AC チェックリスト                                      | `/session-start` の `session-planning` スキル  |
+| セッション層   | 実装進捗                      | 子Issueの Open/Close 状態                                              | task.md駆動の実装でのAC完了時                  |
+| セッション層   | セッション成果                | Issueコメント + Project V2 フィールド更新                              | `/session-end` の `github-pbi-update` 等       |
 
 ### 2.2. ワークフロー別 GitHub 操作フロー
 
@@ -141,7 +141,7 @@ Projects V2 では、フィールドを活用して状態管理を行います�
 | Labels     | 種別ラベルのみ                  | `type:PBI`                    |
 
 カスタムフィールド `harness-*`（size / effort / metrics / kpt 等）の一覧・所属ボードは
-[field-registry.ts](/.agents/core/gateway/field-registry.ts) を唯一の正とする。
+[field-registry.ts](/.opencode/core/gateway/field-registry.ts) を唯一の正とする。
 
 #### 状態遷移とビューの活用
 

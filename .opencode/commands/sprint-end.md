@@ -37,7 +37,7 @@ subtask: false
 - **読み込むペルソナ**: `[scrum-master.md](/.opencode/agents/scrum-master.md)`
   (進行・ファシリテーション)
 - **実行するスキル**:
-  `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
+  `[assess-context](/.opencode/skills/bundles/management-bundle/assess-context/SKILL.md)`
 - **入力（前提条件）**: `.opencode/context/management.md`（必須）/
   `.opencode/context/product.md`（任意）。
 - **期待される結果（終了条件）**:
@@ -56,7 +56,7 @@ subtask: false
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
-  `[archive-sprint-review](/.agents/skills/bundles/management-bundle/archive-sprint-review/SKILL.md)`
+  `[archive-sprint-review](/.opencode/skills/bundles/management-bundle/archive-sprint-review/SKILL.md)`
 - **入力（前提条件）**: 本スプリントのレビュー検証が完了済みであること。
 - **期待される結果（終了条件）**:
   1. `archive-sprint-review` スキルが正常に終了したこと。
@@ -78,7 +78,7 @@ subtask: false
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
-  `[record-pbi-effort-analysis](/.agents/skills/bundles/management-bundle/record-pbi-effort-analysis/SKILL.md)`
+  `[record-pbi-effort-analysis](/.opencode/skills/bundles/management-bundle/record-pbi-effort-analysis/SKILL.md)`
 - **入力（前提条件）**: スプリント内のPBI配下のWPが全て完了（`[DONE]`）しており、 effort実績（計画前
   / 計画後 / 実績）が対象PBI/WPに記録されていること。
 - **手続き**:
@@ -105,7 +105,7 @@ subtask: false
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
-  `[record-pbi-size-analysis](/.agents/skills/bundles/management-bundle/record-pbi-size-analysis/SKILL.md)`
+  `[record-pbi-size-analysis](/.opencode/skills/bundles/management-bundle/record-pbi-size-analysis/SKILL.md)`
 - **入力（前提条件）**: 対象PBIの見積サイズが対象PBIに記録されていること。
 - **手続き**:
   1. 見積サイズを取得する。
@@ -132,7 +132,7 @@ KPT（Keep / Problem / Try / Advise）を記録します。マクロの呼出し
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
-  `[record-sprint-kpt](/.agents/skills/bundles/management-bundle/record-sprint-kpt/SKILL.md)`
+  `[record-sprint-kpt](/.opencode/skills/bundles/management-bundle/record-sprint-kpt/SKILL.md)`
 - **入力（前提条件）**: 対象スプリントの振り返りが作成済みであること（`/sprint-start` の Phase 8
   `plan-retrospective`
   実施済み）。対象スプリント内の各作業パッケージのセッション振り返り・メトリクスが記録済みであること。
@@ -162,7 +162,7 @@ KPT（Keep / Problem / Try / Advise）を記録します。マクロの呼出し
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行)
   - `[platform-engineer.md](/.opencode/agents/platform-engineer.md)` (スクリプト実行・集計)
 - **実行するスキル**:
-  `[record-sprint-velocity](/.agents/skills/bundles/management-bundle/record-sprint-velocity/SKILL.md)`
+  `[record-sprint-velocity](/.opencode/skills/bundles/management-bundle/record-sprint-velocity/SKILL.md)`
 - **入力（前提条件）**: 対象スプリントのPBIに実感サイズが対象PBIに記録されていること。
 - **手続き**:
   1. PBI実績データ（実感サイズ / 見積サイズ）から完了PBI数・合計ウェイト・
@@ -192,7 +192,7 @@ KPT（Keep / Problem / Try / Advise）を記録します。マクロの呼出し
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
-  `[record-sprint-metrics](/.agents/skills/bundles/management-bundle/record-sprint-metrics/SKILL.md)`
+  `[record-sprint-metrics](/.opencode/skills/bundles/management-bundle/record-sprint-metrics/SKILL.md)`
 - **入力（前提条件）**: 対象スプリントの振り返りが作成済みであること（`/sprint-start` の Phase 8
   `plan-retrospective`
   実施済み）。各作業パッケージのセッション振り返り・メトリクスが記録済みであること。
@@ -222,7 +222,7 @@ KPT（Keep / Problem / Try / Advise）を記録します。マクロの呼出し
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
-  `[archive-retrospective](/.agents/skills/bundles/management-bundle/archive-retrospective/SKILL.md)`
+  `[archive-retrospective](/.opencode/skills/bundles/management-bundle/archive-retrospective/SKILL.md)`
 - **入力（前提条件）**: 対象スプリントの振り返りが作成済みであること（`plan-retrospective`
   実施済み）。 `record-sprint-kpt` で KPT が記録済みであり、`record-sprint-metrics`
   でスプリント評価が記録済みであること。
@@ -250,7 +250,7 @@ PBI**（子先にクローズ）です。
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
-  `[archive-product-backlog-items](/.agents/skills/bundles/management-bundle/archive-product-backlog-items/SKILL.md)`
+  `[archive-product-backlog-items](/.opencode/skills/bundles/management-bundle/archive-product-backlog-items/SKILL.md)`
 - **入力（前提条件）**: アーカイブ対象のPBI/WPが `[DONE]`（done, open）状態であること。
 - **手続き**:
   1. スプリント内の完了済み（`[DONE]`）PBI/WP を一覧でPOに提示する。
@@ -258,8 +258,7 @@ PBI**（子先にクローズ）です。
   3. 対象のWP/PBIを順にクローズする。
 - **期待される結果（終了条件）**:
   1. 全対象WP/PBIがクローズ（`closed`）になっていること。
-  2. ローカル `product-backlog-archive.md` との関係（本スキルはクローズのみを担い、
-     ローカルへの書き込みは行わない）を PO が理解し承認していること。
+  2. 対象のクローズ範囲（本スキルはクローズのみを担う）を PO が理解し承認していること。
 
 > [!IMPORTANT]
 > 上記の「期待される結果」を満たすエビデンスを提示し、**「Phase
@@ -278,7 +277,7 @@ PBI**（子先にクローズ）です。
   - `[skill-writer.md](/.opencode/agents/skill-writer.md)` (スキル定義の最適化)
   - `[technical-advisor.md](/.opencode/agents/technical-advisor.md)` (中長期的な保守性の担保)
 - **実行するスキル**:
-  `[skill-optimizer](/.agents/skills/bundles/meta-bundle/skill-optimizer/SKILL.md)`
+  `[skill-optimizer](/.opencode/skills/bundles/meta-bundle/skill-optimizer/SKILL.md)`
 - **入力（前提条件）**: スプリント中のセッションログ、振り返りでの改善Try。
 - **手続き**:
   1. スプリントを通じて利用頻度の低かった「無駄なスキル」を検出し、整理を提案します。
@@ -302,7 +301,7 @@ PBI**（子先にクローズ）です。
 
 - **読み込むペルソナ**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
-  `[conclude-sprint](/.agents/skills/bundles/management-bundle/conclude-sprint/SKILL.md)`
+  `[conclude-sprint](/.opencode/skills/bundles/management-bundle/conclude-sprint/SKILL.md)`
 - **入力（前提条件）**: Phase 1〜9
   の全後処理（レビュー検証・effort分析・サイズ確定・スプリントKPT記録・ベロシティ記録・スプリント評価記録・振り返りアーカイブ・アーカイブ・スキル最適化）が完了し、POがスプリント終了を承認していること。
 - **手続き**:
@@ -328,9 +327,9 @@ PBI**（子先にクローズ）です。
 - **読み込むペルソナ**: `[platform-engineer.md](/.opencode/agents/platform-engineer.md)`
   (環境クリーンアップ)
 - **実行するスキル**:
-  `[stateless-reset](/.agents/skills/bundles/meta-bundle/stateless-reset/SKILL.md)`
+  `[stateless-reset](/.opencode/skills/bundles/meta-bundle/stateless-reset/SKILL.md)`
 - **手続き**:
-  退避スクリプト（`[reset.ts](/.agents/skills/bundles/meta-bundle/stateless-reset/scripts/reset.ts)`）の実行手続きを示し、不要キャッシュ等を完全に退避させ、クリーンなセッションで新たなスプリントを開始できるようにします。
+  退避スクリプト（`[reset.ts](/.opencode/skills/bundles/meta-bundle/stateless-reset/scripts/reset.ts)`）の実行手続きを示し、不要キャッシュ等を完全に退避させ、クリーンなセッションで新たなスプリントを開始できるようにします。
 - **期待される結果（終了条件）**:
   1. ステートレスリセットの実行が完了し、環境がクリーンアップされていること。
   2. スプリントの完全終了が宣言されること。

@@ -46,7 +46,7 @@ subtask: false
 
 - **ロール**: `[platform-engineer.md](/.opencode/agents/platform-engineer.md)` (すべての制約を遵守)
 - **実行スキル**:
-  `[develop-environment-setup](/.agents/skills/bundles/development-bundle/develop-environment-setup/SKILL.md)`
+  `[develop-environment-setup](/.opencode/skills/bundles/development-bundle/develop-environment-setup/SKILL.md)`
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
 
@@ -57,7 +57,7 @@ subtask: false
 - **ロール**: `[version-control-specialist.md](/.opencode/agents/version-control-specialist.md)`
   (すべての制約を遵守)
 - **実行スキル**:
-  `[initialize-branch](/.agents/skills/bundles/git-bundle/initialize-branch/SKILL.md)`
+  `[initialize-branch](/.opencode/skills/bundles/git-bundle/initialize-branch/SKILL.md)`
 - **セルフチェック**:
   - [ ] **[制約遵守]** ブランチ作成の目的をユーザーに説明し、承認を得たか。
 
@@ -73,11 +73,11 @@ subtask: false
 
 - **ロール**: `[refactor.md](/.opencode/agents/refactor.md)` (すべての制約を遵守)
 - **実行スキル**:
-  `[refactoring-loop](/.agents/skills/bundles/development-bundle/refactoring-loop/SKILL.md)`
+  `[refactoring-loop](/.opencode/skills/bundles/development-bundle/refactoring-loop/SKILL.md)`
 - **セルフチェック**:
   - [ ] 外部から見た挙動（API、戻り値、副作用）が変化していないか、常に意識して変更を行っているか。
   - [ ] 静的解析や型チェック等の検証コマンドを随時実行し、破壊が発生していないことを確認したか。
-  - [ ] 各リファクタリングステップの検証が成功した時点で、`[hybrid-triage-commit](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
+  - [ ] 各リファクタリングステップの検証が成功した時点で、`[hybrid-triage-commit](/.opencode/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
         スキル（`wip` モード）を実行し、セーブポイントを作成したか。
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
@@ -119,7 +119,7 @@ subtask: false
 - **ロール**: `[version-control-specialist.md](/.opencode/agents/version-control-specialist.md)`
   (すべての制約を遵守)
 - **実行スキル**:
-  `[hybrid-triage-commit](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
+  `[hybrid-triage-commit](/.opencode/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
 - **セルフチェック**:
   - [ ] 開発および検証が完了した時点で、`hybrid-triage-commit` スキル（`triage`
         モード）を実行し、WIP履歴を美しいアトミックコミットへと再構築したか。
@@ -133,7 +133,7 @@ subtask: false
 - **ロール**: `[version-control-specialist.md](/.opencode/agents/version-control-specialist.md)`
   (すべての制約を遵守)
 - **実行スキル**:
-  `[create-pull-request](/.agents/skills/bundles/git-bundle/create-pull-request/SKILL.md)`
+  `[create-pull-request](/.opencode/skills/bundles/git-bundle/create-pull-request/SKILL.md)`
 - **セルフチェック**:
   - [ ] **[制約遵守]** メトリクスの改善結果を要約して報告し、規格に沿ったメッセージで記録したか。
 
@@ -145,7 +145,7 @@ subtask: false
 
 - **ロール**: `[version-control-specialist.md](/.opencode/agents/version-control-specialist.md)`
   (すべての制約を遵守)
-- **実行スキル**: `[merge-branch](/.agents/skills/bundles/git-bundle/merge-branch/SKILL.md)`
+- **実行スキル**: `[merge-branch](/.opencode/skills/bundles/git-bundle/merge-branch/SKILL.md)`
 - **セルフチェック**:
   - [ ] ユーザーの承認を得た後にマージを実行し、環境を同期したか。
 

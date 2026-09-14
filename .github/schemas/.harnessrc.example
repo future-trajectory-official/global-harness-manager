@@ -1,5 +1,5 @@
 {
-  "_comment": "GitHub Project V2 のボード番号を保持する設定ファイルのリファレンス。実値は setup-github-projects が .harnessrc に自動生成する。キー構成・型・意味を公開する。このファイルはテンプレートのため、<number> を実ボード番号へ置き換えること（このままでは JSON として無効）。ボード番号（projects）はアカウント・作成タイミングごとに異なるため追跡不可。フィールド名（fields）は不変で、正の定義は .agents/core/gateway/field-registry.ts を参照。",
+  "_comment": "GitHub Project V2 のボード番号を保持する設定ファイルのリファレンス。実値は setup-github-projects が .harnessrc に自動生成する。キー構成・型・意味を公開する。このファイルはテンプレートのため、<number> を実ボード番号へ置き換えること（このままでは JSON として無効）。ボード番号（projects）はアカウント・作成タイミングごとに異なるため追跡不可。フィールド名（fields）は不変で、正の定義は .opencode/core/gateway/field-registry.ts を参照。",
   "projects": {
     "productBacklog": <number>,
     "sprintBoard": <number>,
