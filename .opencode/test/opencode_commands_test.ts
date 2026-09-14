@@ -18,7 +18,7 @@
  *   3. コマンド本文は frontmatter（description 非空・subtask:false の2キーのみ）の構造を維持し、
  *      新規 description を FRONTMATTER_SNAPSHOT へ登録する。
  *   4. 新規コマンドのリーフフェーズ見出し一覧を PHASE_SNAPSHOT へ登録する。
- *   5. 新規コマンドの `/.opencode/agents/`・`/.agents/skills/` 参照件数を実測し、
+ *   5. 新規コマンドの `/.opencode/agents/`・`/.opencode/skills/` 参照件数を実測し、
  *      ROLE_LINK_COUNTS・SKILL_LINK_COUNTS へ登録する。
  *   6. 新規にロール定義を参照する場合は `/.opencode/agents/<role>.md` 実在下のみ可。
  * 反復集合は commands ディレクトリの動的走査から駆動されるため、追加で編集が必要な箇所は
@@ -27,15 +27,15 @@
 import { assert, assertEquals } from "@std/assert";
 import { parse } from "@std/yaml";
 
-const ROOT = new URL("../", import.meta.url).pathname;
+const ROOT = new URL("../../", import.meta.url).pathname;
 const COMMANDS_DIR = `${ROOT}.opencode/commands`;
 
 /**
  * 介入2でロールリンク置換を行ったスキル側ファイル（コマンド以外）。
  */
 const SKILL_LINK_FILES: string[] = [
-  `${ROOT}.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md`,
-  `${ROOT}.agents/skills/bundles/management-bundle/session-planning/SKILL.md`,
+  `${ROOT}.opencode/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md`,
+  `${ROOT}.opencode/skills/bundles/management-bundle/session-planning/SKILL.md`,
 ];
 
 /**
@@ -174,7 +174,7 @@ const ROLE_LINK_COUNTS: Record<string, number> = {
 };
 
 /**
- * コマンド別の `/.agents/skills/` 参照件数ベースライン（2026-09-13 実測）。
+ * コマンド別の `/.opencode/skills/` 参照件数ベースライン（2026-09-13 実測）。
  * sprint-end.md の reset.ts スクリプト参照1件を含む。
  */
 const SKILL_LINK_COUNTS: Record<string, number> = {
@@ -320,13 +320,13 @@ Deno.test("replaced role links resolve to existing .opencode/agents files", asyn
 });
 
 /**
- * スキル参照の実在性と件数: 対象中の /.agents/skills/ 参照がファイル別完全一致であること。
+ * スキル参照の実在性と件数: 対象中の /.opencode/skills/ 参照がファイル別完全一致であること。
  * 削除と追加の相殺を素通りさせないため合計数の下限値ではなく件数一致で検証する。
  */
 Deno.test("skill links match per-file counts", async () => {
   for (const file of await listCommandFiles()) {
     const content = await readTarget(commandPath(file));
-    const count = [...content.matchAll(/\/\.agents\/skills\//g)].length;
+    const count = [...content.matchAll(/\/\.opencode\/skills\//g)].length;
     assertEquals(
       count,
       SKILL_LINK_COUNTS[file],

@@ -1,5 +1,5 @@
-import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { walk } from "https://deno.land/std@0.224.0/fs/walk.ts";
+import { assertEquals } from "@std/assert";
+import { walk } from "@std/fs/walk";
 
 const ROOT = Deno.cwd();
 
@@ -26,9 +26,10 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
   const issues: string[] = [];
 
   // ターゲットの Markdown ファイル一覧を取得（テンプレートファイル .example / .md.example も対象に含める）
-  // 対象ディレクトリ: .agents（運用系）・.opencode/context（用語集）・.opencode/guides（運用ガイド）・.opencode/agents（ロール定義）
+  // 対象ディレクトリ: .opencode/context（用語集）・.opencode/guides（運用ガイド）・.opencode/agents（ロール定義）
   // 対象外: .opencode/commands（ワークフロー入口・別テストで検証）・.opencode/skills（配布物）
-  const scanRoots = [`.agents`, `.opencode/context`, `.opencode/guides`, `.opencode/agents`];
+  // （旧 .agents 配下は skills→配布物・workflows→commands・management→廃止のため走査対象なし）
+  const scanRoots = [`.opencode/context`, `.opencode/guides`, `.opencode/agents`];
   const mdFiles: string[] = [];
   for (const root of scanRoots) {
     mdFiles.push(...await collectMarkdownFiles(root));
@@ -36,7 +37,6 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
 
   // ルールやスキルなどのファイル名リスト（プレーンテキスト言及の検出用）
   const knownFiles = [
-    "product-backlog.md",
     "backlog-guidelines.md",
     "architect.md",
     "developer.md",
@@ -157,7 +157,7 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
       } else {
         // 相対パスの場合
         if (
-          isWorkspaceRelative || targetPath.startsWith(".agents/") ||
+          isWorkspaceRelative ||
           targetPath.startsWith(".opencode/")
         ) {
           // ワークスペースルートからの相対

@@ -1,8 +1,8 @@
 import { assert } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
-const ROOT = new URL("../", import.meta.url).pathname;
+const ROOT = new URL("../../", import.meta.url).pathname;
 const COMMANDS_DIR = `${ROOT}.opencode/commands`;
-const ASSESS_CONTEXT_SKILL = "/.agents/skills/bundles/management-bundle/assess-context/SKILL.md";
+const ASSESS_CONTEXT_SKILL = "/.opencode/skills/bundles/management-bundle/assess-context/SKILL.md";
 
 /**
  * 先頭のフェーズ見出しを正規表現で特定する。

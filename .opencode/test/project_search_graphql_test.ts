@@ -1,5 +1,5 @@
 import { assertEquals } from "@std/assert";
-import { PlanGatewayAdapter } from "../.agents/core/gateway/plan-gateway-adapter.ts";
+import { PlanGatewayAdapter } from "../core/gateway/plan-gateway-adapter.ts";
 
 type ExecuteResult = { code: number; stdout: string; stderr: string };
 

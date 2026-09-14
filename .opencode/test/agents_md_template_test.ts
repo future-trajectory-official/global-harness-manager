@@ -2,18 +2,18 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { basename, dirname, fromFileUrl, join } from "@std/path";
 
 /** このテストファイルの位置から解決したリポジトリルートディレクトリ */
-const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "..");
+const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "../..");
 
 /** 静的検証対象のグローバルテンプレート（AGENTS.md.template）の絶対パス */
 export const AGENTS_MD_TEMPLATE_PATH = join(
   REPO_ROOT,
-  ".agents/skills/bundles/workspace-bundle/publish-harness-rules/references/AGENTS.md.template",
+  ".opencode/skills/bundles/workspace-bundle/publish-harness-rules/references/AGENTS.md.template",
 );
 
 /** プレースホルダ名称互換の突合対象となる Antigravity 側テンプレートの絶対パス */
 const GEMINI_MD_TEMPLATE_PATH = join(
   REPO_ROOT,
-  ".agents/skills/bundles/workspace-bundle/publish-harness-rules/references/GEMINI.md.template",
+  ".opencode/skills/bundles/workspace-bundle/publish-harness-rules/references/GEMINI.md.template",
 );
 
 /** ローカル規律テンプレート（プロジェクト配布用 AGENTS.md の源）の絶対パス */
@@ -38,13 +38,14 @@ async function readLocalAgentsExample(): Promise<string> {
 
 /**
  * グローバルテンプレートに含めてはならないパス依存・ハーネス固有トークンの一覧（AC2）。
- * 拡張方針: 「等」を含むAC2の性質上、`.opencode` / `.gitignore` / `SKILL.md` 等のハーネス語・
- * 大文字小文字ゆらぎは現状列挙しない。テンプレートへ新種の配置依存語が混入した場合は
+ * 拡張方針: 単一ルート移行に伴い `.opencode` を追加済み。`.gitignore` / `SKILL.md` 等の
+ * ハーネス語・大文字小文字ゆらぎは現状列挙しない。テンプレートへ新種の配置依存語が混入した場合は
  * 本一覧へ追記して回帰を固定する。
  */
 const FORBIDDEN_PATH_DEPENDENT_TOKENS = [
   ".session",
   ".agents",
+  ".opencode",
   "task.md",
   "implementation_plan.md",
   "Antigravity",
@@ -107,7 +108,7 @@ Deno.test("T2 (AC3): template keeps six global principles without RECOVERY LOG",
 
 /**
  * ユースケース: グローバルテンプレートにパス依存記述が含まれない（AC2）
- * 検証意図: ハーネス固有・配置依存の語（.session / .agents / task.md 等）がテンプレート本文のどこにも現れないことを全量走査で確認する
+ * 検証意図: ハーネス固有・配置依存の語（.session / .agents / .opencode / task.md 等）がテンプレート本文のどこにも現れないことを全量走査で確認する
  */
 Deno.test("T3 (AC2): template contains no path-dependent tokens", async () => {
   const content = await readAgentsMdTemplate();

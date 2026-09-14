@@ -2,7 +2,7 @@ import {
   getSkillDirPath as getCoreSkillDirPath,
   getSkillScriptPath as getCoreSkillScriptPath,
   PATHS as CORE_PATHS,
-} from "../.agents/core/shared/types/constants.ts";
+} from "../core/shared/types/constants.ts";
 
 /**
  * テスト共通のパス定数

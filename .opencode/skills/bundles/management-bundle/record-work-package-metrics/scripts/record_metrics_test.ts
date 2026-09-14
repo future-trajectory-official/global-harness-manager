@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
 import { join } from "@std/path";
-import { getSkillScriptPath, PATHS } from "../../../../../../test/test_helper.ts";
+import { getSkillScriptPath, PATHS } from "../../../../../test/test_helper.ts";
 import { wpId } from "../../../../../core/domain/types.ts";
 import type { SessionMetrics } from "../../../../../core/domain/types.ts";
 import { workPackageUseCase } from "../../../../../core/domain/workpackage-usecase.ts";

@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { getSkillScriptPath, PATHS } from "../../../../../../test/test_helper.ts";
+import { getSkillScriptPath, PATHS } from "../../../../../test/test_helper.ts";
 
 /**
  * モック gh / git を作成し、呼び出しログを記録する一時ディレクトリを構築する。

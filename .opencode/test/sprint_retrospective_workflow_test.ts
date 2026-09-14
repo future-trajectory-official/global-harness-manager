@@ -1,11 +1,11 @@
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
-const ROOT = new URL("../", import.meta.url).pathname;
+const ROOT = new URL("../../", import.meta.url).pathname;
 const COMMANDS_DIR = `${ROOT}.opencode/commands`;
-const OLD_SKILL_DIR = `${ROOT}.agents/skills/bundles/management-bundle/sprint-retrospective-kpt`;
+const OLD_SKILL_DIR = `${ROOT}.opencode/skills/bundles/management-bundle/sprint-retrospective-kpt`;
 
 const RETRO_SKILLS = ["record-sprint-kpt", "record-sprint-metrics", "archive-retrospective"];
-const MANAGEMENT_BUNDLE = "/.agents/skills/bundles/management-bundle";
+const MANAGEMENT_BUNDLE = "/.opencode/skills/bundles/management-bundle";
 
 /**
  * Markdown を `## Phase N:` 見出しで分割し、フェーズ番号 → 本文のマップを返す。
@@ -145,7 +145,7 @@ Deno.test("Old sprint-retrospective-kpt skill directory is removed", async () =>
  * 【検証の意図】retrospective-guide.md の除去がリンク検証テスト側に反映されていることを検証する。
  */
 Deno.test("link_verification_test knownFiles no longer contains retrospective-guide.md", async () => {
-  const linkTest = await Deno.readTextFile(`${ROOT}test/link_verification_test.ts`);
+  const linkTest = await Deno.readTextFile(`${ROOT}.opencode/test/link_verification_test.ts`);
   assertEquals(
     linkTest.includes("retrospective-guide.md"),
     false,
