@@ -19,14 +19,14 @@ Deno.test("command - executeCommand should run in PROJECT_ROOT by default", asyn
 
 /**
  * command - executeCommand にカスタム cwd を指定して実行できることを検証する。
- * .agents/core ディレクトリを cwd として指定し、そのディレクトリ内のファイルが
+ * .opencode/core ディレクトリを cwd として指定し、そのディレクトリ内のファイルが
  * 参照できることを確認する。
  */
 Deno.test("command - executeCommand should respect custom cwd", async () => {
   const result = await executeCommand({
     cmd: "ls",
     args: ["harness-core.ts"],
-    cwd: "./.agents/core",
+    cwd: "./.opencode/core",
   });
 
   assertEquals(result.code, 0);

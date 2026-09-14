@@ -1,6 +1,6 @@
 import { assertEquals } from "jsr:@std/assert@1.0.7";
 import { detectLanguage } from "./manage-sandbox.ts";
-import { fsUtil } from "../../../../../../.agents/core/harness-core.ts";
+import { fsUtil } from "../../../../../../.opencode/core/harness-core.ts";
 
 Deno.test("detectLanguage - detects deno", async () => {
   const originalExists = fsUtil.exists;

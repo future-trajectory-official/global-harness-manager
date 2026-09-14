@@ -27,7 +27,7 @@ Deno.test("manage-git-identity characterization test", async () => {
   // 元のスクリプトの絶対パスを取得
   const scriptPath = join(
     Deno.cwd(),
-    ".agents/skills/bundles/workspace-bundle/manage-git-identity/scripts/add-identity.ts",
+    ".opencode/skills/bundles/workspace-bundle/manage-git-identity/scripts/add-identity.ts",
   );
 
   // 環境変数をモックしてスクリプトを実行

@@ -91,7 +91,7 @@ export function collectRoles(rulesDir: string): RoleInfo[] {
 }
 
 function collectSkills(rootDir: string): SkillInfo[] {
-  const skillsBase = `${rootDir}/.agents/skills/bundles`;
+  const skillsBase = `${rootDir}/.opencode/skills/bundles`;
   const skills: SkillInfo[] = [];
   const walkDir = (dir: string): void => {
     for (const entry of Deno.readDirSync(dir)) {

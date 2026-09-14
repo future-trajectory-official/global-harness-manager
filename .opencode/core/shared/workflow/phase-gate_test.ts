@@ -1,11 +1,7 @@
 import { assertEquals, assertInstanceOf, assertStringIncludes } from "@std/assert";
 import { assertExists } from "@std/assert";
-import { dirname, fromFileUrl, join } from "@std/path";
-
-// phase-gate.ts はこれから実装するため、型のみ先行定義
-// テスト実行時には実際の実装に置き換わる
-const __dirname = dirname(fromFileUrl(import.meta.url));
-const PROJECT_ROOT = join(__dirname, "..", "..");
+import { join } from "@std/path";
+import { PROJECT_ROOT } from "../types/constants.ts";
 
 // --- AC-1: SKILL.md リンク抽出 ---
 
@@ -106,7 +102,7 @@ Deno.test("resolveReferencePath - should resolve relative path from skill direct
   const { resolveReferencePath } = await import("./phase-gate.ts");
   const skillDir = join(
     PROJECT_ROOT,
-    ".agents",
+    ".opencode",
     "skills",
     "bundles",
     "management-bundle",
@@ -117,17 +113,24 @@ Deno.test("resolveReferencePath - should resolve relative path from skill direct
 });
 
 /**
- * resolveReferencePath - 絶対パス（/.agents/...）がプロジェクトルート基準で解決されることを検証する。
+ * resolveReferencePath - 絶対パス（/.opencode/...）がプロジェクトルート基準で解決されることを検証する。
  */
 Deno.test("resolveReferencePath - should resolve absolute path from project root", async () => {
   const { resolveReferencePath } = await import("./phase-gate.ts");
-  const skillDir = join(PROJECT_ROOT, ".agents", "skills", "bundles", "some-bundle", "some-skill");
+  const skillDir = join(
+    PROJECT_ROOT,
+    ".opencode",
+    "skills",
+    "bundles",
+    "some-bundle",
+    "some-skill",
+  );
   const result = resolveReferencePath(
-    "/.agents/management/product-backlog.md",
+    "/.opencode/guides/backlog-guidelines.md",
     skillDir,
     PROJECT_ROOT,
   );
-  assertEquals(result, join(PROJECT_ROOT, ".agents", "management", "product-backlog.md"));
+  assertEquals(result, join(PROJECT_ROOT, ".opencode", "guides", "backlog-guidelines.md"));
 });
 
 /**
@@ -135,7 +138,14 @@ Deno.test("resolveReferencePath - should resolve absolute path from project root
  */
 Deno.test("resolveReferencePath - should strip anchor from path", async () => {
   const { resolveReferencePath } = await import("./phase-gate.ts");
-  const skillDir = join(PROJECT_ROOT, ".agents", "skills", "bundles", "some-bundle", "some-skill");
+  const skillDir = join(
+    PROJECT_ROOT,
+    ".opencode",
+    "skills",
+    "bundles",
+    "some-bundle",
+    "some-skill",
+  );
   const result = resolveReferencePath("./references/guide.md#section-1", skillDir, PROJECT_ROOT);
   assertEquals(result, join(skillDir, "references", "guide.md"));
 });
@@ -147,7 +157,7 @@ Deno.test("resolveReferencePath - should resolve relative path without ./ prefix
   const { resolveReferencePath } = await import("./phase-gate.ts");
   const skillDir = join(
     PROJECT_ROOT,
-    ".agents",
+    ".opencode",
     "skills",
     "bundles",
     "management-bundle",
@@ -165,13 +175,13 @@ Deno.test("resolveReferencePath - should resolve relative path without ./ prefix
 Deno.test("checkReadStatus - should return unread files when some files are not in read log", async () => {
   const { checkReadStatus } = await import("./phase-gate.ts");
   const allFiles = [
-    join(PROJECT_ROOT, ".agents", "core", "phase-gate.ts"),
-    join(PROJECT_ROOT, ".agents", "core", "logger.ts"),
-    join(PROJECT_ROOT, ".agents", "management", "backlog-guidelines.md"),
+    join(PROJECT_ROOT, ".opencode", "core", "phase-gate.ts"),
+    join(PROJECT_ROOT, ".opencode", "core", "logger.ts"),
+    join(PROJECT_ROOT, ".opencode", "management", "backlog-guidelines.md"),
   ];
   const readLog: Record<string, string[]> = {
     "some-skill": [
-      join(PROJECT_ROOT, ".agents", "core", "phase-gate.ts"),
+      join(PROJECT_ROOT, ".opencode", "core", "phase-gate.ts"),
     ],
   };
 
@@ -187,11 +197,11 @@ Deno.test("checkReadStatus - should return unread files when some files are not 
 Deno.test("checkReadStatus - should return empty array when all files are read", async () => {
   const { checkReadStatus } = await import("./phase-gate.ts");
   const allFiles = [
-    join(PROJECT_ROOT, ".agents", "core", "phase-gate.ts"),
+    join(PROJECT_ROOT, ".opencode", "core", "phase-gate.ts"),
   ];
   const readLog: Record<string, string[]> = {
     "some-skill": [
-      join(PROJECT_ROOT, ".agents", "core", "phase-gate.ts"),
+      join(PROJECT_ROOT, ".opencode", "core", "phase-gate.ts"),
     ],
   };
 
@@ -205,8 +215,8 @@ Deno.test("checkReadStatus - should return empty array when all files are read",
 Deno.test("checkReadStatus - should treat all files as unread when skill has no read log entry", async () => {
   const { checkReadStatus } = await import("./phase-gate.ts");
   const allFiles = [
-    join(PROJECT_ROOT, ".agents", "core", "phase-gate.ts"),
-    join(PROJECT_ROOT, ".agents", "core", "logger.ts"),
+    join(PROJECT_ROOT, ".opencode", "core", "phase-gate.ts"),
+    join(PROJECT_ROOT, ".opencode", "core", "logger.ts"),
   ];
   const readLog: Record<string, string[]> = {};
 
@@ -220,7 +230,7 @@ Deno.test("checkReadStatus - should treat all files as unread when skill has no 
 Deno.test("checkReadStatus - should treat all files as unread when readLog is empty", async () => {
   const { checkReadStatus } = await import("./phase-gate.ts");
   const allFiles = [
-    join(PROJECT_ROOT, ".agents", "core", "phase-gate.ts"),
+    join(PROJECT_ROOT, ".opencode", "core", "phase-gate.ts"),
   ];
   const readLog: Record<string, string[]> = {};
 

@@ -111,9 +111,24 @@ async function main() {
     }
   }
 
-  const localSkillsDir = ".agents/skills";
-  if (await fsUtil.exists(localSkillsDir)) {
-    await processSkillRoot(localSkillsDir, "プロジェクト固有");
+  const localSkillsDir = ".opencode/skills";
+  const bundlesDir = pathUtil.joinPath(localSkillsDir, "bundles");
+  try {
+    if (await fsUtil.exists(bundlesDir)) {
+      // skills/bundles/<bundle>/<skill> 構造: 各バンドル配下のスキルを走査する
+      for await (const bundleEntry of Deno.readDir(bundlesDir)) {
+        if (bundleEntry.isDirectory) {
+          await processSkillRoot(
+            pathUtil.joinPath(bundlesDir, bundleEntry.name),
+            "プロジェクト固有",
+          );
+        }
+      }
+    } else if (await fsUtil.exists(localSkillsDir)) {
+      await processSkillRoot(localSkillsDir, "プロジェクト固有");
+    }
+  } catch (_e) {
+    // ignore
   }
 
   console.log("\n=== 再確認完了 ===");

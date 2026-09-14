@@ -5,7 +5,7 @@ import {
   logger,
   pathUtil,
   PROJECT_ROOT,
-} from "../../../../../../.agents/core/harness-core.ts";
+} from "../../../../../../.opencode/core/harness-core.ts";
 
 export type FsDeps = Pick<
   typeof fsUtil,

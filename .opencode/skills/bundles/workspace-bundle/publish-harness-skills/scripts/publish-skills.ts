@@ -22,7 +22,7 @@ async function main() {
     const force = args["force"] || false;
     const configPath = pathUtil.resolvePath("config/publish-targets.md");
     const globalPathFile = pathUtil.resolvePath("config/global-skills-path.txt");
-    const skillsSourceDir = pathUtil.resolvePath(".agents/skills");
+    const skillsSourceDir = pathUtil.resolvePath(".opencode/skills");
 
     if (!(await fsUtil.exists(configPath))) {
       throw new Error(`Config file not found: ${configPath}`);

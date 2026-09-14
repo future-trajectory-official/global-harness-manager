@@ -198,7 +198,7 @@ async function syncGlobalPrompt(
   const config = PLATFORM_CONFIGS[platform];
   const promptPath = pathUtil.expandHome(config.promptPath);
   const templatePath = pathUtil.resolvePath(
-    `.agents/skills/bundles/workspace-bundle/publish-harness-rules/references/${config.templateName}`,
+    `.opencode/skills/bundles/workspace-bundle/publish-harness-rules/references/${config.templateName}`,
   );
 
   if (osEnv && osEnv !== "wsl" && osEnv !== "linux") {

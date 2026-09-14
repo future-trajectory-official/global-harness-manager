@@ -92,7 +92,7 @@ exit 0
 
 echo "Running commit-msg validation..."
 
-deno run -A .agents/core/shared/validate/validate-commit-message.ts "$1"
+deno run -A .opencode/core/shared/validate/validate-commit-message.ts "$1"
 if [ $? -ne 0 ]; then
   echo "❌ Commit message validation failed."
   exit 1
