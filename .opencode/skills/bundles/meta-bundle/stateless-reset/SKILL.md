@@ -25,14 +25,14 @@ tags:
    - 以下のスクリプトを実行し、エージェントの内部記憶フォルダ（`brain/`, `knowledge/`,
      `conversations/`）を退避させます。
    ```bash
-   deno run -A .agents/skills/bundles/meta-bundle/stateless-reset/scripts/reset.ts
+   deno run -A .opencode/skills/bundles/meta-bundle/stateless-reset/scripts/reset.ts
    ```
 
 > [!TIP]
 > 退避対象のデータの詳細は
-> [data-types-spec.md](/.agents/skills/bundles/meta-bundle/stateless-reset/references/data-types-spec.md)
+> [data-types-spec.md](/.opencode/skills/bundles/meta-bundle/stateless-reset/references/data-types-spec.md)
 > を、Windows 等の他環境向けコマンドは
-> [cross-platform-commands.md](/.agents/skills/bundles/meta-bundle/stateless-reset/references/cross-platform-commands.md)
+> [cross-platform-commands.md](/.opencode/skills/bundles/meta-bundle/stateless-reset/references/cross-platform-commands.md)
 > を参照してください。
 
 ※ 注意: 物理的な削除ではなく移動を行うため、OS による自動クリーンアップまではデータが保持されます。

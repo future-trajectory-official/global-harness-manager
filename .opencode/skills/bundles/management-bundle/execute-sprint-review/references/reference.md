@@ -52,10 +52,10 @@
 
 ```bash
 # dry-run
-echo '{"sprintNumber":17,"overallResult":{"judgment":"pass","reason":"OK"},"acGroups":[{"pbiNumber":1,"wpNumber":3,"acJudgments":[{"number":"2","judgment":"pass"}]}]}' | deno run -A .agents/skills/bundles/management-bundle/execute-sprint-review/scripts/execute_sprint_review.ts --dry-run
+echo '{"sprintNumber":17,"overallResult":{"judgment":"pass","reason":"OK"},"acGroups":[{"pbiNumber":1,"wpNumber":3,"acJudgments":[{"number":"2","judgment":"pass"}]}]}' | deno run -A .opencode/skills/bundles/management-bundle/execute-sprint-review/scripts/execute_sprint_review.ts --dry-run
 
 # 本実行
-echo '{"sprintNumber":17,"overallResult":{"judgment":"pass","reason":"OK"},"acGroups":[{"pbiNumber":1,"wpNumber":3,"acJudgments":[{"number":"2","judgment":"pass"}]}]}' | deno run -A .agents/skills/bundles/management-bundle/execute-sprint-review/scripts/execute_sprint_review.ts
+echo '{"sprintNumber":17,"overallResult":{"judgment":"pass","reason":"OK"},"acGroups":[{"pbiNumber":1,"wpNumber":3,"acJudgments":[{"number":"2","judgment":"pass"}]}]}' | deno run -A .opencode/skills/bundles/management-bundle/execute-sprint-review/scripts/execute_sprint_review.ts
 ```
 
 ## スクリプトの動作フロー

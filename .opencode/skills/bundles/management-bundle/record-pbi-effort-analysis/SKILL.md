@@ -22,10 +22,10 @@ AIが乖離分析（planning / execution / improvement）を実施して対象PB
 
 ```bash
 # dry-run: 集計Planを確認
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-effort-analysis/scripts/record_pbi_effort_analysis.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-pbi-effort-analysis/scripts/record_pbi_effort_analysis.ts --dry-run
 
 # 実実行: 集計＋乖離分析の記録
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-effort-analysis/scripts/record_pbi_effort_analysis.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-pbi-effort-analysis/scripts/record_pbi_effort_analysis.ts
 ```
 
 ## 手順
@@ -62,5 +62,5 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-
 ## 詳細リファレンス
 
 - 入力JSON形式・スクリプト呼出パターンは
-  [references/reference.md](/.agents/skills/bundles/management-bundle/record-pbi-effort-analysis/references/reference.md)
+  [references/reference.md](/.opencode/skills/bundles/management-bundle/record-pbi-effort-analysis/references/reference.md)
   を参照

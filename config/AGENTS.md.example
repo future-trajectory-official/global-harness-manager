@@ -80,18 +80,15 @@ OpenCode は会話がコンパクションされると過去の詳細を失う�
    - `// turbo-all` マーカーがあっても、ワークフローの手順が優先される場合はワークフローに従うこと
    - スキルの手順を「参考」としてではなく「ルール」として読むこと
 
-3. **プロジェクト独自ディレクトリ構造（Antigravity由来 × OpenCode対応）**:
-   - 本プロジェクトは2層構造（Antigravity規約由来の `.agents/` 層と、OpenCode統合用
-     `.opencode/` 層）からなる独自ディレクトリ構造を使用している：
-      - `.agents/skills/` - スキル定義（SKILL.md）
-      - `.opencode/agents/` - ロール定義（scrum-master.md等：Antigravityペルソナの変換先）
+ 3. **プロジェクトディレクトリ構造（OpenCode統合・単一ルート）**:
+    - 本プロジェクトは `.opencode/` 単一ルートでハーネス資源を管理している：
+      - `.opencode/skills/` - スキル定義（SKILL.md）
+      - `.opencode/agents/` - ロール定義（scrum-master.md等）
       - `.opencode/commands/` - ワークフロー定義兼入口コマンド（session-start.md等：手順の単一の正）
-      - `.agents/core/` - コアモジュール
-     - `.agents/management/` - 管理用ファイル（backlog等）
-   - これらのディレクトリの存在を認識し、適切に使用すること
-   - **注意**: `.opencode/` は OpenCode
-     プラットフォーム統合の標準層、`.agents/` は本プロジェクト独自の規約層であり、OpenCode/Claude
-     Codeの標準仕様ではない
+      - `.opencode/core/` - コアモジュール
+      - `.opencode/context/` - 管理概念・プロジェクト固有の用語集
+      - `.opencode/guides/` - 運用ガイド
+    - これらのディレクトリの存在を認識し、適切に使用すること
 
 ## プロジェクト用語集の参照
 
@@ -103,6 +100,6 @@ OpenCode は会話がコンパクションされると過去の詳細を失う�
 
 ## ツール制約: glob/grep は dot ディレクトリを検索不可
 
-opencode の `glob` / `grep` ツール（内部で ripgrep 使用）は、 `.agents/` や `.github/` など `.`
-で始まるディレクトリをデフォルトで検索対象外とする。 本プロジェクトのコアファイルは `.agents/`
+opencode の `glob` / `grep` ツール（内部で ripgrep 使用）は、 `.opencode/` や `.github/` など `.`
+で始まるディレクトリをデフォルトで検索対象外とする。 本プロジェクトのコアファイルは `.opencode/`
 配下にあるため、 dot ディレクトリ内のファイル検索には `bash` (`ls`, `find`, `rg`) を使用すること。

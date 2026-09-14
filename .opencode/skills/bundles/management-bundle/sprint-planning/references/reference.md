@@ -28,8 +28,8 @@ PBIのステータスを Idea→Todo に進行し、指定スプリントに確�
 
 ```bash
 # dry-run（id に node-id、code に Issue番号を指定）
-echo '{"identifier":{"title":"Implement login","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"sprintNumber":19}' | deno run -A .agents/skills/bundles/management-bundle/sprint-planning/scripts/commit_pbi.ts --dry-run
+echo '{"identifier":{"title":"Implement login","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"sprintNumber":19}' | deno run -A .opencode/skills/bundles/management-bundle/sprint-planning/scripts/commit_pbi.ts --dry-run
 
 # 本実行
-echo '{"identifier":{"title":"Implement login","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"sprintNumber":19}' | deno run -A .agents/skills/bundles/management-bundle/sprint-planning/scripts/commit_pbi.ts
+echo '{"identifier":{"title":"Implement login","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"sprintNumber":19}' | deno run -A .opencode/skills/bundles/management-bundle/sprint-planning/scripts/commit_pbi.ts
 ```

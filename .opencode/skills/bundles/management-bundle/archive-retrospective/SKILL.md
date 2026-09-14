@@ -38,11 +38,11 @@ tags:
 
 以下のコマンドで、終了（アーカイブ）する対象を確認する。PO の承認後に次へ進む。
 入力JSONの組み立て方は
-[references/reference.md](/.agents/skills/bundles/management-bundle/archive-retrospective/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/archive-retrospective/references/reference.md)
 を参照すること。
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/archive-retrospective/scripts/archive_retrospective.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/archive-retrospective/scripts/archive_retrospective.ts --dry-run
 ```
 
 ### Step 3: 振り返りの終了 [責任者: AI]
@@ -50,7 +50,7 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/archive-ret
 PO の承認後、実実行で振り返りを終了（アーカイブ）する。
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/archive-retrospective/scripts/archive_retrospective.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/archive-retrospective/scripts/archive_retrospective.ts
 ```
 
 ### Step 4: 結果報告 [責任者: AI]
@@ -60,5 +60,5 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/archive-ret
 ## 詳細リファレンス
 
 - 入力JSON形式・対象の特定方法・dry-run 出力の解釈・実行パターンは
-  [references/reference.md](/.agents/skills/bundles/management-bundle/archive-retrospective/references/reference.md)
+  [references/reference.md](/.opencode/skills/bundles/management-bundle/archive-retrospective/references/reference.md)
   を参照

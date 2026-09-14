@@ -49,10 +49,10 @@ Review Issue として永続化する。スキル実行後に返される Issue�
 
 ```bash
 # dry-run で確認
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts --dry-run
 
 # 本実行
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts
 ```
 
 詳細な入力JSONの形式は `plan-sprint-review` スキルのリファレンスを参照すること。

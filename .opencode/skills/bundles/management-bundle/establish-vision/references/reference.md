@@ -56,10 +56,10 @@
 
 ```bash
 # dry-run（事前確認） — ユーザーに内容を提示し承認を得る
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/establish-vision/scripts/establish_vision.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/establish-vision/scripts/establish_vision.ts --dry-run
 
 # 本実行（ユーザー承認後）
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/establish-vision/scripts/establish_vision.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/establish-vision/scripts/establish_vision.ts
 ```
 
 # ビジョン要素の設計テンプレート

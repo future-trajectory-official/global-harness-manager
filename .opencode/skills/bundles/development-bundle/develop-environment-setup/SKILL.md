@@ -33,10 +33,10 @@ tags:
    不整合を防ぐため、新しい作業を開始する前には既存の同名サンドボックスを破棄（クリーンアップ）してから作成することを推奨します。
    ```bash
    # 既存の破棄（任意）
-   deno run -A .agents/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts destroy --name [task-name]
+   deno run -A .opencode/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts destroy --name [task-name]
 
    # 新規作成
-   deno run -A .agents/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts create --name [task-name] --mode [directory|container]
+   deno run -A .opencode/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts create --name [task-name] --mode [directory|container]
    ```
 
 2. **サンドボックスへの進入と動作確認**
@@ -46,7 +46,7 @@ tags:
 3. **作業の完了と破棄**
    作業が完了し、成果物をメインリポジトリへ反映（マージ/コミット）した後は、環境をクリーンに保つためにサンドボックスを破棄してください。
    ```bash
-   deno run -A .agents/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts destroy --name [task-name]
+   deno run -A .opencode/skills/bundles/development-bundle/develop-environment-setup/scripts/manage-sandbox.ts destroy --name [task-name]
    ```
 
 ## 【重要】安全性と分離の原則

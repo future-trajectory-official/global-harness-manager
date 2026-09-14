@@ -35,12 +35,12 @@ tags:
 2. **スクリプトの実行（dry-run）**: 確定したスプリント番号を入力として dry-run を実行し、終了される
    Plan を PO に提示する。
    ```bash
-   echo '{"sprintNumber": N}' | deno run -A .agents/skills/bundles/management-bundle/conclude-sprint/scripts/conclude_sprint.ts --dry-run
+   echo '{"sprintNumber": N}' | deno run -A .opencode/skills/bundles/management-bundle/conclude-sprint/scripts/conclude_sprint.ts --dry-run
    ```
 3. **PO承認**: Plan の内容を PO が確認し、承認する。
 4. **本実行**: PO承認後、本実行を行いスプリントを終了する。
    ```bash
-   echo '{"sprintNumber": N}' | deno run -A .agents/skills/bundles/management-bundle/conclude-sprint/scripts/conclude_sprint.ts
+   echo '{"sprintNumber": N}' | deno run -A .opencode/skills/bundles/management-bundle/conclude-sprint/scripts/conclude_sprint.ts
    ```
 
 <!-- STOP -->

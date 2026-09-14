@@ -15,7 +15,7 @@
 
 **説明**: ...
 
-## system-bundle
+## meta-bundle
 
 ### stateless-reset
 
@@ -42,5 +42,5 @@ cp config/publish-targets.md.example config/publish-targets.md
 
 ## 4. 注意事項
 
-- バンドル名・スキル名は `.agents/skills/bundles/` に実在するディレクトリ名と一致させてください。
+- バンドル名・スキル名は `.opencode/skills/bundles/` に実在するディレクトリ名と一致させてください。
 - 説明文などの H3 以外の行はスクリプトによって無視されるため、自由に記述可能です。

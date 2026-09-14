@@ -22,13 +22,13 @@ PBI**（子先にアーカイブ）です。
 
 ```bash
 # dry-run: archive の Plan を確認
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_wp.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_wp.ts --dry-run
 
 # 実実行: WPをアーカイブ
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_wp.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_wp.ts
 
 # 実実行: PBIをアーカイブ
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_pbi.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/archive-product-backlog-items/scripts/archive_pbi.ts
 ```
 
 ## 手順
@@ -56,5 +56,5 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/archive-pro
 ## 詳細リファレンス
 
 - 入力JSON形式・スクリプト呼出パターンは
-  [references/reference.md](/.agents/skills/bundles/management-bundle/archive-product-backlog-items/references/reference.md)
+  [references/reference.md](/.opencode/skills/bundles/management-bundle/archive-product-backlog-items/references/reference.md)
   を参照

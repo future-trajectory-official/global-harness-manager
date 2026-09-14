@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-HARNESS_ROOT=$(cd "$(dirname "$0")/../../../../" && pwd)
+HARNESS_ROOT=$(cd "$(dirname "$0")/../../../../../../" && pwd)
 BIN_DIR="$HARNESS_ROOT/bin"
 ARCH_NAME=$(uname -m)
 
@@ -17,5 +17,5 @@ if [ ! -f "$BIN_DIR/deno" ]; then
 fi
 
 echo "Starting Deno setup..."
-"$BIN_DIR/deno" run -A "$HARNESS_ROOT/.agents/skills/bundles/workspace-bundle/setup-harness-env/scripts/setup.ts"
+"$BIN_DIR/deno" run -A "$HARNESS_ROOT/.opencode/skills/bundles/workspace-bundle/setup-harness-env/scripts/setup.ts"
 

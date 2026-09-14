@@ -48,11 +48,11 @@ tags:
 確定した内容を一括で記録する。
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-work-package-effort/scripts/record_effort_and_analysis.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-work-package-effort/scripts/record_effort_and_analysis.ts
 ```
 
 入力パラメータは
-[references/reference.md](/.agents/skills/bundles/management-bundle/record-work-package-effort/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/record-work-package-effort/references/reference.md)
 を参照すること。
 
 ### Step 5: タスクファイルの更新 [責任者: AI]

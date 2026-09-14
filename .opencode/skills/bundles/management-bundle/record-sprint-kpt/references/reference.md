@@ -89,10 +89,10 @@
 
 ```bash
 # dry-run（記録内容の確認のみ・何も変更しない）
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-kpt/scripts/record_sprint_kpt.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-sprint-kpt/scripts/record_sprint_kpt.ts --dry-run
 
 # 実実行
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-kpt/scripts/record_sprint_kpt.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-sprint-kpt/scripts/record_sprint_kpt.ts
 ```
 
 ## アーキテクチャ上の責務

@@ -5,8 +5,8 @@
 確実に両立させるための、バージョン管理システムとAIの特性を完全に合致させた最高水準のコミット運用規格です。
 
 > [!CAUTION]
-> ⚠️ **超重要：ローカル運用ファイルのデータ喪失防止警告** `.agents/management/`
-> ディレクトリ配下（`product-backlog.md` 等の実働管理ファイル）、および `config/`
+> ⚠️ **超重要：ローカル運用ファイルのデータ喪失防止警告** `.session/`
+> ディレクトリ配下（セッション状態・実装計画等の実働管理ファイル）、および `config/`
 > ディレクトリ配下（各種設定ファイルの実体）は、 **.gitignore にて
 > Gitの追跡から意図的に除外**されています。
 > したがって、AIがステートレスリセット時やブランチ切り替え時に `git clean -fdx`
@@ -61,7 +61,7 @@ graph TD
 
 - 開発およびすべてのローカル検証（fmt / lint）が完了した完了フェーズ（Phase
   3）の冒頭で、`[version-control-specialist.md](/.opencode/agents/version-control-specialist.md)`
-  ロールを呼び出し、`[hybrid-triage-commit](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
+  ロールを呼び出し、`[hybrid-triage-commit](/.opencode/skills/bundles/git-bundle/hybrid-triage-commit/SKILL.md)`
   スキル（`triage` モード）を実行します。
 - ベースブランチから新しくブランチを作成し、WIPブランチとの `git diff` を俯瞰します。
 - 意味のある論理的なアトミックコミット（例：`feat: ...`, `refactor: ...`, `fix: ...`）へと

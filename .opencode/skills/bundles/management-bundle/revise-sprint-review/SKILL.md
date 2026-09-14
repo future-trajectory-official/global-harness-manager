@@ -24,14 +24,14 @@ Plan を生成し、永続化層へ反映する。
 が内部で保持し、PO に一気に表示して確認負荷をかけてはいけない。
 
 ```bash
-deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts examine
+deno run -A .opencode/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts examine
 ```
 
 <!-- STOP -->
 
 ### Step 2: Review の AC を 1 つずつ PO と確認する
 
-[references/reference.md](/.agents/skills/bundles/management-bundle/revise-sprint-review/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/revise-sprint-review/references/reference.md)
 に沿って、以下の流れで PO と対話する：
 
 1. スプリントゴールと各 PBI の内容（`read-project-state` スキル等で取得）を確認材料として保持する。
@@ -46,14 +46,14 @@ deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/script
 
 ```bash
 # dry-run
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts revise --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts revise --dry-run
 
 # 本実行（PO承認後）
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts revise
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts revise
 ```
 
 ## 詳細手順
 
 入力 JSON の形式、PO 対話フロー、dry-run 出力の解釈、エラーハンドリング、巻き戻し手順は
-[references/reference.md](/.agents/skills/bundles/management-bundle/revise-sprint-review/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/revise-sprint-review/references/reference.md)
 を参照すること。

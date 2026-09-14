@@ -12,7 +12,7 @@ tags:
 
 # publish-harness-skills
 
-プロジェクトの `.agents/skills/`
+プロジェクトの `.opencode/skills/`
 配下にあるローカルスキルを、指定されたグローバルディレクトリへ安全に同期します。
 
 ## 主な機能
@@ -23,20 +23,20 @@ tags:
 ## 使用方法
 
 1. `config/publish-targets.md` を編集する。（形式は
-   [target-config-format.md](/.agents/skills/bundles/workspace-bundle/publish-harness-skills/references/target-config-format.md)
+   [target-config-format.md](/.opencode/skills/bundles/workspace-bundle/publish-harness-skills/references/target-config-format.md)
    参照）
    - ⚠️ このファイルはソース管理対象**外**（`.gitignore`）のローカル設定。
 2. スクリプトを実行。
 
 ```bash
-deno run -A .agents/skills/bundles/workspace-bundle/publish-harness-skills/scripts/publish-skills.ts
+deno run -A .opencode/skills/bundles/workspace-bundle/publish-harness-skills/scripts/publish-skills.ts
 ```
 
 > [!TIP]
 > 設定ファイルの書き方は
-> [target-config-format.md](/.agents/skills/bundles/workspace-bundle/publish-harness-skills/references/target-config-format.md)
+> [target-config-format.md](/.opencode/skills/bundles/workspace-bundle/publish-harness-skills/references/target-config-format.md)
 > を、同期ロジックの詳細は
-> [sync-logic.md](/.agents/skills/bundles/workspace-bundle/publish-harness-skills/references/sync-logic.md)
+> [sync-logic.md](/.opencode/skills/bundles/workspace-bundle/publish-harness-skills/references/sync-logic.md)
 > を参照してください。
 
 ## 前提条件

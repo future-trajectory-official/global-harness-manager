@@ -35,7 +35,7 @@ subtask: false
 
 - **読み込むペルソナ**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
-  `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
+  `[assess-context](/.opencode/skills/bundles/management-bundle/assess-context/SKILL.md)`
 - **入力（前提条件）**: `.opencode/context/management.md`（必須）/
   `.opencode/context/product.md`（任意）。
 - **期待される結果（終了条件）**:
@@ -55,7 +55,7 @@ subtask: false
   - `[po-coach.md](/.opencode/agents/po-coach.md)` (POコーチ)
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
-  `[assess-goal-continuation](/.agents/skills/bundles/management-bundle/assess-goal-continuation/SKILL.md)`
+  `[assess-goal-continuation](/.opencode/skills/bundles/management-bundle/assess-goal-continuation/SKILL.md)`
 - **入力（前提条件）**: 永続化されている最新の Product Goal。
 - **手続き**:
   1. `assess-goal-continuation` スキルで現在の Product Goal を取得し、PO に提示する。
@@ -63,7 +63,7 @@ subtask: false
   3. 継続の場合はそのまま次のフェーズへ進む。
   4. ピボットの場合は、新しいゴールと変更理由を PO と合意し、pivot する。
   5. Product Goal が未作成の場合は、本スキルではなく
-     `[set-product-goal](/.agents/skills/bundles/management-bundle/set-product-goal/SKILL.md)`
+     `[set-product-goal](/.opencode/skills/bundles/management-bundle/set-product-goal/SKILL.md)`
      を用いて作成するよう案内する。
 - **期待される結果（終了条件）**:
   1. 現在の Product Goal が PO に提示されていること。
@@ -85,7 +85,7 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
 - **読み込むペルソナ**: `[po-coach.md](/.opencode/agents/po-coach.md)` (POコーチ) および
   `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
-  `[product-backlog-refinement](/.agents/skills/bundles/management-bundle/product-backlog-refinement/SKILL.md)`
+  `[product-backlog-refinement](/.opencode/skills/bundles/management-bundle/product-backlog-refinement/SKILL.md)`
 - **入力（前提条件）**: 最新のプロダクトバックログ。
 - **手続き**:
   1. `product-backlog-refinement` スキルの Quick-Start Step 1
@@ -111,7 +111,7 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
 
 - **読み込むペルソナ**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
-  `[refine-classification-hierarchy](/.agents/skills/bundles/management-bundle/refine-classification-hierarchy/SKILL.md)`
+  `[refine-classification-hierarchy](/.opencode/skills/bundles/management-bundle/refine-classification-hierarchy/SKILL.md)`
 - **入力（前提条件）**: 既存のエピック/フィーチャー分類階層が存在すること。
 - **手続き**: `refine-classification-hierarchy` スキルの Quick-Start に従い、既存階層の表示 →
   対話による再定義 → 親子関係変更 → PBI配置を段階的に行う。
@@ -135,7 +135,7 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
 
 - **読み込むペルソナ**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
-  `[begin-sprint](/.agents/skills/bundles/management-bundle/begin-sprint/SKILL.md)`
+  `[begin-sprint](/.opencode/skills/bundles/management-bundle/begin-sprint/SKILL.md)`
 - **入力（前提条件）**: Phase 2 でスプリント番号・ゴールが確定済みであること。
 - **手続き**:
   1. `begin-sprint` スキルの Quick-Start に従い、スプリントを作成する。
@@ -159,7 +159,7 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
 
 - **読み込むペルソナ**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (スクラムマスター)
 - **実行するスキル**:
-  `[sprint-planning](/.agents/skills/bundles/management-bundle/sprint-planning/SKILL.md)`
+  `[sprint-planning](/.opencode/skills/bundles/management-bundle/sprint-planning/SKILL.md)`
 - **入力（前提条件）**: Phase 2 でリファインメントされたプロダクトバックログ。
 - **手続き**: `sprint-planning` スキルの Quick-Start に従い、スプリントバックログを選定・確定する。
 - **期待される結果（終了条件）**:
@@ -184,7 +184,7 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
   - `[tester.md](/.opencode/agents/tester.md)` (テスト/品質保証)
   - `[refactor.md](/.opencode/agents/refactor.md)` (可読性・保守性・技術負債削減)
 - **実行するスキル**:
-  `[define-work-package](/.agents/skills/bundles/management-bundle/define-work-package/SKILL.md)`
+  `[define-work-package](/.opencode/skills/bundles/management-bundle/define-work-package/SKILL.md)`
 - **入力（前提条件）**: Phase 5 で確定されたPBI一覧。
 - **手続き**:
   1. POと対話しながら、各PBIを1セッションで完了可能なWPにタスク分解する。
@@ -217,7 +217,7 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
   - `[tester.md](/.opencode/agents/tester.md)` (品質検証・客観的エビデンス提示)
 - **実行するスキル**:
-  `[plan-sprint-review](/.agents/skills/bundles/management-bundle/plan-sprint-review/SKILL.md)`
+  `[plan-sprint-review](/.opencode/skills/bundles/management-bundle/plan-sprint-review/SKILL.md)`
 - **入力（前提条件）**: Phase 6 で定義された全PBIのAC一覧。
 - **手続き**: `plan-sprint-review`
   スキルの手順に従い、本スプリントのレビュー検証計画を立案し、Review
@@ -243,7 +243,7 @@ POと対話しながら、プロダクトバックログを精査し、PBIの追
 - **読み込むペルソナ**:
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
 - **実行するスキル**:
-  `[plan-retrospective](/.agents/skills/bundles/management-bundle/plan-retrospective/SKILL.md)`
+  `[plan-retrospective](/.opencode/skills/bundles/management-bundle/plan-retrospective/SKILL.md)`
 - **入力（前提条件）**:
   対象スプリントの番号が判明しており、対象スプリントの振り返りが未作成であること。
 - **手続き**:

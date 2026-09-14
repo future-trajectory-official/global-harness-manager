@@ -1,13 +1,13 @@
 # read-project-state 入力スキーマ
 
 本ファイルは
-`.agents/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts`
+`.opencode/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts`
 への入力JSONスキーマと、各Entityの対応操作一覧を定義する。
 
 ## 入力形式
 
 ```bash
-deno run -A .agents/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
+deno run -A .opencode/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
 ```
 
 標準入力に以下のJSONを渡す。

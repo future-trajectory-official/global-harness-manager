@@ -1,5 +1,5 @@
 $ErrorActionPreference = "Stop"
-$HarnessRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)))
+$HarnessRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)))))
 $BinDir = Join-Path $HarnessRoot "bin"
 $DenoTarget = "x86_64-pc-windows-msvc"
 
@@ -15,6 +15,6 @@ if (-Not (Test-Path $DenoExe)) {
 }
 
 Write-Host "Starting Deno setup..."
-$SetupScript = Join-Path $HarnessRoot ".agents\skills\bundles\workspace-bundle\setup-harness-env\scripts\setup.ts"
+$SetupScript = Join-Path $HarnessRoot ".opencode\skills\bundles\workspace-bundle\setup-harness-env\scripts\setup.ts"
 & $DenoExe run -A $SetupScript
 

@@ -18,9 +18,9 @@ tags:
 Task tool のサブエージェントに以下のコマンドを実行させる。
 
 ```bash
-echo '{}' | deno run -A .agents/skills/bundles/management-bundle/assess-alignment/scripts/assess_alignment.ts
+echo '{}' | deno run -A .opencode/skills/bundles/management-bundle/assess-alignment/scripts/assess_alignment.ts
 ```
 
 返ってきた JSON を
-[references/display-principles.md](/.agents/skills/bundles/management-bundle/assess-alignment/references/display-principles.md)
+[references/display-principles.md](/.opencode/skills/bundles/management-bundle/assess-alignment/references/display-principles.md)
 の原則に従ってユーザーが理解しやすいよう表示する。

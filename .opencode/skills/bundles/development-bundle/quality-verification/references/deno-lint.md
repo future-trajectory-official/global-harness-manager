@@ -7,7 +7,7 @@
 deno lint
 
 # 特定のディレクトリを対象
-deno lint .agents/skills/
+deno lint .opencode/skills/
 ```
 
 ## 型チェック
@@ -17,7 +17,7 @@ deno lint .agents/skills/
 deno check **/*.ts
 
 # 特定のファイルをチェック
-deno check .agents/skills/bundles/development-bundle/quality-verification/**/*.ts
+deno check .opencode/skills/bundles/development-bundle/quality-verification/**/*.ts
 ```
 
 ## フォーマットチェック

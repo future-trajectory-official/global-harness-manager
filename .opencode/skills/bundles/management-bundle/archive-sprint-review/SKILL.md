@@ -21,20 +21,20 @@ tags:
 取得したデータを元に、総合判定や各受入条件の判定状況を説明する。
 
 ```bash
-echo '{}' | deno run -A .agents/skills/bundles/management-bundle/archive-sprint-review/scripts/archive_sprint_review.ts examine
+echo '{}' | deno run -A .opencode/skills/bundles/management-bundle/archive-sprint-review/scripts/archive_sprint_review.ts examine
 ```
 
 ### 2. 後続処理の判断
 
-[総合判定と対話パターン](/.agents/skills/bundles/management-bundle/archive-sprint-review/references/reference.md)に基づき、後続処理の判断をPOと合意する。
+[総合判定と対話パターン](/.opencode/skills/bundles/management-bundle/archive-sprint-review/references/reference.md)に基づき、後続処理の判断をPOと合意する。
 
 ### 3. アーカイブの事前説明
 
-以下のコマンドを実行してPlanを取得し、[dry-run 出力の解釈](/.agents/skills/bundles/management-bundle/archive-sprint-review/references/reference.md#dry-run-出力の解釈)に従ってPOに説明する。
+以下のコマンドを実行してPlanを取得し、[dry-run 出力の解釈](/.opencode/skills/bundles/management-bundle/archive-sprint-review/references/reference.md#dry-run-出力の解釈)に従ってPOに説明する。
 POの承認が得られたら、次に進む。
 
 ```bash
-echo '{}' | deno run -A .agents/skills/bundles/management-bundle/archive-sprint-review/scripts/archive_sprint_review.ts archive --dry-run
+echo '{}' | deno run -A .opencode/skills/bundles/management-bundle/archive-sprint-review/scripts/archive_sprint_review.ts archive --dry-run
 ```
 
 ### 4. アーカイブの実行
@@ -42,5 +42,5 @@ echo '{}' | deno run -A .agents/skills/bundles/management-bundle/archive-sprint-
 以下のコマンドを実行して、スプリントレビューをアーカイブする。 実行結果をPOに報告する。
 
 ```bash
-echo '{}' | deno run -A .agents/skills/bundles/management-bundle/archive-sprint-review/scripts/archive_sprint_review.ts archive
+echo '{}' | deno run -A .opencode/skills/bundles/management-bundle/archive-sprint-review/scripts/archive_sprint_review.ts archive
 ```

@@ -40,14 +40,14 @@ tags:
 
 ```bash
 # dry-run（事前確認）
-echo '{"description":"<ゴールの記述>"}' | deno run -A .agents/skills/bundles/management-bundle/set-product-goal/scripts/set_product_goal.ts --dry-run
+echo '{"description":"<ゴールの記述>"}' | deno run -A .opencode/skills/bundles/management-bundle/set-product-goal/scripts/set_product_goal.ts --dry-run
 
 # 本実行（ユーザー承認後）
-echo '{"description":"<ゴールの記述>"}' | deno run -A .agents/skills/bundles/management-bundle/set-product-goal/scripts/set_product_goal.ts
+echo '{"description":"<ゴールの記述>"}' | deno run -A .opencode/skills/bundles/management-bundle/set-product-goal/scripts/set_product_goal.ts
 ```
 
 入力JSONの詳細は
-[references/reference.md](/.agents/skills/bundles/management-bundle/set-product-goal/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/set-product-goal/references/reference.md)
 を参照。
 
 ## 詳細手順
@@ -68,5 +68,5 @@ echo '{"description":"<ゴールの記述>"}' | deno run -A .agents/skills/bundl
 ## 入力JSON形式
 
 入力JSONの詳細な形式と各フィールドの説明は
-[references/reference.md](/.agents/skills/bundles/management-bundle/set-product-goal/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/set-product-goal/references/reference.md)
 を参照すること。

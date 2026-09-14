@@ -20,10 +20,10 @@ tags:
 
 ```bash
 # dry-run: recordVelocity の Plan を確認
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts --dry-run
 
 # 実実行
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts
 ```
 
 ## 手順
@@ -33,7 +33,7 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-spri
 - 対象スプリントに含まれる完了PBIの `size_actual` を収集し、ベロシティ集計値を算出する。
 - 集計パラメータ（`pbiCount` / `totalWeight` / `matchRate` / `summary`）の算出方法と
   ウェイト換算表（WEIGHT_MAP）は
-  [references/reference.md](/.agents/skills/bundles/management-bundle/record-sprint-velocity/references/reference.md)
+  [references/reference.md](/.opencode/skills/bundles/management-bundle/record-sprint-velocity/references/reference.md)
   を参照。
 
 ### 2. PO確認と記録
@@ -49,5 +49,5 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-spri
 ## 詳細リファレンス
 
 - 入力JSON形式・スクリプト呼出パターン・対象スプリントの解決方法は
-  [references/reference.md](/.agents/skills/bundles/management-bundle/record-sprint-velocity/references/reference.md)
+  [references/reference.md](/.opencode/skills/bundles/management-bundle/record-sprint-velocity/references/reference.md)
   を参照

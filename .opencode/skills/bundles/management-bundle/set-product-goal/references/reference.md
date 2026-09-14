@@ -27,10 +27,10 @@
 
 ```bash
 # dry-run
-echo '{"title":"Product Goal","description":"ガバナンスの進化"}' | deno run -A .agents/skills/bundles/management-bundle/set-product-goal/scripts/set_product_goal.ts --dry-run
+echo '{"title":"Product Goal","description":"ガバナンスの進化"}' | deno run -A .opencode/skills/bundles/management-bundle/set-product-goal/scripts/set_product_goal.ts --dry-run
 
 # 本実行
-echo '{"title":"Product Goal","description":"ガバナンスの進化"}' | deno run -A .agents/skills/bundles/management-bundle/set-product-goal/scripts/set_product_goal.ts
+echo '{"title":"Product Goal","description":"ガバナンスの進化"}' | deno run -A .opencode/skills/bundles/management-bundle/set-product-goal/scripts/set_product_goal.ts
 ```
 
 ## スクリプトの動作フロー

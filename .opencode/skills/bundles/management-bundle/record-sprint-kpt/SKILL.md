@@ -38,7 +38,7 @@ tags:
 - 各セッションの振り返り（協働品質指標・KPT）
 
 収集方法は
-[references/reference.md](/.agents/skills/bundles/management-bundle/record-sprint-kpt/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/record-sprint-kpt/references/reference.md)
 の「実績確認フェーズ」を参照すること。
 
 **整理フォーマット**: 数値ベースの事実（実績）と AI の観察コメントを**分離**して提示する。
@@ -59,11 +59,11 @@ Step 1 で整理した材料に基づき、KPT（Keep / Problem / Try / Advise�
 ### Step 3: 記録内容の確認 [責任者: 共同]
 
 以下のコマンドで、記録される内容と変更理由を確認する。PO の承認後に次へ進む。 入力JSONの組み立て方は
-[references/reference.md](/.agents/skills/bundles/management-bundle/record-sprint-kpt/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/record-sprint-kpt/references/reference.md)
 を参照すること。
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-kpt/scripts/record_sprint_kpt.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-sprint-kpt/scripts/record_sprint_kpt.ts --dry-run
 ```
 
 ### Step 4: スプリントKPTの記録 [責任者: AI]
@@ -71,7 +71,7 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-spri
 PO の承認後、実実行で KPT を記録する。
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-kpt/scripts/record_sprint_kpt.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-sprint-kpt/scripts/record_sprint_kpt.ts
 ```
 
 ### Step 5: 結果報告 [責任者: AI]
@@ -81,5 +81,5 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-spri
 ## 詳細リファレンス
 
 - 入力JSON形式・対象の特定方法・dry-run 出力の解釈・実行パターンは
-  [references/reference.md](/.agents/skills/bundles/management-bundle/record-sprint-kpt/references/reference.md)
+  [references/reference.md](/.opencode/skills/bundles/management-bundle/record-sprint-kpt/references/reference.md)
   を参照

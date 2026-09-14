@@ -50,10 +50,10 @@
 
 ```bash
 # dry-run（id に node-id、code に Issue番号を指定）
-echo '{"wpTitle":"Implement login UI","parentPbi":{"title":"Login feature","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"acItems":[{"number":"1","description":"Login form renders correctly"},{"number":"2","description":"Error messages are displayed"}]}' | deno run -A .agents/skills/bundles/management-bundle/define-work-package/scripts/define_wp.ts --dry-run
+echo '{"wpTitle":"Implement login UI","parentPbi":{"title":"Login feature","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"acItems":[{"number":"1","description":"Login form renders correctly"},{"number":"2","description":"Error messages are displayed"}]}' | deno run -A .opencode/skills/bundles/management-bundle/define-work-package/scripts/define_wp.ts --dry-run
 
 # 本実行
-echo '{"wpTitle":"Implement login UI","parentPbi":{"title":"Login feature","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"acItems":[{"number":"1","description":"Login form renders correctly"},{"number":"2","description":"Error messages are displayed"}]}' | deno run -A .agents/skills/bundles/management-bundle/define-work-package/scripts/define_wp.ts
+echo '{"wpTitle":"Implement login UI","parentPbi":{"title":"Login feature","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"acItems":[{"number":"1","description":"Login form renders correctly"},{"number":"2","description":"Error messages are displayed"}]}' | deno run -A .opencode/skills/bundles/management-bundle/define-work-package/scripts/define_wp.ts
 ```
 
 ---
@@ -78,10 +78,10 @@ WPの計画前effort見積り（initialEstimate）を記録する。
 
 ```bash
 # dry-run（id に node-id、code に Issue番号を指定）
-echo '{"identifier":{"title":"Implement login UI","id":"I_kwDOR5-zI88AAAABMQS-Ag","code":"660"},"initialEstimate":5}' | deno run -A .agents/skills/bundles/management-bundle/define-work-package/scripts/estimate_wp_initial_effort.ts --dry-run
+echo '{"identifier":{"title":"Implement login UI","id":"I_kwDOR5-zI88AAAABMQS-Ag","code":"660"},"initialEstimate":5}' | deno run -A .opencode/skills/bundles/management-bundle/define-work-package/scripts/estimate_wp_initial_effort.ts --dry-run
 
 # 本実行
-echo '{"identifier":{"title":"Implement login UI","id":"I_kwDOR5-zI88AAAABMQS-Ag","code":"660"},"initialEstimate":5}' | deno run -A .agents/skills/bundles/management-bundle/define-work-package/scripts/estimate_wp_initial_effort.ts
+echo '{"identifier":{"title":"Implement login UI","id":"I_kwDOR5-zI88AAAABMQS-Ag","code":"660"},"initialEstimate":5}' | deno run -A .opencode/skills/bundles/management-bundle/define-work-package/scripts/estimate_wp_initial_effort.ts
 ```
 
 ---
@@ -101,8 +101,8 @@ WPのステータスを Idea→Todo に進行し、スプリントに確定す�
 
 ```bash
 # dry-run（id に node-id、code に Issue番号を指定）
-echo '{"identifier":{"title":"Implement login UI","id":"I_kwDOR5-zI88AAAABMQS-Ag","code":"660"},"sprintNumber":19}' | deno run -A .agents/skills/bundles/management-bundle/define-work-package/scripts/commit_wp.ts --dry-run
+echo '{"identifier":{"title":"Implement login UI","id":"I_kwDOR5-zI88AAAABMQS-Ag","code":"660"},"sprintNumber":19}' | deno run -A .opencode/skills/bundles/management-bundle/define-work-package/scripts/commit_wp.ts --dry-run
 
 # 本実行
-echo '{"identifier":{"title":"Implement login UI","id":"I_kwDOR5-zI88AAAABMQS-Ag","code":"660"},"sprintNumber":19}' | deno run -A .agents/skills/bundles/management-bundle/define-work-package/scripts/commit_wp.ts
+echo '{"identifier":{"title":"Implement login UI","id":"I_kwDOR5-zI88AAAABMQS-Ag","code":"660"},"sprintNumber":19}' | deno run -A .opencode/skills/bundles/management-bundle/define-work-package/scripts/commit_wp.ts
 ```

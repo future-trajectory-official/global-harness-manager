@@ -27,14 +27,14 @@ tags:
 
 ```bash
 # 確認フェーズ（現状取得）
-echo '{"title":"Product Goal"}' | deno run -A .agents/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts --dry-run
+echo '{"title":"Product Goal"}' | deno run -A .opencode/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts --dry-run
 
 # 更新フェーズ（ピボットdry-run）
-echo '{"title":"Product Goal","pivot":{"description":"New goal","reason":"Changed direction","code":"42"}}' | deno run -A .agents/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts --dry-run
+echo '{"title":"Product Goal","pivot":{"description":"New goal","reason":"Changed direction","code":"42"}}' | deno run -A .opencode/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts --dry-run
 ```
 
 入力JSONの詳細は
-[references/reference.md](/.agents/skills/bundles/management-bundle/assess-goal-continuation/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/assess-goal-continuation/references/reference.md)
 を参照。
 
 ## 詳細手順
@@ -44,7 +44,7 @@ echo '{"title":"Product Goal","pivot":{"description":"New goal","reason":"Change
 現在のProductGoalを検索・取得し、内容をPOに提示する。
 
 ```bash
-echo '{"title":"Product Goal"}' | deno run -A .agents/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts
+echo '{"title":"Product Goal"}' | deno run -A .opencode/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts
 ```
 
 出力にはProductGoalの内容と `code`（Issue番号）が含まれる。 後続のピボット実行でこの `code`
@@ -67,7 +67,7 @@ echo '{"title":"Product Goal"}' | deno run -A .agents/skills/bundles/management-
 Step 1の出力から取得した `code` を使用して、ピボットのdry-runを実行する。
 
 ```bash
-echo '{"title":"Product Goal","pivot":{"description":"<新ゴール>","reason":"<変更理由>","code":"<Step1の出力code>"}}' | deno run -A .agents/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts --dry-run
+echo '{"title":"Product Goal","pivot":{"description":"<新ゴール>","reason":"<変更理由>","code":"<Step1の出力code>"}}' | deno run -A .opencode/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts --dry-run
 ```
 
 Plan内容（update + comment の2 Step）を確認する。
@@ -77,11 +77,11 @@ Plan内容（update + comment の2 Step）を確認する。
 ### Step 4: ピボットを本実行
 
 ```bash
-echo '{"title":"Product Goal","pivot":{"description":"<新ゴール>","reason":"<変更理由>","code":"<Step1の出力code>"}}' | deno run -A .agents/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts
+echo '{"title":"Product Goal","pivot":{"description":"<新ゴール>","reason":"<変更理由>","code":"<Step1の出力code>"}}' | deno run -A .opencode/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts
 ```
 
 ## 入力JSON形式
 
 入力JSONの詳細な形式と各フィールドの説明は
-[references/reference.md](/.agents/skills/bundles/management-bundle/assess-goal-continuation/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/assess-goal-continuation/references/reference.md)
 を参照すること。

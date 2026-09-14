@@ -50,10 +50,10 @@
 
 ```bash
 # 引数なし（Open 状態の最新スプリントを自動取得）
-deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts examine
+deno run -A .opencode/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts examine
 
 # 過去スプリントの Review を指定して取得
-echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts examine
+echo '{"sprintNumber": 17}' | deno run -A .opencode/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts examine
 ```
 
 ### 出力例
@@ -160,10 +160,10 @@ echo '{"sprintNumber": 17}' | deno run -A .agents/skills/bundles/management-bund
 
 ```bash
 # dry-run
-echo '{"sprintNumber":17,"changeReason":"仕様変更","removed":{"items":[{"number":"2","description":"旧AC"}]}}' | deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts revise --dry-run
+echo '{"sprintNumber":17,"changeReason":"仕様変更","removed":{"items":[{"number":"2","description":"旧AC"}]}}' | deno run -A .opencode/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts revise --dry-run
 
 # 本実行
-echo '{"sprintNumber":17,"changeReason":"仕様変更","removed":{"items":[{"number":"2","description":"旧AC"}]}}' | deno run -A .agents/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts revise
+echo '{"sprintNumber":17,"changeReason":"仕様変更","removed":{"items":[{"number":"2","description":"旧AC"}]}}' | deno run -A .opencode/skills/bundles/management-bundle/revise-sprint-review/scripts/revise_sprint_review.ts revise
 ```
 
 ### dry-run 出力の解釈

@@ -50,12 +50,12 @@ Issueとして作成され、親子関係が構築されている。完成した
    POからエピックのタイトルと説明文（そのエピックがカバーする範囲）をヒアリングする。
 2. **スクリプトの実行（dry-run）**: 確定した情報で dry-run を実行し、作成されるPlanをPOに提示する。
    ```bash
-   echo '{"operation":"define-epic","title":"エピックのタイトル","description":"エピックの説明"}' | deno run -A .agents/skills/bundles/management-bundle/design-classification-hierarchy/scripts/design_classification_hierarchy.ts --dry-run
+   echo '{"operation":"define-epic","title":"エピックのタイトル","description":"エピックの説明"}' | deno run -A .opencode/skills/bundles/management-bundle/design-classification-hierarchy/scripts/design_classification_hierarchy.ts --dry-run
    ```
 3. **PO承認**: Planの内容をPOが確認し、承認する。
 4. **本実行**: PO承認後、本実行を行いエピックを作成する。
    ```bash
-   echo '{"operation":"define-epic","title":"エピックのタイトル","description":"エピックの説明"}' | deno run -A .agents/skills/bundles/management-bundle/design-classification-hierarchy/scripts/design_classification_hierarchy.ts
+   echo '{"operation":"define-epic","title":"エピックのタイトル","description":"エピックの説明"}' | deno run -A .opencode/skills/bundles/management-bundle/design-classification-hierarchy/scripts/design_classification_hierarchy.ts
    ```
 5. **識別情報の記録**: 作成されたエピックのIssue番号を記録する（後続Phaseで使用）。
 
@@ -69,7 +69,7 @@ Issueとして作成され、親子関係が構築されている。完成した
    「このエピックに含まれるべき具体的な機能分野は何ですか？」と問いかけ、フィーチャーのタイトルと説明文をPOからヒアリングする。
 2. **スクリプトの実行（dry-run）**: エピックのIssue番号を親として指定し、dry-runを実行する。
    ```bash
-   echo '{"operation":"define-feature","title":"フィーチャーのタイトル","description":"フィーチャーの説明","parentEpicTitle":"親エピックのタイトル","parentEpicId":"<Phase2で記録したIssue番号>"}' | deno run -A .agents/skills/bundles/management-bundle/design-classification-hierarchy/scripts/design_classification_hierarchy.ts --dry-run
+   echo '{"operation":"define-feature","title":"フィーチャーのタイトル","description":"フィーチャーの説明","parentEpicTitle":"親エピックのタイトル","parentEpicId":"<Phase2で記録したIssue番号>"}' | deno run -A .opencode/skills/bundles/management-bundle/design-classification-hierarchy/scripts/design_classification_hierarchy.ts --dry-run
    ```
 3. **PO承認**: Planの内容をPOが確認し、承認する。
 4. **本実行**: PO承認後、本実行を行いフィーチャーを作成・紐づけする。
@@ -83,7 +83,7 @@ Issueとして作成され、親子関係が構築されている。完成した
 
 1. **階層の表示**: 分類階層を表示する。
    ```bash
-   echo '{"operation":"show-hierarchy"}' | deno run -A .agents/skills/bundles/management-bundle/design-classification-hierarchy/scripts/design_classification_hierarchy.ts
+   echo '{"operation":"show-hierarchy"}' | deno run -A .opencode/skills/bundles/management-bundle/design-classification-hierarchy/scripts/design_classification_hierarchy.ts
    ```
 2. **PO確認**: 表示されたエピック→フィーチャーの構造をPOに提示し、過不足や分類の妥当性を確認する。
 3. **合意取得**: 必要に応じて修正（再定義・紐づけ変更）を行い、POの最終合意を得る。

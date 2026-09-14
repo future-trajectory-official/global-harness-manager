@@ -29,10 +29,10 @@ tags:
 
 ```bash
 # 全ルールの同期と GEMINI.md のセットアップ
-deno run -A .agents/skills/bundles/workspace-bundle/publish-harness-rules/scripts/publish-rules.ts --lang ja --os wsl
+deno run -A .opencode/skills/bundles/workspace-bundle/publish-harness-rules/scripts/publish-rules.ts --lang ja --os wsl
 
 # OpenCode 向け（~/.config/opencode/AGENTS.md へ同期）
-deno run -A .agents/skills/bundles/workspace-bundle/publish-harness-rules/scripts/publish-rules.ts --platform opencode --lang ja --os linux
+deno run -A .opencode/skills/bundles/workspace-bundle/publish-harness-rules/scripts/publish-rules.ts --platform opencode --lang ja --os linux
 ```
 
 3. （初回セットアップ時のみ）`config/AGENTS.md.example` がワークスペースルートへ `AGENTS.md`
@@ -42,9 +42,9 @@ deno run -A .agents/skills/bundles/workspace-bundle/publish-harness-rules/script
 
 > [!TIP]
 > 設定ファイルの書き方は
-> [target-config-format.md](/.agents/skills/bundles/workspace-bundle/publish-harness-rules/references/target-config-format.md)
+> [target-config-format.md](/.opencode/skills/bundles/workspace-bundle/publish-harness-rules/references/target-config-format.md)
 > を、Git保護の仕組みは
-> [gitignore-protection.md](/.agents/skills/bundles/workspace-bundle/publish-harness-rules/references/gitignore-protection.md)
+> [gitignore-protection.md](/.opencode/skills/bundles/workspace-bundle/publish-harness-rules/references/gitignore-protection.md)
 > を参照してください。
 
 ## 前提要件

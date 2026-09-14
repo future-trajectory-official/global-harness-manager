@@ -29,10 +29,10 @@ tags:
 
 ### Step 2: KPTの生成 [責任者: AI]
 
-介入の事実に基づき、[references/kpt-guide.md](/.agents/skills/bundles/management-bundle/record-work-package-kpt/references/kpt-guide.md)のガイドラインに従って各項目を生成する。
+介入の事実に基づき、[references/kpt-guide.md](/.opencode/skills/bundles/management-bundle/record-work-package-kpt/references/kpt-guide.md)のガイドラインに従って各項目を生成する。
 **各項目は必ず1,024バイト以内に要約すること**（Projects
 V2のTEXT上限は1,024バイト。UTF-8の日本語は約340文字が上限）。詳細は
-[references/reference.md](/.agents/skills/bundles/management-bundle/record-work-package-kpt/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/record-work-package-kpt/references/reference.md)
 を参照。
 
 ### Step 3: KPTの提示と対話 [責任者: 共同]
@@ -50,11 +50,11 @@ KPT案をPOに提示し、以下の確認を行う。
 合意した内容を記録する。
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-work-package-kpt/scripts/record_kpt.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-work-package-kpt/scripts/record_kpt.ts
 ```
 
 入力パラメータは
-[references/reference.md](/.agents/skills/bundles/management-bundle/record-work-package-kpt/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/record-work-package-kpt/references/reference.md)
 を参照すること。
 
 ### Step 5: 結果報告 [責任者: AI]

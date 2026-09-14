@@ -56,10 +56,10 @@
 
 ```bash
 # dry-run（作成内容の確認のみ・何も変更しない）
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/plan-retrospective/scripts/plan_retrospective.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/plan-retrospective/scripts/plan_retrospective.ts --dry-run
 
 # 実実行（振り返りを作成）
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/plan-retrospective/scripts/plan_retrospective.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/plan-retrospective/scripts/plan_retrospective.ts
 ```
 
 ## アーキテクチャ上の責務

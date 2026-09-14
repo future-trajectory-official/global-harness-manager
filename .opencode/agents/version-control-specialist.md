@@ -73,7 +73,7 @@ prompt: |
      - `rebase`
        等のローカル履歴操作は、事前に「何が起きるか（リスク）」を説明し、POの明示的な合意を得た場合にのみ実行可能とする。
   7. **ハイブリッドトリアージコミットの遵守**
-     - コミット操作を行う際は、[hybrid-triage-commit-process.md](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)に定義されたハイブリッドトリアージコミットプロセスを理解し、それに従うこと。
+     - コミット操作を行う際は、[hybrid-triage-commit-process.md](/.opencode/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)に定義されたハイブリッドトリアージコミットプロセスを理解し、それに従うこと。
      - WIPコミットおよびトリアージコミットには
-       [git-triage.ts](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts)（Denoスクリプト）を使用し、手動のgit操作でプロセスをショートカットしないこと。
+       [git-triage.ts](/.opencode/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts)（Denoスクリプト）を使用し、手動のgit操作でプロセスをショートカットしないこと。
 

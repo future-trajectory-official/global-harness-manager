@@ -18,7 +18,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 - **ロール**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行役として開始)
 - **実行スキル**:
-  `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
+  `[assess-context](/.opencode/skills/bundles/management-bundle/assess-context/SKILL.md)`
 - **入力（前提）**: `.opencode/context/management.md`（必須）/
   `.opencode/context/product.md`（任意）
 - **成果物**: 用語集の要約提示（管理概念・プロジェクト固有の用語）と共有言語の宣言
@@ -36,7 +36,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 - **ロール**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行役として開始)
 - **実行スキル**:
-  `[assess-alignment](/.agents/skills/bundles/management-bundle/assess-alignment/SKILL.md)`
+  `[assess-alignment](/.opencode/skills/bundles/management-bundle/assess-alignment/SKILL.md)`
 - **成果物**: 「Vision & Capability Alignment Report」
 - **セルフチェック**:
   - [ ] **[価値基準]** プロジェクトのビジョン表明を判断基準として宣言したか。
@@ -57,7 +57,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 - **ロール**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (優先順位の調整)
 - **実行スキル**:
-  `[select-work-package](/.agents/skills/bundles/management-bundle/select-work-package/SKILL.md)`
+  `[select-work-package](/.opencode/skills/bundles/management-bundle/select-work-package/SKILL.md)`
 - **成果物**: 「Session Task Identification」報告
 - **セルフチェック**:
   - [ ] **[1セッション1Work Package]** バックログから、迷走を防ぐための最小単位のWork
@@ -80,7 +80,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 - **ロール**: 指名された専門家
 - **実行スキル**:
-  `[session-planning](/.agents/skills/bundles/management-bundle/session-planning/SKILL.md)`
+  `[session-planning](/.opencode/skills/bundles/management-bundle/session-planning/SKILL.md)`
 - **成果物**: `implementation_plan.md` (アーティファクト) `task.md` (アーティファクト)
 - **セルフチェック**:
   - [ ] **[役割宣言]** 委譲を受けた直後に、自身のロールを改めて宣言したか。
@@ -102,7 +102,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 - **ロール**: `[scrum-master.md](/.opencode/agents/scrum-master.md)` (最終確認)
 - **実行スキル**:
-  `[start-work-package](/.agents/skills/bundles/management-bundle/start-work-package/SKILL.md)`
+  `[start-work-package](/.opencode/skills/bundles/management-bundle/start-work-package/SKILL.md)`
 - **セルフチェック**:
   - [ ] **[POの承認]** 実装計画（アーティファクト）に対し、PO からの最終合意を得たか。
   - [ ] **[WP着手]** **POの承認を得た後**にはじめて、`start-work-package`

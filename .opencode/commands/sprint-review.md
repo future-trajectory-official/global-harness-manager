@@ -57,7 +57,7 @@ POとレビューの目的・スコープを共有し、認識を揃えます。
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
   - `[tester.md](/.opencode/agents/tester.md)` (品質検証・客観的エビデンス提示)
 - **実行するスキル**:
-  `[revise-sprint-review](/.agents/skills/bundles/management-bundle/revise-sprint-review/SKILL.md)`
+  `[revise-sprint-review](/.opencode/skills/bundles/management-bundle/revise-sprint-review/SKILL.md)`
 - **入力（前提条件）**: Phase 1 完了。
 - **目的**: 検証計画を最新のバックログ構成と整合させる。
 - **期待される結果（終了条件）**:
@@ -81,7 +81,7 @@ POとレビューの目的・スコープを共有し、認識を揃えます。
   - `[scrum-master.md](/.opencode/agents/scrum-master.md)` (進行・ファシリテーション)
   - `[tester.md](/.opencode/agents/tester.md)` (品質検証・客観的エビデンス提示)
 - **実行するスキル**:
-  `[execute-sprint-review](/.agents/skills/bundles/management-bundle/execute-sprint-review/SKILL.md)`
+  `[execute-sprint-review](/.opencode/skills/bundles/management-bundle/execute-sprint-review/SKILL.md)`
 - **入力（前提条件）**: Phase 2 完了（検証計画が最新であること）。
 - **目的**: 全ACの検証を実行し、合格/不合格を確定する。
 - **期待される結果（終了条件）**:

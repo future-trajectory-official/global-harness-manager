@@ -26,14 +26,14 @@ SSH エイリアスに強制書き換えします。
 2. 以下のコマンドを実行。
 
 ```bash
-deno run -A .agents/skills/bundles/workspace-bundle/attach-harness-to-project/scripts/harness-attach.ts
+deno run -A .opencode/skills/bundles/workspace-bundle/attach-harness-to-project/scripts/harness-attach.ts
 ```
 
 > [!TIP]
 > SSHエイリアスの詳細な仕組みは
-> [ssh-alias-spec.md](/.agents/skills/bundles/workspace-bundle/attach-harness-to-project/references/ssh-alias-spec.md)
+> [ssh-alias-spec.md](/.opencode/skills/bundles/workspace-bundle/attach-harness-to-project/references/ssh-alias-spec.md)
 > を、Git設定の反映仕様については
-> [local-git-config.md](/.agents/skills/bundles/workspace-bundle/attach-harness-to-project/references/local-git-config.md)
+> [local-git-config.md](/.opencode/skills/bundles/workspace-bundle/attach-harness-to-project/references/local-git-config.md)
 > を参照してください。
 
 ## 安全性への配慮

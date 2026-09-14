@@ -46,10 +46,10 @@
 
 ```bash
 # dry-run（最新オープンスプリントを解決して Plan を表示）
-echo '{"velocity":{"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全WPを計画内に完了"}}' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts --dry-run
+echo '{"velocity":{"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全WPを計画内に完了"}}' | deno run -A .opencode/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts --dry-run
 
 # 実実行
-echo '{"velocity":{"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全WPを計画内に完了"}}' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts
+echo '{"velocity":{"pbiCount":5,"totalWeight":21,"matchRate":0.8,"summary":"全WPを計画内に完了"}}' | deno run -A .opencode/skills/bundles/management-bundle/record-sprint-velocity/scripts/record_sprint_velocity.ts
 ```
 
 ## WEIGHT_MAP（本スキル内で独立定義）

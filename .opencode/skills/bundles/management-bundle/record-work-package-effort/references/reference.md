@@ -32,8 +32,8 @@ echo '{
   "planningReview": "計画は適切だったが、ACの詳細度が不足していた",
   "executionReview": "実装はスムーズに進んだ。テスト駆動で品質が安定した",
   "improvementSuggestions": "計画時に類似WPのACを事前参照する"
-}' | deno run -A .agents/skills/bundles/management-bundle/record-work-package-effort/scripts/record_effort_and_analysis.ts
+}' | deno run -A .opencode/skills/bundles/management-bundle/record-work-package-effort/scripts/record_effort_and_analysis.ts
 
 # dry-run（処理内容の確認のみ）
-echo '{"identifier":{"title":"Test","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"},"actual":0,"planningReview":"OK","executionReview":"OK"}' | deno run -A --dry-run .agents/skills/bundles/management-bundle/record-work-package-effort/scripts/record_effort_and_analysis.ts
+echo '{"identifier":{"title":"Test","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"},"actual":0,"planningReview":"OK","executionReview":"OK"}' | deno run -A --dry-run .opencode/skills/bundles/management-bundle/record-work-package-effort/scripts/record_effort_and_analysis.ts
 ```

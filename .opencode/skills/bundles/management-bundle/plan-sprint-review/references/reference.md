@@ -118,7 +118,7 @@ POとの対話が終わったら、以下を確認する：
 
 ```bash
 # Sprint 17 の検証計画を立案（dry-run）
-echo '{"sprintNumber": 17, "pbis": [{"number": 1, "title": "PBI例", "wps": [{"number": 1, "title": "WP例", "acs": [{"number": "1", "description": "AC例", "verificationPlan": "dry-runで確認"}]}]}]}' | deno run -A .agents/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts --dry-run
+echo '{"sprintNumber": 17, "pbis": [{"number": 1, "title": "PBI例", "wps": [{"number": 1, "title": "WP例", "acs": [{"number": "1", "description": "AC例", "verificationPlan": "dry-runで確認"}]}]}]}' | deno run -A .opencode/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts --dry-run
 ```
 
 ## 生成される検証台帳の内容

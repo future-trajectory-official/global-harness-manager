@@ -23,7 +23,7 @@ tags:
 
 ### Step 2: POと対話して検証方法を決定する
 
-[references/reference.md > 検証方法の引き出し方](/.agents/skills/bundles/management-bundle/plan-sprint-review/references/reference.md)
+[references/reference.md > 検証方法の引き出し方](/.opencode/skills/bundles/management-bundle/plan-sprint-review/references/reference.md)
 に沿って、ACごとにPOと対話しながら具体的な検証方法を決定する。
 各ACの検証方法が決まり次第JSONに反映する。
 
@@ -32,7 +32,7 @@ tags:
 ### Step 3: dry-run で検証計画を確認
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts --dry-run
 ```
 
 出力される検証台帳の内容を確認し、全ACが網羅されているかPOと合意する。
@@ -40,11 +40,11 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/plan-sprint
 ### Step 4: 検証計画を確定する
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/plan-sprint-review/scripts/plan_sprint_review.ts
 ```
 
 ## 詳細手順
 
 検証計画の立案に必要な入力JSONの形式、実行例、および生成される検証台帳の内容は
-[references/reference.md](/.agents/skills/bundles/management-bundle/plan-sprint-review/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/plan-sprint-review/references/reference.md)
 を参照すること。

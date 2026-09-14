@@ -25,5 +25,5 @@
 になることを確認してください。
 
 ```bash
-bash .agents/skills/check-harness-configs/scripts/check_configs.sh
+bash .opencode/skills/check-harness-configs/scripts/check_configs.sh
 ```

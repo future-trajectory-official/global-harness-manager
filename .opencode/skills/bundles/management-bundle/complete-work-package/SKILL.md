@@ -22,24 +22,24 @@ tags:
 1. **WPの完了**: 現在のWPを完了状態に遷移する。事前に `--dry-run`
    でPlanを確認し、PO承認後に本実行すること。
    ```bash
-   echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/complete-work-package/scripts/complete_wp.ts --dry-run
-   echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/complete-work-package/scripts/complete_wp.ts
+   echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/complete-work-package/scripts/complete_wp.ts --dry-run
+   echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/complete-work-package/scripts/complete_wp.ts
    ```
    入力パラメータは
-   [references/reference.md](/.agents/skills/bundles/management-bundle/complete-work-package/references/reference.md)
+   [references/reference.md](/.opencode/skills/bundles/management-bundle/complete-work-package/references/reference.md)
    を参照すること。
 
 2. **兄弟WPの確認**: 親PBI配下の全WPを検索し、全て完了済みかを確認する。
    ```bash
-   echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/select-work-package/scripts/search_wp.ts
+   echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/select-work-package/scripts/search_wp.ts
    ```
 
 3. **PBI完了判定**:
    - 全兄弟WPが完了 → 親PBIを完了状態に遷移する。事前に `--dry-run`
      でPlanを確認し、PO承認後に本実行すること。
      ```bash
-     echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/complete-work-package/scripts/complete_pbi.ts --dry-run
-     echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/complete-work-package/scripts/complete_pbi.ts
+     echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/complete-work-package/scripts/complete_pbi.ts --dry-run
+     echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/complete-work-package/scripts/complete_pbi.ts
      ```
    - 未完了の兄弟WPあり → POにその旨を報告し、残作業を確認する
 

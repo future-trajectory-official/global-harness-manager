@@ -48,16 +48,16 @@
 
 ```bash
 # 確認フェーズ dry-run
-echo '{"title":"Product Goal"}' | deno run -A .agents/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts --dry-run
+echo '{"title":"Product Goal"}' | deno run -A .opencode/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts --dry-run
 
 # 確認フェーズ 本実行
-echo '{"title":"Product Goal"}' | deno run -A .agents/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts
+echo '{"title":"Product Goal"}' | deno run -A .opencode/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts
 
 # 更新フェーズ dry-run
-echo '{"title":"Product Goal","pivot":{"description":"New goal","reason":"Changed","code":"42"}}' | deno run -A .agents/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts --dry-run
+echo '{"title":"Product Goal","pivot":{"description":"New goal","reason":"Changed","code":"42"}}' | deno run -A .opencode/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts --dry-run
 
 # 更新フェーズ 本実行
-echo '{"title":"Product Goal","pivot":{"description":"New goal","reason":"Changed","code":"42"}}' | deno run -A .agents/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts
+echo '{"title":"Product Goal","pivot":{"description":"New goal","reason":"Changed","code":"42"}}' | deno run -A .opencode/skills/bundles/management-bundle/assess-goal-continuation/scripts/assess_goal_continuation.ts
 ```
 
 ## スクリプトの動作フロー

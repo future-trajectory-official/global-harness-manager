@@ -58,10 +58,10 @@
 
 ```bash
 # dry-run（終了対象の確認のみ・何も変更しない）
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/archive-retrospective/scripts/archive_retrospective.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/archive-retrospective/scripts/archive_retrospective.ts --dry-run
 
 # 実実行（振り返りを終了）
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/archive-retrospective/scripts/archive_retrospective.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/archive-retrospective/scripts/archive_retrospective.ts
 ```
 
 ## アーキテクチャ上の責務

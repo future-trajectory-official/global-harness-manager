@@ -34,10 +34,10 @@
 
 ```bash
 # 進行中のスプリントを確認する
-echo '{"entityType":"Sprint","operation":"search","params":{"state":"open"}}' | deno run -A .agents/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
+echo '{"entityType":"Sprint","operation":"search","params":{"state":"open"}}' | deno run -A .opencode/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
 
 # 完了済みスプリントの一覧を確認する
-echo '{"entityType":"Sprint","operation":"search","params":{"state":"closed"}}' | deno run -A .agents/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
+echo '{"entityType":"Sprint","operation":"search","params":{"state":"closed"}}' | deno run -A .opencode/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
 ```
 
 ### 確定の考え方
@@ -67,8 +67,8 @@ echo '{"entityType":"Sprint","operation":"search","params":{"state":"closed"}}' 
 
 ```bash
 # dry-run: 実行Planを確認する
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/begin-sprint/scripts/begin_sprint.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/begin-sprint/scripts/begin_sprint.ts --dry-run
 
 # 実実行
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/begin-sprint/scripts/begin_sprint.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/begin-sprint/scripts/begin_sprint.ts
 ```

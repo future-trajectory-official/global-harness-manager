@@ -34,5 +34,5 @@ echo '{
   "problem": "AIが既存コード構造を十分に把握しておらず、アプローチの再検討が発生した",
   "try": "作業着手前に AI が該当コードの構造を読み、POに要約してから実装に入る",
   "advise": "POの設計判断が一貫しており、修正の方向性に迷うことがなかった"
-}' | deno run -A .agents/skills/bundles/management-bundle/record-work-package-kpt/scripts/record_kpt.ts
+}' | deno run -A .opencode/skills/bundles/management-bundle/record-work-package-kpt/scripts/record_kpt.ts
 ```

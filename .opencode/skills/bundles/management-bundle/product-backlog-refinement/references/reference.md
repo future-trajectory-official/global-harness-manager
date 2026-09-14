@@ -35,10 +35,10 @@
 
 ```bash
 # dry-run
-echo '{"sprintNumber": 19}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/search_pbi.ts --dry-run
+echo '{"sprintNumber": 19}' | deno run -A .opencode/skills/bundles/management-bundle/product-backlog-refinement/scripts/search_pbi.ts --dry-run
 
 # 本実行
-echo '{"sprintNumber": 19}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/search_pbi.ts
+echo '{"sprintNumber": 19}' | deno run -A .opencode/skills/bundles/management-bundle/product-backlog-refinement/scripts/search_pbi.ts
 ```
 
 ---
@@ -79,10 +79,10 @@ echo '{"sprintNumber": 19}' | deno run -A .agents/skills/bundles/management-bund
 
 ```bash
 # dry-run（artifacts はカテゴリ階層形式）
-echo '{"title":"New feature","summary":"Implement user authentication","artifacts":{"categories":[{"name":"成果物","items":[{"description":"UI mockup"},{"description":"API spec"}]}]}}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/propose_pbi.ts --dry-run
+echo '{"title":"New feature","summary":"Implement user authentication","artifacts":{"categories":[{"name":"成果物","items":[{"description":"UI mockup"},{"description":"API spec"}]}]}}' | deno run -A .opencode/skills/bundles/management-bundle/product-backlog-refinement/scripts/propose_pbi.ts --dry-run
 
 # 本実行
-echo '{"title":"New feature","summary":"Implement user authentication"}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/propose_pbi.ts
+echo '{"title":"New feature","summary":"Implement user authentication"}' | deno run -A .opencode/skills/bundles/management-bundle/product-backlog-refinement/scripts/propose_pbi.ts
 ```
 
 ---
@@ -102,10 +102,10 @@ echo '{"title":"New feature","summary":"Implement user authentication"}' | deno 
 
 ```bash
 # dry-run（id に node-id、code に Issue番号を指定）
-echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"size":"M"}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/estimate_pbi_size.ts --dry-run
+echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"size":"M"}' | deno run -A .opencode/skills/bundles/management-bundle/product-backlog-refinement/scripts/estimate_pbi_size.ts --dry-run
 
 # 本実行
-echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"size":"M"}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/estimate_pbi_size.ts
+echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"size":"M"}' | deno run -A .opencode/skills/bundles/management-bundle/product-backlog-refinement/scripts/estimate_pbi_size.ts
 ```
 
 ---
@@ -128,8 +128,8 @@ echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":
 
 ```bash
 # dry-run（id に node-id、code に Issue番号を指定）
-echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"summary":"Updated summary","reason":{"description":"POからの指示により仕様変更"}}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/update_pbi.ts --dry-run
+echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"summary":"Updated summary","reason":{"description":"POからの指示により仕様変更"}}' | deno run -A .opencode/skills/bundles/management-bundle/product-backlog-refinement/scripts/update_pbi.ts --dry-run
 
 # 本実行
-echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"summary":"Updated summary","reason":{"description":"POからの指示により仕様変更"}}' | deno run -A .agents/skills/bundles/management-bundle/product-backlog-refinement/scripts/update_pbi.ts
+echo '{"identifier":{"title":"PBI title","id":"I_kwDOR5-zI88AAAABMOdNyg","code":"655"},"summary":"Updated summary","reason":{"description":"POからの指示により仕様変更"}}' | deno run -A .opencode/skills/bundles/management-bundle/product-backlog-refinement/scripts/update_pbi.ts
 ```

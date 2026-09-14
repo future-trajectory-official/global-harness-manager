@@ -43,10 +43,10 @@ ACごとにPOと以下の手段を組み合わせて検証を実行する：
 
 ```bash
 # dry-run
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/execute-sprint-review/scripts/execute_sprint_review.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/execute-sprint-review/scripts/execute_sprint_review.ts --dry-run
 
 # 本実行（PO承認後）
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/execute-sprint-review/scripts/execute_sprint_review.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/execute-sprint-review/scripts/execute_sprint_review.ts
 ```
 
 ## 詳細手順
@@ -112,5 +112,5 @@ ACごとに以下を実施する：
 ## 入力JSON形式
 
 入力JSONの詳細な形式と各フィールドの説明は
-[references/reference.md](/.agents/skills/bundles/management-bundle/execute-sprint-review/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/execute-sprint-review/references/reference.md)
 を参照すること。

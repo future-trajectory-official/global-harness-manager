@@ -7,11 +7,11 @@
 set -e
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-HARNESS_ROOT=$(cd "$SCRIPT_DIR/../../../../" && pwd)
+HARNESS_ROOT=$(cd "$SCRIPT_DIR/../../../../../../" && pwd)
 CONFIG_GLOBAL_PATH="$HARNESS_ROOT/config/global-skills-path.txt"
 CONFIG_TARGETS="$HARNESS_ROOT/config/publish-targets.md"
 EXAMPLE_CONFIG="$HARNESS_ROOT/config/publish-targets.md.example"
-LOCAL_SKILLS_DIR="$HARNESS_ROOT/.agents/skills"
+LOCAL_SKILLS_DIR="$HARNESS_ROOT/.opencode/skills"
 
 echo "--- ハーネススキルのグローバル同期を開始します (Publishing Skills) ---"
 

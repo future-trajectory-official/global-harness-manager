@@ -24,7 +24,7 @@ LOG] による文脈同期の基盤を作ります。
 1. **メタデータの抽出実行**
    - 以下のコマンドを実行し、メタデータを抽出するスクリプトを実行します。
    ```bash
-   deno run -A .agents/skills/bundles/meta-bundle/reconfirm-context/scripts/reconfirm.ts
+   deno run -A .opencode/skills/bundles/meta-bundle/reconfirm-context/scripts/reconfirm.ts
    ```
 
 2. **自己認識の同期**
@@ -32,7 +32,7 @@ LOG] による文脈同期の基盤を作ります。
 
 > [!TIP]
 > スキル探索の詳細な仕組みは
-> [indexing-logic.md](/.agents/skills/bundles/meta-bundle/reconfirm-context/references/indexing-logic.md)
+> [indexing-logic.md](/.opencode/skills/bundles/meta-bundle/reconfirm-context/references/indexing-logic.md)
 > を参照してください。
 
 ※ 注意: このスキルは情報の「発見」ではなく「再定義・再認識」を目的としています。

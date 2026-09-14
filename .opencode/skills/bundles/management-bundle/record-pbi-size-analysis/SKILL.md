@@ -21,10 +21,10 @@ tags:
 
 ```bash
 # dry-run: confirmSize の Plan を確認
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-size-analysis/scripts/record_pbi_size_analysis.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-pbi-size-analysis/scripts/record_pbi_size_analysis.ts --dry-run
 
 # 実実行: size_actual + variance_reason を記録
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-size-analysis/scripts/record_pbi_size_analysis.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-pbi-size-analysis/scripts/record_pbi_size_analysis.ts
 ```
 
 ## 手順
@@ -53,5 +53,5 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-pbi-
 ## 詳細リファレンス
 
 - 入力JSON形式・スクリプト呼出パターンは
-  [references/reference.md](/.agents/skills/bundles/management-bundle/record-pbi-size-analysis/references/reference.md)
+  [references/reference.md](/.opencode/skills/bundles/management-bundle/record-pbi-size-analysis/references/reference.md)
   を参照

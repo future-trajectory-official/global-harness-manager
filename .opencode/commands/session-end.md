@@ -19,7 +19,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 - **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
 - **実行スキル**:
-  `[assess-context](/.agents/skills/bundles/management-bundle/assess-context/SKILL.md)`
+  `[assess-context](/.opencode/skills/bundles/management-bundle/assess-context/SKILL.md)`
 - **入力（前提）**: `.opencode/context/management.md`（必須）/
   `.opencode/context/product.md`（任意）
 - **内容**: セッション終了時に用語集（管理概念・プロジェクト固有の用語）を読み、共有言語として PO
@@ -36,7 +36,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 - **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
 - **実行スキル**:
-  `[record-work-package-effort](/.agents/skills/bundles/management-bundle/record-work-package-effort/SKILL.md)`
+  `[record-work-package-effort](/.opencode/skills/bundles/management-bundle/record-work-package-effort/SKILL.md)`
 - **内容**: セッションの実績effort（介入回数）と乖離理由をGitHub Issueに記録します。
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
@@ -54,7 +54,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 - **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
 - **実行スキル**:
-  `[record-work-package-kpt](/.agents/skills/bundles/management-bundle/record-work-package-kpt/SKILL.md)`
+  `[record-work-package-kpt](/.opencode/skills/bundles/management-bundle/record-work-package-kpt/SKILL.md)`
 - **成果物**: 「Session Reflection (KPT)」報告
 - **重要**: AI から人間への建設的なフィードバックを真摯に受け止め、次回の協働品質向上に繋げます。
 
@@ -73,7 +73,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 - **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
 - **実行スキル**:
-  `[record-work-package-metrics](/.agents/skills/bundles/management-bundle/record-work-package-metrics/SKILL.md)`
+  `[record-work-package-metrics](/.opencode/skills/bundles/management-bundle/record-work-package-metrics/SKILL.md)`
 - **成果物**: GitHub Issueへのセッションメトリクス記録
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
@@ -91,7 +91,7 @@ POから「次のフェーズに進めて」または同等の明示的な指示
 
 - **ロール**: 進行役（例：`[scrum-master.md](/.opencode/agents/scrum-master.md)`）
 - **実行スキル**:
-  `[complete-work-package](/.agents/skills/bundles/management-bundle/complete-work-package/SKILL.md)`
+  `[complete-work-package](/.opencode/skills/bundles/management-bundle/complete-work-package/SKILL.md)`
 - **内容**: WPをDone状態に遷移し、兄弟WPが全完了している場合は親PBIも完了します。
 
 ### 4-2. セッションアーティファクトのクリーンアップ

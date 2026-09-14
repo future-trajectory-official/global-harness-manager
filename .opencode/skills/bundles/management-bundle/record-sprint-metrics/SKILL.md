@@ -46,7 +46,7 @@ POとの対話で確定し、対象スプリントの振り返りへ**永続化�
 - ベロシティ（完了数・合計規模）
 
 収集方法は
-[references/reference.md](/.agents/skills/bundles/management-bundle/record-sprint-metrics/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/record-sprint-metrics/references/reference.md)
 の「実績確認フェーズ」を参照すること。
 
 **整理フォーマット**: 数値ベースの事実（実績）と AI の評価コメントを**分離**して提示する。
@@ -67,11 +67,11 @@ Step 1 で整理した評価材料を PO に提示し、5指標のスコア（1�
 ### Step 3: 記録内容の確認 [責任者: 共同]
 
 以下のコマンドで、記録される内容と変更理由を確認する。PO の承認後に次へ進む。 入力JSONの組み立て方は
-[references/reference.md](/.agents/skills/bundles/management-bundle/record-sprint-metrics/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/record-sprint-metrics/references/reference.md)
 を参照すること。
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-metrics/scripts/record_sprint_metrics.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-sprint-metrics/scripts/record_sprint_metrics.ts --dry-run
 ```
 
 ### Step 4: スプリント評価の記録 [責任者: AI]
@@ -79,7 +79,7 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-spri
 PO の承認後、実実行で評価を記録する。
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-sprint-metrics/scripts/record_sprint_metrics.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-sprint-metrics/scripts/record_sprint_metrics.ts
 ```
 
 ### Step 5: 結果報告 [責任者: AI]
@@ -89,5 +89,5 @@ echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-spri
 ## 詳細リファレンス
 
 - 入力JSON形式・対象の特定方法・dry-run 出力の解釈・実行パターンは
-  [references/reference.md](/.agents/skills/bundles/management-bundle/record-sprint-metrics/references/reference.md)
+  [references/reference.md](/.opencode/skills/bundles/management-bundle/record-sprint-metrics/references/reference.md)
   を参照

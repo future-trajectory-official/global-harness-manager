@@ -24,12 +24,12 @@ tags:
 // turbo
 
 ```bash
-deno run -A .agents/skills/bundles/workspace-bundle/check-harness-configs/scripts/check_configs.ts
+deno run -A .opencode/skills/bundles/workspace-bundle/check-harness-configs/scripts/check_configs.ts
 ```
 
 > [!TIP]
 > どのファイルが必要かは
-> [config-list.md](/.agents/skills/bundles/workspace-bundle/check-harness-configs/references/config-list.md)
+> [config-list.md](/.opencode/skills/bundles/workspace-bundle/check-harness-configs/references/config-list.md)
 > を、エラー時の修復方法は
-> [remediation-guide.md](/.agents/skills/bundles/workspace-bundle/check-harness-configs/references/remediation-guide.md)
+> [remediation-guide.md](/.opencode/skills/bundles/workspace-bundle/check-harness-configs/references/remediation-guide.md)
 > を参照してください。

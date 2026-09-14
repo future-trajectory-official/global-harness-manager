@@ -68,14 +68,14 @@ POが次に着手するWPを選択するための情報を提供する。
 
 ```bash
 # デフォルト（status未指定 → "Todo"）
-echo '{}' | deno run -A .agents/skills/bundles/management-bundle/select-work-package/scripts/search_wp.ts
+echo '{}' | deno run -A .opencode/skills/bundles/management-bundle/select-work-package/scripts/search_wp.ts
 
 # 特定ステータス（指定可能値から選択）
-echo '{"status":"In Progress"}' | deno run -A .agents/skills/bundles/management-bundle/select-work-package/scripts/search_wp.ts
+echo '{"status":"In Progress"}' | deno run -A .opencode/skills/bundles/management-bundle/select-work-package/scripts/search_wp.ts
 
 # 特定スプリント＋特定ステータス
-echo '{"status":"Todo","sprintNumber":19}' | deno run -A .agents/skills/bundles/management-bundle/select-work-package/scripts/search_wp.ts
+echo '{"status":"Todo","sprintNumber":19}' | deno run -A .opencode/skills/bundles/management-bundle/select-work-package/scripts/search_wp.ts
 
 # ステータス未設定（Null）を検索
-echo '{"status":"__none__"}' | deno run -A .agents/skills/bundles/management-bundle/select-work-package/scripts/search_wp.ts
+echo '{"status":"__none__"}' | deno run -A .opencode/skills/bundles/management-bundle/select-work-package/scripts/search_wp.ts
 ```

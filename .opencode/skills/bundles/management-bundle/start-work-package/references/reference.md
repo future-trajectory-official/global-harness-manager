@@ -12,7 +12,7 @@
 ### 入力JSON
 
 `read-project-state` の入力スキーマに準拠する（詳細は
-[input-schema.md](/.agents/skills/bundles/management-bundle/read-project-state/references/input-schema.md)
+[input-schema.md](/.opencode/skills/bundles/management-bundle/read-project-state/references/input-schema.md)
 を参照）。
 
 | キー       | 型     | 値                             |
@@ -24,7 +24,7 @@
 ### 実行例
 
 ```bash
-echo '{"entityType":"WorkPackage","operation":"find","params":{"itemId":"643"}}' | deno run -A .agents/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
+echo '{"entityType":"WorkPackage","operation":"find","params":{"itemId":"643"}}' | deno run -A .opencode/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
 ```
 
 ### 出力の解釈
@@ -58,7 +58,7 @@ WPの計画後effort見積り（plannedEstimate）を記録する。
 
 ```bash
 # id に node-id、code に Issue番号を指定
-echo '{"identifier":{"title":"Session-Lifecycle-Persistence","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"},"plannedEstimate":3}' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/estimate_planned_effort.ts
+echo '{"identifier":{"title":"Session-Lifecycle-Persistence","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"},"plannedEstimate":3}' | deno run -A .opencode/skills/bundles/management-bundle/start-work-package/scripts/estimate_planned_effort.ts
 ```
 
 ## start_wp.ts — WP着手
@@ -75,5 +75,5 @@ WPのステータスをInProgressに遷移する。
 
 ```bash
 # id に node-id、code に Issue番号を指定
-echo '{"identifier":{"title":"Session-Lifecycle-Persistence","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"}}' | deno run -A .agents/skills/bundles/management-bundle/start-work-package/scripts/start_wp.ts
+echo '{"identifier":{"title":"Session-Lifecycle-Persistence","id":"I_kwDOR5-zI88AAAABKcLX9A","code":"612"}}' | deno run -A .opencode/skills/bundles/management-bundle/start-work-package/scripts/start_wp.ts
 ```

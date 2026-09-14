@@ -11,7 +11,7 @@ tags:
 # sprint-planning
 
 プロダクトバックログリファインメントで確定したPBIをスプリントにコミットする。入力形式と実行コマンドの詳細は
-[references/reference.md](/.agents/skills/bundles/management-bundle/sprint-planning/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/sprint-planning/references/reference.md)
 を参照。
 
 ## 操作スクリプト
@@ -23,7 +23,7 @@ tags:
 ## 制約
 
 - JSON入力形式と必須フィールドは
-  [references/reference.md](/.agents/skills/bundles/management-bundle/sprint-planning/references/reference.md)
+  [references/reference.md](/.opencode/skills/bundles/management-bundle/sprint-planning/references/reference.md)
   で確認すること。
 - `--dry-run` でPlan内容を確認してから本実行に移ること。
 
@@ -34,7 +34,7 @@ tags:
 PBIのステータスを Idea→Todo に進行し、スプリントに確定する。
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/sprint-planning/scripts/commit_pbi.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/sprint-planning/scripts/commit_pbi.ts --dry-run
 ```
 
 ユーザー承認後に `--dry-run` を外して本実行。

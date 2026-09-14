@@ -25,12 +25,12 @@ POの問いかけに対して、プロダクトバックログの情報（エン
 ## Quick-Start
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
 ```
 
 - 対話手順（3点提示方式）・結果の表示形式・エラー時の表示は
-  [references/reference.md](/.agents/skills/bundles/management-bundle/read-project-state/references/reference.md)
+  [references/reference.md](/.opencode/skills/bundles/management-bundle/read-project-state/references/reference.md)
   を参照し、指定の形式で提示すること。
 - `<JSON>` への入力JSONの組み立て方は
-  [references/input-schema.md](/.agents/skills/bundles/management-bundle/read-project-state/references/input-schema.md)
+  [references/input-schema.md](/.opencode/skills/bundles/management-bundle/read-project-state/references/input-schema.md)
   を参照して組み立てること（AIの省略癖による壊れたJSON入力を防ぐ）。

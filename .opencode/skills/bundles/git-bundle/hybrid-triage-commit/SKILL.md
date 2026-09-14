@@ -39,7 +39,7 @@ git add -A && git commit -m "chore(wip): セーブポイント"
 ### triage モード（プッシュ直前）
 
 **「意味単位で分割する」** が唯一の目的。以下の値は
-[hybrid-triage-commit-process.md](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)
+[hybrid-triage-commit-process.md](/.opencode/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)
 で確認すること：
 
 - `<base>` — ベースブランチ名の導出方法
@@ -66,4 +66,4 @@ git commit -m "<type>(<scope>): <description>"
 - 完了後: `git branch -D <wip-branch>`
 
 対話的仕分けにはスクリプト:
-[git-triage.ts](/.agents/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts)
+[git-triage.ts](/.opencode/skills/bundles/git-bundle/hybrid-triage-commit/scripts/git-triage.ts)

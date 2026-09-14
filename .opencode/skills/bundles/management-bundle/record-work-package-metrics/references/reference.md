@@ -40,5 +40,5 @@ echo '{
   "constraintAdherence": "ルール遵守は徹底されていた。",
   "contextExtraction": "既存コードの事前読解精度を高める余地あり。",
   "workSizeStability": "作業規模は安定していた。"
-}' | deno run -A .agents/skills/bundles/management-bundle/record-work-package-metrics/scripts/record_metrics.ts
+}' | deno run -A .opencode/skills/bundles/management-bundle/record-work-package-metrics/scripts/record_metrics.ts
 ```

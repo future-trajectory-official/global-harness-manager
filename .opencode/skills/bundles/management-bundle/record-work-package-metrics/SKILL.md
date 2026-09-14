@@ -29,7 +29,7 @@ tags:
 
 ### Step 2: 各指標の採点 [責任者: 共同]
 
-[references/metrics-guide.md](/.agents/skills/bundles/management-bundle/record-work-package-metrics/references/metrics-guide.md)
+[references/metrics-guide.md](/.opencode/skills/bundles/management-bundle/record-work-package-metrics/references/metrics-guide.md)
 の定義に基づき、各指標のスコア案と根拠をPOに提示する。 **POが最終スコアを決定する。**
 
 **POの確定を経るまで Step 4 へ進んではならない。**
@@ -46,17 +46,17 @@ tags:
 steps）を表示するだけで、GitHub 上の WP を変更せずに終了する。 PO への提示・確認に利用する。
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-work-package-metrics/scripts/record_metrics.ts --dry-run
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-work-package-metrics/scripts/record_metrics.ts --dry-run
 ```
 
 **本記録（GitHub へ反映）**:
 
 ```bash
-echo '<JSON>' | deno run -A .agents/skills/bundles/management-bundle/record-work-package-metrics/scripts/record_metrics.ts
+echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-work-package-metrics/scripts/record_metrics.ts
 ```
 
 入力パラメータは
-[references/reference.md](/.agents/skills/bundles/management-bundle/record-work-package-metrics/references/reference.md)
+[references/reference.md](/.opencode/skills/bundles/management-bundle/record-work-package-metrics/references/reference.md)
 を参照すること。
 
 ### Step 5: 結果報告 [責任者: AI]

@@ -66,7 +66,7 @@ Labels: <labels>
 ## EntityType 一覧
 
 下表は
-[input-schema.md](/.agents/skills/bundles/management-bundle/read-project-state/references/input-schema.md)
+[input-schema.md](/.opencode/skills/bundles/management-bundle/read-project-state/references/input-schema.md)
 の「EntityType 一覧と対応操作」を**正**とする（二重管理を避けるため、詳細な対応表は input-schema.md
 側に集約）。個別の対応関係・params キー・実行例は必ず input-schema.md を参照する。
 
