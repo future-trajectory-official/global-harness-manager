@@ -22,18 +22,18 @@ export function findProjectRoot(
     return envRoot;
   }
 
-  // 2. カレントディレクトリ直下に .agents ディレクトリがあるか確認
+  // 2. カレントディレクトリ直下に .opencode ディレクトリがあるか確認
   try {
     const cwd = options.cwdGetter();
-    const hasAgents = options.statSync(join(cwd, ".agents")).isDirectory;
-    if (hasAgents) {
+    const hasOpencode = options.statSync(join(cwd, ".opencode")).isDirectory;
+    if (hasOpencode) {
       return cwd;
     }
   } catch (_e) {
     // NotFound の場合などは無視して次に進む
   }
 
-  // 3. フォールバック: スクリプト自体の位置から 4 階層上（.agents/core/shared/types/ → プロジェクトルート）
+  // 3. フォールバック: スクリプト自体の位置から 4 階層上（.opencode/core/shared/types/ → プロジェクトルート）
   const __dirname = dirname(fromFileUrl(options.importMetaUrl));
   return join(__dirname, "..", "..", "..", "..");
 }
@@ -44,12 +44,11 @@ export const PROJECT_ROOT = findProjectRoot();
  * プロジェクト全体のパス定数
  */
 export const PATHS = {
-  SKILLS_ROOT: ".agents/skills/bundles",
+  SKILLS_ROOT: ".opencode/skills/bundles",
   BUNDLES: {
     ONBOARDING: "workspace-bundle",
     GIT: "git-bundle",
     META: "meta-bundle",
-    SYSTEM: "system-bundle",
     DEVELOPMENT: "development-bundle",
     MANAGEMENT: "management-bundle",
   },

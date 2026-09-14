@@ -9,7 +9,7 @@ import {
 
 /**
  * constants - PROJECT_ROOT がチェックアウト先ディレクトリ名に依存せず解決されることを検証する。
- * 構造的要求（絶対パスであり直下に .agents を持つ）で判定し、サンドボックス内の実行にも耐える。
+ * 構造的要求（絶対パスであり直下に .opencode を持つ）で判定し、サンドボックス内の実行にも耐える。
  */
 Deno.test("constants - PROJECT_ROOT should be defined", () => {
   assert(
@@ -19,33 +19,33 @@ Deno.test("constants - PROJECT_ROOT should be defined", () => {
 });
 
 /**
- * constants - PROJECT_ROOT の直下に .agents が存在する（構造的不変条件）。
+ * constants - PROJECT_ROOT の直下に .opencode が存在する（構造的不変条件）。
  * 存在しない場合は解決先の誤りを明示メッセージで報告する。
  */
-Deno.test("constants - PROJECT_ROOT contains the .agents directory", async () => {
-  const agentsDir = `${PROJECT_ROOT.replace(/[/\\]+$/, "")}/.agents`;
+Deno.test("constants - PROJECT_ROOT contains the .opencode directory", async () => {
+  const opencodeDir = `${PROJECT_ROOT.replace(/[/\\]+$/, "")}/.opencode`;
   let isDirectory = false;
   try {
-    isDirectory = (await Deno.stat(agentsDir)).isDirectory;
+    isDirectory = (await Deno.stat(opencodeDir)).isDirectory;
   } catch {
     isDirectory = false;
   }
   assert(
     isDirectory,
-    `PROJECT_ROOT (${PROJECT_ROOT}) must resolve to a directory containing .agents`,
+    `PROJECT_ROOT (${PROJECT_ROOT}) must resolve to a directory containing .opencode`,
   );
 });
 
 /**
  * constants - PATHS.BUNDLES に全バンドル定義が網羅されていることを検証する。
- * オンボーディング、Git、メタ、システム、開発、管理の6バンドルが全て定義されていることを確認する。
+ * オンボーディング、Git、メタ、開発、管理の5バンドルが全て定義されていることを確認する。
+ * （SYSTEM は実体バンドルが存在しないため廃止済み）
  */
 Deno.test("constants - PATHS should have complete bundle definitions", () => {
   const bundles = PATHS.BUNDLES;
   assertEquals(bundles.ONBOARDING, "workspace-bundle");
   assertEquals(bundles.GIT, "git-bundle");
   assertEquals(bundles.META, "meta-bundle");
-  assertEquals(bundles.SYSTEM, "system-bundle");
   assertEquals(bundles.DEVELOPMENT, "development-bundle");
   assertEquals(bundles.MANAGEMENT, "management-bundle");
 });
@@ -55,7 +55,7 @@ Deno.test("constants - PATHS should have complete bundle definitions", () => {
  * SKILLS_ROOT, SCRIPTS の各パスが期待値を満たすことを確認する。
  */
 Deno.test("constants - PATHS should have correct root paths", () => {
-  assertEquals(PATHS.SKILLS_ROOT, ".agents/skills/bundles");
+  assertEquals(PATHS.SKILLS_ROOT, ".opencode/skills/bundles");
   assertEquals(PATHS.SCRIPTS, "scripts");
 });
 
@@ -66,7 +66,7 @@ Deno.test("constants - PATHS should have correct root paths", () => {
 Deno.test("constants - getSkillDirPath should return correct path for all bundles", () => {
   for (const bundle of Object.values(PATHS.BUNDLES)) {
     const path = getSkillDirPath(bundle, "test-skill");
-    assertStringIncludes(path, `.agents/skills/bundles/${bundle}/test-skill`);
+    assertStringIncludes(path, `.opencode/skills/bundles/${bundle}/test-skill`);
   }
 });
 
@@ -76,7 +76,7 @@ Deno.test("constants - getSkillDirPath should return correct path for all bundle
  */
 Deno.test("constants - getSkillScriptPath should return correct path", () => {
   const path = getSkillScriptPath("workspace-bundle", "test-skill", "run.ts");
-  assertStringIncludes(path, ".agents/skills/bundles/workspace-bundle/test-skill/scripts/run.ts");
+  assertStringIncludes(path, ".opencode/skills/bundles/workspace-bundle/test-skill/scripts/run.ts");
 });
 
 /**
@@ -86,13 +86,13 @@ Deno.test("constants - getSkillScriptPath should return correct path", () => {
 Deno.test("constants - getSkillAssetPath should return correct path (with and without asset name)", () => {
   // 引数なし
   const dirPath = getSkillAssetPath("workspace-bundle", "test-skill");
-  assertStringIncludes(dirPath, ".agents/skills/bundles/workspace-bundle/test-skill/assets");
+  assertStringIncludes(dirPath, ".opencode/skills/bundles/workspace-bundle/test-skill/assets");
 
   // 引数あり
   const filePath = getSkillAssetPath("workspace-bundle", "test-skill", "image.png");
   assertStringIncludes(
     filePath,
-    ".agents/skills/bundles/workspace-bundle/test-skill/assets/image.png",
+    ".opencode/skills/bundles/workspace-bundle/test-skill/assets/image.png",
   );
 });
 
@@ -113,45 +113,45 @@ Deno.test("constants - findProjectRoot: 1. 環境変数 HARNESS_WORKSPACE_ROOT �
     statSync: () => {
       throw new Error("should not stat");
     },
-    importMetaUrl: "file:///some/path/.agents/core/shared/types/constants.ts",
+    importMetaUrl: "file:///some/path/.opencode/core/shared/types/constants.ts",
   });
   assertEquals(root, "/global/harness/workspace");
 });
 
 /**
- * constants - findProjectRoot: カレントディレクトリ直下の .agents を検出することを検証する。
- * 環境変数が未設定で、cwd 直下に .agents ディレクトリが存在する場合、
+ * constants - findProjectRoot: カレントディレクトリ直下の .opencode を検出することを検証する。
+ * 環境変数が未設定で、cwd 直下に .opencode ディレクトリが存在する場合、
  * その cwd をプロジェクトルートとして採用することを確認する。
  */
-Deno.test("constants - findProjectRoot: 2. カレントディレクトリ直下に .agents がある場合はそれを優先する", () => {
+Deno.test("constants - findProjectRoot: 2. カレントディレクトリ直下に .opencode がある場合はそれを優先する", () => {
   const root = findProjectRoot({
     envGetter: () => undefined,
     cwdGetter: () => "/my/current/project",
     statSync: (path: string) => {
-      if (path === "/my/current/project/.agents") {
+      if (path === "/my/current/project/.opencode") {
         return { isDirectory: true };
       }
       throw new Error("not found");
     },
-    importMetaUrl: "file:///some/other/path/.agents/core/shared/types/constants.ts",
+    importMetaUrl: "file:///some/other/path/.opencode/core/shared/types/constants.ts",
   });
   assertEquals(root, "/my/current/project");
 });
 
 /**
- * constants - findProjectRoot: 環境変数も cwd の .agents も存在しない場合、
+ * constants - findProjectRoot: 環境変数も cwd の .opencode も存在しない場合、
  * importMetaUrl からフォールバック解決されることを検証する。
- * .agents/core/shared/types/constants.ts のパスから4階層上のディレクトリをルートとみなすことを確認する。
+ * .opencode/core/shared/types/constants.ts のパスから4階層上のディレクトリをルートとみなすことを確認する。
  */
-Deno.test("constants - findProjectRoot: 3. カレントディレクトリ直下に .agents がない、環境変数もない場合は importMetaUrl からフォールバックする", () => {
+Deno.test("constants - findProjectRoot: 3. カレントディレクトリ直下に .opencode がない、環境変数もない場合は importMetaUrl からフォールバックする", () => {
   const root = findProjectRoot({
     envGetter: () => undefined,
     cwdGetter: () => "/other/dir",
     statSync: () => {
       throw new Deno.errors.NotFound("not found");
     },
-    importMetaUrl: "file:///absolute/path/to/harness/.agents/core/shared/types/constants.ts",
+    importMetaUrl: "file:///absolute/path/to/harness/.opencode/core/shared/types/constants.ts",
   });
-  // constants.ts は .agents/core/shared/types/ 配下にあるため、4階層上は /absolute/path/to/harness となる
+  // constants.ts は .opencode/core/shared/types/ 配下にあるため、4階層上は /absolute/path/to/harness となる
   assertEquals(root, "/absolute/path/to/harness");
 });
