@@ -86,26 +86,9 @@ export class ProductBacklogItemHandler {
       if (!itemId) {
         return { operation: "archive", success: false, error: "itemId is required" };
       }
-      const viewResult = await this.adapter.runCommand("gh", [
-        "issue",
-        "view",
-        itemId,
-        "--json",
-        "state,closed",
-        ...this.adapter.buildRepoArg(),
-      ]);
-      if (viewResult.code === 0) {
-        try {
-          const viewData = JSON.parse(viewResult.stdout) as { state?: string; closed?: boolean };
-          if (viewData.state === "CLOSED" || viewData.closed) {
-            return {
-              operation: "archive",
-              success: false,
-              error: `Issue #${itemId} is already closed`,
-            };
-          }
-        } catch { /* ignore */ }
-      }
+      // NOTE: WP側と同型。判定ロジックは adapter.checkAlreadyClosed に集約済みのため本ブロック自体は変更不要。
+      const alreadyClosed = await this.adapter.checkAlreadyClosed(itemId);
+      if (alreadyClosed) return alreadyClosed;
       return await this.adapter.handleCloseItem(params);
     });
 
