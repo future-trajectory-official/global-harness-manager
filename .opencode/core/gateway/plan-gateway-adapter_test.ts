@@ -837,6 +837,74 @@ Deno.test("Review archive - should fail without itemId", async () => {
   assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
 });
 
+/**
+ * Review archive - 既closed品のclose失敗は成功＋注記に正規化される（冪等化）。
+ * ユースケース: スプリント終了時の二重アーカイブ実行。
+ * 検証意図: handleCloseItemのalready-closed正規化により全エンティティで冪等であることを確認する。
+ */
+Deno.test("Review archive - should succeed with note on already closed issue", async () => {
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({ code: 1, stdout: "", stderr: "already closed" });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive closed Review",
+    steps: [
+      { entity: "Review", operation: "archive", params: { itemId: "42" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as { alreadyClosed?: boolean; note?: string };
+  assertEquals(output?.alreadyClosed, true);
+  assertStringIncludes(output?.note ?? "", "#42");
+});
+
+/**
+ * Retrospective archive - 既closed品のclose失敗は成功＋注記に正規化される（冪等化）。
+ * ユースケース: スプリント終了時の二重アーカイブ実行。
+ * 検証意図: handleCloseItemのalready-closed正規化により全エンティティで冪等であることを確認する。
+ */
+Deno.test("Retrospective archive - should succeed with note on already closed issue", async () => {
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({ code: 1, stdout: "", stderr: "already closed" });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive closed Retrospective",
+    steps: [
+      { entity: "Retrospective", operation: "archive", params: { itemId: "42" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as { alreadyClosed?: boolean; note?: string };
+  assertEquals(output?.alreadyClosed, true);
+  assertStringIncludes(output?.note ?? "", "#42");
+});
+
+/**
+ * Sprint archive - archive操作自体が未登録であることを確認（冪等確認）。
+ * ユースケース: スプリント終了時の二重アーカイブ実行。
+ * 検証意図: Sprintエンティティにarchiveハンドラが存在しない現状を文書化する（実装対象外）。
+ */
+Deno.test("Sprint archive - should report no handler registered", async () => {
+  const { runner } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive Sprint",
+    steps: [
+      { entity: "Sprint", operation: "archive" as never, params: { itemId: "24" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(
+    result.stepResults[0].error ?? "",
+    "No handler registered for Sprint:archive",
+  );
+});
+
 Deno.test("Review view - should call gh issue view", async () => {
   const expected = JSON.stringify({
     number: 42,
@@ -1519,8 +1587,15 @@ Deno.test("ProductBacklogItem archive - should close the issue", async () => {
   assertStringIncludes(calls[1].args.join(" "), "issue close 42");
 });
 
-Deno.test("ProductBacklogItem archive - should error if issue is already closed", async () => {
-  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+/**
+ * ProductBacklogItem archive - 既closed品は成功＋注記で返す（冪等化）。
+ * ユースケース: スプリント終了時の二重アーカイブ実行。
+ * 検証意図: success:true、alreadyClosed注記の存在、close未実行を確認する。
+ */
+Deno.test("ProductBacklogItem archive - should succeed with note if issue is already closed", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
     return Promise.resolve({
       code: 0,
       stdout: JSON.stringify({ state: "CLOSED", closed: true }),
@@ -1540,8 +1615,147 @@ Deno.test("ProductBacklogItem archive - should error if issue is already closed"
   };
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
-  assertEquals(result.stepResults[0].success, false);
-  assertStringIncludes(result.stepResults[0].error ?? "", "already closed");
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "42");
+  const output = result.stepResults[0].output as { alreadyClosed?: boolean; note?: string };
+  assertEquals(output?.alreadyClosed, true);
+  assertStringIncludes(output?.note ?? "", "already closed");
+  assertStringIncludes(output?.note ?? "", "#42");
+  assertEquals(calls.length, 1);
+  assertStringIncludes(calls[0].args.join(" "), "issue view 42");
+});
+
+/**
+ * ProductBacklogItem archive - stateのみCLOSED（closed:false）でも成功＋注記で返す。
+ * ユースケース: スプリント終了時の二重アーカイブ実行。
+ * 検証意図: OR条件のstate側単独trueをカバーする。
+ */
+Deno.test("ProductBacklogItem archive - should succeed with note if only state is CLOSED", async () => {
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ state: "CLOSED", closed: false }),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive closed PBI",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "archive",
+        params: { itemId: "42" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as { alreadyClosed?: boolean };
+  assertEquals(output?.alreadyClosed, true);
+});
+
+/**
+ * ProductBacklogItem archive - viewとcloseの間の競合でも成功＋注記で返す。
+ * ユースケース: 並行二重実行・view OPEN後の状態遷移。
+ * 検証意図: 楽観的close失敗時のalready-closed正規化（TOCTOU対策）を確認する。
+ */
+Deno.test("ProductBacklogItem archive - should succeed with note on close race", async () => {
+  let callCount = 0;
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ state: "OPEN", closed: false }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 1, stdout: "", stderr: "already closed" });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive raced PBI",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "archive",
+        params: { itemId: "42" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as { alreadyClosed?: boolean; note?: string };
+  assertEquals(output?.alreadyClosed, true);
+  assertStringIncludes(output?.note ?? "", "#42");
+});
+
+/**
+ * ProductBacklogItem archive - view失敗時もclose失敗の正規化で成功＋注記で返す。
+ * ユースケース: view異常時の既closed品アーカイブ。
+ * 検証意図: view失敗のフォールスルー後にcloseがalready-closedで失敗しても冪等であることを確認する。
+ */
+Deno.test("ProductBacklogItem archive - should succeed with note if view fails but close reports already closed", async () => {
+  let callCount = 0;
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({ code: 1, stdout: "", stderr: "network error" });
+    }
+    return Promise.resolve({ code: 1, stdout: "", stderr: "already closed" });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive PBI with view failure",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "archive",
+        params: { itemId: "42" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as { alreadyClosed?: boolean };
+  assertEquals(output?.alreadyClosed, true);
+});
+
+/**
+ * ProductBacklogItem archive - OPEN明示時はcloseを実行する。
+ * ユースケース: 通常のアーカイブ実行。
+ * 検証意図: 未closed品ではview→closeの2呼出しになることを明示的に確認する。
+ */
+Deno.test("ProductBacklogItem archive - should close the issue if explicitly OPEN", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    if (calls.length === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ state: "OPEN", closed: false }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive open PBI",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "archive",
+        params: { itemId: "42" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].output, undefined);
+  assertEquals(calls.length, 2);
+  assertStringIncludes(calls[1].args.join(" "), "issue close 42");
 });
 
 Deno.test("ProductBacklogItem view - should return issue details with parent/milestone", async () => {
@@ -2278,6 +2492,110 @@ Deno.test("WorkPackage archive - should close the issue", async () => {
   assertEquals(result.stepResults[0].success, true);
   assertEquals(calls.length, 2);
   assertStringIncludes(calls[1].args.join(" "), "issue close 51");
+});
+
+/**
+ * WorkPackage archive - 既closed品は成功＋注記で返す（冪等化）。
+ * ユースケース: スプリント終了時の二重アーカイブ実行。
+ * 検証意図: success:true、alreadyClosed注記の存在、close未実行を確認する。
+ */
+Deno.test("WorkPackage archive - should succeed with note if issue is already closed", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ state: "CLOSED", closed: true }),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive closed WP",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "archive",
+        params: { itemId: "51" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "51");
+  const output = result.stepResults[0].output as { alreadyClosed?: boolean; note?: string };
+  assertEquals(output?.alreadyClosed, true);
+  assertStringIncludes(output?.note ?? "", "already closed");
+  assertStringIncludes(output?.note ?? "", "#51");
+  assertEquals(calls.length, 1);
+  assertStringIncludes(calls[0].args.join(" "), "issue view 51");
+});
+
+/**
+ * WorkPackage archive - closedのみtrue（state:OPEN）でも成功＋注記で返す。
+ * ユースケース: スプリント終了時の二重アーカイブ実行。
+ * 検証意図: OR条件のclosed側単独trueをカバーする。
+ */
+Deno.test("WorkPackage archive - should succeed with note if only closed flag is true", async () => {
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ state: "OPEN", closed: true }),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive closed WP",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "archive",
+        params: { itemId: "51" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as { alreadyClosed?: boolean };
+  assertEquals(output?.alreadyClosed, true);
+});
+
+/**
+ * WorkPackage archive - viewとcloseの間の競合でも成功＋注記で返す。
+ * ユースケース: 並行二重実行・view OPEN後の状態遷移。
+ * 検証意図: 楽観的close失敗時のalready-closed正規化（TOCTOU対策）を確認する。
+ */
+Deno.test("WorkPackage archive - should succeed with note on close race", async () => {
+  let callCount = 0;
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ state: "OPEN", closed: false }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 1, stdout: "", stderr: "already closed" });
+  };
+  const adapter = makeAdapter(runner);
+  const plan: Plan = {
+    summary: "archive raced WP",
+    steps: [
+      {
+        entity: "WorkPackage",
+        operation: "archive",
+        params: { itemId: "51" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  const output = result.stepResults[0].output as { alreadyClosed?: boolean; note?: string };
+  assertEquals(output?.alreadyClosed, true);
+  assertStringIncludes(output?.note ?? "", "#51");
 });
 
 Deno.test("WorkPackage estimateInitialEffort - should succeed with valid params", async () => {
@@ -3274,6 +3592,33 @@ Deno.test("Sprint endSprint - should fail without itemId", async () => {
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults[0].success, false);
   assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
+});
+
+/**
+ * Sprint endSprint - 既closedマイルストーンへの再実行も成功する（冪等確認）。
+ * ユースケース: スプリント終了処理の二重実行。
+ * 検証意図: Milestoneのstate=closedへのPATCHはAPI側で冪等であり、2回とも同一の
+ * close要求として成功すること（Issue closeとは別経路のため実装対象外）を確認する。
+ */
+Deno.test("Sprint endSprint - should succeed on already closed milestone", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+  const runTwice: Plan = {
+    summary: "end sprint twice",
+    steps: [
+      { entity: "Sprint", operation: "endSprint", params: { itemId: "5" } },
+      { entity: "Sprint", operation: "endSprint", params: { itemId: "5" } },
+    ],
+  };
+  const result = await adapter.execute(runTwice);
+  assertEquals(result.stepResults.length, 2);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[1].success, true);
+  assertEquals(calls.length, 2);
+  for (const call of calls) {
+    assertStringIncludes(call.args.join(" "), "/milestones/5");
+    assertStringIncludes(call.args.join(" "), "state=closed");
+  }
 });
 
 /**

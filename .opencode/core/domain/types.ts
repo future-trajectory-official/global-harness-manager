@@ -382,6 +382,15 @@ export interface StepResult {
   readonly error?: string;
 }
 
+/**
+ * 冪等化されたarchive操作の成功注記。
+ * 既closed品を閉じ直さず成功として返す際に `StepResult.output` に設定する。
+ */
+export interface IdempotentArchiveOutput {
+  readonly alreadyClosed: boolean;
+  readonly note: string;
+}
+
 // ======== Vision系 ========
 
 /** ビジョンステートメント。対象ユーザー・価値・差別化要因で構成。 */

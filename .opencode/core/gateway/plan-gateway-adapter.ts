@@ -968,9 +968,58 @@ export class PlanGatewayAdapter implements PlanGateway {
       return { operation: "archive", success: false, error: String(e) };
     }
     if (result.code !== 0) {
+      // 楽観的close後の競合（viewとcloseの間に閉じられた場合）も冪等に扱う。
+      if (/already closed/i.test(result.stderr)) {
+        return this.buildAlreadyClosedResult(itemId);
+      }
       return { operation: "archive", success: false, error: result.stderr };
     }
     return { operation: "archive", success: true, itemId };
+  }
+
+  /**
+   * 既closed品の冪等成功結果を組み立てる。
+   * @param itemId - 対象 Issue 番号
+   * @returns 成功＋注記（alreadyClosed）の StepResult
+   */
+  buildAlreadyClosedResult(itemId: string): StepResult {
+    return {
+      operation: "archive",
+      success: true,
+      itemId,
+      output: {
+        alreadyClosed: true,
+        note: `Issue #${itemId} is already closed`,
+      },
+    };
+  }
+
+  /**
+   * 対象 Issue が既closedか事前確認する。WP/PBI の archive ガード共通用。
+   * @param itemId - 対象 Issue 番号
+   * @returns 既closedの場合は冪等成功結果、未closed・判定不能の場合は null（close試行へ進む）
+   */
+  async checkAlreadyClosed(itemId: string): Promise<StepResult | null> {
+    const viewResult = await this.runCommand("gh", [
+      "issue",
+      "view",
+      itemId,
+      "--json",
+      "state,closed",
+      ...this.buildRepoArg(),
+    ]);
+    if (viewResult.code === 0) {
+      try {
+        const viewData = JSON.parse(viewResult.stdout) as { state?: string; closed?: boolean };
+        if (viewData.state === "CLOSED" || viewData.closed) {
+          return this.buildAlreadyClosedResult(itemId);
+        }
+      } catch {
+        // view応答のparse失敗時は判定不能としてclose試行へフォールスルーする。
+      }
+    }
+    // view失敗時は判定不能としてclose試行へフォールスルーする。
+    return null;
   }
 
   /** 現在のスコープのowner名を返す。Handlerから参照される。 */
