@@ -1,7 +1,7 @@
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { fsUtil, pathUtil } from "./fs.ts";
 import { dirname, join } from "@std/path";
-import { zipSync } from "fflate";
+import { create as createZipArchive } from "@quentinadam/zip";
 
 /**
  * pathUtil.resolvePath - 相対パスがカレントディレクトリ基準で正しく解決されることを検証する。
@@ -234,17 +234,42 @@ Deno.test("fsUtil.extract - should extract zip files", async () => {
   const zipFile = join(tempDir, "test.zip");
   const extractDest = join(tempDir, "out");
 
-  // fflate を使用してテスト用 zip データを作成
-  const zipData = zipSync({
-    "file1.txt": new TextEncoder().encode("hello zip"),
-    "dir/file2.txt": new TextEncoder().encode("world zip"),
-  });
+  // @quentinadam/zip を使用してテスト用 zip データを作成
+  const zipData = await createZipArchive([
+    { name: "file1.txt", data: new TextEncoder().encode("hello zip") },
+    { name: "dir/file2.txt", data: new TextEncoder().encode("world zip") },
+  ]);
   await Deno.writeFile(zipFile, zipData);
 
   try {
     await fsUtil.extract(zipFile, extractDest);
     assertEquals(await Deno.readTextFile(join(extractDest, "file1.txt")), "hello zip");
     assertEquals(await Deno.readTextFile(join(extractDest, "dir", "file2.txt")), "world zip");
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
+
+/**
+ * fsUtil.extract - ディレクトリエントリを含む zip を正しく展開できることを検証する(C1対応)。
+ * @quentinadam/zip はディレクトリエントリを `name: "dir/"` で返すため、writeFile でなく mkdir に
+ * 振り分けられることを確認する。
+ */
+Deno.test("fsUtil.extract - should extract zip files with directory entries", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const zipFile = join(tempDir, "test.zip");
+  const extractDest = join(tempDir, "out");
+
+  const zipData = await createZipArchive([
+    { name: "emptydir/", data: new TextEncoder().encode("") },
+    { name: "dir/file2.txt", data: new TextEncoder().encode("world zip") },
+  ]);
+  await Deno.writeFile(zipFile, zipData);
+
+  try {
+    await fsUtil.extract(zipFile, extractDest);
+    assertEquals(await Deno.readTextFile(join(extractDest, "dir", "file2.txt")), "world zip");
+    assert((await Deno.stat(join(extractDest, "emptydir"))).isDirectory);
   } finally {
     await Deno.remove(tempDir, { recursive: true });
   }

@@ -224,7 +224,14 @@ export async function applyRenameMap(
       continue;
     }
     if (await fsUtil.exists(destDir)) {
-      logger.warn(`Rename target already exists: ${destDir}. Skipping (idempotent).`);
+      // 再配布時、コピーで非global名ソースが再生成されるため、target(global-)既存なら
+      // 古い非globalソースを掃除して収束させる（冪等）。
+      if (!isDryRun) {
+        await fsUtil.remove(fromDir, { recursive: true });
+        logger.info(`  Removed stale source (target exists): ${fromDir}`);
+      } else {
+        logger.dryRun(`Would remove stale source: ${fromDir}`);
+      }
       continue;
     }
     if (isDryRun) {
@@ -236,6 +243,104 @@ export async function applyRenameMap(
     applied.push(entry);
   }
   return applied;
+}
+
+/**
+ * 配布先の SKILL.md frontmatter の `name:` を `global-{name}` へ書き換える（AC2・PO指摘対応）。
+ * OpenCode は `name` を「SKILL.md を含むディレクトリ名と一致」を必須とするため、
+ * ディレクトリ rename だけでは不整合となり読込不能になる。frontmatter の `name:` を
+ * ディレクトリ名（`global-{name}`）へ揃える。
+ * @param destRoot - 配布先ルート
+ * @param map - `applyRenameMap` が適用したマップ（`{before, after, bundle, name}`）
+ * @param isDryRun - true の場合は書き換えせずログのみ
+ */
+export async function rewriteSkillFrontmatter(
+  destRoot: string,
+  map: RenameEntry[],
+  isDryRun: boolean,
+): Promise<void> {
+  for (const entry of map) {
+    const skillDir = pathUtil.joinPath(
+      destRoot,
+      SKILLS_DIR,
+      BUNDLES_DIR,
+      entry.bundle,
+      entry.after.split("/").pop()!,
+    );
+    const skillFile = pathUtil.joinPath(skillDir, "SKILL.md");
+    if (!(await fsUtil.exists(skillFile))) {
+      logger.warn(`SKILL.md not found: ${skillFile}. Skipping.`);
+      continue;
+    }
+    const content = await fsUtil.readTextFile(skillFile);
+    const globalName = entry.after.split("/").pop()!;
+    const updated = content.replace(
+      new RegExp(`^name:[ \\t]*${escapeRegExp(entry.name)}[ \\t]*$`, "m"),
+      `name: ${globalName}`,
+    );
+    if (updated === content) {
+      logger.warn(`name: field not rewritten: ${skillFile} (expected ${entry.name}).`);
+      continue;
+    }
+    await fsUtil.writeTextFile(skillFile, updated, isDryRun);
+    logger.info(`  Rewrote name: ${entry.name} -> ${globalName} (${skillFile})`);
+  }
+}
+
+/** 正規表現用にメタ文字をエスケープする。 */
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * 配布先の Markdown ファイルの参照を書き換える（AC2・PO指摘対応）。
+ * - `.opencode/skills/bundles/<bundle>/<name>` → `<destRoot>/skills/bundles/<bundle>/global-<name>`
+ * - `.opencode/{agents,commands,guides,context,core}/` → `<destRoot>/{dir}/`
+ * - `[skill:<name>]` → `[skill:global-<name>]`
+ * 対象は .md のみ（.ts の相対 import や設定は構造保持のため触れない）。
+ * @param destRoot - 配布先ルート
+ * @param isDryRun - true の場合は書き換えせずログのみ
+ */
+export async function rewriteReferences(
+  destRoot: string,
+  isDryRun: boolean,
+): Promise<void> {
+  const files = await collectMarkdownFiles(destRoot);
+  for (const file of files) {
+    const content = await fsUtil.readTextFile(file);
+    let updated = content;
+    // 1) スキルパス＋名前（先頭 / の有無を吸収）
+    updated = updated.replace(
+      /(?:\/)?\.opencode\/skills\/bundles\/([a-z0-9-]+)\/([a-z0-9-]+)/g,
+      `${destRoot}/skills/bundles/$1/global-$2`,
+    );
+    // 2) その他の .opencode ディレクトリ参照
+    updated = updated.replace(
+      /(?:\/)?\.opencode\/(agents|commands|guides|context|core)\//g,
+      `${destRoot}/$1/`,
+    );
+    // 3) スキル呼出（skill tool）名。既に global- 化済みは置換しない（冪等。C2対応）。
+    updated = updated.replace(/\[skill:(?!global-)([a-z0-9-]+)\]/g, "[skill:global-$1]");
+    if (updated !== content) {
+      await fsUtil.writeTextFile(file, updated, isDryRun);
+      logger.info(`  Rewrote references: ${file}`);
+    }
+  }
+}
+
+/** 配布先の .md ファイルを再帰的に収集する。 */
+async function collectMarkdownFiles(root: string): Promise<string[]> {
+  const found: string[] = [];
+  if (!(await fsUtil.exists(root))) return found;
+  for await (const entry of Deno.readDir(root)) {
+    const full = pathUtil.joinPath(root, entry.name);
+    if (entry.isDirectory) {
+      found.push(...await collectMarkdownFiles(full));
+    } else if (entry.name.endsWith(".md")) {
+      found.push(full);
+    }
+  }
+  return found;
 }
 
 /** 変換マップを JSON として配布先へ書き込む（C3段階抽出）。 */
@@ -284,6 +389,12 @@ async function main(): Promise<void> {
     logger.info("Applying skill rename (global- prefix)...");
     const appliedMap = await applyRenameMap(renameMap, destRoot, isDryRun);
     await writeRenameMap(destRoot, appliedMap, isDryRun);
+
+    logger.info("Rewriting skill frontmatter and references (global- consistency)...");
+    // frontmatter 書き換えは rename 成否に依らず全スキル分を対象とする（再実行時は
+    // rename が skip され appliedMap が空になるため、全件の renameMap を使う）。
+    await rewriteSkillFrontmatter(destRoot, renameMap, isDryRun);
+    await rewriteReferences(destRoot, isDryRun);
 
     logger.info("Distribute completed.");
   } catch (e) {
