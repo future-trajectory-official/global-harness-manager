@@ -6,6 +6,8 @@ import {
   collectSkills,
   COPY_DIRS,
   normalizeSkillName,
+  rewriteReferences,
+  rewriteSkillFrontmatter,
 } from "./distribute-harness.ts";
 
 Deno.test("normalizeSkillName - global-接頭辞を付与し小文字ハイフン化する", () => {
@@ -152,6 +154,71 @@ Deno.test("applyRenameMap - 正常時にリネームしてマップを返す", a
     assertEquals(applied.length, 1);
     const exists = await Deno.stat(`${root}/skills/bundles/b1/global-foo`);
     assert(exists.isDirectory);
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("rewriteSkillFrontmatter - name: を global- 形式へ書き換える(AC2)", async () => {
+  const root = await Deno.makeTempDir({ prefix: "dist-fm-" });
+  try {
+    const skillDir = `${root}/skills/bundles/b1/global-foo`;
+    await Deno.mkdir(skillDir, { recursive: true });
+    await Deno.writeTextFile(
+      `${skillDir}/SKILL.md`,
+      "---\nname: foo\ndescription: bar\n---\nbody\n",
+    );
+    const map = [{ before: "b1/foo", after: "global-foo", bundle: "b1", name: "foo" }];
+    await rewriteSkillFrontmatter(root, map, false);
+    const content = await Deno.readTextFile(`${skillDir}/SKILL.md`);
+    assert(content.includes("name: global-foo"), "name must be rewritten to global-");
+    assert(!content.includes("name: foo"), "old name must be gone");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("rewriteReferences - .opencodeパスとskill名をグローバル化する(AC2)", async () => {
+  const root = await Deno.makeTempDir({ prefix: "dist-ref-" });
+  try {
+    const file = `${root}/cmd.md`;
+    await Deno.writeTextFile(
+      file,
+      "See [session-planning](/.opencode/skills/bundles/management-bundle/session-planning/SKILL.md)\n" +
+        "run [skill:ac-checkpoint-implementation]\n" +
+        "agent [scrum-master.md](/.opencode/agents/scrum-master.md)\n" +
+        "guide /.opencode/guides/backlog-guidelines.md\n",
+    );
+    await rewriteReferences(root, false);
+    const content = await Deno.readTextFile(file);
+    assert(content.includes(`${root}/skills/bundles/management-bundle/global-session-planning`));
+    assert(!content.includes("bundle/session-planning"), "old skill path must be gone");
+    assert(content.includes("[skill:global-ac-checkpoint-implementation]"));
+    assert(!content.includes("[skill:ac-checkpoint-implementation]"));
+    assert(content.includes(`${root}/agents/scrum-master.md`));
+    assert(content.includes(`${root}/guides/backlog-guidelines.md`));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("rewriteReferences - 既にglobal-化済みのskill名は二重化しない(冪等・C2)", async () => {
+  const root = await Deno.makeTempDir({ prefix: "dist-ref-" });
+  try {
+    const file = `${root}/cmd.md`;
+    await Deno.writeTextFile(
+      file,
+      "run [skill:global-ac-checkpoint-implementation]\n" +
+        "run [skill:ac-checkpoint-implementation]\n",
+    );
+    await rewriteReferences(root, false);
+    const content = await Deno.readTextFile(file);
+    assert(content.includes("[skill:global-ac-checkpoint-implementation]"));
+    assert(!content.includes("[skill:global-global-ac-checkpoint-implementation]"));
+    assert(
+      !content.includes("[skill:ac-checkpoint-implementation]"),
+      "non-global must be globalized",
+    );
   } finally {
     await Deno.remove(root, { recursive: true });
   }
