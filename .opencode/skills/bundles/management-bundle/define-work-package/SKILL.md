@@ -28,6 +28,8 @@ PBIのタスク分解としてWPを作成し、初期見積りを記録する。
   [references/reference.md](/.opencode/skills/bundles/management-bundle/define-work-package/references/reference.md)
   で確認すること。
 - `--dry-run` でPlan内容を確認してから本実行に移ること。
+- **WP分解時の前提確認（必須）**:
+  PBIをWPへ分解する際は、AC（受入基準）の記述をレビュー計画の検証項目に整合させ、記録対象の具体物を明記すること（過去スプリントでAC-4の曖昧さが証跡集約の後付けを招いたため）。PBI本文に明記された命名・形式等の確定事項は鵜呑みにせず、該当箇所をPOへ事前確認すること。
 
 ## Quick-Start
 
