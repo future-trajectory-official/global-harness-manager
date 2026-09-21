@@ -1,27 +1,61 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@quentinadam/assert@~0.1.18": "0.1.18",
+    "jsr:@quentinadam/ensure@~0.1.6": "0.1.6",
+    "jsr:@quentinadam/uint8array-extension@~0.1.19": "0.1.19",
+    "jsr:@quentinadam/zip@~0.1.17": "0.1.17",
     "jsr:@std/assert@1.0.7": "1.0.7",
+    "jsr:@std/assert@^1.0.19": "1.0.19",
     "jsr:@std/assert@^1.0.7": "1.0.19",
+    "jsr:@std/async@^1.5.0": "1.5.0",
     "jsr:@std/cli@*": "1.0.29",
     "jsr:@std/cli@1.0.6": "1.0.6",
     "jsr:@std/cli@^1.0.6": "1.0.29",
+    "jsr:@std/data-structures@^1.1.2": "1.1.2",
+    "jsr:@std/fmt@^1.0.10": "1.0.10",
     "jsr:@std/fs@1": "1.0.24",
-    "jsr:@std/internal@^1.0.12": "1.0.13",
-    "jsr:@std/internal@^1.0.13": "1.0.13",
+    "jsr:@std/fs@^1.0.24": "1.0.24",
+    "jsr:@std/internal@^1.0.12": "1.0.14",
+    "jsr:@std/internal@^1.0.13": "1.0.14",
     "jsr:@std/internal@^1.0.14": "1.0.14",
     "jsr:@std/internal@^1.0.5": "1.0.13",
     "jsr:@std/path@*": "1.1.4",
     "jsr:@std/path@1.0.8": "1.0.8",
-    "jsr:@std/path@^1.0.8": "1.1.4",
+    "jsr:@std/path@^1.0.8": "1.1.6",
     "jsr:@std/path@^1.1.5": "1.1.6",
+    "jsr:@std/path@^1.1.6": "1.1.6",
     "jsr:@std/streams@^1.0.17": "1.1.0",
     "jsr:@std/tar@~0.1.3": "0.1.10",
+    "jsr:@std/testing@^1.0.9": "1.0.20",
     "jsr:@std/yaml@^1.0.4": "1.1.1",
-    "npm:@cfworker/json-schema@4": "4.1.1",
-    "npm:fflate@~0.8.2": "0.8.2"
+    "jsr:@steady/json-pointer@0.1": "0.1.0",
+    "jsr:@steady/json-schema@0.1.0": "0.1.0"
   },
   "jsr": {
+    "@quentinadam/assert@0.1.18": {
+      "integrity": "33a484ad66cab3d5453f69730d49c05bded72b7ff1bd54b5cc3fc2327fe314ca"
+    },
+    "@quentinadam/ensure@0.1.6": {
+      "integrity": "67ac14be280165486613bab54c619bad1783e569601584c3ad63536f08610818",
+      "dependencies": [
+        "jsr:@quentinadam/assert"
+      ]
+    },
+    "@quentinadam/uint8array-extension@0.1.19": {
+      "integrity": "485b6b7fbc265502c11ccbe151f90f240b59399a40f9e3cef2003e36f950249a",
+      "dependencies": [
+        "jsr:@quentinadam/assert"
+      ]
+    },
+    "@quentinadam/zip@0.1.17": {
+      "integrity": "437d187f6f0161cc6e1575e90266cc10e10c753999756fb13e87d80f56d10251",
+      "dependencies": [
+        "jsr:@quentinadam/assert",
+        "jsr:@quentinadam/ensure",
+        "jsr:@quentinadam/uint8array-extension"
+      ]
+    },
     "@std/assert@1.0.7": {
       "integrity": "64ce9fac879e0b9f3042a89b3c3f8ccfc9c984391af19e2087513a79d73e28c3",
       "dependencies": [
@@ -34,18 +68,29 @@
         "jsr:@std/internal@^1.0.12"
       ]
     },
+    "@std/async@1.5.0": {
+      "integrity": "4c1f22d287a17ad7d8643b1952bc5a4d21e5d8b68dc8c20d8268eecc69096e82"
+    },
     "@std/cli@1.0.6": {
       "integrity": "d22d8b38c66c666d7ad1f2a66c5b122da1704f985d3c47f01129f05abb6c5d3d"
     },
     "@std/cli@1.0.29": {
       "integrity": "fa4ef29130baa834d8a13b7d138240c3a2fcfba740bfb7afa646a360a15ec84f",
       "dependencies": [
+        "jsr:@std/fmt",
         "jsr:@std/internal@^1.0.13"
       ]
+    },
+    "@std/data-structures@1.1.2": {
+      "integrity": "2471377c9e0051f9ec34e57d0ebd0ad133a5a889677446ec6ba9938e4e102918"
+    },
+    "@std/fmt@1.0.10": {
+      "integrity": "90dfba288802ac6de82fb31d0917eb9e4450b9925b954d5e51fc29ac07419db5"
     },
     "@std/fs@1.0.24": {
       "integrity": "f3061b45b81673a2bece689da041df32d174be064c89eb6397fb5718d3fb7877",
       "dependencies": [
+        "jsr:@std/internal@^1.0.14",
         "jsr:@std/path@^1.1.5"
       ]
     },
@@ -79,16 +124,28 @@
         "jsr:@std/streams"
       ]
     },
+    "@std/testing@1.0.20": {
+      "integrity": "21380ed438672762e4ec549cbf4fe41c5b68f5598773a30b64abe7375513e721",
+      "dependencies": [
+        "jsr:@std/assert@^1.0.19",
+        "jsr:@std/async",
+        "jsr:@std/data-structures",
+        "jsr:@std/fs@^1.0.24",
+        "jsr:@std/internal@^1.0.14",
+        "jsr:@std/path@^1.1.6"
+      ]
+    },
     "@std/yaml@1.1.1": {
       "integrity": "a57665ecf3d17b926380593a56625d8a10cc7281802f1e993b5ebc94a48e71f8"
-    }
-  },
-  "npm": {
-    "@cfworker/json-schema@4.1.1": {
-      "integrity": "sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og=="
     },
-    "fflate@0.8.2": {
-      "integrity": "sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A=="
+    "@steady/json-pointer@0.1.0": {
+      "integrity": "91d4d01efcc854059308d31a0160cad8c91506058537fd0602b915b201566574"
+    },
+    "@steady/json-schema@0.1.0": {
+      "integrity": "709af8910293eac25acd0f778994eda9ba2180af3a8dd9f95a86a7c4b08a654f",
+      "dependencies": [
+        "jsr:@steady/json-pointer"
+      ]
     }
   },
   "redirects": {
@@ -243,15 +300,14 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@quentinadam/zip@~0.1.17",
       "jsr:@std/assert@^1.0.7",
       "jsr:@std/cli@^1.0.6",
       "jsr:@std/fs@1",
       "jsr:@std/path@^1.0.8",
       "jsr:@std/tar@~0.1.3",
       "jsr:@std/testing@^1.0.9",
-      "jsr:@std/yaml@^1.0.4",
-      "npm:@cfworker/json-schema@4",
-      "npm:fflate@~0.8.2"
+      "jsr:@std/yaml@^1.0.4"
     ]
   }
 }

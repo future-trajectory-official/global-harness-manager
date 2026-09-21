@@ -1,5 +1,5 @@
 import { dirname, join, normalize, resolve } from "@std/path";
-import { unzipSync } from "fflate";
+import { extract as extractZipArchive } from "@quentinadam/zip";
 import { UntarStream } from "@std/tar";
 import { logger } from "./logger.ts";
 
@@ -192,19 +192,19 @@ export const fsUtil = {
 };
 
 /**
- * Zip ファイルを展開します (fflate)
+ * Zip ファイルを展開します (@quentinadam/zip)
  */
 async function extractZip(src: string, dest: string): Promise<void> {
   const data = await Deno.readFile(src);
-  const unzipped = unzipSync(data) as Record<string, Uint8Array>;
+  const entries = await extractZipArchive(data);
 
-  for (const [relativePath, content] of Object.entries(unzipped)) {
-    const fullPath = join(dest, relativePath);
-    if (relativePath.endsWith("/")) {
+  for (const entry of entries) {
+    const fullPath = join(dest, entry.name);
+    if (entry.name.endsWith("/")) {
       await Deno.mkdir(fullPath, { recursive: true });
     } else {
       await Deno.mkdir(dirname(fullPath), { recursive: true });
-      await Deno.writeFile(fullPath, content);
+      await Deno.writeFile(fullPath, entry.data);
     }
   }
 }

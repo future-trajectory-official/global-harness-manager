@@ -3,7 +3,7 @@
  * 検証意図: 正常系・異常系の全パターンを網羅する
  */
 
-import { assertEquals } from "@std/assert";
+import { assert, assertEquals } from "@std/assert";
 import { validateHarnessConfig } from "./validate-harnessrc.ts";
 
 const validConfig = {
@@ -171,4 +171,20 @@ Deno.test("AC-4: customFields の必須フィールドが欠損していると�
   const result = validateHarnessConfig(configWithMissingCustomField, schema);
   assertEquals(result.valid, false);
   assertEquals(result.errors.length > 0, true);
+});
+
+Deno.test("AC-5: 未対応キーワードを含むスキーマは fail-fast する(M3)", () => {
+  const unsupportedSchema = { ...schema, pattern: "^x" };
+  const result = validateHarnessConfig(validConfig, unsupportedSchema);
+  assertEquals(result.valid, false);
+  assert(result.errors.some((e) => e.message.includes("unsupported JSON Schema keyword")));
+});
+
+Deno.test("AC-5: 配列型の type を許容する(M3)", () => {
+  const schemaWithArrayType = {
+    ...schema,
+    properties: { ...schema.properties, version: { type: ["string", "null"] } },
+  };
+  const result = validateHarnessConfig({ ...validConfig, version: null }, schemaWithArrayType);
+  assertEquals(result.valid, true);
 });
