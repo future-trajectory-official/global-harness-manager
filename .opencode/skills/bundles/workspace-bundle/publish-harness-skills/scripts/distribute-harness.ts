@@ -190,9 +190,10 @@ export async function executeCopyPlan(
 }
 
 /**
- * リネームマップを配布先に適用する（冪等。M1対応）。
- * リネーム元が存在しない場合は skip、リネーム先（`global-`）が既に存在する場合も
- * skip して冪等にし、適用成功分のみのマップを返す（M4対応）。
+ * リネームマップを配布先に適用する。
+ * リネーム元が存在しない場合は skip する。リネーム先（`global-`）が既に存在する
+ * 場合は内容を最新化する（置換）。再配布で修正を反映させるため。
+ * 適用成功分のみのマップを返す（M4対応）。
  * @param map - `buildRenameMap` の出力
  * @param destRoot - 配布先ルート
  * @param isDryRun - dry-run 時は実行せずログのみ
@@ -224,14 +225,16 @@ export async function applyRenameMap(
       continue;
     }
     if (await fsUtil.exists(destDir)) {
-      // 再配布時、コピーで非global名ソースが再生成されるため、target(global-)既存なら
-      // 古い非globalソースを掃除して収束させる（冪等）。
+      // 再配布時、適用済み global- ディレクトリの内容を最新化する（置換）。
+      // 従来の skip では既存 global- 配下が更新されず、修正の再配布が反映されない。
       if (!isDryRun) {
-        await fsUtil.remove(fromDir, { recursive: true });
-        logger.info(`  Removed stale source (target exists): ${fromDir}`);
+        await fsUtil.remove(destDir, { recursive: true });
+        await fsUtil.move(fromDir, destDir);
+        logger.info(`  Refreshed: ${fromDir} -> ${destDir}`);
       } else {
-        logger.dryRun(`Would remove stale source: ${fromDir}`);
+        logger.dryRun(`Would refresh: ${fromDir} -> ${destDir}`);
       }
+      applied.push(entry);
       continue;
     }
     if (isDryRun) {
@@ -298,6 +301,8 @@ function escapeRegExp(text: string): string {
  * - `.opencode/{agents,commands,guides,context,core}/` → `<destRoot>/{dir}/`
  * - `[skill:<name>]` → `[skill:global-<name>]`
  * 対象は .md のみ（.ts の相対 import や設定は構造保持のため触れない）。
+ * ただしスキルディレクトリ名（`global-` リネーム）の影響を受ける .ts 内参照は
+ * `rewriteSkillImports` で書き換える。
  * @param destRoot - 配布先ルート
  * @param isDryRun - true の場合は書き換えせずログのみ
  */
@@ -326,6 +331,58 @@ export async function rewriteReferences(
       logger.info(`  Rewrote references: ${file}`);
     }
   }
+}
+
+/**
+ * 配布先の TypeScript ファイル内のスキル参照を書き換える。
+ * - `bundles/<bundle>/<name>/` → `bundles/<bundle>/global-<name>/`
+ * 静的相対 import が配布後の `global-` リネーム済みディレクトリを指すようにする。
+ * 既に `global-` 化済みのパスには一致しないため冪等。
+ * 対象は配布先 `skills/` 配下の .ts のみ。
+ * @param destRoot - 配布先ルート
+ * @param map - `applyRenameMap` が適用したマップ（`{before, after, bundle, name}`）
+ * @param isDryRun - true の場合は書き換えせずログのみ
+ */
+export async function rewriteSkillImports(
+  destRoot: string,
+  map: RenameEntry[],
+  isDryRun: boolean,
+): Promise<void> {
+  const skillsDir = pathUtil.joinPath(destRoot, SKILLS_DIR);
+  const files = await collectTsFiles(skillsDir);
+  for (const file of files) {
+    const content = await fsUtil.readTextFile(file);
+    let updated = content;
+    for (const entry of map) {
+      const afterName = entry.after.split("/").pop()!;
+      updated = updated.replace(
+        new RegExp(
+          `bundles/${escapeRegExp(entry.bundle)}/${escapeRegExp(entry.name)}/`,
+          "g",
+        ),
+        `bundles/${entry.bundle}/${afterName}/`,
+      );
+    }
+    if (updated !== content) {
+      await fsUtil.writeTextFile(file, updated, isDryRun);
+      logger.info(`  Rewrote skill imports: ${file}`);
+    }
+  }
+}
+
+/** 配布先の .ts ファイルを再帰的に収集する。 */
+async function collectTsFiles(root: string): Promise<string[]> {
+  const found: string[] = [];
+  if (!(await fsUtil.exists(root))) return found;
+  for await (const entry of Deno.readDir(root)) {
+    const full = pathUtil.joinPath(root, entry.name);
+    if (entry.isDirectory) {
+      found.push(...await collectTsFiles(full));
+    } else if (entry.name.endsWith(".ts")) {
+      found.push(full);
+    }
+  }
+  return found;
 }
 
 /** 配布先の .md ファイルを再帰的に収集する。 */
@@ -395,6 +452,7 @@ async function main(): Promise<void> {
     // rename が skip され appliedMap が空になるため、全件の renameMap を使う）。
     await rewriteSkillFrontmatter(destRoot, renameMap, isDryRun);
     await rewriteReferences(destRoot, isDryRun);
+    await rewriteSkillImports(destRoot, renameMap, isDryRun);
 
     logger.info("Distribute completed.");
   } catch (e) {

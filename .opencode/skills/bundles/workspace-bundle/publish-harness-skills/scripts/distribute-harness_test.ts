@@ -8,6 +8,7 @@ import {
   normalizeSkillName,
   rewriteReferences,
   rewriteSkillFrontmatter,
+  rewriteSkillImports,
 } from "./distribute-harness.ts";
 
 Deno.test("normalizeSkillName - global-接頭辞を付与し小文字ハイフン化する", () => {
@@ -132,14 +133,18 @@ Deno.test("applyRenameMap - リネーム元不在はskipしマップに含めな
   }
 });
 
-Deno.test("applyRenameMap - リネーム先既存はskipし冪等にする(M1)", async () => {
+Deno.test("applyRenameMap - リネーム先既存は内容を最新化する(再配布更新)", async () => {
   const root = await Deno.makeTempDir({ prefix: "dist-rename-" });
   try {
     await Deno.mkdir(`${root}/skills/bundles/b1/foo`, { recursive: true });
+    await Deno.writeTextFile(`${root}/skills/bundles/b1/foo/a.ts`, "new");
     await Deno.mkdir(`${root}/skills/bundles/b1/global-foo`, { recursive: true });
+    await Deno.writeTextFile(`${root}/skills/bundles/b1/global-foo/a.ts`, "old");
     const map = buildRenameMap([{ bundle: "b1", name: "foo" }]);
     const applied = await applyRenameMap(map, root, false);
-    assertEquals(applied.length, 0, "existing dest must be skipped (idempotent)");
+    assertEquals(applied.length, 1, "refreshed dest must be included");
+    const content = await Deno.readTextFile(`${root}/skills/bundles/b1/global-foo/a.ts`);
+    assertEquals(content, "new", "existing dest content must be refreshed");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
@@ -219,6 +224,51 @@ Deno.test("rewriteReferences - 既にglobal-化済みのskill名は二重化し�
       !content.includes("[skill:ac-checkpoint-implementation]"),
       "non-global must be globalized",
     );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("rewriteSkillImports - .ts内のスキル参照をglobal-化する", async () => {
+  const root = await Deno.makeTempDir({ prefix: "dist-ts-" });
+  try {
+    const dir = `${root}/skills/bundles/development-bundle/develop-environment-setup/scripts`;
+    await Deno.mkdir(dir, { recursive: true });
+    await Deno.writeTextFile(
+      `${dir}/manage-sandbox.ts`,
+      'import { x } from "../../../../../skills/bundles/workspace-bundle/setup-harness-env/scripts/setup-hooks.ts";\n',
+    );
+    const map = [{
+      before: "workspace-bundle/setup-harness-env",
+      after: "global-setup-harness-env",
+      bundle: "workspace-bundle",
+      name: "setup-harness-env",
+    }];
+    await rewriteSkillImports(root, map, false);
+    const content = await Deno.readTextFile(`${dir}/manage-sandbox.ts`);
+    assert(
+      content.includes("bundles/workspace-bundle/global-setup-harness-env/scripts/setup-hooks.ts"),
+      "skill ref must be globalized",
+    );
+    assert(!content.includes("bundle/setup-harness-env/"), "old skill path must be gone");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("rewriteSkillImports - 既にglobal-化済みは変更しない(冪等)", async () => {
+  const root = await Deno.makeTempDir({ prefix: "dist-ts-" });
+  try {
+    const dir = `${root}/skills/bundles/b1`;
+    await Deno.mkdir(dir, { recursive: true });
+    const before =
+      'import { x } from "../global-foo/mod.ts";\nimport { y } from "../foo/mod.ts";\n';
+    await Deno.writeTextFile(`${dir}/a.ts`, before);
+    const map = [{ before: "b1/foo", after: "global-foo", bundle: "b1", name: "foo" }];
+    await rewriteSkillImports(root, map, false);
+    const content = await Deno.readTextFile(`${dir}/a.ts`);
+    assert(!content.includes("global-global-foo"), "must not double prefix");
+    assert(content.includes('"../global-foo/mod.ts"'), "globalized ref must remain");
   } finally {
     await Deno.remove(root, { recursive: true });
   }

@@ -1,7 +1,7 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { join } from "@std/path";
 
-import { fsUtil } from "../../../../../../.opencode/core/harness-core.ts";
+import { fsUtil } from "../../../../../core/harness-core.ts";
 import { installGh, type InstallGhDeps } from "./setup.ts";
 
 const TAR_OFFSET_NAME = 0;
