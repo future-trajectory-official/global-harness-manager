@@ -6,8 +6,8 @@ import {
   getSkillAssetPath,
   logger,
   PATHS,
-} from "../../../../../../.opencode/core/harness-core.ts";
-import { setupGitHooks } from "../../../../../../.opencode/skills/bundles/workspace-bundle/setup-harness-env/scripts/setup-hooks.ts";
+} from "../../../../../core/harness-core.ts";
+import { setupGitHooks } from "../../../../../skills/bundles/workspace-bundle/setup-harness-env/scripts/setup-hooks.ts";
 
 const DEFAULT_SANDBOX_BASE = "/tmp/harness-sandboxes";
 
