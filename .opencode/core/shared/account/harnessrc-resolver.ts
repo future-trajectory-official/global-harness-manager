@@ -120,3 +120,74 @@ export function resolveHarnessRcPath(
   });
   return findFirstExisting(candidates, deps.exists);
 }
+
+/** `.harnessrc` から読み取った設定切替情報（ボード番号・フィールド名）。 */
+export interface HarnessRcConfig {
+  /** ボード種別（productBacklog/sprintBoard/retrospectiveBoard）と番号の対応。 */
+  readonly projects: Record<string, number>;
+  /** harness-* フィールド名の対応。 */
+  readonly fields: Record<string, string>;
+}
+
+/**
+ * 解決済みパスから `.harnessrc` の設定切替情報を読み取る。
+ *
+ * 明示パス（`HARNESS_RC_PATH` 解決結果を含む）で指定されたファイルを読み、
+ * JSON を解析して projects/fields を返す。composition-root の読込処理の
+ * テスト可能な抽出であり、挙動は従来どおり（欠落時は空オブジェクト）。
+ * 型に合わない値（非数値のボード番号・非文字列のフィールド名）は除外し、
+ * projects/fields 自体がオブジェクトでない場合は空オブジェクトとする。
+ *
+ * @param path `resolveHarnessRcPath` の解決結果。null の場合は null を返す
+ * @param readFile ファイル読込関数（テスト用に注入可能。既定は `Deno.readTextFileSync`）
+ * @returns 設定切替情報。読込失敗・不正 JSON の場合は null
+ */
+export function loadHarnessRcConfig(
+  path: string | null,
+  readFile: (path: string) => string = Deno.readTextFileSync,
+): HarnessRcConfig | null {
+  if (!path) return null;
+  try {
+    const parsed: unknown = JSON.parse(readFile(path));
+    return {
+      projects: sanitizeNumberRecord(
+        typeof parsed === "object" && parsed !== null
+          ? (parsed as Record<string, unknown>).projects
+          : undefined,
+      ),
+      fields: sanitizeStringRecord(
+        typeof parsed === "object" && parsed !== null
+          ? (parsed as Record<string, unknown>).fields
+          : undefined,
+      ),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function sanitizeNumberRecord(value: unknown): Record<string, number> {
+  if (!isRecord(value)) return {};
+  const result: Record<string, number> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry === "number" && Number.isFinite(entry)) {
+      result[key] = entry;
+    }
+  }
+  return result;
+}
+
+function sanitizeStringRecord(value: unknown): Record<string, string> {
+  if (!isRecord(value)) return {};
+  const result: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof entry === "string") {
+      result[key] = entry;
+    }
+  }
+  return result;
+}
