@@ -1,4 +1,5 @@
 import { executeCommand, type ExecuteResult } from "../shared/io/command.ts";
+import { parseGitRemoteUrl } from "../shared/account/account-identifier.ts";
 import { logger } from "../shared/io/logger.ts";
 import type {
   EntityScope,
@@ -807,8 +808,11 @@ export class PlanGatewayAdapter implements PlanGateway {
     }
 
     const remoteUrl = remoteResult.stdout.trim();
-    const remoteOwner = remoteUrl.match(/(?:github\.com[/:])([\w.-]+)\//)?.[1];
-    const remoteRepo = remoteUrl.match(/(?:github\.com[/:][\w.-]+\/)([\w.-]+?)(?:\.git)?$/)?.[1];
+    // github.com 系の抽出は共有ヘルパーに一本化（正規表現の二重管理を解消）。
+    // 非GitHub SSH のフォールバックは本関数の責務として残す。
+    const parsedScope = parseGitRemoteUrl(remoteUrl);
+    const remoteOwner = parsedScope?.owner;
+    const remoteRepo = parsedScope?.repository;
     if (!remoteOwner || !remoteRepo) {
       const sshMatch = remoteUrl.match(/^git@[^:]+:([\w.-]+)\/([\w.-]+?)(?:\.git)?$/);
       if (sshMatch) {
