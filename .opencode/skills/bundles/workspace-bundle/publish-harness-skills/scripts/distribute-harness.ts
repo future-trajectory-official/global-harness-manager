@@ -190,9 +190,10 @@ export async function executeCopyPlan(
 }
 
 /**
- * リネームマップを配布先に適用する（冪等。M1対応）。
- * リネーム元が存在しない場合は skip、リネーム先（`global-`）が既に存在する場合も
- * skip して冪等にし、適用成功分のみのマップを返す（M4対応）。
+ * リネームマップを配布先に適用する。
+ * リネーム元が存在しない場合は skip する。リネーム先（`global-`）が既に存在する
+ * 場合は内容を最新化する（置換）。再配布で修正を反映させるため。
+ * 適用成功分のみのマップを返す（M4対応）。
  * @param map - `buildRenameMap` の出力
  * @param destRoot - 配布先ルート
  * @param isDryRun - dry-run 時は実行せずログのみ
@@ -224,14 +225,16 @@ export async function applyRenameMap(
       continue;
     }
     if (await fsUtil.exists(destDir)) {
-      // 再配布時、コピーで非global名ソースが再生成されるため、target(global-)既存なら
-      // 古い非globalソースを掃除して収束させる（冪等）。
+      // 再配布時、適用済み global- ディレクトリの内容を最新化する（置換）。
+      // 従来の skip では既存 global- 配下が更新されず、修正の再配布が反映されない。
       if (!isDryRun) {
-        await fsUtil.remove(fromDir, { recursive: true });
-        logger.info(`  Removed stale source (target exists): ${fromDir}`);
+        await fsUtil.remove(destDir, { recursive: true });
+        await fsUtil.move(fromDir, destDir);
+        logger.info(`  Refreshed: ${fromDir} -> ${destDir}`);
       } else {
-        logger.dryRun(`Would remove stale source: ${fromDir}`);
+        logger.dryRun(`Would refresh: ${fromDir} -> ${destDir}`);
       }
+      applied.push(entry);
       continue;
     }
     if (isDryRun) {

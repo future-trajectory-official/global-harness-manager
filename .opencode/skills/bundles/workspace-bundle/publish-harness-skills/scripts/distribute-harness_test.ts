@@ -133,14 +133,18 @@ Deno.test("applyRenameMap - リネーム元不在はskipしマップに含めな
   }
 });
 
-Deno.test("applyRenameMap - リネーム先既存はskipし冪等にする(M1)", async () => {
+Deno.test("applyRenameMap - リネーム先既存は内容を最新化する(再配布更新)", async () => {
   const root = await Deno.makeTempDir({ prefix: "dist-rename-" });
   try {
     await Deno.mkdir(`${root}/skills/bundles/b1/foo`, { recursive: true });
+    await Deno.writeTextFile(`${root}/skills/bundles/b1/foo/a.ts`, "new");
     await Deno.mkdir(`${root}/skills/bundles/b1/global-foo`, { recursive: true });
+    await Deno.writeTextFile(`${root}/skills/bundles/b1/global-foo/a.ts`, "old");
     const map = buildRenameMap([{ bundle: "b1", name: "foo" }]);
     const applied = await applyRenameMap(map, root, false);
-    assertEquals(applied.length, 0, "existing dest must be skipped (idempotent)");
+    assertEquals(applied.length, 1, "refreshed dest must be included");
+    const content = await Deno.readTextFile(`${root}/skills/bundles/b1/global-foo/a.ts`);
+    assertEquals(content, "new", "existing dest content must be refreshed");
   } finally {
     await Deno.remove(root, { recursive: true });
   }
