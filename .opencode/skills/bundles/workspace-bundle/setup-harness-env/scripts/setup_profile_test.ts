@@ -9,22 +9,19 @@ import {
   needsWindowsPathUpdate,
   resolveBinDir,
 } from "./setup.ts";
-import { withEnv } from "./setup_test_helpers.ts";
 
 /**
  * ユースケース: 配布先bin未記載のプロファイルに解決済みbinDirが追記されること
  * 検証意図: resolveBinDirで解決した配布先パス一本がexport行として追加されること
  */
 Deno.test("appendBinDirToProfile - 配布先bin未記載時は解決済みbinDirを追記する", () => {
-  withEnv(
-    { GLOBAL_HARNESS_BIN_DIR: undefined, HARNESS_DISTRIBUTE_BIN_DIR: "/tmp/iso-dist-bin" },
-    () => {
-      const binDir = resolveBinDir("/tmp/fake-root");
-      assertEquals(binDir, "/tmp/iso-dist-bin");
-      const updated = appendBinDirToProfile('export PATH="$PATH:/usr/bin"\n', binDir);
-      assert(updated.includes(`export PATH="$PATH:${binDir}"`));
-    },
-  );
+  const binDir = resolveBinDir("/tmp/fake-root", {
+    GLOBAL_HARNESS_BIN_DIR: undefined,
+    HARNESS_DISTRIBUTE_BIN_DIR: "/tmp/iso-dist-bin",
+  });
+  assertEquals(binDir, "/tmp/iso-dist-bin");
+  const updated = appendBinDirToProfile('export PATH="$PATH:/usr/bin"\n', binDir);
+  assert(updated.includes(`export PATH="$PATH:${binDir}"`));
 });
 
 /**
