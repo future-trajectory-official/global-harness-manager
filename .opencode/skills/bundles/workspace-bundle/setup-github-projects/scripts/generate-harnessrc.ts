@@ -20,14 +20,20 @@ import {
   parseIdentities,
 } from "../../../../../core/shared/account/account-identifier.ts";
 import { verifyGhAuth } from "../../../../../core/shared/account/account-context.ts";
-import { HARNESS_FIELDS } from "../../../../../core/gateway/field-registry.ts";
+import {
+  emptyBoardNumbers,
+  HARNESS_FIELDS,
+  type HarnessRcBoards,
+} from "../../../../../core/gateway/field-registry.ts";
 
-/** ボード種別と番号の対応（`.harnessrc` の projects キー）。 */
-export interface HarnessRcBoards {
-  readonly productBacklog: number;
-  readonly sprintBoard: number;
-  readonly retrospectiveBoard: number;
-}
+/**
+ * ボード種別と番号の対応（`.harnessrc` の projects キー）。
+ *
+ * 正の定義は `field-registry.ts` にあり、本モジュールからは互換維持のため
+ * 再エクスポートする（WP #763 レビュー指摘対応）。既存の利用箇所
+ * （`create-boards.ts`・`generate-harnessrc_test.ts`）は本パスからの参照を維持できる。
+ */
+export type { HarnessRcBoards } from "../../../../../core/gateway/field-registry.ts";
 
 /** 生成物 `_comment` に反映する任意メタ情報（AC-3 のアカウント特定結果）。 */
 export interface HarnessRcMeta {
@@ -53,7 +59,15 @@ export type RepoAccountResolver = (
 const COMMENT =
   "GitHub Project V2 のボード番号を保持する設定ファイル。setup-github-projects スキルが自動生成し、Gateway 層（composition-root.ts）が読み込む。追跡対象外のため、キー構成の公開は .harnessrc.example を参照。ボード番号（projects）はアカウント・作成タイミングごとに異なる。フィールド名（fields）の正の定義は .opencode/core/gateway/field-registry.ts。";
 
-/** ボード番号とフィールド名から `.harnessrc` の JSON 文字列を生成する（純関数）。 */
+/** ボード番号とフィールド名から `.harnessrc` の JSON 文字列を生成する（純関数）。
+ *
+ * 生成物は整形形式のJSON（末尾改行付き）とする。人間が直接確認・編集する
+ * 設定ファイルのため可読性を優先する意図（`--boards-json` 入力の1行形式とは区別）。
+ *
+ * @param boards ボード種別と番号の対応
+ * @param meta 生成物の `_comment` に反映する任意メタ情報（既定は空）
+ * @returns `.harnessrc` の内容（整形JSON文字列）
+ */
 export function generateHarnessRc(
   boards: HarnessRcBoards,
   meta: HarnessRcMeta = {},
@@ -100,7 +114,7 @@ export function parseArgs(
   readonly dryRun: boolean;
   readonly help: boolean;
 } {
-  let boards: HarnessRcBoards = { productBacklog: 0, sprintBoard: 0, retrospectiveBoard: 0 };
+  let boards: HarnessRcBoards = emptyBoardNumbers();
   let outPath = "";
   let repo: string | null = null;
   let dryRun = false;
@@ -188,6 +202,9 @@ export const DEFAULT_OUT_PATH = join(".github", "schemas", ".harnessrc");
  *
  * ボードの所有者はリポジトリのオーナーであり、認証アカウント（identities.md の Account Name）とは
  * 概念的に別物として扱う（plan.md 設計判断）。入力が `owner/repo` 形式でない場合は null。
+ *
+ * @param repo 対象リポジトリの owner/repo（例: `my-org/my-repo`）
+ * @returns ボード所有者。形式不正時は null
  */
 export function deriveBoardOwner(repo: string): string | null {
   const scope = parseGitRemoteUrl(`https://github.com/${repo}`);
@@ -198,6 +215,10 @@ export function deriveBoardOwner(repo: string): string | null {
  * `identities.md` の対応表からリポジトリの Account Name を照合する（純関数）。
  *
  * 対象リポジトリの認証アカウントを特定する既定リゾルバから利用される。
+ *
+ * @param repo 対象リポジトリの owner/repo
+ * @param identitiesText `identities.md` の本文
+ * @returns 照合できた Account Name。未登録時は null
  */
 export function accountNameFromIdentities(repo: string, identitiesText: string): string | null {
   const identities = parseIdentities(identitiesText);
@@ -210,6 +231,10 @@ export function accountNameFromIdentities(repo: string, identitiesText: string):
  *
  * `identitiesText` が空の場合は `config/identities.md`（既定ではカレントディレクトリ）を読み、
  * `accountNameFromIdentities` で照合し、`verifyGhAuth` で gh 認証を検証して返す。
+ *
+ * @param repo 対象リポジトリの owner/repo
+ * @param identitiesText `identities.md` の本文（空時は既定パスから読む）
+ * @returns 認証アカウント名・検証結果・不一致時の誘導文
  */
 function defaultResolveRepoAccount(
   repo: string,
@@ -228,7 +253,12 @@ function defaultResolveRepoAccount(
   return { accountName, ...verification };
 }
 
-/** 既定の identities.md 本文を読み取る（`HARNESS_IDENTITIES_PATH` 優先、次に cwd の config/identities.md）。 */
+/** 既定の identities.md 本文を読み取る（`HARNESS_IDENTITIES_PATH` 優先、次に cwd の config/identities.md）。
+ *
+ * `resolve-target-account.ts` の `defaultIdentitiesText` とは統合しない。差異:
+ * 不在時は空文字を返す契約（向こうは `null` 返却）であり、`HARNESS_WORKSPACE_ROOT`
+ * 優先の探索順も持たない。無理な統一は行わず差異の明記に留める。
+ */
 function readDefaultIdentities(): string {
   const explicit = Deno.env.get("HARNESS_IDENTITIES_PATH");
   if (explicit) {
@@ -277,7 +307,12 @@ export function resolveRepoAccount(
   };
 }
 
-/** CLI の入口。生成物を指定パスへ書き込む（`--dry-run` 時は標準出力のみ）。 */
+/** CLI の入口。生成物を指定パスへ書き込む（`--dry-run` 時は標準出力のみ）。
+ *
+ * @param args `Deno.args` 相当の引数列
+ * @param resolve 認証アカウント解決関数（既定は `config/identities.md` 照合＋gh 検証）
+ * @returns `--dry-run` 時は生成JSON、それ以外は書込完了メッセージ
+ */
 export function runGenerateHarnessRc(
   args: string[],
   resolve?: RepoAccountResolver,
