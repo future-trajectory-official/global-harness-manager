@@ -2,7 +2,7 @@ import { assert, assertEquals } from "@std/assert";
 import { join } from "@std/path";
 
 import { GH_VERSION, installGh, type InstallGhDeps, resolveBinDir } from "./setup.ts";
-import { silentLogger, withEnvAsync, withTempDir } from "./setup_test_helpers.ts";
+import { silentLogger, withTempDir } from "./setup_test_helpers.ts";
 
 // WP #733 AC-3 採用バージョン（調査確定版）。
 // - Deno v2.9.6: 最新安定版（Latest タグ 2026-08-27）と一致のため据え置き。
@@ -70,46 +70,44 @@ Deno.test("installGh - 後継安定版gh v2.100.0のDL URLを組み立てる", a
 Deno.test("resolveBinDir/installGh - env未指定時は隔離<root>/bin配下のみに触れる", async () => {
   const fakeRoot = await Deno.makeTempDir();
   try {
-    await withEnvAsync(
-      { GLOBAL_HARNESS_BIN_DIR: undefined, HARNESS_DISTRIBUTE_BIN_DIR: undefined },
-      async () => {
-        const binDir = resolveBinDir(fakeRoot);
-        assertEquals(binDir, join(fakeRoot, "bin"), "既定は従来通り<root>/binであること");
+    const binDir = resolveBinDir(fakeRoot, {
+      GLOBAL_HARNESS_BIN_DIR: undefined,
+      HARNESS_DISTRIBUTE_BIN_DIR: undefined,
+    });
+    assertEquals(binDir, join(fakeRoot, "bin"), "既定は従来通り<root>/binであること");
 
-        const touched: string[] = [];
-        const deps: InstallGhDeps = {
-          fs: {
-            downloadFile: (_url: string, destPath: string) => {
-              touched.push(destPath);
-              return Promise.resolve();
-            },
-            extract: () => Promise.resolve(),
-            exists: (_path: string) => Promise.resolve(false),
-            move: (src: string, dest: string) => {
-              touched.push(src);
-              touched.push(dest);
-              return Promise.resolve();
-            },
-            remove: (path: string, _options?: { recursive?: boolean }) => {
-              touched.push(path);
-              return Promise.resolve();
-            },
-            mkdir: (path: string, _options?: { recursive?: boolean }) => {
-              touched.push(path);
-              return Promise.resolve();
-            },
-          },
-          cmd: () => Promise.resolve({ code: 0, stdout: "", stderr: "" }),
-          logger: silentLogger(),
-        };
-        await installGh(binDir, "linux", "x86_64", deps);
-
-        assert(touched.length > 0, "何らかのパス操作が記録されること");
-        for (const p of touched) {
-          assert(p.startsWith(binDir), `隔離外への書込みがないこと: ${p}`);
-        }
+    const touched: string[] = [];
+    const deps: InstallGhDeps = {
+      fs: {
+        downloadFile: (_url: string, destPath: string) => {
+          touched.push(destPath);
+          return Promise.resolve();
+        },
+        extract: () => Promise.resolve(),
+        exists: (_path: string) => Promise.resolve(false),
+        move: (src: string, dest: string) => {
+          touched.push(src);
+          touched.push(dest);
+          return Promise.resolve();
+        },
+        remove: (path: string, _options?: { recursive?: boolean }) => {
+          touched.push(path);
+          return Promise.resolve();
+        },
+        mkdir: (path: string, _options?: { recursive?: boolean }) => {
+          touched.push(path);
+          return Promise.resolve();
+        },
       },
-    );
+      cmd: () => Promise.resolve({ code: 0, stdout: "", stderr: "" }),
+      logger: silentLogger(),
+    };
+    await installGh(binDir, "linux", "x86_64", deps);
+
+    assert(touched.length > 0, "何らかのパス操作が記録されること");
+    for (const p of touched) {
+      assert(p.startsWith(binDir), `隔離外への書込みがないこと: ${p}`);
+    }
   } finally {
     await Deno.remove(fakeRoot, { recursive: true });
   }

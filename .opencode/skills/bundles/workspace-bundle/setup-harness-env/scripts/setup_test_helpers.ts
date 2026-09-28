@@ -15,68 +15,6 @@ export async function withTempDir<T>(fn: (dir: string) => Promise<T>): Promise<T
 }
 
 /**
- * テスト中のみ環境変数を上書きする（同期版）。
- * @param vars - 上書きする変数（undefined指定で削除）
- * @param fn - テスト本体
- */
-export function withEnv(vars: Record<string, string | undefined>, fn: () => void): void {
-  const prev = new Map<string, string | undefined>();
-  for (const key of Object.keys(vars)) {
-    prev.set(key, Deno.env.get(key));
-    const value = vars[key];
-    if (value === undefined) {
-      Deno.env.delete(key);
-    } else {
-      Deno.env.set(key, value);
-    }
-  }
-  try {
-    fn();
-  } finally {
-    for (const [key, value] of prev) {
-      if (value === undefined) {
-        Deno.env.delete(key);
-      } else {
-        Deno.env.set(key, value);
-      }
-    }
-  }
-}
-
-/**
- * テスト中のみ環境変数を上書きする（非同期版）。
- * @param vars - 上書きする変数（undefined指定で削除）
- * @param fn - テスト本体
- * @returns テスト本体の戻り値
- */
-export async function withEnvAsync<T>(
-  vars: Record<string, string | undefined>,
-  fn: () => Promise<T>,
-): Promise<T> {
-  const prev = new Map<string, string | undefined>();
-  for (const key of Object.keys(vars)) {
-    prev.set(key, Deno.env.get(key));
-    const value = vars[key];
-    if (value === undefined) {
-      Deno.env.delete(key);
-    } else {
-      Deno.env.set(key, value);
-    }
-  }
-  try {
-    return await fn();
-  } finally {
-    for (const [key, value] of prev) {
-      if (value === undefined) {
-        Deno.env.delete(key);
-      } else {
-        Deno.env.set(key, value);
-      }
-    }
-  }
-}
-
-/**
  * 何もしないロガーを生成する。
  * @returns 静寂なロガー依存
  */
