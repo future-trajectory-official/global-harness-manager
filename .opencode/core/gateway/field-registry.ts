@@ -82,6 +82,36 @@ export const BOARDS = {
 export type BoardKey = keyof typeof BOARDS;
 
 /**
+ * ボード種別と番号の対応（`.harnessrc` の projects キー）。
+ *
+ * `generate-harnessrc.ts`・`create-boards.ts` が共有する正の定義。本モジュールが
+ * 単一の正源泉であり、スクリプト側は再定義せず本型を参照する（WP #763 レビュー指摘対応）。
+ * 既存の利用箇所との互換のため `generate-harnessrc.ts` から再エクスポートする。
+ */
+export interface HarnessRcBoards {
+  readonly productBacklog: number;
+  readonly sprintBoard: number;
+  readonly retrospectiveBoard: number;
+}
+
+/**
+ * 未確定のボード番号の初期値（全キー0）を生成する。
+ *
+ * `BOARDS` のキー集合（`create-boards.ts` の `BOARD_ORDER` と同一）から生成し、
+ * ゼロ初期化リテラルの重複を排除する（WP #763 レビュー指摘対応）。
+ * 順序付きの処理自体は `BOARD_ORDER` を使用すること。
+ *
+ * @returns 全キーが0のボード番号（呼出元で複写して使用する）
+ */
+export function emptyBoardNumbers(): HarnessRcBoards {
+  const numbers = {} as Record<BoardKey, number>;
+  for (const key of Object.values(BOARDS)) {
+    numbers[key] = 0;
+  }
+  return numbers;
+}
+
+/**
  * ボード別カスタムフィールド定義（design-spec 5.3）。
  * フィールドはボードごとに定義され、同名フィールド（`harness-metrics-summary`,
  * `harness-kpt-*`）はボードが異なれば別物として扱う。
