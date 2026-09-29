@@ -112,7 +112,7 @@ subtask: false
 
 ## 2. フェーズB: プロセス統一 (Process Standardization)
 
-**責務**: AI開発のルール・スキルをプロジェクトに適用し、一貫性のある開発プロセスを確立する。
+**責務**: AI開発のルール・スキルをプロジェクトに適用する。加えてGitHub Project V2のボード・設定を構築し、一貫性のある開発プロセスを確立する。
 **ロール**: 本フェーズの全ステップは
 `[platform-engineer.md](/.opencode/agents/platform-engineer.md)` (すべての制約を遵守)
 で実行すること。
@@ -128,7 +128,23 @@ subtask: false
 
 <!-- STOP -->
 
-### 2-2. スキルの同期
+### 2-2. ボード構築と設定生成
+
+- **実行スキル**:
+  `[setup-github-projects](/.opencode/skills/bundles/workspace-bundle/setup-github-projects/SKILL.md)`
+- **手順**: スキルの使用方法に従い、boards → fields → harnessrc の順に実行する（詳細はスキル側が正）。
+- **入力**: `1-5. リポジトリの確保` で確定した `<owner/repo>`。
+- **実行場所**: ハーネス側リポジトリで実行する（対象プロジェクトへのスキル同期前でも実行可能なため、本ステップを `2-3` より前に配置する）。
+- **前提条件**: `1-3. 認証設定` で `project` スコープが付与済みであること（確認: `gh auth status` の出力に `project` が含まれること）。
+- **セルフチェック**:
+  - [ ] 3ボード (productBacklog/sprintBoard/retrospectiveBoard) が利用可能か（例: `gh project view <番号> --owner <owner>` の成功）。
+  - [ ] `.harnessrc` が生成されているか（`.github/schemas/.harnessrc` の存在と `projects` キーの有無）。
+
+**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
+
+<!-- STOP -->
+
+### 2-3. スキルの同期
 
 - **実行スキル**:
   `[publish-harness-skills](/.opencode/skills/bundles/workspace-bundle/publish-harness-skills/SKILL.md)`
