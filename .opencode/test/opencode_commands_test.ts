@@ -45,7 +45,7 @@ const SKILL_LINK_FILES: string[] = [
  */
 const STOP_BASELINE: Record<string, number> = {
   "kickoff.md": 6,
-  "project-setup.md": 8,
+  "project-setup.md": 9,
   "refactoring.md": 10,
   "session-end.md": 5,
   "session-start.md": 5,
@@ -96,7 +96,8 @@ const PHASE_SNAPSHOT: Record<string, string[]> = {
     "1-4. SSH鍵の生成と登録",
     "1-5. リポジトリの確保",
     "2-1. ルールの同期",
-    "2-2. スキルの同期",
+    "2-2. ボード構築と設定生成",
+    "2-3. スキルの同期",
     "3-1. 通信経路の疎通確認",
   ],
   "refactoring.md": [
@@ -179,7 +180,7 @@ const ROLE_LINK_COUNTS: Record<string, number> = {
  */
 const SKILL_LINK_COUNTS: Record<string, number> = {
   "kickoff.md": 0,
-  "project-setup.md": 7,
+  "project-setup.md": 8,
   "refactoring.md": 7,
   "session-end.md": 5,
   "session-start.md": 5,
