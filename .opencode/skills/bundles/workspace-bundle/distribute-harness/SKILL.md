@@ -18,7 +18,7 @@ tags:
 ## Quick-Start
 
 ```bash
-SCRIPT=.opencode/skills/bundles/workspace-bundle/publish-harness-skills/scripts/distribute-harness.ts
+SCRIPT=.opencode/skills/bundles/workspace-bundle/distribute-harness/scripts/distribute-harness.ts
 deno run -A "$SCRIPT" --dry-run
 deno run -A "$SCRIPT" --dest ~/.harness
 ```
@@ -28,15 +28,8 @@ deno run -A "$SCRIPT" --dest ~/.harness
 > （`.opencode/deno.json` は配布しない）。詳細は
 > [deno-json-authority.md](references/deno-json-authority.md) を参照。
 
-> [!NOTE]
-> 実行対象スクリプトの現パスは
-> `.opencode/skills/bundles/workspace-bundle/publish-harness-skills/scripts/distribute-harness.ts`
-> である。
+## 位置づけ
 
-## 選択同期との使い分け
-
-- 選択同期（`publish-harness-skills`）: `config/publish-targets.md`
-  で対象を選んで差分同期する。日常のスキル更新はこちらを使う。
 - 全量配布（本スキル）: `.opencode/` 配下の資源全体を配布先へ一括複写し、スキル名へ `global-`
   接頭辞を付与して参照を書き換える。初回導入・全体再配布はこちらを使う。 実配布の後に配布先
   `<dest>/skills/bundles/workspace-bundle/` を削除する （全量配布＋配布後除外が正規手順）。

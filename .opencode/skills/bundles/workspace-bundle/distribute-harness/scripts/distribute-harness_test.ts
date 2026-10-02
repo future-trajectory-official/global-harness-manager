@@ -17,7 +17,7 @@ Deno.test("normalizeSkillName - global-接頭辞を付与し小文字ハイフ�
 });
 
 Deno.test("normalizeSkillName - ~ を含まない", () => {
-  const name = normalizeSkillName("publish-harness-skills");
+  const name = normalizeSkillName("example-skill");
   assert(!name.includes("~"), `~ must not be included: ${name}`);
 });
 
