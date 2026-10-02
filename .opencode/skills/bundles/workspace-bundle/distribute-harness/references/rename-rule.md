@@ -1,52 +1,55 @@
 # リネーム・書換規則
 
-`global-` リネームと参照整合性のための規則。実装は L46-49・L113-371。
+`global-` リネームと参照整合性のための規則。
 
-## normalizeSkillName（L46-49）
+## normalizeSkillName
 
 - 入力を trim → 小文字化 → `[^a-z0-9]+` を `-` に置換 → 前後 `-` を除去。
-- 先頭に `global-` を付与する。`~` はシェル展開リスクのため不使用（L43）。
+- 先頭に `global-` を付与する。`~` はシェル展開リスクのため不使用（同関数の JsDoc 参照）。
 
 ```ts
 `global-${norm}`;
 ```
 
-## collectSkills（L113-128）
+## collectSkills
 
 - `skills/bundles/<bundle>/<name>/` のディレクトリ列挙。
 - `bundles/` が存在しなければ空配列を返す。
 
-## buildRenameMap（L136-152）
+## buildRenameMap
 
 - `{bundle, name}` → `{before: "<bundle>/<name>", after: "global-<name>", bundle, name}`。
-- 変換後の重複（異 bundle 同名・異表記衝突）は `throw` で中断（L141-147）。
+- 変換後の重複（異 bundle 同名・異表記衝突）は `throw` で中断。
 
-## applyRenameMap（L202-249）
+重複時はコピー前に fail-fast で中断するため、`--dry-run`
+で重複エラーが出た場合は配布元のスキル名を修正して再実行する。
+
+## applyRenameMap
 
 - 配布先 `<dest>/skills/bundles/<bundle>/<name>` → `<dest>/skills/bundles/<bundle>/global-<name>`。
-- リネーム元が無ければ skip（L223-226）。
-- `global-` 先が既存なら置換で最新化（再配布反映。L227-239）。
-- 適用成功分のみを返す（L207・L247）。
+- リネーム元が無ければ skip。
+- `global-` 先が既存なら置換で最新化（再配布反映）。
+- 適用成功分のみを返す。
 
-## rewriteSkillFrontmatter（L260-291）
+## rewriteSkillFrontmatter
 
 - 配布先各スキルの `SKILL.md` の `name:` を `global-<name>` へ書換。
-- OpenCode は `name` とディレクトリ名の一致を必須とするため（L253-256）。
-- 正規表現 `^name:\s*<旧名>\s*$`（multiline）で一致行のみ置換（L280-283）。
-- 不一致時は警告して skip（L284-287）。
+- OpenCode は `name` とディレクトリ名の一致を必須とするため。
+- 正規表現 `^name:\s*<旧名>\s*$`（multiline）で一致行のみ置換。
+- 不一致時は警告して skip。
 
-## rewriteReferences（L309-334、対象 .md のみ）
+## rewriteReferences（対象 .md のみ）
 
-1. `(⁠/.opencode)?/skills/bundles/<bundle>/<name>` →
-   `<destRoot>/skills/bundles/<bundle>/global-<name>`（L318-321）。
-2. `(⁠/.opencode)?/(agents|commands|guides|context|core)/` → `<destRoot>/$1/`（L323-326）。
-3. `[skill:<name>]` → `[skill:global-<name>]`（既存 `global-` は置換しない冪等。L328）。
+1. `(/)?\.opencode/skills/bundles/<bundle>/<name>` →
+   `<dest>/skills/bundles/<bundle>/global-<name>`。
+2. `(/)?\.opencode/(agents|commands|guides|context|core)/` → `<dest>/$1/`。
+3. `[skill:<name>]` → `[skill:global-<name>]`（既存 `global-` は置換しない冪等）。
 
-## rewriteSkillImports（L346-371、対象 skills/ 配下 .ts のみ）
+## rewriteSkillImports（対象 skills/ 配下 .ts のみ）
 
-- `bundles/<bundle>/<name>/` → `bundles/<bundle>/global-<name>/`（L358-364）。
-- 既 `global-` 化パスには一致しないため冪等（L340）。
+- `bundles/<bundle>/<name>/` → `bundles/<bundle>/global-<name>/`。
+- 既 `global-` 化パスには一致しないため冪等。
 
-## rename-map 書込み（L404-412）
+## rename-map 書込み（`writeRenameMap`）
 
-- 適用マップを `<dest>/skill-rename-map.json` へ JSON 書込み（`RENAME_MAP_FILE` L30）。
+- 適用マップを `<dest>/skill-rename-map.json` へ JSON 書込み。

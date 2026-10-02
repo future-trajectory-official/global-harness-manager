@@ -18,40 +18,83 @@ tags:
 ## Quick-Start
 
 ```bash
-deno run -A .opencode/skills/bundles/workspace-bundle/publish-harness-skills/scripts/distribute-harness.ts --dry-run
-deno run -A .opencode/skills/bundles/workspace-bundle/publish-harness-skills/scripts/distribute-harness.ts --dest ~/.harness
+SCRIPT=.opencode/skills/bundles/workspace-bundle/publish-harness-skills/scripts/distribute-harness.ts
+deno run -A "$SCRIPT" --dry-run
+deno run -A "$SCRIPT" --dest ~/.harness
 ```
 
 > [!NOTE]
-> `deno.json` の正はリポジトリ root 版であり、配布先では `dest/deno.json` と同一になる
+> `deno.json` の正はリポジトリ root 版であり、配布先では `<dest>/deno.json` と同一になる
 > （`.opencode/deno.json` は配布しない）。詳細は
-> [deno-json-authority.md](/.opencode/skills/bundles/workspace-bundle/distribute-harness/references/deno-json-authority.md)
-> を参照。
+> [deno-json-authority.md](references/deno-json-authority.md) を参照。
 
 > [!NOTE]
-> ラップ対象スクリプトの現パスは
+> 実行対象スクリプトの現パスは
 > `.opencode/skills/bundles/workspace-bundle/publish-harness-skills/scripts/distribute-harness.ts`
-> である。WP#778 で `distribute-harness/scripts/` へ移設予定のため、本SKILL.md内の
-> 実行コマンドは移設後に更新すること（申送り事項）。
+> である。
 
-## 全量配布手順
+## 選択同期との使い分け
 
-1. 配布計画を確認する（`--dry-run` で書込みなし）。
-2. リネーム計画を先に検証する（重複は fail-fast で中断）。
-3. コピー計画を実行する（COPY_DIRS 5dirs＋context 2件＋deno.json＋AGENTS.md）。
-4. スキルを `global-` リネームし、frontmatter と参照を書き換える。
-5. 配布先の安全性を確認する（git dirty の場合は中断、`--force` で無視可）。
+- 選択同期（`publish-harness-skills`）: `config/publish-targets.md`
+  で対象を選んで差分同期する。日常のスキル更新はこちらを使う。
+- 全量配布（本スキル）: `.opencode/` 配下の資源全体を配布先へ一括複写し、スキル名へ `global-`
+  接頭辞を付与して参照を書き換える。初回導入・全体再配布はこちらを使う。
 
-> [!TIP]
-> 詳細は Sidecar Reference を参照： 配布対象は
-> [copy-plan.md](/.opencode/skills/bundles/workspace-bundle/distribute-harness/references/copy-plan.md)、
-> リネーム規則は
-> [rename-rule.md](/.opencode/skills/bundles/workspace-bundle/distribute-harness/references/rename-rule.md)、
-> deno.json の正本と制約は
-> [deno-json-authority.md](/.opencode/skills/bundles/workspace-bundle/distribute-harness/references/deno-json-authority.md)
-> を参照してください。
+配布対象は [copy-plan.md](references/copy-plan.md)、リネーム規則は
+[rename-rule.md](references/rename-rule.md)、deno.json の正本と制約は
+[deno-json-authority.md](references/deno-json-authority.md) を参照。
 
 ## 前提条件
 
+- CWD がリポジトリ root であること（実装は `.opencode` を CWD 基準の相対パスで解決する）。
 - 配布元 `.opencode/` が存在すること。
+- 本番配布の前に必ず `--dry-run` で計画を確認すること。
+- 配布先の事前バックアップを確認すること。
 - 配布先が dirty な git リポジトリでないこと（または `--force` 指定）。
+
+## 全量配布手順
+
+1. 配布先の安全性を確認する（`ensureDestSafe`。git dirty の場合は中断、`--force` で無視可）。
+2. 配布計画を確認する（`--dry-run` で書込みなし。コピー 9 件の計画が出ることを確認する）。
+3. リネーム計画を先に検証する（`buildRenameMap`。重複は fail-fast で中断するため、`--dry-run`
+   で重複エラーが出た場合は配布元のスキル名を修正して再実行する）。
+4. コピー計画を実行する（`executeCopyPlan`）。
+5. スキルを `global-` リネームし（`applyRenameMap`）、frontmatter と参照を書き換える
+   （`rewriteSkillFrontmatter`・`rewriteReferences`・`rewriteSkillImports`）。
+
+## 合否基準
+
+### `--dry-run` の期待出力
+
+- コピー計画が 9 件であること（`buildCopyPlan` の出力。内訳は
+  [copy-plan.md](references/copy-plan.md) の表のとおり）。
+- `deno.json` の計画が 1 件含まれること（`<repoRoot>/deno.json` → `<dest>/deno.json`）。
+- 除外物（`node_modules`・`deno.lock`・利用者編集 `context/product.md` 等）が 計画に含まれないこと。
+
+### 完了後の照合
+
+- `<dest>/skill-rename-map.json` に適用マップが登録されていること。
+- 配布先各スキルの frontmatter `name:` がディレクトリ名（`global-<name>`）と一致すること。
+- 配布先 `<dest>/deno.json` がリポジトリ root 版と同一内容であること。
+
+## 配布後検証手順（配布先での確認。実装本体の改変なし）
+
+```bash
+# 1. `.opencode/` 参照の残存なし（ゼロ件であること）
+rg '\.opencode/' "<dest>"
+# 2. 未リネームのスキル呼出の残存なし（ゼロ件であること）
+rg '\[skill:(?!global-)' "<dest>"
+# 3. frontmatter name とディレクトリ名の照合（差分なしであること）
+for f in "<dest>"/skills/bundles/*/*/SKILL.md; do
+  dir=$(basename "$(dirname "$f")")
+  name=$(sed -n 's/^name:[[:space:]]*//p' "$f" | head -n 1)
+  [ "$dir" = "$name" ] || echo "MISMATCH: $f (dir=$dir name=$name)"
+done
+# 4. 利用者編集 context/product.md が上書きされていないこと（差分なしであること）
+diff <backup>/context/product.md "<dest>/context/product.md"
+```
+
+配布仕様では利用者編集 `context/product.md` を配布しない（`.example` のみ配布する）ため、手順 4
+では事前バックアップとの差分がないことをもって上書きなしと判定する。配布先での `deno task qa`
+実行不能制約は既知の制約であり、接続検証は次工程に申し送る。 詳細は
+[deno-json-authority.md](references/deno-json-authority.md) を参照。
