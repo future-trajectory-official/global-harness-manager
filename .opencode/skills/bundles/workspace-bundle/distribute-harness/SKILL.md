@@ -38,7 +38,12 @@ deno run -A "$SCRIPT" --dest ~/.harness
 - 選択同期（`publish-harness-skills`）: `config/publish-targets.md`
   で対象を選んで差分同期する。日常のスキル更新はこちらを使う。
 - 全量配布（本スキル）: `.opencode/` 配下の資源全体を配布先へ一括複写し、スキル名へ `global-`
-  接頭辞を付与して参照を書き換える。初回導入・全体再配布はこちらを使う。
+  接頭辞を付与して参照を書き換える。初回導入・全体再配布はこちらを使う。 実配布の後に配布先
+  `<dest>/skills/bundles/workspace-bundle/` を削除する （全量配布＋配布後除外が正規手順）。
+
+workspace-bundle のスキルは `.opencode/commands/project-setup.md`
+で完結し、他リポジトリ側から呼ぶことを想定していない。
+配布先に残すと不要スキルのグローバル化・誤実行・スキルリスト肥大を招くため、 配布後に除外する。
 
 配布対象は [copy-plan.md](references/copy-plan.md)、リネーム規則は
 [rename-rule.md](references/rename-rule.md)、deno.json の正本と制約は
@@ -61,6 +66,16 @@ deno run -A "$SCRIPT" --dest ~/.harness
 4. コピー計画を実行する（`executeCopyPlan`）。
 5. スキルを `global-` リネームし（`applyRenameMap`）、frontmatter と参照を書き換える
    （`rewriteSkillFrontmatter`・`rewriteReferences`・`rewriteSkillImports`）。
+6. 実配布の後に配布先 `<dest>/skills/bundles/workspace-bundle/` を削除する（既定 `<dest>` は
+   `~/.harness`）。本体スクリプトは改修せず、手順として事後除外する。
+
+```bash
+rm -rf <dest>/skills/bundles/workspace-bundle
+```
+
+実行順序は `ensureDestSafe` → `--dry-run` 確認 → `buildRenameMap` 検証 → `executeCopyPlan` →
+`applyRenameMap`・参照書換 → 配布後除外 （`<dest>/skills/bundles/workspace-bundle`
+削除）の順とする。
 
 ## 合否基準
 
@@ -76,6 +91,8 @@ deno run -A "$SCRIPT" --dest ~/.harness
 - `<dest>/skill-rename-map.json` に適用マップが登録されていること。
 - 配布先各スキルの frontmatter `name:` がディレクトリ名（`global-<name>`）と一致すること。
 - 配布先 `<dest>/deno.json` がリポジトリ root 版と同一内容であること。
+- `<dest>/skills/bundles/workspace-bundle` が存在しないこと（配布後除外済みであること）。
+- `<dest>/skills/bundles/` 配下に他 bundle（`management-bundle` 等）が残存していること。
 
 ## 配布後検証手順（配布先での確認。実装本体の改変なし）
 
@@ -92,9 +109,26 @@ for f in "<dest>"/skills/bundles/*/*/SKILL.md; do
 done
 # 4. 利用者編集 context/product.md が上書きされていないこと（差分なしであること）
 diff <backup>/context/product.md "<dest>/context/product.md"
+# 5. workspace-bundle が除外され、他 bundle が残存していること
+test ! -e "<dest>/skills/bundles/workspace-bundle" && echo "OK: workspace-bundle absent"
+ls "<dest>/skills/bundles"
 ```
 
 配布仕様では利用者編集 `context/product.md` を配布しない（`.example` のみ配布する）ため、手順 4
-では事前バックアップとの差分がないことをもって上書きなしと判定する。配布先での `deno task qa`
+では事前バックアップとの差分がないことをもって上書きなしと判定する。手順 5 では
+`test ! -e "<dest>/skills/bundles/workspace-bundle"`
+が成功（不存在）し、`ls "<dest>/skills/bundles"` に `management-bundle`
+等が残存していることをもって除外成功と判定する。配布先での `deno task qa`
 実行不能制約は既知の制約であり、接続検証は次工程に申し送る。 詳細は
 [deno-json-authority.md](references/deno-json-authority.md) を参照。
+
+## 証跡テンプレート
+
+```text
+- 配布先: <dest>
+- workspace-bundle 不存在: OK / NG (`test ! -e <dest>/skills/bundles/workspace-bundle`)
+- 他 bundle 残存: OK / NG (`ls <dest>/skills/bundles` に management-bundle 等あり)
+- rename-map 登録: OK / NG (<dest>/skill-rename-map.json あり)
+- frontmatter 照合: 差分なし / あり
+- deno.json 同一: OK / NG
+```
