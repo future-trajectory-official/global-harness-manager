@@ -35,8 +35,20 @@ Deno.test("buildConnectionConfig - skills/instructions/permission.skill を組�
   const cfg = buildConnectionConfig("~/.harness");
   assertEquals(cfg.skills, ["~/.harness/skills"]);
   assertEquals(cfg.instructions, ["~/.harness/context/*.md", "~/.harness/AGENTS.md"]);
-  assertEquals(cfg.permission.skill["global-publish-harness-skills"], "deny");
+  assertEquals(cfg.permission.skill["global-harness-clone"], "deny");
   assertEquals(cfg.permission.skill["global-setup-harness-env"], "deny");
+  assert(
+    !(GLOBAL_DENY_SKILLS as readonly string[]).includes("global-publish-harness-skills"),
+    "retired global-publish-harness-skills must be absent from the deny list",
+  );
+  assert(
+    !(GLOBAL_DENY_SKILLS as readonly string[]).includes("global-publish-harness-rules"),
+    "retired global-publish-harness-rules must be absent from the deny list",
+  );
+  assert(
+    GLOBAL_DENY_SKILLS.every((name) => !name.includes("publish")),
+    "retired distribution skills must not remain in the deny list",
+  );
 });
 
 Deno.test("mergeConfig - 既存の model/provider/permission.bash を保持する", () => {

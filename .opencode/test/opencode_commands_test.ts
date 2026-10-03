@@ -39,13 +39,14 @@ const SKILL_LINK_FILES: string[] = [
 ];
 
 /**
- * コマンド別の `<!-- STOP -->` 数ベースライン（2026-09-12 実測・旧 wf 値と同数）。
- * 合計58。AC4「STOPマーカーは変更不要」の機械的担保。コマンド追加時はプレイブック②で登録し、
+ * コマンド別の `<!-- STOP -->` 数ベースライン（2026-09-12 実測・旧 wf 値と同数、
+ * project-setup.md のみ WP#778 AC-1 の Phase B 置換で 9→8）。
+ * 合計57。AC4「STOPマーカーは変更不要」の機械的担保。コマンド追加時はプレイブック②で登録し、
  * レジストリテストが commands 実走査との集合同値を強制する。
  */
 const STOP_BASELINE: Record<string, number> = {
   "kickoff.md": 6,
-  "project-setup.md": 9,
+  "project-setup.md": 8,
   "refactoring.md": 10,
   "session-end.md": 5,
   "session-start.md": 5,
@@ -95,10 +96,9 @@ const PHASE_SNAPSHOT: Record<string, string[]> = {
     "1-3. 認証設定",
     "1-4. SSH鍵の生成と登録",
     "1-5. リポジトリの確保",
-    "2-1. ルールの同期",
+    "2-1. ハーネス資源の配布",
     "2-2. ボード構築と設定生成",
-    "2-3. スキルの同期",
-    "3-1. 通信経路の疎通確認",
+    "2-3. 通信経路の疎通確認",
   ],
   "refactoring.md": [
     "1-1. 事前メトリクスの測定",
@@ -165,7 +165,7 @@ const PHASE_SNAPSHOT: Record<string, string[]> = {
  */
 const ROLE_LINK_COUNTS: Record<string, number> = {
   "kickoff.md": 6,
-  "project-setup.md": 3,
+  "project-setup.md": 2,
   "refactoring.md": 10,
   "session-end.md": 6,
   "session-start.md": 4,
@@ -180,7 +180,7 @@ const ROLE_LINK_COUNTS: Record<string, number> = {
  */
 const SKILL_LINK_COUNTS: Record<string, number> = {
   "kickoff.md": 0,
-  "project-setup.md": 8,
+  "project-setup.md": 7,
   "refactoring.md": 7,
   "session-end.md": 5,
   "session-start.md": 5,
@@ -261,7 +261,7 @@ Deno.test("STOP baseline registry covers exactly the command set", async () => {
 
 /**
  * AC4不変条件: 各コマンドの `<!-- STOP -->` 数がベースラインと一致する。
- * 移植前 wf 値（合計58）と同数を commands 側で保証する。
+ * 移植前 wf 値（合計57）と同数を commands 側で保証する。
  */
 Deno.test("commands keep the STOP marker baseline (AC4 invariance)", async () => {
   for (const [file, expected] of Object.entries(STOP_BASELINE)) {

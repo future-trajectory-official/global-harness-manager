@@ -36,7 +36,7 @@ Deno.test({
       // テスト用のダミー設定を Bundles 構造で作成
       await Deno.writeTextFile(
         configPath,
-        join(PATHS.SKILLS_ROOT, PATHS.BUNDLES.ONBOARDING, "publish-harness-skills") + "\n",
+        join(PATHS.SKILLS_ROOT, PATHS.BUNDLES.ONBOARDING, "distribute-harness") + "\n",
       );
 
       const tempBinDir = join(tempHome, "bin");
@@ -113,7 +113,7 @@ Deno.test({
       assertEquals(await fsUtil.exists(skillsFilePath), true, "skills.txt should be created");
 
       const skillsContent = await Deno.readTextFile(skillsFilePath);
-      assertStringIncludes(skillsContent, "publish-harness-skills");
+      assertStringIncludes(skillsContent, "distribute-harness");
 
       // Verify bin/ was NOT polluted in the real project root
       if (!realGhExistedInitially) {
