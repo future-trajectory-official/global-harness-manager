@@ -1,15 +1,21 @@
 import { assert, assertEquals, assertThrows } from "@std/assert";
+import { dirname, fromFileUrl, join } from "@std/path";
 import {
   applyRenameMap,
   buildCopyPlan,
   buildRenameMap,
   collectSkills,
   COPY_DIRS,
+  executeCopyPlan,
   normalizeSkillName,
   rewriteReferences,
   rewriteSkillFrontmatter,
   rewriteSkillImports,
+  writeRenameMap,
 } from "./distribute-harness.ts";
+
+/** このテストファイルの位置から解決したリポジトリルートディレクトリ */
+const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "../../../../../..");
 
 Deno.test("normalizeSkillName - global-接頭辞を付与し小文字ハイフン化する", () => {
   assertEquals(normalizeSkillName("select-work-package"), "global-select-work-package");
@@ -271,5 +277,70 @@ Deno.test("rewriteSkillImports - 既にglobal-化済みは変更しない(冪等
     assert(content.includes('"../global-foo/mod.ts"'), "globalized ref must remain");
   } finally {
     await Deno.remove(root, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: 本番配布の前に --dry-run で配布計画のみ確認する
+ * 検証意図: dry-run 実行が配布先へ何も書き込まず、計画が9件であることを確認する
+ */
+Deno.test("distribute E2E - dry-run は無副作用で計画9件を返す", async () => {
+  const sourceRoot = join(REPO_ROOT, ".opencode");
+  const dest = await Deno.makeTempDir({ prefix: "dist-e2e-dry-" });
+  try {
+    const plan = buildCopyPlan(sourceRoot, dest);
+    assertEquals(plan.length, 9);
+    await executeCopyPlan(plan, true);
+    const entries: string[] = [];
+    for await (const entry of Deno.readDir(dest)) {
+      entries.push(entry.name);
+    }
+    assertEquals(entries.length, 0, "dry-run must not write anything to dest");
+  } finally {
+    await Deno.remove(dest, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: 実配布でハーネス資源が配布先へ到達する
+ * 検証意図: 一時ディレクトリへの実実行後にコピー9件・rename-map登録・deno.json同一・workspace-bundle除外・他bundle残存を確認する
+ */
+Deno.test("distribute E2E - 実配布が配布先へ到達する", async () => {
+  const sourceRoot = join(REPO_ROOT, ".opencode");
+  const dest = await Deno.makeTempDir({ prefix: "dist-e2e-real-" });
+  try {
+    const plan = buildCopyPlan(sourceRoot, dest);
+    assertEquals(plan.length, 9);
+    const skills = await collectSkills(join(sourceRoot, "skills"));
+    const renameMap = buildRenameMap(skills);
+    await executeCopyPlan(plan, false);
+    const applied = await applyRenameMap(renameMap, dest, false);
+    assertEquals(applied.length, renameMap.length);
+    await writeRenameMap(dest, applied, false);
+    await rewriteSkillFrontmatter(dest, renameMap, false);
+    await rewriteReferences(dest, false);
+    await rewriteSkillImports(dest, renameMap, false);
+    // 配布後除外（SKILL.md 全量配布手順6と同一。利用者の ~/.harness には触れない）
+    await Deno.remove(join(dest, "skills", "bundles", "workspace-bundle"), {
+      recursive: true,
+    });
+    const mapRaw = await Deno.readTextFile(join(dest, "skill-rename-map.json"));
+    assert(mapRaw.trim().length > 2, "rename map must be registered");
+    const [repoDenoJson, destDenoJson] = await Promise.all([
+      Deno.readTextFile(join(REPO_ROOT, "deno.json")),
+      Deno.readTextFile(join(dest, "deno.json")),
+    ]);
+    assertEquals(destDenoJson, repoDenoJson, "dest deno.json must equal repo root");
+    let workspaceExists = true;
+    try {
+      await Deno.stat(join(dest, "skills", "bundles", "workspace-bundle"));
+    } catch {
+      workspaceExists = false;
+    }
+    assert(!workspaceExists, "workspace-bundle must be excluded after distribution");
+    const other = await Deno.stat(join(dest, "skills", "bundles", "management-bundle"));
+    assert(other.isDirectory, "other bundles must remain after exclusion");
+  } finally {
+    await Deno.remove(dest, { recursive: true });
   }
 });

@@ -27,8 +27,6 @@ export const CONTEXT_DIR = "context";
 export const OPENCODE_CONFIG_DIR_VAR = "OPENCODE_CONFIG_DIR";
 /** グローバルで非表示化（deny）する配布・セットアップ系スキル（変換後 `global-*` 名）。 */
 export const GLOBAL_DENY_SKILLS = [
-  "global-publish-harness-skills",
-  "global-publish-harness-rules",
   "global-harness-clone",
   "global-harness-init",
   "global-manage-git-identity",
