@@ -105,6 +105,7 @@ diff <backup>/context/product.md "<dest>/context/product.md"
 # 5. workspace-bundle が除外され、他 bundle が残存していること
 test ! -e "<dest>/skills/bundles/workspace-bundle" && echo "OK: workspace-bundle absent"
 ls "<dest>/skills/bundles"
+# 6. 退役スキル global-publish-harness-rules／global-publish-harness-skills が配布先に残留していないこと（残留時は手動削除）
 ```
 
 配布仕様では利用者編集 `context/product.md` を配布しない（`.example` のみ配布する）ため、手順 4

@@ -5,7 +5,7 @@ subtask: false
 
 # /project-setup — プロジェクトセットアップワークフロー
 
-本ワークフローは、プロジェクトのリポジトリを準備し、AI協働開発のルール・スキルを適用する。
+本ワークフローは、プロジェクトのリポジトリを準備し、ハーネス資源をプロジェクトに適用する。
 完了後、`/kickoff` によるプロジェクト立ち上げが可能になる。
 
 ---
@@ -112,17 +112,18 @@ subtask: false
 
 ## 2. フェーズB: プロセス統一 (Process Standardization)
 
-**責務**: AI開発のルール・スキルをプロジェクトに適用する。加えてGitHub Project V2のボード・設定を構築し、一貫性のある開発プロセスを確立する。
+**責務**: ハーネス資源をプロジェクトに適用する。加えてGitHub Project V2のボード・設定を構築し、一貫性のある開発プロセスを確立する。
 **ロール**: 本フェーズの全ステップは
 `[platform-engineer.md](/.opencode/agents/platform-engineer.md)` (すべての制約を遵守)
 で実行すること。
 
-### 2-1. ルールの同期
+### 2-1. ハーネス資源の配布
 
 - **実行スキル**:
-  `[publish-harness-rules](/.opencode/skills/bundles/workspace-bundle/publish-harness-rules/SKILL.md)`
+  `[distribute-harness](/.opencode/skills/bundles/workspace-bundle/distribute-harness/SKILL.md)`
+- **手順**: スキルの使用方法に従い、`--dry-run` → `--dest` 実配布 → 配布後除外の順に実行する（詳細はスキル側が正）。
 - **セルフチェック**:
-  - [ ] ハーネスのルールがプロジェクトに配信されているか。
+  - [ ] スキル側の合否基準を満たすこと（詳細・合否基準は distribute-harness スキル側が正）。
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
 
@@ -134,7 +135,7 @@ subtask: false
   `[setup-github-projects](/.opencode/skills/bundles/workspace-bundle/setup-github-projects/SKILL.md)`
 - **手順**: スキルの使用方法に従い、boards → fields → harnessrc の順に実行する（詳細はスキル側が正）。
 - **入力**: `1-5. リポジトリの確保` で確定した `<owner/repo>`。
-- **実行場所**: ハーネス側リポジトリで実行する（対象プロジェクトへのスキル同期前でも実行可能なため、本ステップを `2-3` より前に配置する）。
+- **実行場所**: ハーネス側リポジトリで実行する（ハーネス資源配布（2-1）とは独立に実行可能なため、本ステップを `2-3` より前に配置する）。
 - **前提条件**: `1-3. 認証設定` で `project` スコープが付与済みであること（確認: `gh auth status` の出力に `project` が含まれること）。
 - **セルフチェック**:
   - [ ] 3ボード (productBacklog/sprintBoard/retrospectiveBoard) が利用可能か（例: `gh project view <番号> --owner <owner>` の成功）。
@@ -144,26 +145,7 @@ subtask: false
 
 <!-- STOP -->
 
-### 2-3. スキルの同期
-
-- **実行スキル**:
-  `[publish-harness-skills](/.opencode/skills/bundles/workspace-bundle/publish-harness-skills/SKILL.md)`
-- **セルフチェック**:
-  - [ ] `.opencode/skills/` がプロジェクトに配信されているか。
-
-**停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
-
-<!-- STOP -->
-
----
-
-## 3. 検証フェーズ
-
-**ロール**: 本フェーズの全ステップは
-`[platform-engineer.md](/.opencode/agents/platform-engineer.md)` (すべての制約を遵守)
-で実行すること。
-
-### 3-1. 通信経路の疎通確認
+### 2-3. 通信経路の疎通確認
 
 - **手順**:
   1. 1-4 で設定したSSHエイリアスを用いてSSH通信を確認する。
