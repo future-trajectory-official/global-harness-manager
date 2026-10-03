@@ -3,6 +3,34 @@ import { join } from "@std/path";
 import { getSkillScriptPath, PATHS } from "./test_helper.ts";
 
 /**
+ * gitが子プロセスへ継承させるローカル環境変数の一覧。
+ * hook経路（gitがGIT_DIR等をexportする）でテストが実行されても、
+ * 一時リポジトリ宛のgit操作がpush元リポジトリへ誤転送されないように除去する。
+ * git公式doc（githooks: `unset $(git rev-parse --local-env-vars)`）と同等の対処。
+ */
+const GIT_LOCAL_ENV_VARS = [
+  "GIT_DIR",
+  "GIT_WORK_TREE",
+  "GIT_PREFIX",
+  "GIT_INDEX_FILE",
+] as const;
+
+/**
+ * 子プロセス起動用の環境変数を組み立てる。
+ * 親環境を継承しつつgitローカル変数を除去し、追加変数を上書きする。
+ *
+ * @param extra - 追加・上書きする環境変数
+ * @returns 子プロセス用の環境変数マップ
+ */
+function childEnv(extra: Record<string, string> = {}): Record<string, string> {
+  const env: Record<string, string> = { ...Deno.env.toObject(), ...extra };
+  for (const key of GIT_LOCAL_ENV_VARS) {
+    delete env[key];
+  }
+  return env;
+}
+
+/**
  * Integration: harness-attach dry-run — dry-run モードでharness-attachが正しくシミュレーションされることを検証する。
  * ターゲットプロジェクトへのバインディング設定が出力されることを確認する。
  */
@@ -38,10 +66,8 @@ Deno.test("Integration: harness-attach dry-run", async () => {
         "--dry-run",
       ],
       cwd: managerDir,
-      env: {
-        ...Deno.env.toObject(),
-        HARNESS_WORKSPACE_ROOT: managerDir,
-      },
+      clearEnv: true,
+      env: childEnv({ HARNESS_WORKSPACE_ROOT: managerDir }),
       stdout: "piped",
       stderr: "piped",
     });
@@ -87,6 +113,8 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
     const initCmd = new Deno.Command("git", {
       args: ["init"],
       cwd: targetProjectDir,
+      clearEnv: true,
+      env: childEnv(),
     });
     await initCmd.output();
 
@@ -94,6 +122,8 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
     const remoteCmd = new Deno.Command("git", {
       args: ["remote", "add", "origin", "git@github.com:example/repo.git"],
       cwd: targetProjectDir,
+      clearEnv: true,
+      env: childEnv(),
     });
     await remoteCmd.output();
 
@@ -110,10 +140,8 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
         scriptPath,
       ],
       cwd: managerDir,
-      env: {
-        ...Deno.env.toObject(),
-        HARNESS_WORKSPACE_ROOT: managerDir,
-      },
+      clearEnv: true,
+      env: childEnv({ HARNESS_WORKSPACE_ROOT: managerDir }),
       stdout: "piped",
       stderr: "piped",
     });
@@ -127,6 +155,8 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
     const configCmd = new Deno.Command("git", {
       args: ["config", "user.name"],
       cwd: targetProjectDir,
+      clearEnv: true,
+      env: childEnv(),
     });
     const configOutput = await configCmd.output();
     const userName = new TextDecoder().decode(configOutput.stdout).trim();
@@ -135,6 +165,8 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
     const emailCmd = new Deno.Command("git", {
       args: ["config", "user.email"],
       cwd: targetProjectDir,
+      clearEnv: true,
+      env: childEnv(),
     });
     const emailOutput = await emailCmd.output();
     const userEmail = new TextDecoder().decode(emailOutput.stdout).trim();
@@ -143,6 +175,8 @@ Deno.test("Integration: harness-attach actual execution on existing repo", async
     const remoteUrlCmd = new Deno.Command("git", {
       args: ["remote", "get-url", "origin"],
       cwd: targetProjectDir,
+      clearEnv: true,
+      env: childEnv(),
     });
     const remoteUrlOutput = await remoteUrlCmd.output();
     const remoteUrl = new TextDecoder().decode(remoteUrlOutput.stdout).trim();
