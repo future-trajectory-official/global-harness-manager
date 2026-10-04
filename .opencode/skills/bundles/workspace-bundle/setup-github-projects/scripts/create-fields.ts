@@ -15,6 +15,7 @@
 import { BOARD_FIELDS, type BoardKey } from "../../../../../core/gateway/field-registry.ts";
 import { resolveOwnerTarget } from "./resolve-target-account.ts";
 import { FIELDS_USAGE, handleTargetOrExit, parseCommonArgs } from "./cli-args.ts";
+import { resolveRunnerOrExit } from "./gh-auth-env.ts";
 import { runGh } from "./subprocess.ts";
 
 /** gh 呼出の注入点（テスト用に差し替え可能）。 */
@@ -255,40 +256,71 @@ export async function dryRunFields(
   ].join("\n");
 }
 
+/**
+ * `FieldGhRunner` の単一生成関数（WP #785 AC-1・レビュー指摘対応）。
+ *
+ * 既定 runner と env 付き runner の重複を一箇所に集約する。`env` 指定時は
+ * `GH_TOKEN` の局所注入によりambient認証への暗黙依存を排除する（グローバル状態の
+ * 書換は行わない）。`run` はテスト用の注入点。
+ *
+ * @param env 対象アカウントの env。未指定時はambient動作（後方互換）
+ * @param run gh 実行関数（既定は実 gh 呼出）
+ * @returns `FieldGhRunner`
+ */
+export function makeFieldGhRunner(
+  env?: Record<string, string>,
+  run: typeof runGh = runGh,
+): FieldGhRunner {
+  const exec = (args: string[]) => env ? run(args, { env }) : run(args);
+  return {
+    listFields: async (boardNumber: number, owner: string) => {
+      const args = ["project", "field-list", String(boardNumber), "--format", "json"];
+      if (owner) {
+        args.push("--owner", owner);
+      }
+      const result = await exec(args);
+      if (result.code !== 0) {
+        throw new Error(
+          `gh project field-list に失敗しました: ${result.stderr.trim()}`,
+        );
+      }
+      return parseFieldListJson(result.stdout);
+    },
+    createField: async (
+      boardNumber: number,
+      owner: string,
+      name: string,
+      dataType: string,
+    ) => {
+      const args = ["project", "field-create", String(boardNumber)];
+      if (owner) {
+        args.push("--owner", owner);
+      }
+      args.push("--name", name, "--data-type", dataType);
+      const result = await exec(args);
+      if (result.code !== 0) {
+        throw new Error(
+          `gh project field-create に失敗しました: ${result.stderr.trim()}`,
+        );
+      }
+    },
+  };
+}
+
 /** 実 gh 呼出の既定実装（非同期IFに実非同期で応答する。`outputSync` の `Promise` 包みは行わない）。 */
-export const defaultFieldGhRunner: FieldGhRunner = {
-  listFields: async (boardNumber: number, owner: string) => {
-    const args = ["project", "field-list", String(boardNumber), "--format", "json"];
-    if (owner) {
-      args.push("--owner", owner);
-    }
-    const result = await runGh(args);
-    if (result.code !== 0) {
-      throw new Error(
-        `gh project field-list に失敗しました: ${result.stderr.trim()}`,
-      );
-    }
-    return parseFieldListJson(result.stdout);
-  },
-  createField: async (
-    boardNumber: number,
-    owner: string,
-    name: string,
-    dataType: string,
-  ) => {
-    const args = ["project", "field-create", String(boardNumber)];
-    if (owner) {
-      args.push("--owner", owner);
-    }
-    args.push("--name", name, "--data-type", dataType);
-    const result = await runGh(args);
-    if (result.code !== 0) {
-      throw new Error(
-        `gh project field-create に失敗しました: ${result.stderr.trim()}`,
-      );
-    }
-  },
-};
+export const defaultFieldGhRunner: FieldGhRunner = makeFieldGhRunner();
+
+/**
+ * 対象アイデンティティ認証の runner 生成関数（WP #785 AC-1）。
+ *
+ * `makeFieldGhRunner` の薄い別名（公開面の後方互換）。
+ *
+ * @param env 対象アカウントの env（`resolveGhEnvForAccount` の結果）
+ * @returns env 付きの `FieldGhRunner`
+ */
+export function fieldGhRunnerWithEnv(env: Record<string, string>): FieldGhRunner {
+  return makeFieldGhRunner(env);
+}
 
 if (import.meta.main) {
   let opts: CreateFieldsArgs;
@@ -307,13 +339,15 @@ if (import.meta.main) {
     console.error(FIELDS_USAGE);
     Deno.exit(1);
   } else {
-    const owner = handleTargetOrExit(resolveOwnerTarget(opts));
+    const target = resolveOwnerTarget(opts);
+    const runner = resolveRunnerOrExit(target, defaultFieldGhRunner, fieldGhRunnerWithEnv);
+    const owner = target.owner || handleTargetOrExit(target);
     if (opts.dryRun) {
       console.log(
         await dryRunFields(
           opts.boardNumber,
           opts.board as BoardKey,
-          defaultFieldGhRunner,
+          runner,
           opts.dataType,
           owner,
         ),
@@ -325,7 +359,7 @@ if (import.meta.main) {
           await ensureFields(
             opts.boardNumber,
             opts.board as BoardKey,
-            defaultFieldGhRunner,
+            runner,
             opts.dataType,
             owner,
           ),

@@ -18,12 +18,14 @@ import {
   buildBoardsPlan,
   dryRunBoards,
   ensureBoards,
+  makeBoardGhRunner,
   parseCreateBoardsArgs,
   parseProjectCreateJson,
   parseProjectListJson,
   runCreateBoards,
 } from "./create-boards.ts";
 import type { HarnessRcBoards } from "./generate-harnessrc.ts";
+import type { CommandResult } from "./subprocess.ts";
 
 /**
  * ユースケース: 存在するボードは再利用し作成しないこと
@@ -333,4 +335,51 @@ Deno.test("gh create出力解析: 番号を抽出し不正時はErrorを投げ�
     Error,
     "番号が含まれていません",
   );
+});
+
+/**
+ * ユースケース: env付きrunnerがGH_TOKENを子プロセスへ転送すること
+ * 検証意図: makeBoardGhRunner(env)の実行がenv付きでghを呼ぶことを確認する（AC-1の主旨）
+ */
+Deno.test("makeBoardGhRunner: envをgh呼出へ転送する", async () => {
+  const seen: { args: string[]; env?: Record<string, string> }[] = [];
+  const fakeRun = (
+    args: string[],
+    opts?: { env?: Record<string, string> },
+  ): Promise<CommandResult> => {
+    seen.push({ args, env: opts?.env });
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ projects: [], totalCount: 0 }),
+      stderr: "",
+    });
+  };
+  const runner = makeBoardGhRunner({ GH_TOKEN: "TOKEN_B" }, fakeRun);
+  await runner.listBoards("some-owner");
+  assertEquals(seen.length, 1);
+  assertEquals(seen[0].env, { GH_TOKEN: "TOKEN_B" });
+  assertEquals(seen[0].args.slice(0, 2), ["project", "list"]);
+});
+
+/**
+ * ユースケース: env未指定時はenvなしでghを呼ぶこと
+ * 検証意図: 既定runnerが従来どおりambient動作することを確認する（AC-2後方互換）
+ */
+Deno.test("makeBoardGhRunner: env未指定時はenvなしで呼ぶ", async () => {
+  const seen: { args: string[]; env?: Record<string, string> }[] = [];
+  const fakeRun = (
+    args: string[],
+    opts?: { env?: Record<string, string> },
+  ): Promise<CommandResult> => {
+    seen.push({ args, env: opts?.env });
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ projects: [], totalCount: 0 }),
+      stderr: "",
+    });
+  };
+  const runner = makeBoardGhRunner(undefined, fakeRun);
+  await runner.listBoards("some-owner");
+  assertEquals(seen.length, 1);
+  assertEquals(seen[0].env, undefined);
 });

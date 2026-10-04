@@ -23,6 +23,7 @@ import {
   OWNER_REQUIRED_MESSAGE,
   parseCommonArgs,
 } from "./cli-args.ts";
+import { resolveRunnerOrExit } from "./gh-auth-env.ts";
 import { runGh } from "./subprocess.ts";
 
 /** `gh project list` 相当の結果の最小表現。 */
@@ -271,25 +272,56 @@ export async function dryRunBoards(
   ].join("\n");
 }
 
+/**
+ * `BoardGhRunner` の単一生成関数（WP #785 AC-1・レビュー指摘対応）。
+ *
+ * 既定 runner と env 付き runner の重複を一箇所に集約する。`env` 指定時は
+ * `GH_TOKEN` の局所注入によりambient認証への暗黙依存を排除する（グローバル状態の
+ * 書換は行わない）。`run` はテスト用の注入点。
+ *
+ * @param env 対象アカウントの env。未指定時はambient動作（後方互換）
+ * @param run gh 実行関数（既定は実 gh 呼出）
+ * @returns `BoardGhRunner`
+ */
+export function makeBoardGhRunner(
+  env?: Record<string, string>,
+  run: typeof runGh = runGh,
+): BoardGhRunner {
+  const exec = (args: string[]) => env ? run(args, { env }) : run(args);
+  return {
+    listBoards: async (owner: string) => {
+      const result = await exec(["project", "list", "--owner", owner, "--format", "json"]);
+      if (result.code !== 0) {
+        throw new Error(`gh project list に失敗しました: ${result.stderr.trim()}`);
+      }
+      return parseProjectListJson(result.stdout);
+    },
+    createBoard: async (owner: string, title: string) => {
+      const result = await exec(
+        ["project", "create", "--owner", owner, "--title", title, "--format", "json"],
+      );
+      if (result.code !== 0) {
+        throw new Error(`gh project create に失敗しました: ${result.stderr.trim()}`);
+      }
+      return parseProjectCreateJson(result.stdout);
+    },
+  };
+}
+
 /** 実 gh 呼出の既定実装（非同期IFに実非同期で応答する。`outputSync` の `Promise` 包みは行わない）。 */
-export const defaultBoardGhRunner: BoardGhRunner = {
-  listBoards: async (owner: string) => {
-    const result = await runGh(["project", "list", "--owner", owner, "--format", "json"]);
-    if (result.code !== 0) {
-      throw new Error(`gh project list に失敗しました: ${result.stderr.trim()}`);
-    }
-    return parseProjectListJson(result.stdout);
-  },
-  createBoard: async (owner: string, title: string) => {
-    const result = await runGh(
-      ["project", "create", "--owner", owner, "--title", title, "--format", "json"],
-    );
-    if (result.code !== 0) {
-      throw new Error(`gh project create に失敗しました: ${result.stderr.trim()}`);
-    }
-    return parseProjectCreateJson(result.stdout);
-  },
-};
+export const defaultBoardGhRunner: BoardGhRunner = makeBoardGhRunner();
+
+/**
+ * 対象アイデンティティ認証の runner 生成関数（WP #785 AC-1）。
+ *
+ * `makeBoardGhRunner` の薄い別名（公開面の後方互換）。
+ *
+ * @param env 対象アカウントの env（`resolveGhEnvForAccount` の結果）
+ * @returns env 付きの `BoardGhRunner`
+ */
+export function boardGhRunnerWithEnv(env: Record<string, string>): BoardGhRunner {
+  return makeBoardGhRunner(env);
+}
 
 if (import.meta.main) {
   let opts: CreateBoardsArgs;
@@ -302,11 +334,13 @@ if (import.meta.main) {
   if (opts.help) {
     console.log(BOARDS_USAGE);
   } else {
-    const owner = handleTargetOrExit(resolveOwnerTarget(opts));
+    const target = resolveOwnerTarget(opts);
+    const runner = resolveRunnerOrExit(target, defaultBoardGhRunner, boardGhRunnerWithEnv);
+    const owner = target.owner || handleTargetOrExit(target);
     if (opts.dryRun) {
-      console.log(await dryRunBoards(owner));
+      console.log(await dryRunBoards(owner, runner));
     } else {
-      console.log(await runCreateBoards(owner));
+      console.log(await runCreateBoards(owner, runner));
     }
   }
 }

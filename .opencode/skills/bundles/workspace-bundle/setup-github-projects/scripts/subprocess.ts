@@ -38,6 +38,15 @@ export function decodeUtf8(output: Uint8Array): string {
   return utf8Decoder.decode(output);
 }
 
+/** 子プロセス実行時の追加オプション（環境変数の局所注入用）。 */
+export interface RunCommandOptions {
+  /**
+   * 子プロセスに追加設定する環境変数（`Deno.Command` の仕様により親環境に
+   * マージされ、同名は上書きする。未指定時は親環境をそのまま継承）。
+   */
+  readonly env?: Record<string, string>;
+}
+
 /**
  * コマンドを同期実行し、結果を復号済みで返す。
  *
@@ -47,15 +56,21 @@ export function decodeUtf8(output: Uint8Array): string {
  *
  * @param cmd 実行コマンド名（例: `git`）
  * @param args コマンド引数
+ * @param opts 追加オプション（`env` 指定時は対象アカウントの認証等を局所注入する）
  * @returns 実行結果（終了コード・標準出力・標準エラー出力）
  */
-export function runCommandSync(cmd: string, args: string[]): CommandResult {
+export function runCommandSync(
+  cmd: string,
+  args: string[],
+  opts: RunCommandOptions = {},
+): CommandResult {
   let result: Deno.CommandOutput;
   try {
     result = new Deno.Command(cmd, {
       args,
       stdout: "piped",
       stderr: "piped",
+      env: opts.env,
     }).outputSync();
   } catch (error) {
     throw new Error(`${cmd} 呼出に失敗しました: ${(error as Error).message}`);
@@ -77,15 +92,21 @@ export function runCommandSync(cmd: string, args: string[]): CommandResult {
  * `code` で返す（呼出元が操作種別に応じた文言で報告するため）。
  *
  * @param args `gh` への引数（例: `["project", "list", ...]`）
+ * @param opts 追加オプション（`env` 指定時は対象アカウントの認証を局所注入し、
+ *   ambient認証への暗黙依存を排除する。WP #785）
  * @returns 実行結果（終了コード・標準出力・標準エラー出力）
  */
-export async function runGh(args: string[]): Promise<CommandResult> {
+export async function runGh(
+  args: string[],
+  opts: RunCommandOptions = {},
+): Promise<CommandResult> {
   let result: Deno.CommandOutput;
   try {
     result = await new Deno.Command("gh", {
       args,
       stdout: "piped",
       stderr: "piped",
+      env: opts.env,
     }).output();
   } catch (error) {
     throw new Error(`gh 呼出に失敗しました: ${(error as Error).message}`);
@@ -104,11 +125,12 @@ export async function runGh(args: string[]): Promise<CommandResult> {
  * 終了コード1の `GhStatus` に変換する（既存振る舞いを維持）。
  *
  * @param args `gh` への引数（例: `["auth", "status"]`）
+ * @param opts 追加オプション（`env` 指定時は対象アカウントの認証で状態確認する。WP #785）
  * @returns `gh` 実行結果の `GhStatus` 表現
  */
-export function runGhStatusSync(args: string[]): GhStatus {
+export function runGhStatusSync(args: string[], opts: RunCommandOptions = {}): GhStatus {
   try {
-    return runCommandSync("gh", args);
+    return runCommandSync("gh", args, opts);
   } catch (error) {
     return { code: 1, stdout: "", stderr: (error as Error).message };
   }
