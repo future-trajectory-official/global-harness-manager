@@ -30,7 +30,8 @@ deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scri
 deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scripts/create-fields.ts <board-number> <productBacklog|sprintBoard|retrospectiveBoard>
 ```
 
-3. `.harnessrc` を生成する。
+3. `.harnessrc` を生成する。生成と同時に同一ディレクトリへ2行の `.gitignore`
+   （`.harnessrc`＋`.gitignore` 自身）を冪等に併置する（WP#786 AC-1）。
 
 ```bash
 deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scripts/generate-harnessrc.ts --boards-json '<boards-json>' --repo <owner/repo>

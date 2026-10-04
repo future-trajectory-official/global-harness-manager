@@ -131,6 +131,192 @@ Deno.test("AC-2: 対象リポジトリ毎に --out で生成できる（マル�
 });
 
 /**
+ * ユースケース: 生成時に同一ディレクトリへ2行の .gitignore（.harnessrc＋.gitignore自身）を併せて配置すること
+ * 検証意図: WP#786 AC-1 の配置手順（.harnessrcと同階層.gitignoreの併置）が自動化されていることを確認する
+ */
+Deno.test("WP786-AC1: 生成時に同階層へ2行の .gitignore を併せて配置する", () => {
+  const temp = Deno.makeTempDirSync();
+  try {
+    const out = join(temp, ".github", "schemas", ".harnessrc");
+    runGenerateHarnessRc(
+      [
+        "--boards-json",
+        JSON.stringify(boards),
+        "--out",
+        out,
+        "--repo",
+        "future-trajectory-official/global-harness-manager",
+      ],
+      () => ({ accountName: "future-trajectory", verified: true, guidance: null }),
+    );
+    const gitignore = Deno.readTextFileSync(join(temp, ".github", "schemas", ".gitignore"));
+    const lines = gitignore.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+    assertEquals(lines, [".harnessrc", ".gitignore"]);
+  } finally {
+    Deno.removeSync(temp, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: 2回実行しても .gitignore が重複・変化しないこと
+ * 検証意図: R-C3・R-M3。冪等性（追記のみ・重複なし）を確認する
+ */
+Deno.test("WP786-AC1: 2回実行しても .gitignore は変化しない（冪等）", () => {
+  const temp = Deno.makeTempDirSync();
+  try {
+    const out = join(temp, ".github", "schemas", ".harnessrc");
+    const args = [
+      "--boards-json",
+      JSON.stringify(boards),
+      "--out",
+      out,
+      "--repo",
+      "future-trajectory-official/global-harness-manager",
+    ];
+    const stub = () => ({ accountName: "future-trajectory", verified: true, guidance: null });
+    runGenerateHarnessRc(args, stub);
+    const first = Deno.readTextFileSync(join(temp, ".github", "schemas", ".gitignore"));
+    runGenerateHarnessRc(args, stub);
+    const second = Deno.readTextFileSync(join(temp, ".github", "schemas", ".gitignore"));
+    assertEquals(second, first);
+    assertEquals(
+      second.split("\n").map((l) => l.trim()).filter((l) => l.length > 0),
+      [".harnessrc", ".gitignore"],
+    );
+  } finally {
+    Deno.removeSync(temp, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: 既存のカスタム行・コメントを保持したまま不足行のみ追記すること
+ * 検証意図: R-C3・R-M3。既存内容の保持と追記のみを確認する
+ */
+Deno.test("WP786-AC1: 既存のコメント・カスタム行を保持して不足行のみ追記する", () => {
+  const temp = Deno.makeTempDirSync();
+  try {
+    const dir = join(temp, ".github", "schemas");
+    Deno.mkdirSync(dir, { recursive: true });
+    Deno.writeTextFileSync(join(dir, ".gitignore"), "# custom\n\ncustom-rule\n");
+    runGenerateHarnessRc(
+      [
+        "--boards-json",
+        JSON.stringify(boards),
+        "--out",
+        join(dir, ".harnessrc"),
+        "--repo",
+        "future-trajectory-official/global-harness-manager",
+      ],
+      () => ({ accountName: "future-trajectory", verified: true, guidance: null }),
+    );
+    const raw = Deno.readTextFileSync(join(dir, ".gitignore"));
+    assert(raw.startsWith("# custom\n"));
+    const lines = raw.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+    assert(lines.includes("custom-rule"));
+    assert(lines.includes(".harnessrc"));
+    assert(lines.includes(".gitignore"));
+  } finally {
+    Deno.removeSync(temp, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: 片方のみ存在する場合は不足分のみ追記すること
+ * 検証意図: R-C3。部分存在時の追記を確認する
+ */
+Deno.test("WP786-AC1: 片方のみ存在する場合は不足分のみ追記する", () => {
+  const temp = Deno.makeTempDirSync();
+  try {
+    const dir = join(temp, ".github", "schemas");
+    Deno.mkdirSync(dir, { recursive: true });
+    Deno.writeTextFileSync(join(dir, ".gitignore"), ".harnessrc\n");
+    runGenerateHarnessRc(
+      [
+        "--boards-json",
+        JSON.stringify(boards),
+        "--out",
+        join(dir, ".harnessrc"),
+        "--repo",
+        "future-trajectory-official/global-harness-manager",
+      ],
+      () => ({ accountName: "future-trajectory", verified: true, guidance: null }),
+    );
+    const raw = Deno.readTextFileSync(join(dir, ".gitignore"));
+    assertEquals(
+      raw.split("\n").map((l) => l.trim()).filter((l) => l.length > 0),
+      [".harnessrc", ".gitignore"],
+    );
+  } finally {
+    Deno.removeSync(temp, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: 否定形がある行は上書きせずスキップすること
+ * 検証意図: R-M4。利用者の明示的例外を黙って上書きしないことを確認する
+ */
+Deno.test("WP786-AC1: 否定形がある行は追記をスキップする", () => {
+  const temp = Deno.makeTempDirSync();
+  try {
+    const dir = join(temp, ".github", "schemas");
+    Deno.mkdirSync(dir, { recursive: true });
+    Deno.writeTextFileSync(join(dir, ".gitignore"), "!.harnessrc\n");
+    runGenerateHarnessRc(
+      [
+        "--boards-json",
+        JSON.stringify(boards),
+        "--out",
+        join(dir, ".harnessrc"),
+        "--repo",
+        "future-trajectory-official/global-harness-manager",
+      ],
+      () => ({ accountName: "future-trajectory", verified: true, guidance: null }),
+    );
+    const lines = Deno.readTextFileSync(join(dir, ".gitignore"))
+      .split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+    assert(!lines.includes(".harnessrc"));
+    assert(lines.includes(".gitignore"));
+  } finally {
+    Deno.removeSync(temp, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: --dry-run では .harnessrc も .gitignore も書かないこと
+ * 検証意図: R-M2。dry-run の副作用なしを確認する
+ */
+Deno.test("WP786-AC1: --dry-run ではいずれのファイルも書かない", () => {
+  const temp = Deno.makeTempDirSync();
+  try {
+    const dir = join(temp, ".github", "schemas");
+    Deno.mkdirSync(dir, { recursive: true });
+    runGenerateHarnessRc([
+      "--boards-json",
+      JSON.stringify(boards),
+      "--out",
+      join(dir, ".harnessrc"),
+      "--dry-run",
+    ]);
+    let harnessExists = true;
+    try {
+      Deno.statSync(join(dir, ".harnessrc"));
+    } catch {
+      harnessExists = false;
+    }
+    let ignoreExists = true;
+    try {
+      Deno.statSync(join(dir, ".gitignore"));
+    } catch {
+      ignoreExists = false;
+    }
+    assert(!harnessExists);
+    assert(!ignoreExists);
+  } finally {
+    Deno.removeSync(temp, { recursive: true });
+  }
+});
+
+/**
  * ユースケース: 既定出力先は .github/schemas/.harnessrc（resolver候補と一致）
  * 検証意図: 慣例パスが resolver の候補と一致することを確認する
  */
