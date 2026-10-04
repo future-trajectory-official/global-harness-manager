@@ -307,6 +307,51 @@ export function resolveRepoAccount(
   };
 }
 
+/** `.harnessrc` と同階層に併置する `.gitignore` の必須行（WP#786 AC-1）。 */
+const COLOCATED_GITIGNORE_LINES = [".harnessrc", ".gitignore"];
+
+/**
+ * `.harnessrc` 出力先と同一ディレクトリに2行の `.gitignore` を冪等に配置する。
+ *
+ * 既存ファイルがある場合は不足行のみ追記し、既存のコメント・空行・順序は保持する
+ * （全文正規化による差分ノイズを避ける意図）。WP#786 AC-1 の配置手順
+ * （`.harnessrc` と同階層 `.gitignore` の併置）を自動化するための処理。
+ * 既存行に否定形（例: `!.harnessrc`）がある行は上書きせず警告してスキップする。
+ * 不存在以外の読取失敗（権限等）は握り潰さず投げ直す。
+ *
+ * @param outPath `.harnessrc` の出力先ファイルパス
+ * @returns なし
+ */
+function ensureCoLocatedGitignore(outPath: string): void {
+  const gitignorePath = join(dirname(outPath), ".gitignore");
+  let raw: string | null = null;
+  try {
+    raw = Deno.readTextFileSync(gitignorePath);
+  } catch (error) {
+    if (!(error instanceof Deno.errors.NotFound)) {
+      throw error;
+    }
+  }
+  const existing = raw === null
+    ? []
+    : raw.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
+  const missing = COLOCATED_GITIGNORE_LINES.filter((line) => !existing.includes(line));
+  const appendable = missing.filter((line) => !existing.includes(`!${line}`));
+  for (const line of missing) {
+    if (existing.includes(`!${line}`)) {
+      console.warn(
+        `[WARN] ${gitignorePath} に否定形 '!${line}' があるため '${line}' の追記をスキップしました`,
+      );
+    }
+  }
+  if (appendable.length === 0) {
+    return;
+  }
+  const base = raw ?? "";
+  const prefix = base === "" || base.endsWith("\n") ? "" : "\n";
+  Deno.writeTextFileSync(gitignorePath, `${base}${prefix}${appendable.join("\n")}\n`);
+}
+
 /** CLI の入口。生成物を指定パスへ書き込む（`--dry-run` 時は標準出力のみ）。
  *
  * @param args `Deno.args` 相当の引数列
@@ -345,6 +390,7 @@ export function runGenerateHarnessRc(
   const outPath = opts.outPath || DEFAULT_OUT_PATH;
   Deno.mkdirSync(dirname(outPath), { recursive: true });
   Deno.writeTextFileSync(outPath, json);
+  ensureCoLocatedGitignore(outPath);
   return `[OK] wrote ${outPath}`;
 }
 
