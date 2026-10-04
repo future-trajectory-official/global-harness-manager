@@ -134,12 +134,15 @@ subtask: false
 - **実行スキル**:
   `[setup-github-projects](/.opencode/skills/bundles/workspace-bundle/setup-github-projects/SKILL.md)`
 - **手順**: スキルの使用方法に従い、boards → fields → harnessrc の順に実行する（詳細はスキル側が正）。
+  harnessrc 生成と同時に同一ディレクトリへ2行の `.gitignore`
+  （`.harnessrc`＋`.gitignore` 自身）が併置されること（WP#786 AC-1）。
 - **入力**: `1-5. リポジトリの確保` で確定した `<owner/repo>`。
 - **実行場所**: ハーネス側リポジトリで実行する（ハーネス資源配布（2-1）とは独立に実行可能なため、本ステップを `2-3` より前に配置する）。
 - **前提条件**: `1-3. 認証設定` で `project` スコープが付与済みであること（確認: `gh auth status` の出力に `project` が含まれること）。
 - **セルフチェック**:
   - [ ] 3ボード (productBacklog/sprintBoard/retrospectiveBoard) が利用可能か（例: `gh project view <番号> --owner <owner>` の成功）。
   - [ ] `.harnessrc` が生成されているか（`.github/schemas/.harnessrc` の存在と `projects` キーの有無）。
+  - [ ] 同階層の `.gitignore` が2行（`.harnessrc`＋`.gitignore`）であるか。
 
 **停止指示**: 次のステップの内容を先読みして実行してはならない。PO の次の指示を待て。
 
