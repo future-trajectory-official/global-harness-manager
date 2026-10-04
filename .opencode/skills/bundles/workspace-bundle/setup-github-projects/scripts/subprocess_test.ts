@@ -6,7 +6,7 @@
  */
 
 import { assert, assertEquals, assertThrows } from "@std/assert";
-import { decodeUtf8, runCommandSync, runGhStatusSync } from "./subprocess.ts";
+import { decodeUtf8, runCommandSync, runGh, runGhStatusSync } from "./subprocess.ts";
 
 /**
  * ユースケース: バイト列をUTF-8文字列に復号できること
@@ -49,4 +49,15 @@ Deno.test("runGhStatusSync: 非ゼロ終了時にcodeを返す", () => {
   assert(typeof result.code === "number");
   assert(typeof result.stdout === "string");
   assert(typeof result.stderr === "string");
+});
+
+/**
+ * ユースケース: env指定時も親環境を継承してghが実行できること
+ * 検証意図: envが親環境の置換ではなくマージであること（PATH喪失による
+ * 起動失敗の回帰を検出する。WP #785レビュー指摘C1のガード）
+ */
+Deno.test("runGh: env指定時も親環境を継承する", async () => {
+  const result = await runGh(["--version"], { env: { GH_TOKEN: "dummy-token-for-test" } });
+  assertEquals(result.code, 0);
+  assert(result.stdout.includes("gh version"));
 });
