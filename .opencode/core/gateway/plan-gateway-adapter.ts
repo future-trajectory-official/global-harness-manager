@@ -54,6 +54,84 @@ function parseJsonOutput(raw: string): unknown {
   }
 }
 
+/** `gh api graphql` の引数に GraphQL 文書を渡す際の接頭辞。 */
+const QUERY_ARG_PREFIX = "query=";
+
+/** 未知の JSON 値をレコードとして読めるか判定する型ガード。 */
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/**
+ * ProjectV2 参照クエリの応答が「Organization 未解決」によるものか判定する（純関数）。
+ *
+ * User所有ボードでは `organization(login:)` が `organization: null` を返す。
+ * Organization 自体は解決したがボード番号が無い場合（`projectV2: null`）は
+ * フォールバック対象外とする。判定は「`organization === null`」または
+ * 「NOT_FOUND かつ Organization 解決失敗を示す errors」のいずれかを満たす場合に
+ * 真となる（OR 条件）。
+ *
+ * @param stdout gh api graphql の標準出力
+ * @returns Organization 未解決の場合 true
+ */
+export function isOrganizationUnresolved(stdout: string): boolean {
+  const parsed = parseJsonOutput(stdout) as
+    | { data?: { organization?: unknown } | null; errors?: unknown }
+    | undefined;
+  if (!isRecord(parsed)) return false;
+  const { data, errors } = parsed;
+  if (isRecord(data) && "organization" in data && data.organization === null) {
+    return true;
+  }
+  if (!Array.isArray(errors)) return false;
+  return errors.some((e) => {
+    if (!isRecord(e)) return false;
+    const { type, message } = e;
+    return type === "NOT_FOUND" && typeof message === "string" && /organization/i.test(message);
+  });
+}
+
+/**
+ * ProjectV2 参照クエリのルートフィールドを `organization(login:` から
+ * `user(login:` へ書き換える（純関数）。
+ *
+ * 現状の参照クエリは単一ルートのため全件置換と単発置換は等価だが、将来の
+ * 複数ルート混在（半端な混成クエリ生成）を避けるため全件置換とする。
+ * 該当箇所が無い場合は無変更。
+ *
+ * @param query organization 版の GraphQL クエリ文字列
+ * @returns user 版の GraphQL クエリ文字列
+ */
+export function toUserProjectQuery(query: string): string {
+  return query.replaceAll("organization(login:", "user(login:");
+}
+
+/**
+ * user フォールバック応答の `data.user` を `data.organization` へ付け替える（純関数）。
+ * 呼出側のパース（`data.organization.projectV2` 読取）を無変更で再利用するための透過化。
+ * 付け替え後は `data.user` を削除し、単一の正（`data.organization`）のみを残す。
+ *
+ * @param stdout user 版クエリの標準出力
+ * @returns 正規化後の標準出力（該当しない場合・非JSONの場合は無変更）
+ */
+export function aliasUserAsOrganization(stdout: string): string {
+  const parsed = parseJsonOutput(stdout) as
+    | { data?: { organization?: unknown; user?: unknown } | null }
+    | undefined;
+  if (!isRecord(parsed)) return stdout;
+  const { data, ...rest } = parsed;
+  if (!isRecord(data)) return stdout;
+  const { organization, user, ...others } = data as
+    & { organization?: unknown; user?: unknown }
+    & Record<
+      string,
+      unknown
+    >;
+  if (organization !== null && organization !== undefined) return stdout;
+  if (user === null || user === undefined) return stdout;
+  return JSON.stringify({ ...rest, data: { ...others, organization: user } });
+}
+
 export type OperationHandler = (
   operation: string,
   params: Record<string, unknown>,
@@ -344,6 +422,40 @@ export class PlanGatewayAdapter implements PlanGateway {
   }
 
   /**
+   * ProjectV2 参照用の `gh api graphql` を実行する。User所有ボードでは
+   * `organization(login:)` が NOT_FOUND になるため、その場合のみ同一クエリの
+   * `user(login:)` 版へフォールバックする（1回のみ再試行し、繰返しはしない）。
+   * gh auth のアカウント切替は行わない（PO確認なしの切替は禁止）。
+   *
+   * @param args organization 版クエリを含む gh 引数（`query=` を含むこと）
+   * @returns 初回またはフォールバックの実行結果
+   */
+  private async runProjectV2Query(args: string[]): Promise<ExecuteResult> {
+    const first = await this.runCommand("gh", args);
+    // gh の GraphQL エラーは code 0＋応答内 errors で返る前提。code 非ゼロ
+    //（認証・通信失敗）はフォールバックせず即時返却する（安全側の仕様）。
+    if (first.code !== 0) return first;
+    if (!isOrganizationUnresolved(first.stdout)) return first;
+    logger.debug("[runProjectV2Query] organization unresolved; retrying with user(login:)");
+    const userArgs = args.map((a) =>
+      a.startsWith(QUERY_ARG_PREFIX)
+        ? `${QUERY_ARG_PREFIX}${toUserProjectQuery(a.slice(QUERY_ARG_PREFIX.length))}`
+        : a
+    );
+    // 置換不能（organization 形式でないクエリ）の場合は初回結果を返す。
+    if (userArgs.every((a, i) => a === args[i])) {
+      logger.debug("[runProjectV2Query] no organization root found; returning first result");
+      return first;
+    }
+    const second = await this.runCommand("gh", userArgs);
+    if (second.code !== 0) {
+      logger.debug("[runProjectV2Query] user fallback query failed");
+      return second;
+    }
+    return { ...second, stdout: aliasUserAsOrganization(second.stdout) };
+  }
+
+  /**
    * Issue を Project V2 ボードに追加する。
    * @returns プロジェクト上の item node id
    */
@@ -353,7 +465,7 @@ export class PlanGatewayAdapter implements PlanGateway {
   ): Promise<{ projectItemNodeId: string }> {
     const getProjectIdQuery =
       `query($owner: String!, $number: Int!) { organization(login: $owner) { projectV2(number: $number) { id } } }`;
-    const projectResult = await this.runCommand("gh", [
+    const projectResult = await this.runProjectV2Query([
       "api",
       "graphql",
       "-f",
@@ -476,7 +588,7 @@ export class PlanGatewayAdapter implements PlanGateway {
     if (projectNumber === undefined) return;
     const owner = this.resolvedScope?.owner;
     if (!owner) return undefined;
-    const result = await this.runCommand("gh", [
+    const result = await this.runProjectV2Query([
       "api",
       "graphql",
       "-f",
@@ -511,7 +623,7 @@ export class PlanGatewayAdapter implements PlanGateway {
   ): Promise<{ fieldId: string } | { error: string }> {
     const query =
       `query($owner: String!, $number: Int!, $fieldName: String!) { organization(login: $owner) { projectV2(number: $number) { field(name: $fieldName) { ... on ProjectV2SingleSelectField { id } ... on ProjectV2Field { id } } } } }`;
-    const result = await this.runCommand("gh", [
+    const result = await this.runProjectV2Query([
       "api",
       "graphql",
       "-f",
@@ -543,7 +655,7 @@ export class PlanGatewayAdapter implements PlanGateway {
   ): Promise<{ projectId: string } | { error: string }> {
     const query =
       `query($owner: String!, $number: Int!) { organization(login: $owner) { projectV2(number: $number) { id } } }`;
-    const result = await this.runCommand("gh", [
+    const result = await this.runProjectV2Query([
       "api",
       "graphql",
       "-f",
@@ -1759,7 +1871,7 @@ export class PlanGatewayAdapter implements PlanGateway {
       if (cursor) {
         args.push("-f", `cursor=${cursor}`);
       }
-      const res = await this.runCommand("gh", args);
+      const res = await this.runProjectV2Query(args);
       if (res.code !== 0) return null;
       const parsed = parseJsonOutput(res.stdout) as {
         data?: {

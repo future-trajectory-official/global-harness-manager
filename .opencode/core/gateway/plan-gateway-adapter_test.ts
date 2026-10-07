@@ -1,6 +1,12 @@
-import { assert, assertEquals, assertStringIncludes } from "@std/assert";
+import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
 import type { ExecuteResult } from "../shared/io/command.ts";
-import { PlanGatewayAdapter, upsertVelocitySection } from "./plan-gateway-adapter.ts";
+import {
+  aliasUserAsOrganization,
+  isOrganizationUnresolved,
+  PlanGatewayAdapter,
+  toUserProjectQuery,
+  upsertVelocitySection,
+} from "./plan-gateway-adapter.ts";
 import { FIELD, HARNESS_FIELDS } from "./field-registry.ts";
 import type { Plan } from "../domain/types.ts";
 
@@ -24,9 +30,11 @@ const REPO = "my-repo";
 
 function makeAdapter(
   runner: ReturnType<typeof mockRunner>["runner"] = mockRunner().runner,
+  owner: string = OWNER,
+  repo: string = REPO,
 ): PlanGatewayAdapter {
   const adapter = new PlanGatewayAdapter(runner);
-  adapter.setScope(OWNER, REPO);
+  adapter.setScope(owner, repo);
   return adapter;
 }
 
@@ -35,6 +43,36 @@ function makeRawAdapter(
   runner: ReturnType<typeof mockRunner>["runner"] = mockRunner().runner,
 ): PlanGatewayAdapter {
   return new PlanGatewayAdapter(runner);
+}
+
+/** User所有ボードでの organization 未解決応答（NOT_FOUND）の共通フィクスチャ。 */
+const ORG_MISS = JSON.stringify({
+  data: { organization: null },
+  errors: [{
+    type: "NOT_FOUND",
+    message: "Could not resolve to an Organization with the login of 'some-user'.",
+  }],
+});
+
+/** 収集した gh 呼出の中に user(login:) フォールバックが含まれることを断言する。 */
+function assertFallbackIssued(calls: { cmd: string; args: string[] }[]): void {
+  assert(
+    calls.some((c) => c.args.some((a) => a.includes("user(login:"))),
+    "user(login:) fallback query should be issued",
+  );
+}
+
+/** 収集した gh 呼出の中に user(login:) フォールバックが無いことを断言する。 */
+function assertNoFallback(calls: { cmd: string; args: string[] }[]): void {
+  assert(
+    !calls.some((c) => c.args.some((a) => a.includes("user(login:"))),
+    "user(login:) query must not be issued",
+  );
+}
+
+/** user(login:) フォールバック呼出の回数を数える。 */
+function countFallbacks(calls: { cmd: string; args: string[] }[]): number {
+  return calls.filter((c) => c.args.some((a) => a.includes("user(login:"))).length;
 }
 
 /**
@@ -4954,4 +4992,486 @@ Deno.test("Retrospective recordSprintKpt - should fallback to projectItems looku
   assertEquals(itemEditCalls.length, 4);
   const lookupCall = calls.find((c) => c.args.some((a) => a.includes("projectItems")));
   assert(lookupCall, "projectItems lookup should be called");
+});
+
+/**
+ * ユースケース: User所有ボードへの書込時に organization クエリが NOT_FOUND になる場合
+ * 検証意図: addItemToProject が user(login:) クエリへフォールバックし、ボード追加に成功すること (AC-1)
+ */
+Deno.test("addItemToProject - should fallback to user query when organization is not found (AC-1)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const query = args.find((a) => a.startsWith("query=")) ?? "";
+    if (query.includes("addProjectV2ItemById")) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({
+          data: { addProjectV2ItemById: { item: { id: "PVTI_userItem1" } } },
+        }),
+        stderr: "",
+      });
+    }
+    if (query.includes("user(login:")) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ data: { user: { projectV2: { id: "PVT_user10" } } } }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: ORG_MISS, stderr: "" });
+  };
+  const adapter = makeAdapter(runner, "some-user", "my-repo");
+  const result = await adapter.addItemToProject("I_issue123", 10);
+  assertEquals(result.projectItemNodeId, "PVTI_userItem1");
+  assertFallbackIssued(calls);
+});
+
+/**
+ * ユースケース: Organization所有ボードへの書込が従来どおり成功する場合
+ * 検証意図: user(login:) クエリを発行せず、既存動作が不変であること (AC-2回帰)
+ */
+Deno.test("addItemToProject - should not issue user query when organization resolves (AC-2)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const query = args.find((a) => a.startsWith("query=")) ?? "";
+    if (query.includes("addProjectV2ItemById")) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({
+          data: { addProjectV2ItemById: { item: { id: "PVTI_orgItem1" } } },
+        }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ data: { organization: { projectV2: { id: "PVT_org10" } } } }),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+  const result = await adapter.addItemToProject("I_issue123", 10);
+  assertEquals(result.projectItemNodeId, "PVTI_orgItem1");
+  assertNoFallback(calls);
+});
+
+/**
+ * ユースケース: 単一選択肢ID解決時に organization クエリが NOT_FOUND になる場合
+ * 検証意図: resolveSingleSelectOptionId が user(login:) クエリへフォールバックして選択肢IDを返すこと (AC-1)
+ */
+Deno.test("resolveSingleSelectOptionId - should fallback to user query when organization is not found (AC-1)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const query = args.find((a) => a.startsWith("query=")) ?? "";
+    if (query.includes("user(login:")) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({
+          data: { user: { projectV2: { field: { options: [{ id: "OPT_TODO", name: "Todo" }] } } } },
+        }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: ORG_MISS, stderr: "" });
+  };
+  const adapter = makeAdapter(runner, "some-user", "my-repo");
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  const optionId = await adapter.resolveSingleSelectOptionId(
+    { boardKey: "sprintBoard", fieldName: "Status" },
+    "Todo",
+  );
+  assertEquals(optionId, "OPT_TODO");
+  assertFallbackIssued(calls);
+});
+
+/**
+ * ユースケース: Organization は解決するが指定ボード番号が存在しない場合
+ * 検証意図: projectV2 null を User所有と誤判定せず、user(login:) クエリへフォールバックしないこと
+ */
+Deno.test("resolveSingleSelectOptionId - should not fallback when organization resolves but board is missing", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ data: { organization: { projectV2: null } } }),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  const optionId = await adapter.resolveSingleSelectOptionId(
+    { boardKey: "sprintBoard", fieldName: "Status" },
+    "Todo",
+  );
+  assertEquals(optionId, undefined);
+  assertNoFallback(calls);
+});
+
+/**
+ * ユースケース: フィールドID解決とプロジェクトID解決の双方で organization クエリが NOT_FOUND になる場合
+ * 検証意図: setSingleSelectFieldValue が両解決でフォールバックし、値設定に成功すること (AC-1)
+ */
+Deno.test("setSingleSelectFieldValue - should fallback on both field and project resolution (AC-1)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    if (cmd === "gh" && args[0] === "project") {
+      return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+    }
+    const query = args.find((a) => a.startsWith("query=")) ?? "";
+    if (query.includes("user(login:")) {
+      if (query.includes("field(name:")) {
+        return Promise.resolve({
+          code: 0,
+          stdout: JSON.stringify({
+            data: { user: { projectV2: { field: { id: "FIELD_user" } } } },
+          }),
+          stderr: "",
+        });
+      }
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ data: { user: { projectV2: { id: "PVT_user11" } } } }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: ORG_MISS, stderr: "" });
+  };
+  const adapter = makeAdapter(runner, "some-user", "my-repo");
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  const result = await adapter.setSingleSelectFieldValue(
+    "PVTI_item1",
+    { boardKey: "sprintBoard", fieldName: "Status" },
+    "OPT_TODO",
+  );
+  assertEquals(result.success, true);
+  assertFallbackIssued(calls);
+  assertEquals(countFallbacks(calls), 2);
+});
+
+/**
+ * ユースケース: ProjectV2ボード検索時に organization クエリが NOT_FOUND になる場合
+ * 検証意図: handleProjectSearchItems(#fetchProjectItems経由) がフォールバックして件数を返すこと (AC-1)
+ */
+Deno.test("handleProjectSearchItems - should fallback to user query when organization is not found (AC-1)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const query = args.find((a) => a.startsWith("query=")) ?? "";
+    if (query.includes("user(login:")) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({
+          data: {
+            user: {
+              projectV2: {
+                items: {
+                  pageInfo: { hasNextPage: false, endCursor: null },
+                  nodes: [{
+                    content: { number: 1, title: "T1" },
+                    fieldValueByName: { name: "Todo" },
+                  }],
+                },
+              },
+            },
+          },
+        }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: ORG_MISS, stderr: "" });
+  };
+  const adapter = makeAdapter(runner, "some-user", "my-repo");
+  const result = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "WP",
+    boardNumber: 11,
+  });
+  assertEquals(result.success, true);
+  const output = result.output as Array<{ number: number; title: string }>;
+  assertEquals(output.length, 1);
+  assertEquals(output[0].number, 1);
+});
+
+/**
+ * ユースケース: Organization未解決判定の境界値を直接確認する場合
+ * 検証意図: isOrganizationUnresolved が organization null と errors 単独を分離して正しく判定すること
+ */
+Deno.test("isOrganizationUnresolved - should classify miss and non-miss payloads", () => {
+  assertEquals(isOrganizationUnresolved(ORG_MISS), true);
+  assertEquals(
+    isOrganizationUnresolved(JSON.stringify({ data: { organization: null } })),
+    true,
+  );
+  assertEquals(
+    isOrganizationUnresolved(
+      JSON.stringify({
+        data: { dummy: 1 },
+        errors: [{ type: "NOT_FOUND", message: "Could not resolve to an Organization." }],
+      }),
+    ),
+    true,
+  );
+  assertEquals(isOrganizationUnresolved("not json"), false);
+  assertEquals(
+    isOrganizationUnresolved(JSON.stringify({ data: { organization: { projectV2: null } } })),
+    false,
+  );
+  assertEquals(
+    isOrganizationUnresolved(
+      JSON.stringify({ data: null, errors: [{ type: "NOT_FOUND", message: "auth failed" }] }),
+    ),
+    false,
+  );
+  assertEquals(
+    isOrganizationUnresolved(JSON.stringify({ data: { organization: null }, errors: "broken" })),
+    true,
+  );
+  assertEquals(
+    isOrganizationUnresolved(
+      JSON.stringify({
+        data: { organization: null },
+        errors: [{ type: "FORBIDDEN", message: "rate limited" }],
+      }),
+    ),
+    true,
+  );
+});
+
+/**
+ * ユースケース: クエリ書換えの境界値を直接確認する場合
+ * 検証意図: toUserProjectQuery が該当箇所の全件置換と無変更を正しく行うこと
+ */
+Deno.test("toUserProjectQuery - should rewrite all organization roots or leave untouched", () => {
+  assertEquals(
+    toUserProjectQuery("{ organization(login: $owner) { projectV2(number: 1) { id } } }"),
+    "{ user(login: $owner) { projectV2(number: 1) { id } } }",
+  );
+  assertEquals(
+    toUserProjectQuery("{ a: organization(login: $o) { id } b: organization(login: $o) { id } }"),
+    "{ a: user(login: $o) { id } b: user(login: $o) { id } }",
+  );
+  assertEquals(
+    toUserProjectQuery("{ repository(owner: $o, name: $r) { id } }"),
+    "{ repository(owner: $o, name: $r) { id } }",
+  );
+});
+
+/**
+ * ユースケース: 応答正規化の境界値を直接確認する場合
+ * 検証意図: aliasUserAsOrganization が data.user を data.organization へ付け替えて user を削除すること
+ */
+Deno.test("aliasUserAsOrganization - should alias user as organization and drop user key", () => {
+  const normalized = JSON.parse(
+    aliasUserAsOrganization(JSON.stringify({ data: { user: { projectV2: { id: "P1" } } } })),
+  ) as { data: { organization?: unknown; user?: unknown } };
+  assertEquals(normalized.data.organization, { projectV2: { id: "P1" } });
+  assertEquals("user" in normalized.data, false);
+  const untouched = '{"data":{"organization":{"projectV2":{"id":"P0"}}}}';
+  assertEquals(aliasUserAsOrganization(untouched), untouched);
+  assertEquals(aliasUserAsOrganization("not json"), "not json");
+  assertEquals(
+    aliasUserAsOrganization(JSON.stringify({ data: { organization: null, user: null } })),
+    JSON.stringify({ data: { organization: null, user: null } }),
+  );
+});
+
+/**
+ * ユースケース: 初回呼出が gh 失敗 (code!=0) の場合
+ * 検証意図: フォールバックせず即時返却し、user(login:) を発行しないこと
+ */
+Deno.test("addItemToProject - should not fallback when first call fails (AC-2)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return Promise.resolve({ code: 1, stdout: "", stderr: "network error" });
+  };
+  const adapter = makeAdapter(runner, "some-user", "my-repo");
+  await assertRejects(
+    () => adapter.addItemToProject("I_issue123", 10),
+    Error,
+    "Failed to get project ID",
+  );
+  assertNoFallback(calls);
+});
+
+/**
+ * ユースケース: フォールバック先 (user) も失敗する場合
+ * 検証意図: 再試行は1回のみで打切り、2回目のエラーをそのまま返すこと（無限フォールバックなし）
+ */
+Deno.test("addItemToProject - should stop after a single retry when user query also misses", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const userMiss = JSON.stringify({
+    data: { user: null },
+    errors: [{ type: "NOT_FOUND", message: "Could not resolve to a User." }],
+  });
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const query = args.find((a) => a.startsWith("query=")) ?? "";
+    if (query.includes("user(login:")) {
+      return Promise.resolve({ code: 0, stdout: userMiss, stderr: "" });
+    }
+    return Promise.resolve({ code: 0, stdout: ORG_MISS, stderr: "" });
+  };
+  const adapter = makeAdapter(runner, "some-user", "my-repo");
+  await assertRejects(
+    () => adapter.addItemToProject("I_issue123", 10),
+    Error,
+    "GraphQL error",
+  );
+  assertEquals(countFallbacks(calls), 1);
+});
+
+/**
+ * ユースケース: フォールバック先の呼出自体が gh 失敗 (code!=0) の場合
+ * 検証意図: 2回目のエラーをそのまま返し、3回目の呼出を行わないこと
+ */
+Deno.test("addItemToProject - should return second error without further retry", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const query = args.find((a) => a.startsWith("query=")) ?? "";
+    if (query.includes("user(login:")) {
+      return Promise.resolve({ code: 1, stdout: "", stderr: "user query failed" });
+    }
+    return Promise.resolve({ code: 0, stdout: ORG_MISS, stderr: "" });
+  };
+  const adapter = makeAdapter(runner, "some-user", "my-repo");
+  await assertRejects(
+    () => adapter.addItemToProject("I_issue123", 10),
+    Error,
+    "Failed to get project ID",
+  );
+  assertEquals(countFallbacks(calls), 1);
+});
+
+/**
+ * ユースケース: User所有の大規模ボードを複数ページで検索する場合
+ * 検証意図: 各ページでフォールバックし、cursor を保持して件数を合算すること
+ */
+Deno.test("handleProjectSearchItems - should fallback on every page and merge items", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const page = (next: string | null, num: number) =>
+    JSON.stringify({
+      data: {
+        user: {
+          projectV2: {
+            items: {
+              pageInfo: { hasNextPage: next !== null, endCursor: next },
+              nodes: [{
+                content: { number: num, title: `T${num}` },
+                fieldValueByName: { name: "Todo" },
+              }],
+            },
+          },
+        },
+      },
+    });
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const query = args.find((a) => a.startsWith("query=")) ?? "";
+    if (query.includes("user(login:")) {
+      const hasCursor = args.some((a) => a === "cursor=cursor-1");
+      return Promise.resolve({
+        code: 0,
+        stdout: hasCursor ? page(null, 2) : page("cursor-1", 1),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: ORG_MISS, stderr: "" });
+  };
+  const adapter = makeAdapter(runner, "some-user", "my-repo");
+  const result = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "WP",
+    boardNumber: 11,
+  });
+  assertEquals(result.success, true);
+  const output = result.output as Array<{ number: number; title: string }>;
+  assertEquals(output.map((o) => o.number), [1, 2]);
+  assertEquals(countFallbacks(calls), 2);
+  assert(
+    calls.some((c) => c.args.includes("cursor=cursor-1")),
+    "cursor should be preserved on fallback pages",
+  );
+});
+
+/**
+ * ユースケース: Organization解決時にフィールド値設定を行う場合
+ * 検証意図: resolveFieldId・resolveProjectNodeId 経路で user(login:) を発行しないこと (AC-2回帰)
+ */
+Deno.test("setSingleSelectFieldValue - should not issue user query when organization resolves (AC-2)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    if (cmd === "gh" && args[0] === "project") {
+      return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+    }
+    const query = args.find((a) => a.startsWith("query=")) ?? "";
+    if (query.includes("field(name:")) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({
+          data: { organization: { projectV2: { field: { id: "FIELD_org" } } } },
+        }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ data: { organization: { projectV2: { id: "PVT_org11" } } } }),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  const result = await adapter.setSingleSelectFieldValue(
+    "PVTI_item1",
+    { boardKey: "sprintBoard", fieldName: "Status" },
+    "OPT_TODO",
+  );
+  assertEquals(result.success, true);
+  assertNoFallback(calls);
+});
+
+/**
+ * ユースケース: Organization解決時にボード検索を行う場合
+ * 検証意図: #fetchProjectItems 経路で user(login:) を発行しないこと (AC-2回帰)
+ */
+Deno.test("handleProjectSearchItems - should not issue user query when organization resolves (AC-2)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({
+        data: {
+          organization: {
+            projectV2: {
+              items: {
+                pageInfo: { hasNextPage: false, endCursor: null },
+                nodes: [{
+                  content: { number: 7, title: "T7" },
+                  fieldValueByName: { name: "Todo" },
+                }],
+              },
+            },
+          },
+        },
+      }),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+  const result = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "WP",
+    boardNumber: 11,
+  });
+  assertEquals(result.success, true);
+  assertNoFallback(calls);
 });
