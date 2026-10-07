@@ -1536,8 +1536,62 @@ Deno.test("ProductBacklogItem commit - should fail without itemId", async () => 
   assertStringIncludes(result.stepResults[0].error ?? "", "itemId is required");
 });
 
+/** estimateSize 系テスト用の逐次応答ランナー。消費数を検証可能にする。 */
+function makeSequencedRunner(
+  responses: { code: number; stdout: string; stderr: string }[],
+) {
+  const calls: { cmd: string; args: string[] }[] = [];
+  let idx = 0;
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const r = responses[idx] ?? { code: 0, stdout: "", stderr: "" };
+    idx++;
+    return Promise.resolve(r);
+  };
+  return { runner, calls, consumed: () => idx };
+}
+
+/** estimateSize 成功系の gh 7連鎖（issue → project → add → options → field → node → edit）。 */
+function estimateSuccessResponses(
+  optionName = "M",
+): { code: number; stdout: string; stderr: string }[] {
+  return [
+    // 1: gh issue view <id> --json id
+    { code: 0, stdout: '{"id":"NODE_123"}', stderr: "" },
+    // 2: addItemToProject getProjectId query
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_123"}}}}', stderr: "" },
+    // 3: addItemToProject addItem mutation
+    {
+      code: 0,
+      stdout: '{"data":{"addProjectV2ItemById":{"item":{"id":"ITEM_123"}}}}',
+      stderr: "",
+    },
+    // 4: resolveSingleSelectOptionId field options query
+    {
+      code: 0,
+      stdout:
+        `{"data":{"organization":{"projectV2":{"field":{"options":[{"id":"OPT_M","name":"${optionName}"}]}}}}}`,
+      stderr: "",
+    },
+    // 5: setSingleSelectFieldValue resolveFieldId
+    {
+      code: 0,
+      stdout: '{"data":{"organization":{"projectV2":{"field":{"id":"FIELD_123"}}}}}',
+      stderr: "",
+    },
+    // 6: setSingleSelectFieldValue resolveProjectNodeId
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_123"}}}}', stderr: "" },
+    // 7: setSingleSelectFieldValue item-edit
+    { code: 0, stdout: "", stderr: "" },
+  ];
+}
+
 Deno.test("ProductBacklogItem estimateSize - should succeed with valid itemId", async () => {
-  const adapter = makeAdapter();
+  const responses = estimateSuccessResponses();
+  const { runner, consumed } = makeSequencedRunner(responses);
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99);
   const plan: Plan = {
     summary: "estimate size",
     steps: [
@@ -1551,6 +1605,194 @@ Deno.test("ProductBacklogItem estimateSize - should succeed with valid itemId", 
   const result = await adapter.execute(plan);
   assertEquals(result.stepResults.length, 1);
   assertEquals(result.stepResults[0].success, true);
+  assertEquals(consumed(), responses.length);
+});
+
+/**
+ * ユースケース: ボード未設定でestimateSizeを呼んでも無言成功にならないこと
+ * 検証意図: success:false と理由（board番号未設定）が返ることを確認する
+ */
+Deno.test("ProductBacklogItem estimateSize - should return error when board is not configured", async () => {
+  const adapter = makeAdapter();
+  const plan: Plan = {
+    summary: "estimate size without board",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "estimateSize",
+        params: { itemId: "42", sizeEstimate: "M" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(
+    result.stepResults[0].error ?? "",
+    "productBacklogBoardNumber is not configured",
+  );
+});
+
+/**
+ * ユースケース: Issue解決失敗時にestimateSizeが無言成功にならないこと
+ * 検証意図: success:false と理由（ノード解決失敗）が返ることを確認する
+ */
+Deno.test("ProductBacklogItem estimateSize - should return error when issue lookup fails", async () => {
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({ code: 1, stdout: "", stderr: "issue not found" });
+  };
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99);
+  const plan: Plan = {
+    summary: "estimate size lookup failure",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "estimateSize",
+        params: { itemId: "42", sizeEstimate: "M" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "failed to resolve issue node");
+});
+
+/**
+ * ユースケース: User所有ボードへのestimateで書込不能時に警告返却されること（WP#805 AC-2再現手順）
+ * 再現手順:
+ *   1. ボード番号を設定（User所有ボード想定: setProjectBoardNumbers(99, 99)）
+ *   2. estimateSize を呼ぶ（gh issue view は成功、projectV2解決は organization→userフォールバック後も未解決）
+ *   3. success:false と理由が返ることを確認する（無言成功でないこと）
+ * 検証意図: user(login:)フォールバック経路でプロジェクト未解決時に理由付き返却となることを確認する
+ */
+Deno.test("ProductBacklogItem estimateSize - should return error on User-owned board when project is unresolved", async () => {
+  const ORG_MISS = JSON.stringify({
+    data: { organization: null },
+    errors: [{
+      type: "NOT_FOUND",
+      message: "Could not resolve to an Organization with the login of 'some-user'.",
+    }],
+  });
+  const responses = [
+    // 1: gh issue view <id> --json id
+    { code: 0, stdout: '{"id":"NODE_123"}', stderr: "" },
+    // 2: getProjectId organization 版クエリ → NOT_FOUND（User所有想定）
+    { code: 0, stdout: ORG_MISS, stderr: "" },
+    // 3: getProjectId user(login:) フォールバック → 解決不可
+    { code: 0, stdout: '{"data":{"user":{"projectV2":null}}}', stderr: "" },
+  ];
+  const { runner, calls, consumed } = makeSequencedRunner(responses);
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope("some-user", REPO);
+  adapter.setProjectBoardNumbers(99, 99);
+  const plan: Plan = {
+    summary: "estimate size on user-owned board",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "estimateSize",
+        params: { itemId: "42", sizeEstimate: "M" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertEquals(
+    result.stepResults[0].error,
+    "board write failed for estimateSize (itemId=42): Project V2 #99 not found",
+  );
+  assert(
+    calls.some((c) => c.args.some((a) => a.includes("user(login:"))),
+    "user(login:) fallback query should be issued",
+  );
+  assertEquals(consumed(), responses.length);
+});
+/**
+ * ユースケース: サイズ選択肢の未解決時にestimateSizeが無言成功にならないこと
+ * 検証意図: success:false と理由（選択肢未解決）が返ることを確認する
+ */
+Deno.test("ProductBacklogItem estimateSize - should return error when size option is unresolved", async () => {
+  const responses = estimateSuccessResponses("S");
+  const { runner, consumed } = makeSequencedRunner(responses);
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99);
+  const plan: Plan = {
+    summary: "estimate size unknown option",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "estimateSize",
+        params: { itemId: "42", sizeEstimate: "M" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "failed to resolve size option");
+  // 選択肢未解決で早期終了するため options 解決までの4呼出のみ消費
+  assertEquals(consumed(), 4);
+});
+
+/**
+ * ユースケース: 最終書込（item-edit）失敗時にestimateSizeが無言成功にならないこと
+ * 検証意図: success:false と理由（書込失敗）が返ることを確認する
+ */
+Deno.test("ProductBacklogItem estimateSize - should return error when final field write fails", async () => {
+  const responses = estimateSuccessResponses().map((r, i, arr) =>
+    i === arr.length - 1 ? { code: 1, stdout: "", stderr: "permission denied" } : r
+  );
+  const { runner, consumed } = makeSequencedRunner(responses);
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99);
+  const plan: Plan = {
+    summary: "estimate size write failure",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "estimateSize",
+        params: { itemId: "42", sizeEstimate: "M" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "failed to write size option");
+  assertEquals(consumed(), responses.length);
+});
+
+/**
+ * ユースケース: Issue参照の応答不正時にestimateSizeが無言成功にならないこと
+ * 検証意図: success:false と理由（書込失敗）が返ることを確認する
+ */
+Deno.test("ProductBacklogItem estimateSize - should return error when issue lookup response is malformed", async () => {
+  const responses = [{ code: 0, stdout: "not-json", stderr: "" }];
+  const { runner, consumed } = makeSequencedRunner(responses);
+  const adapter = new PlanGatewayAdapter(runner);
+  adapter.setScope(OWNER, REPO);
+  adapter.setProjectBoardNumbers(99, 99);
+  const plan: Plan = {
+    summary: "estimate size malformed lookup",
+    steps: [
+      {
+        entity: "ProductBacklogItem",
+        operation: "estimateSize",
+        params: { itemId: "42", sizeEstimate: "M" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "board write failed for estimateSize");
+  assertEquals(consumed(), responses.length);
 });
 
 Deno.test("ProductBacklogItem estimateSize - should fail without itemId", async () => {
