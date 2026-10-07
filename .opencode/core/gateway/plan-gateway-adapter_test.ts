@@ -143,6 +143,177 @@ Deno.test("Scope.resolve - should resolve unknown scope via git + gh", async () 
 });
 
 /**
+ * Scope.resolve - 非git cwd で ambient cwd 解決失敗→repoDir 基準の git remote で解決し gh issue に --repo が付くこと（WP #806 AC-1/AC-2）
+ * 検証意図: cwd の `git remote` が失敗し repoDir の `-C` で SSHエイリアス origin を解決でき、
+ *   後続の `gh issue list` に `--repo owner/repo` が渡され ambient git remote 不要であることを確認する
+ */
+Deno.test("Scope.resolve - cwd失敗→repoDir基準で解決し gh issue に--repoを付与", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    if (cmd === "git") {
+      // ambient cwd（-C なし）は失敗＝非git、repoDir（-C あり）で成功
+      if (args[0] === "-C") {
+        return Promise.resolve({
+          code: 0,
+          stdout:
+            "git@github.com-future-trajectory:future-trajectory-official/global-harness-manager.git\n",
+          stderr: "",
+        });
+      }
+      return Promise.resolve({ code: 128, stdout: "", stderr: "fatal: not a git repository" });
+    }
+    return Promise.resolve({ code: 0, stdout: "[]", stderr: "" });
+  };
+  const adapter = new PlanGatewayAdapter(runner, () => "/ws/global-harness-manager");
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      },
+      { entity: "Vision", operation: "search", params: { labelType: "Vision" } },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  const dirCall = calls.find((c) => c.cmd === "git" && c.args[0] === "-C");
+  assert(dirCall !== undefined, "cwd失敗後に repoDir基準の git が呼ばれること");
+  assertEquals(dirCall!.args.slice(0, 2), ["-C", "/ws/global-harness-manager"]);
+  const issueCall = calls.find((c) =>
+    c.cmd === "gh" && c.args[0] === "issue" && c.args[1] === "list"
+  );
+  assert(issueCall !== undefined, "gh issue list が呼ばれること");
+  assert(
+    issueCall!.args.join(" ").includes("--repo future-trajectory-official/global-harness-manager"),
+    `gh issue list に --repo が含まれない: ${issueCall!.args.join(" ")}`,
+  );
+});
+
+/**
+ * Scope.resolve - https origin で gh repo view 検証経路を通るとき、検証呼出にも --repo を付与すること（WP #806 AC-2）
+ * 検証意図: parseGitRemoteUrl が一致する https origin では gh auth status 後に gh repo view を呼ぶため、
+ *   非git cwd（cwd失敗→repoDir）でも成功するよう `gh repo view ... --repo owner/repo` が付くことを確認する
+ */
+Deno.test("Scope.resolve - https origin の gh repo view 検証に--repoを付与", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    if (cmd === "git") {
+      if (args[0] === "-C") {
+        return Promise.resolve({
+          code: 0,
+          stdout: "https://github.com/my-org/my-repo.git\n",
+          stderr: "",
+        });
+      }
+      return Promise.resolve({ code: 128, stdout: "", stderr: "fatal: not a git repository" });
+    }
+    if (args[0] === "auth") {
+      return Promise.resolve({ code: 0, stdout: "Logged in to gh as my-user", stderr: "" });
+    }
+    if (args[0] === "repo" && args[1] === "view") {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ owner: { login: "my-org" }, name: "my-repo" }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: "[]", stderr: "" });
+  };
+  const adapter = new PlanGatewayAdapter(runner, () => "/ws/my-repo");
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  const repoView = calls.find((c) =>
+    c.cmd === "gh" && c.args[0] === "repo" && c.args[1] === "view"
+  );
+  assert(repoView !== undefined, "gh repo view が呼ばれること");
+  assert(
+    repoView!.args.join(" ").includes("--repo my-org/my-repo"),
+    `gh repo view に --repo が含まれない: ${repoView!.args.join(" ")}`,
+  );
+});
+
+/**
+ * Scope.resolve - cwd が git repo のときは repoDir より cwd を優先すること（WP #806 M4）
+ * 検証意図: 非git cwd 対策で repoDir(env/.harnessrc) を用意しても、cwd が git repo ならその remote を優先し、
+ *   stale な HARNESS_WORKSPACE_ROOT 等で別 repo に誤解決しない（`-C` を呼ばない）ことを確認する
+ */
+Deno.test("Scope.resolve - cwd が git repo なら repoDir を使わず cwd 優先", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    if (cmd === "git") {
+      // cwd の素の git remote が成功する（git repo 内）。sshエイリアス origin で検証経路を挟まず解決。
+      return Promise.resolve({
+        code: 0,
+        stdout: "git@github.com-alias:real-org/real-repo.git\n",
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: "[]", stderr: "" });
+  };
+  const adapter = new PlanGatewayAdapter(runner, () => "/stale/other-repo");
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, true);
+  assert(
+    !calls.some((c) => c.cmd === "git" && c.args[0] === "-C"),
+    "cwd成功時は -C を呼ばないこと（cwd優先）",
+  );
+  assertEquals(adapter.scopeOwner, "real-org");
+  assertEquals(adapter.scopeRepository, "real-repo");
+});
+
+/**
+ * Scope.resolve - cwd と repoDir 双方失敗時は失敗を返すこと（WP #806 M1/M6）
+ * 検証意図: 非git cwd かつ repoDir の `git -C` も失敗する場合、resolve が success:false と error を返すことを確認する
+ */
+Deno.test("Scope.resolve - cwd と repoDir 双方失敗で success:false", async () => {
+  const runner = (_cmd: string, _args: string[]): Promise<ExecuteResult> => {
+    return Promise.resolve({ code: 128, stdout: "", stderr: "fatal: not a git repository" });
+  };
+  const adapter = new PlanGatewayAdapter(runner, () => "/ws/missing-repo");
+  const plan: Plan = {
+    summary: "test",
+    steps: [
+      {
+        entity: "Scope",
+        operation: "resolve",
+        params: { owner: "unknown", repository: "unknown" },
+      },
+    ],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults[0].success, false);
+  assert(
+    typeof result.stepResults[0].error === "string" && result.stepResults[0].error.length > 0,
+    "失敗理由を返すこと",
+  );
+});
+
+/**
  * PlanGateway - execute が空の Plan.steps に対して空の ExecutionResult を返すことを検証する。
  * AC6: steps が空の場合、stepResults: [] を返しエラーにしない。
  */

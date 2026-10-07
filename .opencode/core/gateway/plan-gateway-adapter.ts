@@ -1,5 +1,6 @@
 import { executeCommand, type ExecuteResult } from "../shared/io/command.ts";
 import { parseGitRemoteUrl } from "../shared/account/account-identifier.ts";
+import { readOriginRemoteUrl, resolveRepoDir } from "../shared/scope-repo-dir.ts";
 import { logger } from "../shared/io/logger.ts";
 import type {
   EntityScope,
@@ -153,6 +154,8 @@ export class PlanGatewayAdapter implements PlanGateway {
 
   constructor(
     readonly runCommand: CommandRunner = (cmd, args) => executeCommand({ cmd, args }),
+    /** 非git cwd でも `git -C` の基準dir を per-repo で解決する関数（既定は `resolveRepoDir`、テスト注入可）。 */
+    private readonly repoDirResolver: () => string | null = () => resolveRepoDir(),
   ) {
     // === Vision 操作の登録 ===
     const visionCreate: OperationHandler = async (op, params) => {
@@ -910,16 +913,18 @@ export class PlanGatewayAdapter implements PlanGateway {
       return { operation: "resolve", success: true };
     }
 
-    const remoteResult = await this.runCommand("git", ["remote", "get-url", "origin"]);
-    if (remoteResult.code !== 0) {
+    // 解決順: ambient cwd（git repo なら最優先）→ repoDir（env/.harnessrc）へ `git -C` 再試行（M1/M4）。
+    // 呼出組立は共有関数 readOriginRemoteUrl に一本化（M5）。
+    const origin = await readOriginRemoteUrl(this.runCommand, this.repoDirResolver);
+    if (!origin.ok) {
       return {
         operation: "resolve",
         success: false,
-        error: `Failed to resolve scope: ${remoteResult.stderr}`,
+        error: origin.error ?? "Failed to resolve scope",
       };
     }
 
-    const remoteUrl = remoteResult.stdout.trim();
+    const remoteUrl = origin.url ?? "";
     // github.com 系の抽出は共有ヘルパーに一本化（正規表現の二重管理を解消）。
     // 非GitHub SSH のフォールバックは本関数の責務として残す。
     const parsedScope = parseGitRemoteUrl(remoteUrl);
@@ -952,7 +957,14 @@ export class PlanGatewayAdapter implements PlanGateway {
       };
     }
 
-    const repoResult = await this.runCommand("gh", ["repo", "view", "--json", "owner,name"]);
+    const repoResult = await this.runCommand("gh", [
+      "repo",
+      "view",
+      "--json",
+      "owner,name",
+      "--repo",
+      `${remoteOwner}/${remoteRepo}`,
+    ]);
     if (repoResult.code !== 0) {
       return {
         operation: "resolve",
