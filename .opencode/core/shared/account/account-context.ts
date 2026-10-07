@@ -17,6 +17,7 @@ import {
   loadHarnessRcConfig,
   resolveHarnessRcPath,
 } from "./harnessrc-resolver.ts";
+import { resolveRepoDir } from "../scope-repo-dir.ts";
 
 /** `gh auth status` 実行結果の最小表現。 */
 export interface GhStatus {
@@ -141,17 +142,24 @@ function decode(output: Uint8Array): string {
 }
 
 function defaultGitRemoteUrl(): string | null {
-  try {
-    const result = new Deno.Command("git", {
-      args: ["remote", "get-url", "origin"],
-      stdout: "piped",
-      stderr: "null",
-    }).outputSync();
-    if (result.code !== 0) return null;
-    return decode(result.stdout).trim() || null;
-  } catch {
-    return null;
-  }
+  const read = (args: string[]): string | null => {
+    try {
+      const result = new Deno.Command("git", {
+        args,
+        stdout: "piped",
+        stderr: "null",
+      }).outputSync();
+      if (result.code !== 0) return null;
+      return decode(result.stdout).trim() || null;
+    } catch {
+      return null;
+    }
+  };
+  // 解決順: ambient cwd（git repo なら最優先・M4）→ 非git cwd は repoDir に `git -C` 再試行（M1/M3）。
+  const cwdUrl = read(["remote", "get-url", "origin"]);
+  if (cwdUrl) return cwdUrl;
+  const repoDir = resolveRepoDir();
+  return repoDir ? read(["-C", repoDir, "remote", "get-url", "origin"]) : null;
 }
 
 function defaultIdentitiesText(): string | null {

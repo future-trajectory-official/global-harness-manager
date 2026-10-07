@@ -2,6 +2,7 @@ import { executeCommand } from "./io/command.ts";
 import type { ExecuteResult } from "./io/command.ts";
 import { sprintId } from "../domain/types.ts";
 import type { EntityScope, SprintIdentifier } from "../domain/types.ts";
+import { readOriginRemoteUrl, resolveRepoDir } from "./scope-repo-dir.ts";
 
 export type SprintCommandRunner = (cmd: string, args: string[]) => Promise<ExecuteResult>;
 
@@ -20,6 +21,7 @@ export function parseScopeFromRemote(remoteUrl: string): EntityScope | null {
 export async function resolveScope(
   scope: EntityScope,
   runCommand: SprintCommandRunner = defaultCommandRunner,
+  repoDirResolver: () => string | null = () => resolveRepoDir(),
 ): Promise<EntityScope> {
   if (
     scope.owner && scope.repository && scope.owner !== "unknown" &&
@@ -27,13 +29,15 @@ export async function resolveScope(
   ) {
     return scope;
   }
-  const result = await runCommand("git", ["remote", "get-url", "origin"]);
-  if (result.code !== 0) {
-    throw new Error(`Failed to resolve scope from git remote: ${result.stderr}`);
+  // 解決順: ambient cwd（git repo なら最優先）→ repoDir（env/.harnessrc）へ `git -C` 再試行。
+  // 呼出組立は共有関数 readOriginRemoteUrl に一本化（M5）。
+  const origin = await readOriginRemoteUrl(runCommand, repoDirResolver);
+  if (!origin.ok) {
+    throw new Error(origin.error ?? "Failed to resolve scope from git remote");
   }
-  const parsed = parseScopeFromRemote(result.stdout.trim());
+  const parsed = parseScopeFromRemote(origin.url ?? "");
   if (!parsed) {
-    throw new Error(`Could not parse owner/repo from git remote: ${result.stdout.trim()}`);
+    throw new Error(`Could not parse owner/repo from git remote: ${origin.url}`);
   }
   return parsed;
 }
