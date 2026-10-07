@@ -1,4 +1,5 @@
 import type { EntityType, Stage, StepOperation, StepResult } from "../domain/types.ts";
+import { logger } from "../shared/io/logger.ts";
 import type { OperationHandler, PlanGatewayAdapter } from "./plan-gateway-adapter.ts";
 import {
   FIELD,
@@ -7,6 +8,7 @@ import {
   type HarnessFieldConstant,
   statusRef,
 } from "./field-registry.ts";
+import { collectFieldWriteOutcomes, formatPartialFieldWriteError } from "./field-write-outcomes.ts";
 
 export class ProductBacklogItemHandler {
   constructor(private readonly adapter: PlanGatewayAdapter) {}
@@ -22,13 +24,32 @@ export class ProductBacklogItemHandler {
         const pr = await this.adapter.handleSetParent(result.itemId, parentFeature);
         if (!pr.success) return pr;
       }
+      if (this.adapter.productBacklogBoardNumber && !result.nodeId) {
+        return {
+          ...result,
+          operation: "propose",
+          success: false,
+          error:
+            `Failed to add PBI #${result.itemId} to Product Backlog Board #${this.adapter.productBacklogBoardNumber}: issue node ID was not resolved`,
+        };
+      }
       if (result.nodeId && this.adapter.productBacklogBoardNumber) {
         try {
           await this.adapter.addItemToProject(
             result.nodeId,
             this.adapter.productBacklogBoardNumber,
           );
-        } catch { /* ok */ }
+        } catch (e) {
+          return {
+            ...result,
+            operation: "propose",
+            success: false,
+            error:
+              `Failed to add PBI #${result.itemId} to Product Backlog Board #${this.adapter.productBacklogBoardNumber}: ${
+                e instanceof Error ? e.message : String(e)
+              }`,
+          };
+        }
       }
       return result;
     });
@@ -161,54 +182,100 @@ export class ProductBacklogItemHandler {
       return { operation: OP, success: true, itemId };
     });
 
-    // TODO(WP#805 follow-up): confirmSize/recordAnalysis below keep the legacy
-    // silent-skip contract (success:true on skip). Unify with estimateSize in a separate WP.
+    // Board未設定や値未指定による意図的no-opは成功を維持し、要求された書込失敗は明示する。
     handlers.set("confirmSize", async (_op, params) => {
       const itemId = String(params.itemId ?? "");
       if (!itemId) return { operation: "confirmSize", success: false, error: "itemId is required" };
+      const fail = (error: string): StepResult => ({
+        operation: "confirmSize",
+        success: false,
+        itemId,
+        error,
+      });
       const sizeActual = String(params.sizeActual ?? "");
       const varianceReason = String(params.sizeVarianceReason ?? "");
       if ((sizeActual || varianceReason) && this.adapter.productBacklogBoardNumber) {
-        const nodeResult = await this.adapter.runCommand("gh", [
-          "issue",
-          "view",
-          itemId,
-          "--json",
-          "id",
-          ...this.adapter.buildRepoArg(),
-        ]);
-        if (nodeResult.code === 0) {
-          try {
-            const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
-            const projectItemNodeId = await this.adapter.resolveProjectItemOnBoard(
-              itemId,
-              nodeData.id,
-              "productBacklog",
+        const completedWrites: string[] = [];
+        try {
+          const nodeResult = await this.adapter.runCommand("gh", [
+            "issue",
+            "view",
+            itemId,
+            "--json",
+            "id",
+            ...this.adapter.buildRepoArg(),
+          ]);
+          if (nodeResult.code !== 0) {
+            return fail(
+              `Failed to resolve PBI #${itemId} for size update: ${
+                nodeResult.stderr || "unknown error"
+              }`,
             );
-            if (!projectItemNodeId) {
-              return { operation: "confirmSize", success: true, itemId };
-            }
-            if (sizeActual) {
-              const optionId = await this.adapter.resolveSingleSelectOptionId(
-                fieldRef("productBacklog", FIELD.sizeActual),
-                sizeActual,
+          }
+          const nodeData = JSON.parse(nodeResult.stdout) as { id?: string };
+          if (!nodeData.id) {
+            return fail(`Failed to resolve node ID for PBI #${itemId}: missing id in gh response`);
+          }
+          const projectItemNodeId = await this.adapter.resolveProjectItemOnBoard(
+            itemId,
+            nodeData.id,
+            "productBacklog",
+          );
+          if (!projectItemNodeId) {
+            return fail(
+              `PBI #${itemId} is not on Product Backlog Board #${this.adapter.productBacklogBoardNumber}`,
+            );
+          }
+          if (sizeActual) {
+            const field = fieldRef("productBacklog", FIELD.sizeActual);
+            const optionId = await this.adapter.resolveSingleSelectOptionId(field, sizeActual);
+            if (!optionId) {
+              return fail(
+                `Failed to resolve size actual option "${sizeActual}" for PBI #${itemId}`,
               );
-              if (optionId) {
-                await this.adapter.setSingleSelectFieldValue(
-                  projectItemNodeId,
-                  fieldRef("productBacklog", FIELD.sizeActual),
-                  optionId,
-                );
-              }
             }
-            if (varianceReason) {
-              await this.adapter.setTextFieldValue(
-                projectItemNodeId,
-                fieldRef("productBacklog", FIELD.varianceReviewSize),
-                varianceReason,
+            const setResult = await this.adapter.setSingleSelectFieldValue(
+              projectItemNodeId,
+              field,
+              optionId,
+            );
+            if (!setResult.success) {
+              return fail(
+                formatPartialFieldWriteError(`Failed to write size actual for PBI #${itemId}`, {
+                  completed: completedWrites,
+                  errors: [setResult.error ?? "unknown error"],
+                }),
               );
             }
-          } catch { /* ok */ }
+            completedWrites.push(FIELD.sizeActual);
+          }
+          if (varianceReason) {
+            const setResult = await this.adapter.setTextFieldValue(
+              projectItemNodeId,
+              fieldRef("productBacklog", FIELD.varianceReviewSize),
+              varianceReason,
+            );
+            if (!setResult.success) {
+              const partial = completedWrites.length > 0
+                ? ` Completed fields: ${completedWrites.join(", ")}.`
+                : "";
+              return fail(
+                `Failed to write size variance review for PBI #${itemId}: ${
+                  setResult.error ?? "unknown error"
+                }.${partial}`,
+              );
+            }
+            completedWrites.push(FIELD.varianceReviewSize);
+          }
+        } catch (e) {
+          const partial = completedWrites.length > 0
+            ? ` Completed fields: ${completedWrites.join(", ")}.`
+            : " No field write completed successfully.";
+          return fail(
+            `Failed to write size details for PBI #${itemId}: ${
+              e instanceof Error ? e.message : String(e)
+            }.${partial}`,
+          );
         }
       }
       return { operation: "confirmSize", success: true, itemId };
@@ -299,6 +366,12 @@ export class ProductBacklogItemHandler {
       if (!itemId) {
         return { operation: "recordAnalysis", success: false, error: "itemId is required" };
       }
+      const fail = (error: string): StepResult => ({
+        operation: "recordAnalysis",
+        success: false,
+        itemId,
+        error,
+      });
       const body = String(params.body ?? "");
       if (!body) {
         return { operation: "recordAnalysis", success: false, error: "body is required" };
@@ -321,16 +394,25 @@ export class ProductBacklogItemHandler {
           ...this.adapter.buildRepoArg(),
         ]);
         if (nodeResult.code !== 0) {
-          return { operation: "recordAnalysis", success: true, itemId };
+          return fail(
+            `Failed to resolve PBI #${itemId} for analysis update: ${
+              nodeResult.stderr || "unknown error"
+            }`,
+          );
         }
-        const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
+        const nodeData = JSON.parse(nodeResult.stdout) as { id?: string };
+        if (!nodeData.id) {
+          return fail(`Failed to resolve node ID for PBI #${itemId}: missing id in gh response`);
+        }
         const projectItemNodeId = await this.adapter.resolveProjectItemOnBoard(
           itemId,
           nodeData.id,
           "productBacklog",
         );
         if (!projectItemNodeId) {
-          return { operation: "recordAnalysis", success: true, itemId };
+          return fail(
+            `PBI #${itemId} is not on Product Backlog Board #${this.adapter.productBacklogBoardNumber}`,
+          );
         }
         const parsed = JSON.parse(body) as Record<string, unknown>;
         const writes: Array<{ field: FieldRef; value: string }> = [];
@@ -351,14 +433,31 @@ export class ProductBacklogItemHandler {
             writes.push({ field: fieldRef("productBacklog", field), value: String(parsed[key]) });
           }
         }
-        await Promise.all(writes.map((w) =>
-          this.adapter.setTextFieldValue(
-            projectItemNodeId,
-            w.field,
-            w.value,
-          )
-        ));
-      } catch { /* ok */ }
+        const writeResults = await Promise.allSettled(
+          writes.map((w) =>
+            this.adapter.setTextFieldValue(
+              projectItemNodeId,
+              w.field,
+              w.value,
+            )
+          ),
+        );
+        const outcomes = collectFieldWriteOutcomes(writes, writeResults);
+        if (outcomes.errors.length > 0) {
+          return fail(
+            formatPartialFieldWriteError(`Failed to write analysis for PBI #${itemId}`, outcomes),
+          );
+        }
+      } catch (e) {
+        return {
+          operation: "recordAnalysis",
+          success: false,
+          itemId,
+          error: `Failed to write analysis for PBI #${itemId}: ${
+            e instanceof Error ? e.message : String(e)
+          }`,
+        };
+      }
       return { operation: "recordAnalysis", success: true, itemId };
     });
 
@@ -413,23 +512,56 @@ export class ProductBacklogItemHandler {
               });
               const tmpFile = `/tmp/opencode/gh_cmt_${Date.now()}.json`;
               await Deno.writeTextFile(tmpFile, gqlBody);
-              const gr = await this.adapter.runCommand("gh", [
-                "api",
-                "graphql",
-                "--input",
-                tmpFile,
-              ]);
+              let gr: { code: number; stdout: string; stderr: string };
               try {
-                await Deno.remove(tmpFile);
-              } catch { /* ok */ }
+                gr = await this.adapter.runCommand("gh", [
+                  "api",
+                  "graphql",
+                  "--input",
+                  tmpFile,
+                ]);
+              } finally {
+                try {
+                  await Deno.remove(tmpFile);
+                } catch (e) {
+                  logger.warn(
+                    `[ProductBacklogItemHandler.comment] Failed to remove temporary file ${tmpFile}: ${
+                      e instanceof Error ? e.message : String(e)
+                    }`,
+                  );
+                }
+              }
               if (gr.code === 0) {
                 const grData = JSON.parse(gr.stdout);
                 if (!grData.errors) return { operation: "comment", success: true, itemId };
+                logger.warn(
+                  `[ProductBacklogItemHandler.comment] History update failed for PBI #${itemId}: ${
+                    JSON.stringify(grData.errors)
+                  }; falling back to a regular comment`,
+                );
+              } else {
+                logger.warn(
+                  `[ProductBacklogItemHandler.comment] History update failed for PBI #${itemId}: ${
+                    gr.stderr || "unknown error"
+                  }; falling back to a regular comment`,
+                );
               }
             }
           }
+        } else {
+          logger.warn(
+            `[ProductBacklogItemHandler.comment] History lookup failed for PBI #${itemId}: ${
+              viewResult.stderr || "unknown error"
+            }; falling back to a regular comment`,
+          );
         }
-      } catch { /* fallthrough */ }
+      } catch (e) {
+        logger.warn(
+          `[ProductBacklogItemHandler.comment] History update failed for PBI #${itemId}: ${
+            e instanceof Error ? e.message : String(e)
+          }; falling back to a regular comment`,
+        );
+      }
       return await this.adapter.handleAddComment(params);
     });
 

@@ -7,6 +7,7 @@ import {
   type HarnessFieldConstant,
   statusRef,
 } from "./field-registry.ts";
+import { collectFieldWriteOutcomes, formatPartialFieldWriteError } from "./field-write-outcomes.ts";
 
 /**
  * `harness-effort-summary` JSON テキストに計画後見積（planned_estimate）が記録されているか判定する。
@@ -42,10 +43,30 @@ export class WorkPackageHandler {
       if (!cr.success || !cr.itemId) return cr;
       const pr = await this.adapter.handleSetParent(cr.itemId, parentPbi);
       if (!pr.success) return pr;
+      if (this.adapter.sprintBoardNumber && !cr.nodeId) {
+        return {
+          operation: "define",
+          success: false,
+          itemId: cr.itemId,
+          error:
+            `Failed to add WP #${cr.itemId} to Sprint Board #${this.adapter.sprintBoardNumber}: issue node ID was not resolved`,
+        };
+      }
       if (cr.nodeId && this.adapter.sprintBoardNumber) {
         try {
           await this.adapter.addItemToProject(cr.nodeId, this.adapter.sprintBoardNumber);
-        } catch { /* ok */ }
+        } catch (e) {
+          return {
+            operation: "define",
+            success: false,
+            itemId: cr.itemId,
+            nodeId: cr.nodeId,
+            error:
+              `Failed to add WP #${cr.itemId} to Sprint Board #${this.adapter.sprintBoardNumber}: ${
+                e instanceof Error ? e.message : String(e)
+              }`,
+          };
+        }
       }
       return cr;
     });
@@ -150,7 +171,16 @@ export class WorkPackageHandler {
             "initial_estimate",
             effort,
           );
-        } catch { /* ok */ }
+        } catch (e) {
+          return {
+            operation: "estimateInitialEffort",
+            success: false,
+            itemId,
+            error: `Failed to write initial effort for WP #${itemId}: ${
+              e instanceof Error ? e.message : String(e)
+            }`,
+          };
+        }
       }
       return Promise.resolve({ operation: "estimateInitialEffort", success: true, itemId });
     });
@@ -172,7 +202,16 @@ export class WorkPackageHandler {
             "planned_estimate",
             effort,
           );
-        } catch { /* ok */ }
+        } catch (e) {
+          return {
+            operation: "estimatePlannedEffort",
+            success: false,
+            itemId,
+            error: `Failed to write planned effort for WP #${itemId}: ${
+              e instanceof Error ? e.message : String(e)
+            }`,
+          };
+        }
       }
       return Promise.resolve({ operation: "estimatePlannedEffort", success: true, itemId });
     });
@@ -190,7 +229,16 @@ export class WorkPackageHandler {
       if (effort !== undefined && this.adapter.sprintBoardNumber) {
         try {
           await this.setEffortField(itemId, "actual", effort);
-        } catch { /* ok */ }
+        } catch (e) {
+          return {
+            operation: "recordActualEffort",
+            success: false,
+            itemId,
+            error: `Failed to write actual effort for WP #${itemId}: ${
+              e instanceof Error ? e.message : String(e)
+            }`,
+          };
+        }
       }
       return Promise.resolve({ operation: "recordActualEffort", success: true, itemId });
     });
@@ -224,6 +272,8 @@ export class WorkPackageHandler {
       if (!this.adapter.sprintBoardNumber) {
         return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
       }
+      const fail = (error: string) =>
+        Promise.resolve({ operation: "recordAnalysis", success: false, itemId, error });
       try {
         const nodeResult = await this.adapter.runCommand("gh", [
           "issue",
@@ -234,16 +284,25 @@ export class WorkPackageHandler {
           ...this.adapter.buildRepoArg(),
         ]);
         if (nodeResult.code !== 0) {
-          return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
+          return fail(
+            `Failed to resolve WP #${itemId} for analysis update: ${
+              nodeResult.stderr || "unknown error"
+            }`,
+          );
         }
-        const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
+        const nodeData = JSON.parse(nodeResult.stdout) as { id?: string };
+        if (!nodeData.id) {
+          return fail(`Failed to resolve node ID for WP #${itemId}: missing id in gh response`);
+        }
         const projectItemNodeId = await this.adapter.resolveProjectItemOnBoard(
           itemId,
           nodeData.id,
           "sprintBoard",
         );
         if (!projectItemNodeId) {
-          return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
+          return fail(
+            `WP #${itemId} is not on Sprint Board #${this.adapter.sprintBoardNumber}`,
+          );
         }
         const parsed = JSON.parse(body) as Record<string, unknown>;
         const writes: Array<{ field: FieldRef; value: string }> = [];
@@ -258,14 +317,31 @@ export class WorkPackageHandler {
             writes.push({ field: fieldRef("sprintBoard", field), value: String(parsed[key]) });
           }
         }
-        await Promise.all(writes.map((w) =>
-          this.adapter.setTextFieldValue(
-            projectItemNodeId,
-            w.field,
-            w.value,
-          )
-        ));
-      } catch { /* ok */ }
+        const writeResults = await Promise.allSettled(
+          writes.map((w) =>
+            this.adapter.setTextFieldValue(
+              projectItemNodeId,
+              w.field,
+              w.value,
+            )
+          ),
+        );
+        const outcomes = collectFieldWriteOutcomes(writes, writeResults);
+        if (outcomes.errors.length > 0) {
+          return fail(
+            formatPartialFieldWriteError(`Failed to write analysis for WP #${itemId}`, outcomes),
+          );
+        }
+      } catch (e) {
+        return Promise.resolve({
+          operation: "recordAnalysis",
+          success: false,
+          itemId,
+          error: `Failed to write analysis for WP #${itemId}: ${
+            e instanceof Error ? e.message : String(e)
+          }`,
+        });
+      }
       return Promise.resolve({ operation: "recordAnalysis", success: true, itemId });
     });
 
@@ -614,14 +690,21 @@ export class WorkPackageHandler {
       "id",
       ...this.adapter.buildRepoArg(),
     ]);
-    if (nodeResult.code !== 0) return;
-    const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
+    if (nodeResult.code !== 0) {
+      throw new Error(`gh issue view failed: ${nodeResult.stderr || "unknown error"}`);
+    }
+    const nodeData = JSON.parse(nodeResult.stdout) as { id?: string };
+    if (!nodeData.id) {
+      throw new Error("gh issue view response did not include a node ID");
+    }
     const projectItemNodeId = await this.adapter.resolveProjectItemOnBoard(
       itemId,
       nodeData.id,
       "sprintBoard",
     );
-    if (!projectItemNodeId) return;
+    if (!projectItemNodeId) {
+      throw new Error(`WP #${itemId} is not on Sprint Board #${this.adapter.sprintBoardNumber}`);
+    }
     const text = await this.adapter.readTextFieldValue(
       projectItemNodeId,
       fieldRef("sprintBoard", FIELD.effortSummary),
@@ -631,10 +714,13 @@ export class WorkPackageHandler {
       data = JSON.parse(text ?? "{}") as Record<string, number>;
     } catch { /* use empty */ }
     data[key] = Number(value);
-    await this.adapter.setTextFieldValue(
+    const result = await this.adapter.setTextFieldValue(
       projectItemNodeId,
       fieldRef("sprintBoard", FIELD.effortSummary),
       JSON.stringify(data),
     );
+    if (!result.success) {
+      throw new Error(result.error ?? `Failed to write ${key} for WP #${itemId}`);
+    }
   }
 }
