@@ -3304,7 +3304,29 @@ Deno.test("WorkPackage recordActualEffort - should write to board field via setE
 });
 
 Deno.test("WorkPackage recordAnalysis - should read/write board field for process analysis", async () => {
-  const adapter = makeBoardMockAdapter();
+  const responses: ExecuteResult[] = [
+    { code: 0, stdout: '{"id":"NODE_123"}', stderr: "" },
+    { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_123"}}}}', stderr: "" },
+    {
+      code: 0,
+      stdout: '{"data":{"addProjectV2ItemById":{"item":{"id":"ITEM_123"}}}}',
+      stderr: "",
+    },
+  ];
+  for (let i = 0; i < 3; i++) {
+    responses.push(
+      {
+        code: 0,
+        stdout: '{"data":{"organization":{"projectV2":{"field":{"id":"FIELD_123"}}}}}',
+        stderr: "",
+      },
+      { code: 0, stdout: '{"data":{"organization":{"projectV2":{"id":"PROJ_123"}}}}', stderr: "" },
+    );
+  }
+  for (let i = 0; i < 3; i++) responses.push({ code: 0, stdout: "", stderr: "" });
+  let responseIndex = 0;
+  const adapter = makeAdapter(() => Promise.resolve(responses[responseIndex++]));
+  adapter.setProjectBoardNumbers(99, 99);
   const result = await adapter.execute({
     summary: "record analysis",
     steps: [{
@@ -5887,4 +5909,917 @@ Deno.test("handleProjectSearchItems - should not issue user query when organizat
   });
   assertEquals(result.success, true);
   assertNoFallback(calls);
+});
+
+// ======== WP #809 AC-1: gateway handler write-error propagation ========
+
+/**
+ * ユースケース: PBI提案後のボード追加が失敗した場合
+ * 検証意図: 作成済みIssueの識別子を保持し、proposeを失敗として返すこと。
+ */
+Deno.test("WP809 AC-1 ProductBacklogItem propose - should report board add failure", async () => {
+  const adapter = makeAdapter();
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.handleCreateItem = () =>
+    Promise.resolve({
+      operation: "create",
+      success: true,
+      itemId: "42",
+      nodeId: "NODE_PBI_42",
+    });
+  adapter.addItemToProject = () => Promise.reject(new Error("project write denied"));
+
+  const result = await adapter.execute({
+    summary: "propose PBI with board write failure",
+    steps: [{ entity: "ProductBacklogItem", operation: "propose", params: { title: "PBI" } }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertEquals(result.stepResults[0].itemId, "42");
+  assertStringIncludes(result.stepResults[0].error ?? "", "project write denied");
+});
+
+/**
+ * ユースケース: PBIサイズ実績のボードfield書込が例外になった場合
+ * 検証意図: confirmSizeを成功扱いにせず、例外理由を返すこと。
+ */
+Deno.test("WP809 AC-1 ProductBacklogItem confirmSize - should report field write exception", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_PBI_42" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve("ITEM_PBI_42");
+  adapter.resolveSingleSelectOptionId = () => Promise.resolve("OPTION_M");
+  adapter.setSingleSelectFieldValue = () => Promise.reject(new Error("size field write denied"));
+
+  const result = await adapter.execute({
+    summary: "confirm PBI size with write exception",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "confirmSize",
+      params: { itemId: "42", sizeActual: "M" },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertEquals(result.stepResults[0].operation, "confirmSize");
+  assertEquals(result.stepResults[0].itemId, "42");
+  assertStringIncludes(result.stepResults[0].error ?? "", "size field write denied");
+});
+
+/**
+ * ユースケース: PBIプロセス分析のfield書込が例外になった場合
+ * 検証意図: recordAnalysisを成功扱いにせず、例外理由を返すこと。
+ */
+Deno.test("WP809 AC-1 ProductBacklogItem recordAnalysis - should report field write exception", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_PBI_42" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve("ITEM_PBI_42");
+  adapter.setTextFieldValue = () => Promise.reject(new Error("analysis field write denied"));
+  const body = JSON.stringify({
+    wp_effort_summary: { initial_estimate: 2, planned_estimate: 2, actual: 1 },
+    planning_variance_review: "planning",
+    execution_variance_review: "execution",
+    improvement_suggestions: "improve",
+  });
+
+  const result = await adapter.execute({
+    summary: "record PBI analysis with write exception",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "recordAnalysis",
+      params: { itemId: "42", body },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertEquals(result.stepResults[0].operation, "recordAnalysis");
+  assertEquals(result.stepResults[0].itemId, "42");
+  assertStringIncludes(result.stepResults[0].error ?? "", "analysis field write denied");
+});
+
+/**
+ * ユースケース: PBI履歴コメント更新の試行が失敗した場合
+ * 検証意図: 失敗を記録したうえで通常コメント処理へfallbackし、成功結果を維持すること。
+ */
+Deno.test("WP809 AC-1 ProductBacklogItem comment - should fallback after history update exception", async () => {
+  const adapter = makeAdapter(() => Promise.reject(new Error("history lookup failed")));
+  let fallbackCalled = false;
+  adapter.handleAddComment = (params) => {
+    fallbackCalled = true;
+    return Promise.resolve({
+      operation: "comment",
+      success: true,
+      itemId: String(params.itemId ?? ""),
+    });
+  };
+
+  const result = await adapter.execute({
+    summary: "add a PBI history comment",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "comment",
+      params: { itemId: "42", body: "history row" },
+    }],
+  });
+
+  assertEquals(fallbackCalled, true);
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].operation, "comment");
+  assertEquals(result.stepResults[0].itemId, "42");
+});
+
+/**
+ * ユースケース: WP作成後のSprint Board追加が失敗した場合
+ * 検証意図: 作成済みIssueの識別子を保持し、defineを失敗として返すこと。
+ */
+Deno.test("WP809 AC-1 WorkPackage define - should report board add failure", async () => {
+  const adapter = makeAdapter();
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.handleCreateItem = () =>
+    Promise.resolve({
+      operation: "create",
+      success: true,
+      itemId: "51",
+      nodeId: "NODE_WP_51",
+    });
+  adapter.handleSetParent = (itemId) =>
+    Promise.resolve({ operation: "update", success: true, itemId });
+  adapter.addItemToProject = () => Promise.reject(new Error("sprint board write denied"));
+
+  const result = await adapter.execute({
+    summary: "define WP with board write failure",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "define",
+      params: { title: "WP", parentPbi: "42", body: "body" },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertEquals(result.stepResults[0].itemId, "51");
+  assertStringIncludes(result.stepResults[0].error ?? "", "sprint board write denied");
+});
+
+for (
+  const { operation, params } of [
+    { operation: "estimateInitialEffort", params: { itemId: "51", effortInitial: 2 } },
+    { operation: "estimatePlannedEffort", params: { itemId: "51", effortPlanned: 2 } },
+    { operation: "recordActualEffort", params: { itemId: "51", effortActual: 1 } },
+  ] as const
+) {
+  /**
+   * ユースケース: WP effort field操作のrunnerが例外になった場合
+   * 検証意図: 各operationが成功扱いにせず、runnerの原因を返すこと。
+   */
+  Deno.test(`WP809 AC-1 WorkPackage ${operation} - should report runner exception`, async () => {
+    const adapter = makeAdapter(() => Promise.reject(new Error("gh runner failed")));
+    adapter.setProjectBoardNumbers(10, 11, 12);
+
+    const result = await adapter.execute({
+      summary: `${operation} with runner exception`,
+      steps: [{ entity: "WorkPackage", operation, params }],
+    });
+
+    assertEquals(result.stepResults[0].success, false);
+    assertEquals(result.stepResults[0].operation, operation);
+    assertEquals(result.stepResults[0].itemId, "51");
+    assertStringIncludes(result.stepResults[0].error ?? "", "gh runner failed");
+  });
+}
+
+/**
+ * ユースケース: WPプロセス分析のrunnerが例外になった場合
+ * 検証意図: recordAnalysisを成功扱いにせず、例外理由を返すこと。
+ */
+Deno.test("WP809 AC-1 WorkPackage recordAnalysis - should report runner exception", async () => {
+  const adapter = makeAdapter(() => Promise.reject(new Error("gh runner failed")));
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  const body = JSON.stringify({
+    planning_variance_review: "planning",
+    execution_variance_review: "execution",
+    improvement_suggestions: "improve",
+  });
+
+  const result = await adapter.execute({
+    summary: "record WP analysis with runner exception",
+    steps: [{ entity: "WorkPackage", operation: "recordAnalysis", params: { itemId: "51", body } }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertEquals(result.stepResults[0].operation, "recordAnalysis");
+  assertEquals(result.stepResults[0].itemId, "51");
+  assertStringIncludes(result.stepResults[0].error ?? "", "gh runner failed");
+});
+
+/**
+ * ユースケース: Retrospective作成後のボード追加が失敗した場合
+ * 検証意図: 作成済みIssueの識別子を保持し、planを失敗として返すこと。
+ */
+Deno.test("WP809 AC-1 Retrospective plan - should report board add failure", async () => {
+  const adapter = makeAdapter();
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.handleCreateItem = () =>
+    Promise.resolve({
+      operation: "create",
+      success: true,
+      itemId: "77",
+      nodeId: "NODE_RETRO_77",
+    });
+  adapter.addItemToProject = () => Promise.reject(new Error("retrospective board write denied"));
+
+  const result = await adapter.execute({
+    summary: "plan retrospective with board write failure",
+    steps: [{ entity: "Retrospective", operation: "plan", params: { title: "Sprint retro" } }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertEquals(result.stepResults[0].itemId, "77");
+  assertStringIncludes(result.stepResults[0].error ?? "", "retrospective board write denied");
+});
+
+/**
+ * ユースケース: 履歴コメントのGH更新が成功した後、一時ファイル削除だけが失敗した場合
+ * 検証意図: cleanup失敗を警告し、成功したコメント更新を失敗扱いにしないこと。
+ */
+Deno.test("WP809 AC-1 ProductBacklogItem comment - should warn and preserve success when cleanup fails", async () => {
+  await Deno.mkdir("/tmp/opencode", { recursive: true });
+  let blockedTempPath: string | undefined;
+  const runner = async (_cmd: string, args: string[]): Promise<ExecuteResult> => {
+    const inputIndex = args.indexOf("--input");
+    if (inputIndex >= 0) {
+      blockedTempPath = args[inputIndex + 1];
+      await Deno.remove(blockedTempPath);
+      await Deno.mkdir(blockedTempPath);
+      await Deno.writeTextFile(`${blockedTempPath}/keep`, "cleanup should fail");
+      return {
+        code: 0,
+        stdout: JSON.stringify({
+          data: { updateIssueComment: { issueComment: { id: "COMMENT_1" } } },
+        }),
+        stderr: "",
+      };
+    }
+    return {
+      code: 0,
+      stdout: JSON.stringify({
+        comments: [{ id: "COMMENT_1", body: "## History\n\n| 1 | previous |" }],
+      }),
+      stderr: "",
+    };
+  };
+  const adapter = makeAdapter(runner);
+
+  try {
+    const result = await adapter.execute({
+      summary: "append history comment with cleanup failure",
+      steps: [{
+        entity: "ProductBacklogItem",
+        operation: "comment",
+        params: { itemId: "42", body: "| 2 | updated |" },
+      }],
+    });
+
+    assertEquals(result.stepResults[0].success, true);
+    assert(blockedTempPath, "history update should create a temporary input file");
+    const tempStat = await Deno.stat(blockedTempPath);
+    assertEquals(
+      tempStat.isDirectory,
+      true,
+      "cleanup failure should leave the replacement directory",
+    );
+  } finally {
+    if (blockedTempPath) await Deno.remove(blockedTempPath, { recursive: true });
+  }
+});
+
+// ======== WP #809 AC-2: requested write failures are visible ========
+
+/**
+ * ユースケース: 要求されたサイズ実績の選択肢がボード上に存在しない場合
+ * 検証意図: optionId未解決をsuccess:trueで黙認せずerrorで返すこと。
+ */
+Deno.test("WP809 AC-2 ProductBacklogItem confirmSize - should fail when option is unresolved", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_PBI_42" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve("ITEM_PBI_42");
+  adapter.resolveSingleSelectOptionId = () => Promise.resolve(undefined);
+
+  const result = await adapter.execute({
+    summary: "confirm PBI size with missing option",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "confirmSize",
+      params: { itemId: "42", sizeActual: "XL" },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertEquals(result.stepResults[0].operation, "confirmSize");
+  assertEquals(result.stepResults[0].itemId, "42");
+  assertStringIncludes(result.stepResults[0].error ?? "", "XL");
+});
+
+/**
+ * ユースケース: PBIが対象Board itemとして解決できない場合
+ * 検証意図: Board item未解決を要求書込失敗として返すこと。
+ */
+Deno.test("WP809 AC-2 ProductBacklogItem confirmSize - should fail when Board item is unresolved", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_PBI_42" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve(null);
+
+  const result = await adapter.execute({
+    summary: "confirm PBI size without Board item",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "confirmSize",
+      params: { itemId: "42", sizeActual: "M" },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertEquals(result.stepResults[0].itemId, "42");
+  assertStringIncludes(result.stepResults[0].error ?? "", "42");
+});
+
+/**
+ * ユースケース: サイズ実績記録のIssue解決でghが失敗した場合
+ * 検証意図: gh失敗のstderrを返し、正常終了扱いにしないこと。
+ */
+Deno.test("WP809 AC-2 ProductBacklogItem confirmSize - should fail when gh issue view fails", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 1, stdout: "", stderr: "issue lookup denied" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+
+  const result = await adapter.execute({
+    summary: "confirm PBI size with gh failure",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "confirmSize",
+      params: { itemId: "42", sizeActual: "M" },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "issue lookup denied");
+});
+
+/**
+ * ユースケース: PBI分析更新のIssue解決でghが失敗した場合
+ * 検証意図: recordAnalysisが無言成功にならず、ghの原因を返すこと。
+ */
+Deno.test("WP809 AC-2 ProductBacklogItem recordAnalysis - should fail when gh issue view fails", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 1, stdout: "", stderr: "PBI lookup denied" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  const body = JSON.stringify({ planning_variance_review: "planning" });
+
+  const result = await adapter.execute({
+    summary: "record PBI analysis with gh failure",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "recordAnalysis",
+      params: { itemId: "42", body },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "PBI lookup denied");
+});
+
+/**
+ * ユースケース: PBI分析更新で対象Board itemを解決できない場合
+ * 検証意図: 要求field書込が未実施のまま成功扱いにならないこと。
+ */
+Deno.test("WP809 AC-2 ProductBacklogItem recordAnalysis - should fail when Board item is unresolved", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_PBI_42" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve(null);
+
+  const result = await adapter.execute({
+    summary: "record PBI analysis without Board item",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "recordAnalysis",
+      params: { itemId: "42", body: JSON.stringify({ planning_variance_review: "planning" }) },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "42");
+});
+
+/**
+ * ユースケース: PBI分析のProject V2 field setterがsuccess:falseを返す場合
+ * 検証意図: nested StepResultの失敗とerrorを親operationへ伝播すること。
+ */
+Deno.test("WP809 AC-2 ProductBacklogItem recordAnalysis - should report field setter failure", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_PBI_42" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve("ITEM_PBI_42");
+  adapter.setTextFieldValue = () =>
+    Promise.resolve({ operation: "updateField", success: false, error: "PBI field denied" });
+
+  const result = await adapter.execute({
+    summary: "record PBI analysis with field failure",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "recordAnalysis",
+      params: { itemId: "42", body: JSON.stringify({ planning_variance_review: "planning" }) },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "PBI field denied");
+});
+
+/**
+ * ユースケース: WP effortの要求書込でghが非0終了した場合
+ * 検証意図: GH stderrを親operationの失敗として返すこと。
+ */
+Deno.test("WP809 AC-2 WorkPackage estimateInitialEffort - should fail when gh issue view fails", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 1, stdout: "", stderr: "WP lookup denied" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+
+  const result = await adapter.execute({
+    summary: "estimate initial effort with gh failure",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "estimateInitialEffort",
+      params: { itemId: "51", effortInitial: 2 },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "WP lookup denied");
+});
+
+/**
+ * ユースケース: WP effortの要求書込でBoard itemが解決できない場合
+ * 検証意図: field書込をしないままsuccess:trueを返さないこと。
+ */
+Deno.test("WP809 AC-2 WorkPackage estimatePlannedEffort - should fail when Board item is unresolved", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_WP_51" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve(null);
+
+  const result = await adapter.execute({
+    summary: "estimate planned effort without Board item",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "estimatePlannedEffort",
+      params: { itemId: "51", effortPlanned: 2 },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "51");
+});
+
+/**
+ * ユースケース: WP effort field setterがsuccess:falseを返す場合
+ * 検証意図: setterの失敗をestimate operationへ伝播すること。
+ */
+Deno.test("WP809 AC-2 WorkPackage recordActualEffort - should report field setter failure", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_WP_51" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve("ITEM_WP_51");
+  adapter.readTextFieldValue = () => Promise.resolve('{"initial_estimate":2}');
+  adapter.setTextFieldValue = () =>
+    Promise.resolve({ operation: "updateField", success: false, error: "effort field denied" });
+
+  const result = await adapter.execute({
+    summary: "record actual effort with field failure",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordActualEffort",
+      params: { itemId: "51", effortActual: 1 },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "effort field denied");
+});
+
+/**
+ * ユースケース: ボード未設定でeffort値がないため書込対象が存在しない場合
+ * 検証意図: 既存の意図的no-opは正常終了を維持すること。
+ */
+Deno.test("WP809 AC-2 WorkPackage estimateInitialEffort - should preserve intentional no-op without board", async () => {
+  const adapter = makeAdapter();
+
+  const result = await adapter.execute({
+    summary: "estimate initial effort without board configuration",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "estimateInitialEffort",
+      params: { itemId: "51", effortInitial: 2 },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "51");
+});
+
+/**
+ * ユースケース: ボード未設定でPBIサイズ実績を書き込めない場合
+ * 検証意図: PO合意済みの意図的no-opは従来どおり成功を維持すること。
+ */
+Deno.test("WP809 AC-2 ProductBacklogItem confirmSize - should preserve intentional no-op without board", async () => {
+  const adapter = makeAdapter();
+
+  const result = await adapter.execute({
+    summary: "confirm PBI size without board configuration",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "confirmSize",
+      params: { itemId: "42", sizeActual: "M" },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].itemId, "42");
+});
+
+/**
+ * ユースケース: PBIサイズ実績field setterがsuccess:falseを返す場合
+ * 検証意図: setterの失敗をconfirmSizeへ伝播すること。
+ */
+Deno.test("WP809 AC-2 ProductBacklogItem confirmSize - should report setter failure", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_PBI_42" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve("ITEM_PBI_42");
+  adapter.resolveSingleSelectOptionId = () => Promise.resolve("OPTION_M");
+  adapter.setSingleSelectFieldValue = () =>
+    Promise.resolve({ operation: "updateField", success: false, error: "size field denied" });
+
+  const result = await adapter.execute({
+    summary: "confirm PBI size with setter failure",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "confirmSize",
+      params: { itemId: "42", sizeActual: "M" },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "size field denied");
+});
+
+/**
+ * ユースケース: WP分析記録のIssue解決でghが失敗した場合
+ * 検証意図: recordAnalysisを無言成功にせず、ghの原因を返すこと。
+ */
+Deno.test("WP809 AC-2 WorkPackage recordAnalysis - should fail when gh issue view fails", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 1, stdout: "", stderr: "WP analysis lookup denied" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  const body = JSON.stringify({ planning_variance_review: "planning" });
+
+  const result = await adapter.execute({
+    summary: "record WP analysis with gh failure",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordAnalysis",
+      params: { itemId: "51", body },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "WP analysis lookup denied");
+});
+
+/**
+ * ユースケース: WP分析記録で対象Board itemを解決できない場合
+ * 検証意図: 要求field書込が未実施のまま成功扱いにならないこと。
+ */
+Deno.test("WP809 AC-2 WorkPackage recordAnalysis - should fail when Board item is unresolved", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_WP_51" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve(null);
+
+  const result = await adapter.execute({
+    summary: "record WP analysis without Board item",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordAnalysis",
+      params: { itemId: "51", body: JSON.stringify({ planning_variance_review: "planning" }) },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "51");
+});
+
+/**
+ * ユースケース: WP分析のProject V2 field setterがsuccess:falseを返す場合
+ * 検証意図: nested StepResultの失敗とerrorを親operationへ伝播すること。
+ */
+Deno.test("WP809 AC-2 WorkPackage recordAnalysis - should report field setter failure", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_WP_51" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve("ITEM_WP_51");
+  adapter.setTextFieldValue = () =>
+    Promise.resolve({ operation: "updateField", success: false, error: "analysis field denied" });
+
+  const result = await adapter.execute({
+    summary: "record WP analysis with field failure",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordAnalysis",
+      params: { itemId: "51", body: JSON.stringify({ planning_variance_review: "planning" }) },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "analysis field denied");
+});
+
+for (
+  const { operation, params, error } of [
+    {
+      operation: "estimateInitialEffort",
+      params: { itemId: "51", effortInitial: 2 },
+      error: "initial estimate write denied",
+    },
+    {
+      operation: "estimatePlannedEffort",
+      params: { itemId: "51", effortPlanned: 2 },
+      error: "planned estimate write denied",
+    },
+  ] as const
+) {
+  /**
+   * ユースケース: effort見積りfield setterがsuccess:falseを返す場合
+   * 検証意図: estimate operationがsuccess:falseとsetterの原因を返すこと。
+   */
+  Deno.test(`WP809 AC-3 WorkPackage ${operation} - should report field setter failure`, async () => {
+    const adapter = makeAdapter(() =>
+      Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_WP_51" }), stderr: "" })
+    );
+    adapter.setProjectBoardNumbers(10, 11, 12);
+    adapter.resolveProjectItemOnBoard = () => Promise.resolve("ITEM_WP_51");
+    adapter.readTextFieldValue = () => Promise.resolve('{"initial_estimate":2}');
+    adapter.setTextFieldValue = () =>
+      Promise.resolve({ operation: "updateField", success: false, error });
+
+    const result = await adapter.execute({
+      summary: `${operation} with setter failure`,
+      steps: [{ entity: "WorkPackage", operation, params }],
+    });
+
+    assertEquals(result.stepResults[0].success, false);
+    assertEquals(result.stepResults[0].operation, operation);
+    assertEquals(result.stepResults[0].itemId, "51");
+    assertStringIncludes(result.stepResults[0].error ?? "", error);
+  });
+}
+
+for (
+  const scenario of [
+    {
+      entity: "ProductBacklogItem",
+      operation: "propose",
+      step: { entity: "ProductBacklogItem", operation: "propose", params: { title: "PBI" } },
+      itemId: "42",
+      boardName: "Product Backlog Board",
+    },
+    {
+      entity: "WorkPackage",
+      operation: "define",
+      step: {
+        entity: "WorkPackage",
+        operation: "define",
+        params: { title: "WP", parentPbi: "40" },
+      },
+      itemId: "51",
+      boardName: "Sprint Board",
+    },
+    {
+      entity: "Retrospective",
+      operation: "plan",
+      step: { entity: "Retrospective", operation: "plan", params: { title: "Retro" } },
+      itemId: "77",
+      boardName: "Board #12",
+    },
+  ] as const
+) {
+  /**
+   * ユースケース: Board設定済みで作成後のIssue node ID解決が失敗した場合
+   * 検証意図: addItemToProjectを実行できない作成結果を成功報告しないこと。
+   */
+  Deno.test(`WP809 review - ${scenario.entity} ${scenario.operation} should fail without created nodeId`, async () => {
+    const adapter = makeAdapter();
+    adapter.setProjectBoardNumbers(10, 11, 12);
+    adapter.handleCreateItem = () =>
+      Promise.resolve({ operation: "create", success: true, itemId: scenario.itemId });
+    adapter.handleSetParent = (itemId) =>
+      Promise.resolve({ operation: "update", success: true, itemId });
+
+    const result = await adapter.execute({
+      summary: `create ${scenario.entity} without nodeId`,
+      steps: [scenario.step],
+    });
+
+    assertEquals(result.stepResults[0].success, false);
+    assertEquals(result.stepResults[0].itemId, scenario.itemId);
+    assertStringIncludes(result.stepResults[0].error ?? "", scenario.boardName);
+    assertStringIncludes(result.stepResults[0].error ?? "", "node ID");
+  });
+}
+
+/**
+ * ユースケース: confirmSizeのgh issue view runnerがrejectした場合
+ * 検証意図: itemIdとoperation名を保持した失敗結果を返すこと。
+ */
+Deno.test("WP809 review confirmSize - should retain PBI context when gh runner rejects", async () => {
+  const adapter = makeAdapter(() => Promise.reject(new Error("view runner rejected")));
+  adapter.setProjectBoardNumbers(10, 11, 12);
+
+  const result = await adapter.execute({
+    summary: "confirm PBI size with rejected view runner",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "confirmSize",
+      params: { itemId: "42", sizeActual: "M" },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertEquals(result.stepResults[0].operation, "confirmSize");
+  assertEquals(result.stepResults[0].itemId, "42");
+  assertStringIncludes(result.stepResults[0].error ?? "", "view runner rejected");
+});
+
+/**
+ * ユースケース: サイズ実績は書込済みだがサイズ乖離理由のfield書込が失敗する場合
+ * 検証意図: fieldの部分成功を親operationのerrorで明示すること。
+ */
+Deno.test("WP809 review confirmSize - should describe partial field completion", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_PBI_42" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve("ITEM_PBI_42");
+  adapter.resolveSingleSelectOptionId = () => Promise.resolve("OPTION_M");
+  adapter.setSingleSelectFieldValue = () =>
+    Promise.resolve({ operation: "updateField", success: true });
+  adapter.setTextFieldValue = () =>
+    Promise.resolve({ operation: "updateField", success: false, error: "variance denied" });
+
+  const result = await adapter.execute({
+    summary: "confirm PBI size with partial field failure",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "confirmSize",
+      params: { itemId: "42", sizeActual: "M", sizeVarianceReason: "reason" },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "Completed fields:");
+  assertStringIncludes(result.stepResults[0].error ?? "", "variance denied");
+});
+
+/**
+ * ユースケース: 分析field群の一部書込がrejectし別field書込が成功する場合
+ * 検証意図: 全setterの完了を待ち、成功fieldと失敗field双方をerrorに列挙すること。
+ */
+Deno.test("WP809 review recordAnalysis - should report completed and failed fields", async () => {
+  const adapter = makeAdapter(() =>
+    Promise.resolve({ code: 0, stdout: JSON.stringify({ id: "NODE_WP_51" }), stderr: "" })
+  );
+  adapter.setProjectBoardNumbers(10, 11, 12);
+  adapter.resolveProjectItemOnBoard = () => Promise.resolve("ITEM_WP_51");
+  adapter.setTextFieldValue = (_itemId, ref) =>
+    ref.fieldName.includes("planning")
+      ? Promise.resolve({ operation: "updateField", success: true })
+      : Promise.reject(new Error("second field rejected"));
+
+  const result = await adapter.execute({
+    summary: "record WP analysis with partial writes",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "recordAnalysis",
+      params: {
+        itemId: "51",
+        body: JSON.stringify({
+          planning_variance_review: "planning",
+          execution_variance_review: "execution",
+        }),
+      },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "Completed fields:");
+  assertStringIncludes(result.stepResults[0].error ?? "", "Failed fields:");
+  assertStringIncludes(result.stepResults[0].error ?? "", "second field rejected");
+});
+
+/**
+ * ユースケース: 履歴lookup失敗後の通常コメントfallbackも失敗する場合
+ * 検証意図: lookup失敗warningを記録し、fallback側の失敗を呼出元へ伝播すること。
+ */
+Deno.test("WP809 review comment - should warn on history lookup and propagate fallback failure", async () => {
+  const adapter = makeAdapter((_cmd, args) =>
+    Promise.resolve(
+      args.includes("comment")
+        ? { code: 1, stdout: "", stderr: "regular comment denied" }
+        : { code: 1, stdout: "", stderr: "history lookup denied" },
+    )
+  );
+  const warnings: string[] = [];
+  const originalWarn = console.warn;
+  console.warn = (...values: unknown[]) => warnings.push(values.map(String).join(" "));
+
+  let result;
+  try {
+    result = await adapter.execute({
+      summary: "comment after history lookup failure",
+      steps: [{
+        entity: "ProductBacklogItem",
+        operation: "comment",
+        params: { itemId: "42", body: "history row" },
+      }],
+    });
+  } finally {
+    console.warn = originalWarn;
+  }
+
+  assert(warnings.some((warning) => warning.includes("History lookup failed for PBI #42")));
+  assertEquals(result!.stepResults[0].success, false);
+  assertStringIncludes(result!.stepResults[0].error ?? "", "regular comment denied");
+});
+
+/**
+ * ユースケース: 履歴更新GH runnerがrejectした後の一時ファイルcleanup
+ * 検証意図: fallbackを続けながら一時ファイルをfinallyで削除すること。
+ */
+Deno.test("WP809 review comment - should cleanup temp input after GraphQL runner rejects", async () => {
+  await Deno.mkdir("/tmp/opencode", { recursive: true });
+  let tempPath: string | undefined;
+  const runner = (_cmd: string, args: string[]): Promise<ExecuteResult> => {
+    const inputIndex = args.indexOf("--input");
+    if (inputIndex >= 0) {
+      tempPath = args[inputIndex + 1];
+      return Promise.reject(new Error("GraphQL runner rejected"));
+    }
+    if (args.includes("view")) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({
+          comments: [{ id: "COMMENT_1", body: "## History\n\n| 1 | previous |" }],
+        }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(runner);
+
+  const result = await adapter.execute({
+    summary: "history update runner reject",
+    steps: [{
+      entity: "ProductBacklogItem",
+      operation: "comment",
+      params: { itemId: "42", body: "| 2 | updated |" },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, true);
+  assert(tempPath, "history update should allocate a temporary input file");
+  let exists = true;
+  try {
+    await Deno.stat(tempPath);
+  } catch {
+    exists = false;
+  }
+  assertEquals(exists, false, "temporary input should be removed when runner rejects");
 });

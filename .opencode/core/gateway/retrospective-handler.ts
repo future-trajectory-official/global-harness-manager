@@ -21,13 +21,33 @@ export class RetrospectiveHandler {
     handlers.set("plan", async (_op, params) => {
       const result = await this.adapter.handleCreateItem({ ...params, type: "Retrospective" });
       if (!result.success || !result.itemId) return result;
+      if (this.adapter.retrospectiveBoardNumber && !result.nodeId) {
+        return {
+          ...result,
+          operation: "plan",
+          success: false,
+          error:
+            `Failed to add Retrospective #${result.itemId} to Board #${this.adapter.retrospectiveBoardNumber}: issue node ID was not resolved`,
+        };
+      }
       if (result.nodeId && this.adapter.retrospectiveBoardNumber) {
         try {
           await this.adapter.addItemToProject(
             result.nodeId,
             this.adapter.retrospectiveBoardNumber,
           );
-        } catch { /* ok */ }
+        } catch (e) {
+          return {
+            operation: "plan",
+            success: false,
+            itemId: result.itemId,
+            nodeId: result.nodeId,
+            error:
+              `Failed to add Retrospective #${result.itemId} to Board #${this.adapter.retrospectiveBoardNumber}: ${
+                e instanceof Error ? e.message : String(e)
+              }`,
+          };
+        }
       }
       return result;
     });
