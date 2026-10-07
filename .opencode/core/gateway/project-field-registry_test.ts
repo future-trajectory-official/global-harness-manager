@@ -37,6 +37,7 @@ Deno.test("project-field-registry: fields を読み、field 名を解決でき�
   const reg = fresh();
   reg.load({ projects: { productBacklog: 10 }, fields: ALL_FIELDS });
   assertEquals(reg.field("harness-size-estimate"), "harness-size-estimate");
+  assertEquals(reg.fieldType("harness-size-estimate"), "SINGLE_SELECT");
 });
 
 Deno.test("project-field-registry: field が HARNESS_FIELDS にない場合は throw する", () => {

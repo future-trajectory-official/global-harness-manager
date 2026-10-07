@@ -7,6 +7,7 @@ import {
   BOARD_FIELDS,
   BOARDS,
   FIELD,
+  FIELD_TYPES,
   fieldRef,
   HARNESS_FIELDS,
   isFieldOnBoard,
@@ -152,6 +153,33 @@ Deno.test("field-registry: HARNESS_FIELDS の全フィールドがいずれか�
       allBoardFields.has(field),
       true,
       `field "${field}" should belong to at least one board`,
+    );
+  }
+});
+
+Deno.test("field-registry: FIELD_TYPES に harness-size-estimate の型が SINGLE_SELECT で定義されている", () => {
+  assertEquals(FIELD_TYPES[FIELD.sizeEstimate], "SINGLE_SELECT");
+  assertEquals(FIELD_TYPES[FIELD.sizeActual], "SINGLE_SELECT");
+});
+
+Deno.test("field-registry: BOARD_FIELDS の全フィールドが FIELD_TYPES に定義されている", () => {
+  for (const board of Object.keys(BOARD_FIELDS) as Array<keyof typeof BOARD_FIELDS>) {
+    for (const field of BOARD_FIELDS[board] as readonly string[]) {
+      assertEquals(
+        field in FIELD_TYPES,
+        true,
+        `field "${field}" on board "${board}" should be in FIELD_TYPES`,
+      );
+    }
+  }
+});
+
+Deno.test("field-registry: FIELD の全値が FIELD_TYPES に定義されている", () => {
+  for (const field of Object.values(FIELD)) {
+    assertEquals(
+      field in FIELD_TYPES,
+      true,
+      `field "${field}" should be in FIELD_TYPES`,
     );
   }
 });
