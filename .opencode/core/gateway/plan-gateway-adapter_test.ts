@@ -6145,6 +6145,7 @@ Deno.test("WP809 AC-1 Retrospective plan - should report board add failure", asy
  * 検証意図: cleanup失敗を警告し、成功したコメント更新を失敗扱いにしないこと。
  */
 Deno.test("WP809 AC-1 ProductBacklogItem comment - should warn and preserve success when cleanup fails", async () => {
+  await Deno.mkdir("/tmp/opencode", { recursive: true });
   let blockedTempPath: string | undefined;
   const runner = async (_cmd: string, args: string[]): Promise<ExecuteResult> => {
     const inputIndex = args.indexOf("--input");
