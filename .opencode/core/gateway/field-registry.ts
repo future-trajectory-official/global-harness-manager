@@ -81,7 +81,7 @@ export type HarnessFieldConstant = (typeof FIELD)[keyof typeof FIELD];
 export type FieldType = "TEXT" | "SINGLE_SELECT" | "NUMBER";
 
 /**
- * フィールド名から型への対応表（design-spec 5.3 の型定義）。
+ * フィールド名から Project V2 型への対応表。このモジュールを型定義の唯一の正本とする。
  *
  * サイズ見積・実績は T-Shirt Size（XS/S/M/L/XL）を単一選択で設定するため
  * `SINGLE_SELECT` 型とする。他のフィールドはテキスト入力のため `TEXT` 型とする。
