@@ -1,4 +1,4 @@
-import type { EntityType, Stage, StepOperation } from "../domain/types.ts";
+import type { EntityType, Stage, StepOperation, StepResult } from "../domain/types.ts";
 import type { OperationHandler, PlanGatewayAdapter } from "./plan-gateway-adapter.ts";
 import {
   FIELD,
@@ -93,44 +93,76 @@ export class ProductBacklogItemHandler {
     });
 
     handlers.set("estimateSize", async (_op, params) => {
+      const OP = "estimateSize";
+      const fail = (error: string): StepResult => ({ operation: OP, success: false, error });
       const itemId = String(params.itemId ?? "");
-      if (!itemId) {
-        return { operation: "estimateSize", success: false, error: "itemId is required" };
+      if (!itemId) return fail("itemId is required");
+      const sizeEstimate = String(params.sizeEstimate ?? "");
+      if (!sizeEstimate) return { operation: OP, success: true, itemId };
+      if (!this.adapter.productBacklogBoardNumber) {
+        return fail(
+          "productBacklogBoardNumber is not configured: board write required for estimateSize but skipped",
+        );
       }
-      const sizeVal = String(params.sizeEstimate ?? "");
-      if (sizeVal && this.adapter.productBacklogBoardNumber) {
-        const nodeResult = await this.adapter.runCommand("gh", [
-          "issue",
-          "view",
-          itemId,
-          "--json",
-          "id",
-          ...this.adapter.buildRepoArg(),
-        ]);
-        if (nodeResult.code === 0) {
-          try {
-            const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
-            const { projectItemNodeId } = await this.adapter.addItemToProject(
-              nodeData.id,
-              this.adapter.productBacklogBoardNumber,
-            );
-            const optionId = await this.adapter.resolveSingleSelectOptionId(
-              fieldRef("productBacklog", FIELD.sizeEstimate),
-              sizeVal,
-            );
-            if (optionId) {
-              await this.adapter.setSingleSelectFieldValue(
-                projectItemNodeId,
-                fieldRef("productBacklog", FIELD.sizeEstimate),
-                optionId,
-              );
-            }
-          } catch { /* ok */ }
+      const nodeResult = await this.adapter.runCommand("gh", [
+        "issue",
+        "view",
+        itemId,
+        "--json",
+        "id",
+        ...this.adapter.buildRepoArg(),
+      ]);
+      if (nodeResult.code !== 0) {
+        return fail(
+          `failed to resolve issue node (itemId=${itemId}): ${
+            nodeResult.stderr || "unknown error"
+          }`,
+        );
+      }
+      try {
+        const nodeData = JSON.parse(nodeResult.stdout) as { id?: string };
+        if (!nodeData.id) {
+          return fail(
+            `failed to resolve issue node (itemId=${itemId}): missing id in gh response`,
+          );
         }
+        const { projectItemNodeId } = await this.adapter.addItemToProject(
+          nodeData.id,
+          this.adapter.productBacklogBoardNumber,
+        );
+        const optionId = await this.adapter.resolveSingleSelectOptionId(
+          fieldRef("productBacklog", FIELD.sizeEstimate),
+          sizeEstimate,
+        );
+        if (!optionId) {
+          return fail(
+            `failed to resolve size option "${sizeEstimate}" (itemId=${itemId}): board write required for estimateSize but skipped`,
+          );
+        }
+        const setResult = await this.adapter.setSingleSelectFieldValue(
+          projectItemNodeId,
+          fieldRef("productBacklog", FIELD.sizeEstimate),
+          optionId,
+        );
+        if (!setResult.success) {
+          return fail(
+            `failed to write size option "${sizeEstimate}" (itemId=${itemId}): ${
+              setResult.error ?? "unknown error"
+            }`,
+          );
+        }
+      } catch (e) {
+        return fail(
+          `board write failed for estimateSize (itemId=${itemId}): ${
+            (e as Error)?.message || String(e)
+          }`,
+        );
       }
-      return { operation: "estimateSize", success: true, itemId };
+      return { operation: OP, success: true, itemId };
     });
 
+    // TODO(WP#805 follow-up): confirmSize/recordAnalysis below keep the legacy
+    // silent-skip contract (success:true on skip). Unify with estimateSize in a separate WP.
     handlers.set("confirmSize", async (_op, params) => {
       const itemId = String(params.itemId ?? "");
       if (!itemId) return { operation: "confirmSize", success: false, error: "itemId is required" };
