@@ -6,7 +6,7 @@
  */
 
 import { assertEquals, assertStringIncludes, assertThrows } from "@std/assert";
-import { BOARD_FIELDS } from "../../../../../core/gateway/field-registry.ts";
+import { BOARD_FIELDS, FIELD_TYPES } from "../../../../../core/gateway/field-registry.ts";
 import {
   buildFieldsPlan,
   dryRunFields,
@@ -17,6 +17,16 @@ import {
   parseFieldListJson,
 } from "./create-fields.ts";
 import type { CommandResult } from "./subprocess.ts";
+import type { EnsureFieldsResult } from "./create-fields.ts";
+
+const assertEnsureFieldsResult = (value: EnsureFieldsResult): void => {
+  for (const field of value.created) assertEquals(typeof field, "string");
+  for (const field of value.skipped) assertEquals(typeof field, "string");
+  for (const failure of value.failed) {
+    assertEquals(typeof failure.field, "string");
+    assertEquals(typeof failure.error, "string");
+  }
+};
 
 /**
  * ユースケース: BOARD_FIELDS 準拠のフィールド集合を返すこと
@@ -37,7 +47,7 @@ Deno.test("BOARD_FIELDS準拠: fieldsForBoard が正の定義と一致する", (
 Deno.test("既存時スキップ分岐: 既存フィールドは作成しない", async () => {
   let createCalls = 0;
   const existing = [...BOARD_FIELDS.sprintBoard];
-  const created = await ensureFields(11, "sprintBoard", {
+  const result = await ensureFields(11, "sprintBoard", {
     listFields: (_boardNumber: number, _owner: string) => Promise.resolve(existing),
     createField: (
       _boardNumber: number,
@@ -49,7 +59,9 @@ Deno.test("既存時スキップ分岐: 既存フィールドは作成しない"
       return Promise.resolve();
     },
   });
-  assertEquals(created, []);
+  assertEquals(result.created, []);
+  assertEquals(result.skipped, [...BOARD_FIELDS.sprintBoard]);
+  assertEquals(result.failed, []);
   assertEquals(createCalls, 0);
 });
 
@@ -59,7 +71,7 @@ Deno.test("既存時スキップ分岐: 既存フィールドは作成しない"
  */
 Deno.test("不存在→作成分岐: 不足フィールドのみ作成する", async () => {
   const createdNames: string[] = [];
-  const created = await ensureFields(10, "productBacklog", {
+  const result = await ensureFields(10, "productBacklog", {
     listFields: (_boardNumber: number, _owner: string) => Promise.resolve([]),
     createField: (
       _boardNumber: number,
@@ -72,7 +84,9 @@ Deno.test("不存在→作成分岐: 不足フィールドのみ作成する", a
     },
   });
   assertEquals(createdNames.sort(), [...BOARD_FIELDS.productBacklog].sort());
-  assertEquals(created.sort(), [...BOARD_FIELDS.productBacklog].sort());
+  assertEquals(result.created.sort(), [...BOARD_FIELDS.productBacklog].sort());
+  assertEquals(result.skipped, []);
+  assertEquals(result.failed, []);
 });
 
 /**
@@ -119,7 +133,7 @@ Deno.test("部分欠落→作成分岐: 欠落した1フィールドのみ作成
   const existing = [...BOARD_FIELDS.sprintBoard].filter((name) => name !== missing);
   assertEquals(existing.length, BOARD_FIELDS.sprintBoard.length - 1);
   const createdNames: string[] = [];
-  const created = await ensureFields(11, "sprintBoard", {
+  const result = await ensureFields(11, "sprintBoard", {
     listFields: (_boardNumber: number, _owner: string) => Promise.resolve(existing),
     createField: (
       _boardNumber: number,
@@ -131,7 +145,9 @@ Deno.test("部分欠落→作成分岐: 欠落した1フィールドのみ作成
       return Promise.resolve();
     },
   });
-  assertEquals(created, [missing]);
+  assertEquals(result.created, [missing]);
+  assertEquals(result.skipped, existing);
+  assertEquals(result.failed, []);
   assertEquals(createdNames, [missing]);
 });
 
@@ -153,10 +169,10 @@ Deno.test("BOARD_FIELDS等価性: 全ボードで正の定義と同一参照・�
 });
 
 /**
- * ユースケース: CLI引数から --owner / --data-type / --dry-run を解決できること
+ * ユースケース: CLI引数から --owner / --dry-run を解決できること
  * 検証意図: フラグ形式と位置引数の両方でボード番号・ボード・所有者を特定できることを確認する
  */
-Deno.test("引数解析: --ownerと--data-typeと--dry-runを解決する", () => {
+Deno.test("引数解析: --ownerと--dry-runを解決する", () => {
   assertEquals(
     parseCreateFieldsArgs(["11", "sprintBoard", "--owner", "test-owner", "--dry-run"]),
     {
@@ -164,7 +180,6 @@ Deno.test("引数解析: --ownerと--data-typeと--dry-runを解決する", () =
       board: "sprintBoard",
       owner: "test-owner",
       repo: null,
-      dataType: "TEXT",
       dryRun: true,
       help: false,
     },
@@ -174,28 +189,14 @@ Deno.test("引数解析: --ownerと--data-typeと--dry-runを解決する", () =
     board: "sprintBoard",
     owner: "",
     repo: null,
-    dataType: "TEXT",
     dryRun: false,
     help: false,
   });
-  assertEquals(
-    parseCreateFieldsArgs(["--data-type", "TEXT", "11", "sprintBoard"]),
-    {
-      boardNumber: 11,
-      board: "sprintBoard",
-      owner: "",
-      repo: null,
-      dataType: "TEXT",
-      dryRun: false,
-      help: false,
-    },
-  );
   assertEquals(parseCreateFieldsArgs(["--help"]), {
     boardNumber: 0,
     board: "",
     owner: "",
     repo: null,
-    dataType: "TEXT",
     dryRun: false,
     help: true,
   });
@@ -322,19 +323,19 @@ Deno.test("異常系: 余剰の位置引数でErrorを投げる", () => {
 });
 
 /**
- * ユースケース: --owner／--data-type の値欠落は拒否すること
+ * ユースケース: --owner の値欠落は拒否すること
  * 検証意図: フラグのみで終端した場合に Error を投げることを確認する
  */
-Deno.test("異常系: --owner／--data-type の値欠落でErrorを投げる", () => {
+Deno.test("異常系: --owner の値欠落でErrorを投げる", () => {
   assertThrows(
     () => parseCreateFieldsArgs(["11", "sprintBoard", "--owner"]),
     Error,
     "--owner の値",
   );
   assertThrows(
-    () => parseCreateFieldsArgs(["11", "sprintBoard", "--data-type"]),
+    () => parseCreateFieldsArgs(["11", "sprintBoard", "--data-type", "TEXT"]),
     Error,
-    "--data-type の値",
+    "未知のオプション",
   );
 });
 
@@ -375,4 +376,50 @@ Deno.test("makeFieldGhRunner: env未指定時はenvなしで呼ぶ", async () =>
   await runner.listFields(11, "some-owner");
   assertEquals(seen.length, 1);
   assertEquals(seen[0].env, undefined);
+});
+
+Deno.test("AC-2: ensureFields は作成に失敗したフィールドを failed に含める", async () => {
+  const failedName = "harness-sequence";
+  const failedMessage = "create failed";
+  const result = await ensureFields(11, "sprintBoard", {
+    listFields: (_boardNumber: number, _owner: string) => Promise.resolve([]),
+    createField: (
+      _boardNumber: number,
+      _owner: string,
+      name: string,
+      _dataType: string,
+    ) => {
+      if (name === failedName) {
+        return Promise.reject(new Error(failedMessage));
+      }
+      return Promise.resolve();
+    },
+  });
+  assertEnsureFieldsResult(result);
+  assertEquals(result.failed, [{ field: failedName, error: failedMessage }]);
+  assertEquals(result.created.includes(failedName), false);
+});
+
+Deno.test("AC-1: create-fields は各フィールドのレジストリ型で作成する", async () => {
+  const createdTypes = new Map<string, string>();
+  const result = await ensureFields(10, "productBacklog", {
+    listFields: (_boardNumber: number, _owner: string) => Promise.resolve([]),
+    createField: (
+      _boardNumber: number,
+      _owner: string,
+      name: string,
+      dataType: string,
+    ) => {
+      createdTypes.set(name, dataType);
+      return Promise.resolve();
+    },
+  });
+  assertEquals(result.failed, []);
+  assertEquals(createdTypes.get("harness-size-estimate"), "SINGLE_SELECT");
+  assertEquals(createdTypes.get("harness-size-actual"), "SINGLE_SELECT");
+  for (const [field, type] of Object.entries(FIELD_TYPES)) {
+    if ((BOARD_FIELDS.productBacklog as readonly string[]).includes(field)) {
+      assertEquals(createdTypes.get(field), type);
+    }
+  }
 });

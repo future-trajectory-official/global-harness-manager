@@ -8,7 +8,13 @@
  * `projects`（ボード番号：変動）と `fields`（フィールド名：固定）を読み取り、
  * `field-registry.ts` の型付き定義（HARNESS_FIELDS）と整合することを検証して提供する。
  */
-import { HARNESS_FIELDS, isHarnessField } from "./field-registry.ts";
+import {
+  FIELD_TYPES,
+  type FieldType,
+  HARNESS_FIELDS,
+  type HarnessFieldName,
+  isHarnessField,
+} from "./field-registry.ts";
 
 /** `.harnessrc` の構造型。projects と fields を持つ。 */
 export interface HarnessConfigInput {
@@ -86,6 +92,17 @@ export class ProjectV2FieldRegistry {
       throw new Error(`Field "${name}" is not registered in .harnessrc fields`);
     }
     return name;
+  }
+
+  /**
+   * 登録済みカスタムフィールドの Project V2 型を正のレジストリから返す。
+   *
+   * @param name フィールド名
+   * @returns `field-registry.ts` で定義された型
+   */
+  fieldType(name: string): FieldType {
+    this.field(name);
+    return FIELD_TYPES[name as HarnessFieldName];
   }
 
   /** テスト用にシングルトン状態をリセットする。 */

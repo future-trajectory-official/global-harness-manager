@@ -72,6 +72,45 @@ export const FIELD = {
 
 export type HarnessFieldConstant = (typeof FIELD)[keyof typeof FIELD];
 
+/**
+ * Project V2 フィールド型の定義。
+ *
+ * `gh project field-create --data-type` に渡す型名の正。
+ * フィールド名はリポジトリ・アカウントに依存せず不変のため、本モジュールが単一の正源泉となる。
+ */
+export type FieldType = "TEXT" | "SINGLE_SELECT" | "NUMBER";
+
+/**
+ * フィールド名から Project V2 型への対応表。このモジュールを型定義の唯一の正本とする。
+ *
+ * サイズ見積・実績は T-Shirt Size（XS/S/M/L/XL）を単一選択で設定するため
+ * `SINGLE_SELECT` 型とする。他のフィールドはテキスト入力のため `TEXT` 型とする。
+ */
+export const FIELD_TYPES = {
+  "harness-size-estimate": "SINGLE_SELECT",
+  "harness-size-actual": "SINGLE_SELECT",
+  "harness-effort-summary": "TEXT",
+  "harness-variance-review-size": "TEXT",
+  "harness-variance-review-planning": "TEXT",
+  "harness-variance-review-execution": "TEXT",
+  "harness-improvement-suggestions": "TEXT",
+  "harness-metrics-summary": "TEXT",
+  "harness-metrics-intent-alignment": "TEXT",
+  "harness-metrics-constraint-adherence": "TEXT",
+  "harness-metrics-context-extraction": "TEXT",
+  "harness-metrics-work-size-stability": "TEXT",
+  "harness-metrics-goal-achievement": "TEXT",
+  "harness-metrics-estimation-accuracy": "TEXT",
+  "harness-metrics-quality-integrity": "TEXT",
+  "harness-metrics-collaboration-discipline": "TEXT",
+  "harness-metrics-velocity": "TEXT",
+  "harness-kpt-keep": "TEXT",
+  "harness-kpt-problem": "TEXT",
+  "harness-kpt-try": "TEXT",
+  "harness-kpt-advise": "TEXT",
+  "harness-sequence": "TEXT",
+} as const satisfies Record<HarnessFieldName, FieldType>;
+
 /** ボード識別子。`.harnessrc` の projects キーと一致する。 */
 export const BOARDS = {
   productBacklog: "productBacklog",

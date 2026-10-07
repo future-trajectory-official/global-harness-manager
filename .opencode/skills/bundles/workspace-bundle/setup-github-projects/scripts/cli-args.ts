@@ -2,8 +2,8 @@
  * create-boards／create-fields 共通のCLI引数パーサ（WP #763 レビュー指摘対応）。
  *
  * `--owner`／`--repo`／`--dry-run`／`--help` の解析を本モジュールに一元化し、
- * 両CLI間の文言driftを防止する。各CLI固有の要素（位置引数の解釈・`--data-type`
- * 等の固有フラグ・利用法文字列）は呼出元が担い、本モジュールは共通部分のみ扱う。
+ * 両CLI間の文言driftを防止する。各CLI固有の要素（位置引数の解釈・固有フラグ・
+ * 利用法文字列）は呼出元が担い、本モジュールは共通部分のみ扱う。
  *
  * 厳格化の仕様（両CLI同一）:
  * - 未知の `--*` フラグは `Error` を投げる（タイポ時の実作成への進行を防止）。
@@ -21,7 +21,7 @@ export const BOARDS_USAGE =
 
 /** create-fields の利用法（`--help` 表示・引数エラーの報告で共用）。 */
 export const FIELDS_USAGE =
-  "usage: create-fields [--owner <owner>] [--repo <owner/repo>] [--data-type <type>] [--dry-run] <board-number> <productBacklog|sprintBoard|retrospectiveBoard>";
+  "usage: create-fields [--owner <owner>] [--repo <owner/repo>] [--dry-run] <board-number> <productBacklog|sprintBoard|retrospectiveBoard>";
 
 /** 共通オプション（`--owner`／`--repo`／`--dry-run`／`--help`）の解析結果。 */
 export interface CommonCliOptions {

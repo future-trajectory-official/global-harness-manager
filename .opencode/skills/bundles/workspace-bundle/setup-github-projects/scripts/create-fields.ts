@@ -5,14 +5,19 @@
  * `BOARD_FIELDS`（および必要時は `FIELD`）のみを参照する。既存フィールドは
  * スキップし、不足分のみ作成する。削除・型変更は行わない（破壊防止）。
  *
- * フィールド型は `gh project field-list` の実査を前提とし、型未確定でも動作する
- * よう型名は引数化する（既定は TEXT）。型が不明な場合は作成を中断して PO へ
- * 報告すること（下記 PO 報告ガード参照）。
+ * フィールド型は `field-registry.ts` の `FIELD_TYPES` を唯一の正として使用する。
+ * 型の二重指定による作成時・参照時の不整合を防ぐ。
  *
  * 正の定義は `.opencode/core/gateway/field-registry.ts` の `BOARD_FIELDS` を参照。
  */
 
-import { BOARD_FIELDS, type BoardKey } from "../../../../../core/gateway/field-registry.ts";
+import {
+  BOARD_FIELDS,
+  type BoardKey,
+  FIELD_TYPES,
+  type FieldType,
+  type HarnessFieldName,
+} from "../../../../../core/gateway/field-registry.ts";
 import { resolveOwnerTarget } from "./resolve-target-account.ts";
 import { FIELDS_USAGE, handleTargetOrExit, parseCommonArgs } from "./cli-args.ts";
 import { resolveRunnerOrExit } from "./gh-auth-env.ts";
@@ -36,18 +41,29 @@ export interface FieldGhRunner {
    * @param boardNumber 対象ボードの番号
    * @param owner ボード所有者（Organization または個人アカウント。空文字時は省略）
    * @param name 作成するフィールド名（`BOARD_FIELDS[board]` の要素）
-   * @param dataType 作成時のフィールド型（既定は TEXT）
+   * @param dataType 作成時のフィールド型（`field-registry.ts` の定義）
    */
   readonly createField: (
     boardNumber: number,
     owner: string,
     name: string,
-    dataType: string,
+    dataType: FieldType,
   ) => Promise<void>;
 }
 
-/** フィールド型未確定時の既定値（`gh project field-create --data-type` に渡す）。 */
-export const DEFAULT_FIELD_DATA_TYPE = "TEXT";
+/**
+ * `ensureFields()` の実行結果。
+ *
+ * 作成・スキップ・失敗を区別できる構造体。
+ * - `created`: 新規作成したフィールド名
+ * - `skipped`: 既存のためスキップしたフィールド名
+ * - `failed`: 作成に失敗したフィールド名
+ */
+export interface EnsureFieldsResult {
+  readonly created: string[];
+  readonly skipped: string[];
+  readonly failed: { readonly field: string; readonly error: string }[];
+}
 
 /**
  * 指定ボードの作成対象フィールド名を返す（純関数）。
@@ -58,43 +74,47 @@ export const DEFAULT_FIELD_DATA_TYPE = "TEXT";
  * @param board ボード識別子（`BOARDS` のキー）
  * @returns 作成対象のフィールド名一覧（`BOARD_FIELDS[board]` と同一参照）
  */
-export function fieldsForBoard(board: BoardKey): readonly string[] {
+export function fieldsForBoard(board: BoardKey): readonly HarnessFieldName[] {
   return BOARD_FIELDS[board];
 }
 
 /**
- * 不足フィールドのみ作成し、作成した名前を返す。
+ * 不足フィールドのみ作成し、作成・スキップ・失敗を区別して返す。
  *
- * 既存フィールドはスキップする。
- *
- * PO 報告ガード: `dataType` が不明な場合（実査で型が確定できない場合）は
- * 本関数を呼ばず、PO へ「ボード番号・フィールド名・`gh project field-list` の
- * 実査結果」を報告して指示を仰ぐこと。推測で型を決めて作成してはならない。
+ * 既存フィールドはスキップする。作成に失敗したフィールドは `failed` に含める。
  *
  * @param boardNumber 対象ボードの番号
  * @param board ボード識別子（`BOARDS` のキー）
  * @param runner gh 呼出の実装（既定は実 gh 呼出）
- * @param dataType 作成時のフィールド型（既定は TEXT）
- * @param owner ボード所有者（Organization または個人アカウント。空文字時は `--owner` を省略）
- * @returns 新規作成したフィールド名
+ * @param owner ボード所有者（Organization または個人アカウント。空文字時は省略）
+ * @returns 作成・スキップ・失敗を区別した実行結果
  */
 export async function ensureFields(
   boardNumber: number,
   board: BoardKey,
   runner: FieldGhRunner = defaultFieldGhRunner,
-  dataType: string = DEFAULT_FIELD_DATA_TYPE,
   owner = "",
-): Promise<string[]> {
+): Promise<EnsureFieldsResult> {
   const existing = new Set(await runner.listFields(boardNumber, owner));
   const created: string[] = [];
+  const skipped: string[] = [];
+  const failed: EnsureFieldsResult["failed"][number][] = [];
   for (const name of fieldsForBoard(board)) {
     if (existing.has(name)) {
+      skipped.push(name);
       continue;
     }
-    await runner.createField(boardNumber, owner, name, dataType);
-    created.push(name);
+    try {
+      await runner.createField(boardNumber, owner, name, FIELD_TYPES[name]);
+      created.push(name);
+    } catch (error) {
+      failed.push({
+        field: name,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
-  return created;
+  return { created, skipped, failed };
 }
 
 /**
@@ -129,8 +149,6 @@ export interface CreateFieldsArgs {
   readonly owner: string;
   /** 対象リポジトリの owner/repo（`--repo`。未指定時は null）。 */
   readonly repo: string | null;
-  /** 作成時のフィールド型（`--data-type`。既定は TEXT）。 */
-  readonly dataType: string;
   /** 作成を行わず実行計画の表示のみ行うか。 */
   readonly dryRun: boolean;
   /** 利用法を表示するか。 */
@@ -141,9 +159,8 @@ export interface CreateFieldsArgs {
  * CLI引数を解析する（純関数）。
  *
  * 対応: `<board-number> <board>` / `--owner <owner>` / `--repo <owner/repo>` /
- * `--data-type <type>` / `--dry-run` / `--help`。共通オプションの解析は
- * `cli-args.ts` の `parseCommonArgs` に委譲する（`--data-type` は固有の値付き
- * フラグとして受ける）。未知の `--*` フラグ・各フラグの値欠落時・余剰の
+ * `--dry-run` / `--help`。共通オプションの解析は `cli-args.ts` の
+ * `parseCommonArgs` に委譲する。未知の `--*` フラグ・各フラグの値欠落時・余剰の
  * 位置引数（3件目以降）がある場合は `Error` を投げる。
  *
  * `--owner` 明示時はそれを優先する（後方互換）。未指定時は `--repo`
@@ -154,10 +171,7 @@ export interface CreateFieldsArgs {
  * @returns 解析済み引数
  */
 export function parseCreateFieldsArgs(args: string[]): CreateFieldsArgs {
-  const common = parseCommonArgs(args, {
-    valueFlags: { "--data-type": "--data-type の値（TEXT等）が指定されていません" },
-  });
-  const dataType = common.extras["--data-type"] ?? DEFAULT_FIELD_DATA_TYPE;
+  const common = parseCommonArgs(args);
   const positionals = common.positionals;
   if (positionals.length > 2) {
     throw new Error(
@@ -178,7 +192,6 @@ export function parseCreateFieldsArgs(args: string[]): CreateFieldsArgs {
     board,
     owner: common.owner,
     repo: common.repo,
-    dataType,
     dryRun: common.dryRun,
     help: common.help,
   };
@@ -219,7 +232,7 @@ export function buildFieldsPlan(
       lines.push(`skip ${board} "${name}"`);
     } else {
       toCreate.push(name);
-      lines.push(`create ${board} "${name}"`);
+      lines.push(`create ${board} "${name}" --data-type ${FIELD_TYPES[name]}`);
     }
   }
   return { lines, skipCount, createCount: toCreate.length, toCreate };
@@ -234,7 +247,6 @@ export function buildFieldsPlan(
  * @param boardNumber 対象ボードの番号
  * @param board ボード識別子（`BOARDS` のキー）
  * @param runner gh 呼出の実装（既定は実 gh 呼出）
- * @param dataType 作成時のフィールド型（既定は TEXT。計画表示のみに使用）
  * @param owner ボード所有者（Organization または個人アカウント。空文字時は省略）
  * @returns 計画表示（`スキップN件・作成M件` を含む）
  */
@@ -242,15 +254,12 @@ export async function dryRunFields(
   boardNumber: number,
   board: BoardKey,
   runner: FieldGhRunner = defaultFieldGhRunner,
-  dataType: string = DEFAULT_FIELD_DATA_TYPE,
   owner = "",
 ): Promise<string> {
   const existing = await runner.listFields(boardNumber, owner);
   const plan = buildFieldsPlan(board, existing);
   return [
-    `[DRY-RUN] board: ${board} #${boardNumber} owner: ${
-      owner || "(default)"
-    } data-type: ${dataType}`,
+    `[DRY-RUN] board: ${board} #${boardNumber} owner: ${owner || "(default)"}`,
     ...plan.lines,
     `スキップ${plan.skipCount}件・作成${plan.createCount}件`,
   ].join("\n");
@@ -348,7 +357,6 @@ if (import.meta.main) {
           opts.boardNumber,
           opts.board as BoardKey,
           runner,
-          opts.dataType,
           owner,
         ),
       );
@@ -360,7 +368,6 @@ if (import.meta.main) {
             opts.boardNumber,
             opts.board as BoardKey,
             runner,
-            opts.dataType,
             owner,
           ),
         ),
