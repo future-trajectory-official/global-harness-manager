@@ -30,7 +30,16 @@ deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scri
 deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scripts/create-fields.ts <board-number> <productBacklog|sprintBoard|retrospectiveBoard>
 ```
 
-3. `.harnessrc` を生成する。生成と同時に同一ディレクトリへ2行の `.gitignore`
+3. ボードを対象リポジトリにリンクする（リポジトリの Projects タブに表示させるため）。 リンクは
+   Project とリポジトリの紐づけのみで、issue はボードへ追加しない。リンク済みは skip する（冪等）。
+   事前に `--dry-run` で計画を確認すること。
+
+```bash
+deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scripts/link-boards.ts --repo <owner/repo> --boards-json '<boards-json>' --dry-run
+deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scripts/link-boards.ts --repo <owner/repo> --boards-json '<boards-json>'
+```
+
+4. `.harnessrc` を生成する。生成と同時に同一ディレクトリへ2行の `.gitignore`
    （`.harnessrc`＋`.gitignore` 自身）を冪等に併置する（WP#786 AC-1）。
 
 ```bash
