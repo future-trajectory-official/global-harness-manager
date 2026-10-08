@@ -26,10 +26,9 @@ Deno.test("Markdown Link and Path Resolution Verification", async () => {
   const issues: string[] = [];
 
   // ターゲットの Markdown ファイル一覧を取得（テンプレートファイル .example / .md.example も対象に含める）
-  // 対象ディレクトリ: .opencode/context（用語集）・.opencode/guides（運用ガイド）・.opencode/agents（ロール定義）
+  // 対象ディレクトリ: .github/context（用語集）・.opencode/guides（運用ガイド）・.opencode/agents（ロール定義）
   // 対象外: .opencode/commands（ワークフロー入口・別テストで検証）・.opencode/skills（配布物）
-  // （旧 .agents 配下は skills→配布物・workflows→commands・management→廃止のため走査対象なし）
-  const scanRoots = [`.opencode/context`, `.opencode/guides`, `.opencode/agents`];
+  const scanRoots = [`.github/context`, `.opencode/guides`, `.opencode/agents`];
   const mdFiles: string[] = [];
   for (const root of scanRoots) {
     mdFiles.push(...await collectMarkdownFiles(root));
