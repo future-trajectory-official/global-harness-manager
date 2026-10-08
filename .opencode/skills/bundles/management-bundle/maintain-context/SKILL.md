@@ -15,9 +15,8 @@ AI がプロジェクト固有の用語集 `product.md` に、固有用語を追
 
 ## 入力（前提）
 
-- `.opencode/context/product.md` … 編集対象（利用者編集・git追跡対象外）。
-- `.opencode/context/management.md` … 参照のみ。**編集禁止**。
-- `.opencode/context/product.md.example` … 構造見本。**編集対象外**。
+- 編集対象・対象外・禁止事項は `references/edits.md` §1
+  の表を唯一の定義とする（本スキルでは再記述しない）。
 
 ## 出力（実現すること）
 
@@ -31,8 +30,12 @@ AI がプロジェクト固有の用語集 `product.md` に、固有用語を追
 > を読まない限り、編集対象の判断・編集方法・ガードを実行できない**。リファレンスを無視した編集を禁止する。
 
 1. 編集を始める前に `references/edits.md` を**必ず読む**。これを読まずに編集を開始してはならない。
-2. `references/edits.md` の規則に従い、編集対象・対象外を確認してから `product.md` を編集する。
-3. 編集後、`references/edits.md` のガード検証手順に従い、`management.md`
+2. 作成判定: 呼出元の `.github/context/product.md` が**存在しない**場合は、グローバル
+   `~/.harness/context/product.md.example` を元に `.github/context/product.md` を作成する。
+   判定基準は実行回数ではなく「`product.md` の存在有無」とする。 `product.md`
+   が存在する場合は、呼出元の `.github/context/product.md` のみを更新する。
+3. 編集対象の確認と編集の作法は `references/edits.md` §1・§3 に従う。
+4. 編集後、`references/edits.md` §4 のガード検証手順に従い、`management.md`
    に差分がないことを検証する。
 
 ## セッション中の扱い
