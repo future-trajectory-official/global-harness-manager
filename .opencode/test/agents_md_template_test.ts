@@ -2,7 +2,7 @@ import { assert, assertEquals, assertStringIncludes } from "@std/assert";
 import { basename, dirname, fromFileUrl, join } from "@std/path";
 
 /**
- * 存続ファイル (config/AGENTS.md.example) のみ検証する縮退テスト。旧配布スキルのテンプレート検証は AC-2 で廃止。
+ * config/AGENTS.md.example を検証する。
  */
 
 /** このテストファイルの位置から解決したリポジトリルートディレクトリ */
@@ -22,7 +22,7 @@ const REQUIRED_LOCAL_CONVENTION_KEYS = [
   ".session/plan.md",
   "[Phase",
   "[CRITICAL ACTION]",
-  ".opencode/context",
+  ".github/context",
   "git push",
   "一括置換",
   "ホストOS",
@@ -46,8 +46,7 @@ Deno.test("T4 (AC4): local example hosts migrated harness conventions", async ()
 
 /**
  * ユースケース: 用語集参照が opencode.json.example の instructions と整合する（AC4）
- * 検証意図: instructions の全項目について、AGENTS.md（=local example の配布実体名）または .opencode/context 連鎖がローカル規律で担保されることを総称的に検証し、用語集2ファイル（management.md / product.md）への言及を確認する
- * （旧T5末尾のグローバルテンプレート参照断片は参照先廃止のためAC-2で削除）
+ * 検証意図: instructions の全項目について、AGENTS.md（=local example の配布実体名）または .github/context 連鎖がローカル規律で担保されることを総称的に検証し、用語集2ファイル（management.md / product.md）への言及を確認する
  */
 Deno.test("T5 (AC4): glossary reference chain aligns with opencode.json.example", async () => {
   const instructionsJson = JSON.parse(

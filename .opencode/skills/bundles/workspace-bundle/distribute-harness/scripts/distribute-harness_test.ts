@@ -219,15 +219,15 @@ Deno.test("rewriteReferences - contextは書換対象外で.github/contextは素
     const file = `${root}/ctx.md`;
     await Deno.writeTextFile(
       file,
-      "old /.opencode/context/management.md\n" +
+      "old /.github/context/management.md\n" +
         "caller <repo>/.github/context/product.md\n" +
         "agent [scrum-master.md](/.opencode/agents/scrum-master.md)\n",
     );
     await rewriteReferences(root, false);
     const content = await Deno.readTextFile(file);
     assert(
-      content.includes("/.opencode/context/management.md"),
-      ".opencode/context must pass through",
+      content.includes("/.github/context/management.md"),
+      ".github/context must pass through",
     );
     assert(
       content.includes("<repo>/.github/context/product.md"),

@@ -24,9 +24,7 @@
 /cov_profile/
 /coverage/
 
-# リポジトリ固有用語（利用者編集・追跡対象外）。構造見本（.example）は追跡対象
-/.opencode/context/product.md
-
+# リポジトリ固有用語（product.md）の除外は .github/context/.gitignore に集約する
 
 # OS/エディタ固有のファイル
 .DS_Store

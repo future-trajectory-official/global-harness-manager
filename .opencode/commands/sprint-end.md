@@ -38,8 +38,7 @@ subtask: false
   (進行・ファシリテーション)
 - **実行するスキル**:
   `[assess-context](/.opencode/skills/bundles/management-bundle/assess-context/SKILL.md)`
-- **入力（前提条件）**: `.opencode/context/management.md`（必須）/
-  `.opencode/context/product.md`（任意）。
+- **入力（前提条件）**: 用語集（`assess-context` の読み取り規則に従う。management.md 必須 / product.md 任意）。
 - **期待される結果（終了条件）**:
   1. 用語集（管理概念・プロジェクト固有の用語）が出典別に要約提示されていること。
   2. 提示した語彙が本スプリントの共有言語として PO に確認されていること。
