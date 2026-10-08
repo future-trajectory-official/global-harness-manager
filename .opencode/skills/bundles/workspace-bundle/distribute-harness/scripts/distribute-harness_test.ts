@@ -50,12 +50,12 @@ Deno.test("buildCopyPlan - 除外対象を含まず配布ファイルを含む",
   assert(!sources.some((s) => s.includes("deno.lock")));
 });
 
-Deno.test("buildCopyPlan - contextはmanagementとexampleのみでproduct.md実体を除外する(C2)", () => {
+Deno.test("buildCopyPlan - contextは配布対象外である(WP #791・B案)", () => {
   const plan = buildCopyPlan("/src/.opencode", "/dest");
   const sources = plan.map((p) => p.src);
-  assert(sources.some((s) => s.endsWith("context/management.md")));
-  assert(sources.some((s) => s.endsWith("context/product.md.example")));
-  assert(!sources.some((s) => s.endsWith("context/product.md")));
+  assert(!sources.some((s) => s.includes("context/management.md")));
+  assert(!sources.some((s) => s.includes("context/product.md.example")));
+  assert(!sources.some((s) => s.includes("context/product.md")));
   // AGENTS.md.example → AGENTS.md のマッピング
   const agents = plan.find((p) => p.kind === "file" && p.dest.endsWith("/AGENTS.md"));
   assert(agents, "AGENTS.md entry must exist");
@@ -213,6 +213,32 @@ Deno.test("rewriteReferences - .opencodeパスとskill名をグローバル化�
   }
 });
 
+Deno.test("rewriteReferences - contextは書換対象外で.github/contextは素通しする(WP #791)", async () => {
+  const root = await Deno.makeTempDir({ prefix: "dist-ref-" });
+  try {
+    const file = `${root}/ctx.md`;
+    await Deno.writeTextFile(
+      file,
+      "old /.opencode/context/management.md\n" +
+        "caller <repo>/.github/context/product.md\n" +
+        "agent [scrum-master.md](/.opencode/agents/scrum-master.md)\n",
+    );
+    await rewriteReferences(root, false);
+    const content = await Deno.readTextFile(file);
+    assert(
+      content.includes("/.opencode/context/management.md"),
+      ".opencode/context must pass through",
+    );
+    assert(
+      content.includes("<repo>/.github/context/product.md"),
+      ".github/context must pass through",
+    );
+    assert(content.includes(`${root}/agents/scrum-master.md`));
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
 Deno.test("rewriteReferences - 既にglobal-化済みのskill名は二重化しない(冪等・C2)", async () => {
   const root = await Deno.makeTempDir({ prefix: "dist-ref-" });
   try {
@@ -282,14 +308,14 @@ Deno.test("rewriteSkillImports - 既にglobal-化済みは変更しない(冪等
 
 /**
  * ユースケース: 本番配布の前に --dry-run で配布計画のみ確認する
- * 検証意図: dry-run 実行が配布先へ何も書き込まず、計画が9件であることを確認する
+ * 検証意図: dry-run 実行が配布先へ何も書き込まず、計画が7件であることを確認する
  */
-Deno.test("distribute E2E - dry-run は無副作用で計画9件を返す", async () => {
+Deno.test("distribute E2E - dry-run は無副作用で計画7件を返す", async () => {
   const sourceRoot = join(REPO_ROOT, ".opencode");
   const dest = await Deno.makeTempDir({ prefix: "dist-e2e-dry-" });
   try {
     const plan = buildCopyPlan(sourceRoot, dest);
-    assertEquals(plan.length, 9);
+    assertEquals(plan.length, 7);
     await executeCopyPlan(plan, true);
     const entries: string[] = [];
     for await (const entry of Deno.readDir(dest)) {
@@ -303,14 +329,14 @@ Deno.test("distribute E2E - dry-run は無副作用で計画9件を返す", asyn
 
 /**
  * ユースケース: 実配布でハーネス資源が配布先へ到達する
- * 検証意図: 一時ディレクトリへの実実行後にコピー9件・rename-map登録・deno.json同一・workspace-bundle除外・他bundle残存を確認する
+ * 検証意図: 一時ディレクトリへの実実行後にコピー7件・rename-map登録・deno.json同一・workspace-bundle除外・他bundle残存を確認する
  */
 Deno.test("distribute E2E - 実配布が配布先へ到達する", async () => {
   const sourceRoot = join(REPO_ROOT, ".opencode");
   const dest = await Deno.makeTempDir({ prefix: "dist-e2e-real-" });
   try {
     const plan = buildCopyPlan(sourceRoot, dest);
-    assertEquals(plan.length, 9);
+    assertEquals(plan.length, 7);
     const skills = await collectSkills(join(sourceRoot, "skills"));
     const renameMap = buildRenameMap(skills);
     await executeCopyPlan(plan, false);
@@ -338,6 +364,13 @@ Deno.test("distribute E2E - 実配布が配布先へ到達する", async () => {
       workspaceExists = false;
     }
     assert(!workspaceExists, "workspace-bundle must be excluded after distribution");
+    let contextExists = true;
+    try {
+      await Deno.stat(join(dest, "context"));
+    } catch {
+      contextExists = false;
+    }
+    assert(!contextExists, "context must not be distributed (WP #791)");
     const other = await Deno.stat(join(dest, "skills", "bundles", "management-bundle"));
     assert(other.isDirectory, "other bundles must remain after exclusion");
   } finally {
