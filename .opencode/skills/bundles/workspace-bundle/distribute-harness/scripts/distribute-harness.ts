@@ -21,8 +21,8 @@ import {
  */
 
 /** 構造保持コピー対象ディレクトリ（`.opencode/` 配下。AC1）。
- * `context/` はディレクトリ丸ごとではなく、利用者編集 `product.md` を除く
- * `management.md` と `product.md.example` のみを明示コピーする（include方式・C2対応）。 */
+ * `context/` は配布対象外（WP #791・B案）。
+ * グローバル配置 `~/.harness/context` への2件コピーは配布コピーとは別枠の手順（SKILL.md参照）で行う。 */
 export const COPY_DIRS = ["skills", "core", "agents", "commands", "guides"];
 
 /** 定数化（M2対応: マジックリテラル集約） */
@@ -52,7 +52,8 @@ export function normalizeSkillName(name: string): string {
  * 配布コピー計画を組み立てる（AC1）。
  * 除外方針は include方式：コピー対象を明示列挙し、除外対象（`node_modules/`・`deno.lock`・
  * `package*.json`・`.local/`・`.session/`・`coverage/`・`cov_profile/`・`.log` ・`/tmp/`・
- * `/config/` 実体・`/opencode.json(c)`・利用者編集 `context/product.md`）は計画に含めない。
+ * `/config/` 実体・`/opencode.json(c)`・`context/` 全件（WP #791・B案で配布廃止。利用者編集 `context/product.md`
+ * を含む）は計画に含めない。
  * 事後削除は行わず、対象を直接列挙する（C2対応）。
  * @param sourceRoot - 配布元 `.opencode/` ディレクトリの絶対パス
  * @param destRoot - 配布先ルート（例: `~/.harness`）の絶対パス
@@ -67,17 +68,7 @@ export function buildCopyPlan(sourceRoot: string, destRoot: string): CopyEntry[]
       kind: "dir",
     });
   }
-  // context は include方式（management.md + product.md.example のみ）
-  plan.push({
-    src: pathUtil.joinPath(sourceRoot, "context", "management.md"),
-    dest: pathUtil.joinPath(destRoot, "context", "management.md"),
-    kind: "file",
-  });
-  plan.push({
-    src: pathUtil.joinPath(sourceRoot, "context", "product.md.example"),
-    dest: pathUtil.joinPath(destRoot, "context", "product.md.example"),
-    kind: "file",
-  });
+  // context は配布対象外（WP #791・B案）。グローバル配置は別手順で行うため計画に含めない。
   const repoRoot = pathUtil.dirname(sourceRoot);
   plan.push({
     src: pathUtil.joinPath(repoRoot, "deno.json"),
@@ -296,10 +287,11 @@ function escapeRegExp(text: string): string {
 }
 
 /**
- * 配布先の Markdown ファイルの参照を書き換える（AC2・PO指摘対応）。
+ * 配布先の Markdown ファイルの参照を書き換える（AC2・PO指摘対応。WP #791でcontext除外）。
  * - `.opencode/skills/bundles/<bundle>/<name>` → `<destRoot>/skills/bundles/<bundle>/global-<name>`
- * - `.opencode/{agents,commands,guides,context,core}/` → `<destRoot>/{dir}/`
+ * - `.opencode/{agents,commands,guides,core}/` → `<destRoot>/{dir}/`（`context` は配布対象外のため書換対象外）
  * - `[skill:<name>]` → `[skill:global-<name>]`
+ * - `.github/context/` 参照は呼出元相対解決のため素通し（書換えない）
  * 対象は .md のみ（.ts の相対 import や設定は構造保持のため触れない）。
  * ただしスキルディレクトリ名（`global-` リネーム）の影響を受ける .ts 内参照は
  * `rewriteSkillImports` で書き換える。
@@ -319,9 +311,10 @@ export async function rewriteReferences(
       /(?:\/)?\.opencode\/skills\/bundles\/([a-z0-9-]+)\/([a-z0-9-]+)/g,
       `${destRoot}/skills/bundles/$1/global-$2`,
     );
-    // 2) その他の .opencode ディレクトリ参照
+    // 2) その他の .opencode ディレクトリ参照（contextは配布対象外のため除外。WP #791）
+    // .github/context/ は呼出元相対のため素通し（ここでは触れない）
     updated = updated.replace(
-      /(?:\/)?\.opencode\/(agents|commands|guides|context|core)\//g,
+      /(?:\/)?\.opencode\/(agents|commands|guides|core)\//g,
       `${destRoot}/$1/`,
     );
     // 3) スキル呼出（skill tool）名。既に global- 化済みは置換しない（冪等。C2対応）。
