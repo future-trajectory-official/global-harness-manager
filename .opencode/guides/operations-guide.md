@@ -342,15 +342,5 @@ Review / Retrospective）をどの時点で・どの操作で管理するかの�
 2. POが `/compact` を実行する。
 3. コンパクション直後に Read ツールで `.session/task.md` を読み戻し、現在のPhaseを宣言して再開する。
 
-### 5.3. トレーサビリティ
-
-- 本節のトレーサビリティとは、コンパクト後に「どこまで何をしていたか」が分かることを指す（PBI #754
-  BR3の「計画→実行→介入記録→評価→KPT」の一連性をSSoTで辿れること）。
-- 手段は§5.2の手順（実施前のtask.md更新＋実施後の読み戻し・Phase宣言）のみとする。記録の置き場に関する新規ルールは設けず、既存§2・§3および各ワークフローに従う。
-- 退避先はgitignore済みパス（`.local/`、`.session/`）に限定する。
-- 両ディレクトリが存在しない場合は作成し、各ディレクトリ直下に `.gitignore`（内容は `/*`
-  のみ）を配置して追跡対象外とすること。`.gitignore`
-  自身も無視されるため他リポジトリの追跡対象として汚染しない。リポジトリルートの `.gitignore`
-  設定に依存しない。
-- 関連設定: `config/opencode.json.example` の `compaction`
-  キー（auto/prune/reserved。公式スキーマ準拠）を参照。
+関連設定: `config/opencode.json.example` の `compaction`
+キー（auto/prune/reserved。公式スキーマ準拠）を参照。
