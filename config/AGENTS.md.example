@@ -35,6 +35,12 @@ OpenCode は会話がコンパクションされると過去の詳細を失う�
 - 原則として毎ターン終了時に `.session/task.md` を最新の状態に保つ。
 - `.session/` は `.gitignore` で管理対象外とする。
 
+### SSoT読み戻し規律
+
+ユーザーからの入力受領時および各フェーズ開始時には、応答・実行に先立ち Read ツールで
+`.session/task.md` を読み戻し、現在のPhaseを宣言すること。`.session/`
+は `.gitignore` 対象のため git 経由で復元しようとせず、Read ツールで直接読むこと。
+
 ### Phase Progression Rule
 
 本節はグローバル原則「永続状態への依存 (Truth of State)」「重要操作前のHITLアライメント」に対する、本プロジェクトの具体的手段です。
