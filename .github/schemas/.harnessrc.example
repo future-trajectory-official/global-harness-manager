@@ -5,6 +5,10 @@
     "sprintBoard": <number>,
     "retrospectiveBoard": <number>
   },
+  "boardOwner": {
+    "owner": "<ボード所有者のログイン名>",
+    "ownerType": "<organization|user>"
+  },
   "fields": {
     "harness-size-estimate": "harness-size-estimate",
     "harness-size-actual": "harness-size-actual",

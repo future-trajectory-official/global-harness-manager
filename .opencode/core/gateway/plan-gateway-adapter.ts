@@ -19,7 +19,14 @@ import type { PlanGateway } from "../domain/plan-gateway.ts";
 import { ProductBacklogItemHandler } from "./product-backlog-item-handler.ts";
 import { WorkPackageHandler } from "./work-package-handler.ts";
 import { RetrospectiveHandler } from "./retrospective-handler.ts";
-import { type BoardKey, type FieldRef, HARNESS_FIELDS, STATUS_FIELD } from "./field-registry.ts";
+import {
+  type BoardKey,
+  type BoardOwner,
+  type BoardOwnerType,
+  type FieldRef,
+  HARNESS_FIELDS,
+  STATUS_FIELD,
+} from "./field-registry.ts";
 
 export type CommandRunner = (cmd: string, args: string[]) => Promise<ExecuteResult>;
 
@@ -108,6 +115,56 @@ export function toUserProjectQuery(query: string): string {
 }
 
 /**
+ * ボード所有者の種別に応じた GraphQL ルート種別を返す（純関数）。
+ *
+ * 役割: ProjectV2 参照クエリの起点（organization / user）を所有者種別から決める。
+ * 引数: 所有者の種別。
+ * 戻り値: "user" または "organization"。クエリ組立時に `${root}(login: ...)` と埋め込む。
+ */
+export function projectV2OwnerRoot(ownerType: BoardOwnerType): "user" | "organization" {
+  return ownerType === "user" ? "user" : "organization";
+}
+
+/**
+ * ProjectV2 参照クエリのルートフィールドを `user(login:` から
+ * `organization(login:` へ書き換える（純関数）。
+ *
+ * user-first クエリが未解決だった場合の逆フォールバック用。該当箇所が無い場合は無変更。
+ *
+ * @param query user 版の GraphQL クエリ文字列
+ * @returns organization 版の GraphQL クエリ文字列
+ */
+export function toOrganizationProjectQuery(query: string): string {
+  return query.replaceAll("user(login:", "organization(login:");
+}
+
+/**
+ * ProjectV2 参照クエリの応答が「User 未解決」によるものか判定する（純関数）。
+ *
+ * user-first クエリで `user: null` が返った場合、または User 解決失敗を示す
+ * NOT_FOUND エラーの場合に真となる。`isOrganizationUnresolved` の user 対称版。
+ *
+ * @param stdout gh api graphql の標準出力
+ * @returns User 未解決の場合 true
+ */
+export function isUserUnresolved(stdout: string): boolean {
+  const parsed = parseJsonOutput(stdout) as
+    | { data?: { user?: unknown } | null; errors?: unknown }
+    | undefined;
+  if (!isRecord(parsed)) return false;
+  const { data, errors } = parsed;
+  if (isRecord(data) && "user" in data && data.user === null) {
+    return true;
+  }
+  if (!Array.isArray(errors)) return false;
+  return errors.some((e) => {
+    if (!isRecord(e)) return false;
+    const { type, message } = e;
+    return type === "NOT_FOUND" && typeof message === "string" && /user/i.test(message);
+  });
+}
+
+/**
  * user フォールバック応答の `data.user` を `data.organization` へ付け替える（純関数）。
  * 呼出側のパース（`data.organization.projectV2` 読取）を無変更で再利用するための透過化。
  * 付け替え後は `data.user` を削除し、単一の正（`data.organization`）のみを残す。
@@ -150,6 +207,7 @@ export class PlanGatewayAdapter implements PlanGateway {
     productBacklogBoardNumber?: number;
     sprintBoardNumber?: number;
     retrospectiveBoardNumber?: number;
+    boardOwner?: BoardOwner;
   } = {};
 
   constructor(
@@ -361,10 +419,38 @@ export class PlanGatewayAdapter implements PlanGateway {
     retrospective?: number,
   ): void {
     this.projectConfig = {
+      ...this.projectConfig,
       productBacklogBoardNumber: productBacklog,
       sprintBoardNumber: sprint,
       retrospectiveBoardNumber: retrospective,
     };
+  }
+
+  /**
+   * Project V2 ボードの所有者を設定する。
+   *
+   * 役割: `.harnessrc` の boardOwner を Gateway に反映し、リポジトリownerと
+   * ボードownerが異なる場合（個人所有ボード）の解決を可能にする。
+   * 引数: ボード所有者（ログイン名と種別）。
+   * 戻り値: なし。
+   */
+  setBoardOwner(boardOwner: BoardOwner): void {
+    this.projectConfig = { ...this.projectConfig, boardOwner };
+  }
+
+  /**
+   * ボード解決に用いるログイン名と種別を返す。
+   *
+   * 役割: 設定済みボード所有者を優先し、未設定時は従来どおり
+   * リポジトリownerの organization 解決にフォールバックする。
+   * 戻り値: ログイン名（未解決時は undefined）と所有者種別。
+   */
+  private resolveBoardOwner(): { login: string | undefined; ownerType: BoardOwnerType } {
+    const configured = this.projectConfig.boardOwner;
+    if (configured) {
+      return { login: configured.owner, ownerType: configured.ownerType };
+    }
+    return { login: this.resolvedScope?.owner, ownerType: "organization" };
   }
 
   /**
@@ -428,9 +514,11 @@ export class PlanGatewayAdapter implements PlanGateway {
    * ProjectV2 参照用の `gh api graphql` を実行する。User所有ボードでは
    * `organization(login:)` が NOT_FOUND になるため、その場合のみ同一クエリの
    * `user(login:)` 版へフォールバックする（1回のみ再試行し、繰返しはしない）。
+   * 逆に user-first クエリが未解決の場合は `organization(login:)` 版へ
+   * フォールバックする（種別設定が実態と逆の場合の救済）。
    * gh auth のアカウント切替は行わない（PO確認なしの切替は禁止）。
    *
-   * @param args organization 版クエリを含む gh 引数（`query=` を含むこと）
+   * @param args ProjectV2 参照クエリを含む gh 引数（`query=` を含むこと）
    * @returns 初回またはフォールバックの実行結果
    */
   private async runProjectV2Query(args: string[]): Promise<ExecuteResult> {
@@ -438,6 +526,29 @@ export class PlanGatewayAdapter implements PlanGateway {
     // gh の GraphQL エラーは code 0＋応答内 errors で返る前提。code 非ゼロ
     //（認証・通信失敗）はフォールバックせず即時返却する（安全側の仕様）。
     if (first.code !== 0) return first;
+    const firstQuery = args.find((a) => a.startsWith(QUERY_ARG_PREFIX)) ?? "";
+    if (firstQuery.includes("user(login:")) {
+      if (!isUserUnresolved(first.stdout)) {
+        return { ...first, stdout: aliasUserAsOrganization(first.stdout) };
+      }
+      logger.debug("[runProjectV2Query] user unresolved; retrying with organization(login:)");
+      const orgArgs = args.map((a) =>
+        a.startsWith(QUERY_ARG_PREFIX)
+          ? `${QUERY_ARG_PREFIX}${toOrganizationProjectQuery(a.slice(QUERY_ARG_PREFIX.length))}`
+          : a
+      );
+      // 置換不能（user 形式でないクエリ）の場合は初回結果を返す。
+      if (orgArgs.every((a, i) => a === args[i])) {
+        logger.debug("[runProjectV2Query] no user root found; returning first result");
+        return first;
+      }
+      const second = await this.runCommand("gh", orgArgs);
+      if (second.code !== 0) {
+        logger.debug("[runProjectV2Query] organization fallback query failed");
+        return second;
+      }
+      return second;
+    }
     if (!isOrganizationUnresolved(first.stdout)) return first;
     logger.debug("[runProjectV2Query] organization unresolved; retrying with user(login:)");
     const userArgs = args.map((a) =>
@@ -466,15 +577,18 @@ export class PlanGatewayAdapter implements PlanGateway {
     issueNodeId: string,
     projectNumber: number,
   ): Promise<{ projectItemNodeId: string }> {
+    const board = this.resolveBoardOwner();
+    if (!board.login) throw new Error("Scope not resolved");
+    const root = projectV2OwnerRoot(board.ownerType);
     const getProjectIdQuery =
-      `query($owner: String!, $number: Int!) { organization(login: $owner) { projectV2(number: $number) { id } } }`;
+      `query($owner: String!, $number: Int!) { ${root}(login: $owner) { projectV2(number: $number) { id } } }`;
     const projectResult = await this.runProjectV2Query([
       "api",
       "graphql",
       "-f",
       `query=${getProjectIdQuery}`,
       "-f",
-      `owner=${this.resolvedScope?.owner}`,
+      `owner=${board.login}`,
       "-F",
       `number=${projectNumber}`,
     ]);
@@ -589,13 +703,15 @@ export class PlanGatewayAdapter implements PlanGateway {
   ): Promise<string | undefined> {
     const projectNumber = this.resolveRefBoardNumber(ref);
     if (projectNumber === undefined) return;
-    const owner = this.resolvedScope?.owner;
+    const board = this.resolveBoardOwner();
+    const owner = board.login;
     if (!owner) return undefined;
+    const root = projectV2OwnerRoot(board.ownerType);
     const result = await this.runProjectV2Query([
       "api",
       "graphql",
       "-f",
-      "query=query($owner: String!, $number: Int!, $field: String!) { organization(login: $owner) { projectV2(number: $number) { field(name: $field) { ... on ProjectV2SingleSelectField { options { id name } } } } } }",
+      `query=query($owner: String!, $number: Int!, $field: String!) { ${root}(login: $owner) { projectV2(number: $number) { field(name: $field) { ... on ProjectV2SingleSelectField { options { id name } } } } } }`,
       "-f",
       `owner=${owner}`,
       "-F",
@@ -624,15 +740,18 @@ export class PlanGatewayAdapter implements PlanGateway {
     projectNumber: number,
     fieldName: string,
   ): Promise<{ fieldId: string } | { error: string }> {
+    const board = this.resolveBoardOwner();
+    if (!board.login) return { error: "Scope not resolved" };
+    const root = projectV2OwnerRoot(board.ownerType);
     const query =
-      `query($owner: String!, $number: Int!, $fieldName: String!) { organization(login: $owner) { projectV2(number: $number) { field(name: $fieldName) { ... on ProjectV2SingleSelectField { id } ... on ProjectV2Field { id } } } } }`;
+      `query($owner: String!, $number: Int!, $fieldName: String!) { ${root}(login: $owner) { projectV2(number: $number) { field(name: $fieldName) { ... on ProjectV2SingleSelectField { id } ... on ProjectV2Field { id } } } } }`;
     const result = await this.runProjectV2Query([
       "api",
       "graphql",
       "-f",
       `query=${query}`,
       "-f",
-      `owner=${this.resolvedScope?.owner}`,
+      `owner=${board.login}`,
       "-F",
       `number=${projectNumber}`,
       "-f",
@@ -656,15 +775,18 @@ export class PlanGatewayAdapter implements PlanGateway {
   private async resolveProjectNodeId(
     projectNumber: number,
   ): Promise<{ projectId: string } | { error: string }> {
+    const board = this.resolveBoardOwner();
+    if (!board.login) return { error: "Scope not resolved" };
+    const root = projectV2OwnerRoot(board.ownerType);
     const query =
-      `query($owner: String!, $number: Int!) { organization(login: $owner) { projectV2(number: $number) { id } } }`;
+      `query($owner: String!, $number: Int!) { ${root}(login: $owner) { projectV2(number: $number) { id } } }`;
     const result = await this.runProjectV2Query([
       "api",
       "graphql",
       "-f",
       `query=${query}`,
       "-f",
-      `owner=${this.resolvedScope?.owner}`,
+      `owner=${board.login}`,
       "-F",
       `number=${projectNumber}`,
     ]);
@@ -1799,8 +1921,10 @@ export class PlanGatewayAdapter implements PlanGateway {
         error: "keyword search is not yet implemented",
       };
     }
-    const owner = this.resolvedScope?.owner;
-    if (!owner) return { operation: "search", success: false, error: "Scope not resolved" };
+    const board = this.resolveBoardOwner();
+    if (!board.login) {
+      return { operation: "search", success: false, error: "Scope not resolved" };
+    }
 
     // ProjectV2 の `query` 引数（プロジェクトUIフィルタDSL）でサーバー側フィルタする。
     // status と sprintNumber はスキル呼出時の引数（WorkPackageSearchCondition）をそのまま使う。
@@ -1816,7 +1940,12 @@ export class PlanGatewayAdapter implements PlanGateway {
     }
     const filterQuery = filterParts.join(" ");
 
-    const items = await this.#fetchProjectItems(owner, boardNumber, filterQuery);
+    const items = await this.#fetchProjectItems(
+      board.login,
+      boardNumber,
+      filterQuery,
+      board.ownerType,
+    );
     if (items === null) {
       return {
         operation: "search",
@@ -1851,9 +1980,11 @@ export class PlanGatewayAdapter implements PlanGateway {
     owner: string,
     boardNumber: number,
     filterQuery: string,
+    ownerType: BoardOwnerType = "organization",
   ): Promise<Array<{ number: number; title: string; status: string | null }> | null> {
+    const root = projectV2OwnerRoot(ownerType);
     const query = `query($owner: String!, $number: Int!, $filter: String, $cursor: String) {
-      organization(login: $owner) {
+      ${root}(login: $owner) {
         projectV2(number: $number) {
           items(first: 100, after: $cursor, query: $filter) {
             pageInfo { hasNextPage endCursor }

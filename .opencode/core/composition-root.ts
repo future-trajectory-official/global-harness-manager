@@ -43,6 +43,9 @@ try {
     ) {
       gateway.setProjectBoardNumbers(productBacklog, sprintBoard, retrospectiveBoard);
     }
+    if (harnessrc.boardOwner) {
+      gateway.setBoardOwner(harnessrc.boardOwner);
+    }
   }
 } catch {
   // .harnessrc not found or invalid; board numbers remain unconfigured

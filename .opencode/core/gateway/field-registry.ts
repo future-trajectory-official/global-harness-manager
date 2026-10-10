@@ -238,3 +238,46 @@ export function statusRef(board: BoardKey): FieldRef {
 export function isHarnessField(name: string): name is HarnessFieldName {
   return (HARNESS_FIELDS as readonly string[]).includes(name);
 }
+
+/**
+ * ボード所有者の種別。
+ *
+ * 役割: GraphQL のルートフィールド選択に用いる区分。organization 所有と
+ * 個人(user)所有でクエリの起点が変わる。
+ */
+export type BoardOwnerType = "organization" | "user";
+
+/**
+ * ボード所有者（機械可読）。
+ *
+ * 役割: `.harnessrc` の boardOwner キーの正。リポジトリownerとボードownerが
+ * 異なる場合（個人所有ボード）の解決に用いる。未設定時は従来どおり
+ * リポジトリownerの organization 解決にフォールバックする。
+ */
+export interface BoardOwner {
+  /** ボード所有者のログイン名。 */
+  readonly owner: string;
+  /** 所有者の種別。 */
+  readonly ownerType: BoardOwnerType;
+}
+
+/**
+ * 未知の値をボード所有者として検証する（純関数）。
+ *
+ * 役割: `.harnessrc` 読込時の型不正を欠落扱いにし、旧形式との互換を保つ。
+ * 引数: 検証対象の値。
+ * 戻り値: 妥当なボード所有者。不正時は undefined。
+ */
+export function parseBoardOwner(value: unknown): BoardOwner | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  if (typeof record.owner !== "string" || record.owner.length === 0) {
+    return undefined;
+  }
+  if (record.ownerType !== "organization" && record.ownerType !== "user") {
+    return undefined;
+  }
+  return { owner: record.owner, ownerType: record.ownerType };
+}
