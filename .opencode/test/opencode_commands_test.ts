@@ -536,8 +536,9 @@ Deno.test("commands keep the approved leaf phase baseline", async () => {
 });
 
 /**
- * 遵守事項の一貫性: 8本同一3項＋STOP/単一の正/内部操作/サブエージェント宣言。
+ * 遵守事項の一貫性: 8本同一4項＋STOP/単一の正/内部操作/サブエージェント宣言。
  * 第1項は計数干渉回避のためリテラルでなく「STOP マーカー」と表記する。
+ * 第4項はSSoT更新規律（WP #823で追加。終了時クリーンアップ後の最終ゲートの例外を含む）。
  */
 Deno.test("commands share identical compliance items and declare STOP/subagent policy", async () => {
   const commands = await listCommandFiles();
@@ -547,7 +548,7 @@ Deno.test("commands share identical compliance items and declare STOP/subagent p
     const name = baseName(file);
     const command = await readTarget(commandPath(file));
     const items = complianceItems(command);
-    assertEquals(items.length, 3, `${name}.md must have exactly 3 compliance items`);
+    assertEquals(items.length, 4, `${name}.md must have exactly 4 compliance items`);
     if (canonical === null) {
       canonical = items;
     } else {
