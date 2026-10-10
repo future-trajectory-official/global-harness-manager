@@ -32,6 +32,23 @@ Deno.test("define-feature with parentEpic should generate correct Plan", () => {
   assertEquals(params.parentEpic, "42");
 });
 
+Deno.test("define-feature with parentEpicId only (Issue number) should map to code", () => {
+  const featureId = identify(scope, "ログイン機能");
+  // CLI経路: parentEpicId（Issue番号）は code スロットへ格納する
+  // （本番経路では parentEpicTitle 未指定時に title="" で呼ばれるため空文字で再現）
+  const parentEpic = identify(scope, "", undefined, "42");
+  assertEquals(parentEpic.code, "42");
+  assertEquals(parentEpic.id, undefined);
+  const plan = featureUseCase.define(
+    featureId,
+    { description: "ログイン画面と認証ロジック" },
+    parentEpic,
+  );
+  const params = plan.steps[1].params as Record<string, unknown>;
+  assertEquals(params.parentEpic, "42");
+  assertStringIncludes(params.body as string, "**Parent Epic**: 42");
+});
+
 Deno.test("define-epic should throw for empty title", () => {
   const identifier = identify(scope, "");
   try {
