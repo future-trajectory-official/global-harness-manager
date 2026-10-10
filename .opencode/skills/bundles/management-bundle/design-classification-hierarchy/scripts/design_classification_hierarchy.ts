@@ -47,7 +47,7 @@ async function main(): Promise<void> {
       case "define-feature": {
         const featureId = identify(scope, input.title ?? "", input.epicId, input.epicNumber);
         const parentEpic = input.parentEpicId
-          ? identify(scope, input.parentEpicTitle ?? "", input.parentEpicId)
+          ? identify(scope, input.parentEpicTitle ?? "", undefined, input.parentEpicId)
           : undefined;
         plan = featureUseCase.define(
           featureId,
