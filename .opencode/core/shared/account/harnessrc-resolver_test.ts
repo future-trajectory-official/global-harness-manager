@@ -172,3 +172,27 @@ Deno.test("loadHarnessRcConfig: 型外の値は除外される", () => {
     { projects: {}, fields: {} },
   );
 });
+
+/**
+ * ユースケース: ボード所有者(種別付き)を読めること (WP #828 AC-1)
+ * 検証意図: boardOwner キーがある場合は owner/ownerType が読み取れる
+ */
+Deno.test("loadHarnessRcConfig: boardOwner を読める", () => {
+  const config = loadHarnessRcConfig(
+    "/env/.harnessrc",
+    () => '{"projects":{},"fields":{},"boardOwner":{"owner":"board-user","ownerType":"user"}}',
+  );
+  assertEquals(config?.boardOwner, { owner: "board-user", ownerType: "user" });
+});
+
+/**
+ * ユースケース: boardOwner 不在の旧形式も読めること
+ * 検証意図: キー不在時は undefined となり既存動作が不変であること (後方互換)
+ */
+Deno.test("loadHarnessRcConfig: boardOwner 不在時は undefined になる", () => {
+  const config = loadHarnessRcConfig(
+    "/env/.harnessrc",
+    () => '{"projects":{"sprintBoard":11},"fields":{}}',
+  );
+  assertEquals(config?.boardOwner, undefined);
+});

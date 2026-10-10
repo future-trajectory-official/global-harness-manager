@@ -11,6 +11,7 @@
  * 探索候補と依存（env / cwd / exists）は関数引数で注入可能にし、純関数としてテスト可能にする。
  */
 import { join } from "@std/path";
+import { type BoardOwner, parseBoardOwner } from "../../gateway/field-registry.ts";
 
 /** `.harnessrc` を探索する候補パスを列挙する。 */
 export interface HarnessRcCandidates {
@@ -127,6 +128,8 @@ export interface HarnessRcConfig {
   readonly projects: Record<string, number>;
   /** harness-* フィールド名の対応。 */
   readonly fields: Record<string, string>;
+  /** ボード所有者。旧形式ファイルでは undefined（従来動作にフォールバック）。 */
+  readonly boardOwner?: BoardOwner;
 }
 
 /**
@@ -149,17 +152,12 @@ export function loadHarnessRcConfig(
   if (!path) return null;
   try {
     const parsed: unknown = JSON.parse(readFile(path));
+    const record = isRecord(parsed) ? parsed : undefined;
+    const boardOwner = record ? parseBoardOwner(record.boardOwner) : undefined;
     return {
-      projects: sanitizeNumberRecord(
-        typeof parsed === "object" && parsed !== null
-          ? (parsed as Record<string, unknown>).projects
-          : undefined,
-      ),
-      fields: sanitizeStringRecord(
-        typeof parsed === "object" && parsed !== null
-          ? (parsed as Record<string, unknown>).fields
-          : undefined,
-      ),
+      projects: sanitizeNumberRecord(record?.projects),
+      fields: sanitizeStringRecord(record?.fields),
+      ...(boardOwner ? { boardOwner } : {}),
     };
   } catch {
     return null;

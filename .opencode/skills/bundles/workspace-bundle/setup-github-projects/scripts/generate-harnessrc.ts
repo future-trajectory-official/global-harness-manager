@@ -21,6 +21,7 @@ import {
 } from "../../../../../core/shared/account/account-identifier.ts";
 import { verifyGhAuth } from "../../../../../core/shared/account/account-context.ts";
 import {
+  type BoardOwnerType,
   emptyBoardNumbers,
   HARNESS_FIELDS,
   type HarnessRcBoards,
@@ -39,6 +40,8 @@ export type { HarnessRcBoards } from "../../../../../core/gateway/field-registry
 export interface HarnessRcMeta {
   /** ボード所有者（リポジトリのオーナー）。未特定時は null。 */
   readonly owner?: string | null;
+  /** ボード所有者の種別。未特定時は boardOwner キーを生成しない。 */
+  readonly ownerType?: BoardOwnerType | null;
   /** 認証アカウント（identities.md の Account Name）。未特定時は null。 */
   readonly accountName?: string | null;
   /** gh 認証が Account Name と一致したか。 */
@@ -88,6 +91,9 @@ export function generateHarnessRc(
   const config = {
     _comment: comment,
     projects: { ...boards },
+    ...(meta.owner && meta.ownerType
+      ? { boardOwner: { owner: meta.owner, ownerType: meta.ownerType } }
+      : {}),
     fields,
   };
   return `${JSON.stringify(config, null, 2)}\n`;
@@ -100,6 +106,8 @@ export function generateHarnessRc(
  * - `--boards-json <json>`: ボード番号（WP #763 の出力スタブ。`{"productBacklog":N,...}`）
  * - `--out <path>`: 出力先ファイルパス（省略時は `.github/schemas/.harnessrc`）
  * - `--repo <owner/repo>`: 対象リポジトリの owner/repo（AC-2 の生成先スコープ。任意）
+ * - `--owner-type <organization|user>`: ボード所有者の種別（省略時は boardOwner キーなし）
+ * - `--board-owner <login>`: ボード所有者の上書き（省略時は repo の owner。user所有等で異なる場合に指定）
  * - `--dry-run`: ファイルへ書かず標準出力へ出す
  * - `--help`: 利用法を表示
  *
@@ -111,12 +119,16 @@ export function parseArgs(
   readonly boards: HarnessRcBoards;
   readonly outPath: string;
   readonly repo: string | null;
+  readonly ownerType: BoardOwnerType | null;
+  readonly boardOwner: string | null;
   readonly dryRun: boolean;
   readonly help: boolean;
 } {
   let boards: HarnessRcBoards = emptyBoardNumbers();
   let outPath = "";
   let repo: string | null = null;
+  let ownerType: BoardOwnerType | null = null;
+  let boardOwner: string | null = null;
   let dryRun = false;
   let help = false;
   for (let i = 0; i < args.length; i++) {
@@ -146,6 +158,27 @@ export function parseArgs(
         repo = value;
         break;
       }
+      case "--owner-type": {
+        const value = args[++i];
+        if (value === undefined) {
+          throw new Error("--owner-type の値（organization または user）が指定されていません");
+        }
+        if (value !== "organization" && value !== "user") {
+          throw new Error(
+            "--owner-type の値には organization または user を指定してください",
+          );
+        }
+        ownerType = value;
+        break;
+      }
+      case "--board-owner": {
+        const value = args[++i];
+        if (value === undefined) {
+          throw new Error("--board-owner の値（ボード所有者のログイン名）が指定されていません");
+        }
+        boardOwner = value;
+        break;
+      }
       case "--dry-run":
         dryRun = true;
         break;
@@ -158,6 +191,8 @@ export function parseArgs(
     boards,
     outPath,
     repo,
+    ownerType,
+    boardOwner,
     dryRun,
     help,
   };
@@ -370,7 +405,7 @@ export function runGenerateHarnessRc(
     throw error;
   }
   if (opts.help) {
-    return "usage: generate-harnessrc [--boards-json <json>] [--out <path>] [--repo <owner/repo>] [--dry-run]";
+    return "usage: generate-harnessrc [--boards-json <json>] [--out <path>] [--repo <owner/repo>] [--owner-type <organization|user>] [--board-owner <login>] [--dry-run]";
   }
   if (!opts.boards.productBacklog || !opts.boards.sprintBoard || !opts.boards.retrospectiveBoard) {
     throw new Error(
@@ -379,7 +414,8 @@ export function runGenerateHarnessRc(
   }
   const account = resolveRepoAccount(opts.repo, resolve);
   const meta: HarnessRcMeta = {
-    owner: account.owner,
+    owner: opts.boardOwner ?? account.owner,
+    ownerType: opts.ownerType,
     accountName: account.accountName,
     verified: account.verified,
   };
