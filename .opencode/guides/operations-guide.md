@@ -323,3 +323,24 @@ Review / Retrospective）をどの時点で・どの操作で管理するかの�
 - 子Issue の作成に失敗した場合、代わりに Issue body 内に `parent: #N` 形式で親子関係を記述する
   フォールバックが使用されます。
 - 子Issue の一覧は親Issue ページの "Sub-issues" タブで確認できます（GitHub UI）。
+
+## 5. 手動コンパクション運用（PO主導）
+
+コンパクションの主導権はPOが持つ。自動コンパクション（auto）は既定で無効（false）であり、原則としてPOが任意のタイミングで意図的に
+`/compact` を実施する（autoを有効化した場合のみ上限超過時の保険として機能する）。
+
+### 5.1. 実施タイミング
+
+- 長期ワークフロー（session-start / sprint-start
+  等）で前提情報・ツール結果が蓄積し、トークン消費が膨張してきたと感じた時
+- STOPゲート到達時など、区切りの良い承認直後
+- 中断・復帰を予定している時（再開可能性の確保）
+
+### 5.2. 実施手順
+
+1. `.session/task.md` を最新の状態に更新する（目的・進捗・残作業・介入履歴）。
+2. POが `/compact` を実行する。
+3. コンパクション直後に Read ツールで `.session/task.md` を読み戻し、現在のPhaseを宣言して再開する。
+
+関連設定: `config/opencode.json.example` の `compaction`
+キー（auto/prune/reserved。公式スキーマ準拠）を参照。
