@@ -16,7 +16,7 @@ GitHub Project V2 のボード・フィールド・設定ファイルを順に�
 
 ## 使用方法
 
-boards → fields → harnessrc の順に実行する。
+boards → fields → labels → link → harnessrc の順に実行する。
 
 1. ボードを作成する。
 
@@ -30,7 +30,15 @@ deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scri
 deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scripts/create-fields.ts <board-number> <productBacklog|sprintBoard|retrospectiveBoard>
 ```
 
-3. ボードを対象リポジトリにリンクする（リポジトリの Projects タブに表示させるため）。 リンクは
+3. ハーネス用 Issue ラベルを作成する（リポジトリ単位。既存はスキップ）。 事前に `--dry-run`
+   で計画を確認すること。
+
+```bash
+deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scripts/create-labels.ts --repo <owner/repo> --dry-run
+deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scripts/create-labels.ts --repo <owner/repo>
+```
+
+4. ボードを対象リポジトリにリンクする（リポジトリの Projects タブに表示させるため）。 リンクは
    Project とリポジトリの紐づけのみで、issue はボードへ追加しない。リンク済みは skip する（冪等）。
    事前に `--dry-run` で計画を確認すること。
 
@@ -39,7 +47,7 @@ deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scri
 deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scripts/link-boards.ts --repo <owner/repo> --boards-json '<boards-json>'
 ```
 
-4. `.harnessrc` を生成する。生成と同時に同一ディレクトリへ2行の `.gitignore`
+5. `.harnessrc` を生成する。生成と同時に同一ディレクトリへ2行の `.gitignore`
    （`.harnessrc`＋`.gitignore` 自身）を冪等に併置する（WP#786 AC-1）。
 
 ```bash
@@ -48,7 +56,8 @@ deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scri
 
 > [!TIP]
 > ボード仕様は [board-spec.md](./references/board-spec.md) を、 フィールド仕様は
-> [field-spec.md](./references/field-spec.md) を、 アカウントの扱いは
+> [field-spec.md](./references/field-spec.md) を、 ラベル仕様は
+> [label-spec.md](./references/label-spec.md) を、 アカウントの扱いは
 > [account-usage.md](./references/account-usage.md) を参照してください。
 
 ## 前提条件
@@ -57,5 +66,5 @@ deno run -A .opencode/skills/bundles/workspace-bundle/setup-github-projects/scri
 
 ## 注意（破壊防止）
 
-- 既存ボード・既存フィールドは再利用・スキップし、削除・改名・型変更は行わない。
+- 既存ボード・既存フィールド・既存ラベルは再利用・スキップし、削除・改名・型変更は行わない。
 - フィールド型が不明な場合は推測で作成せず、PO へ報告して指示を仰ぐこと。
