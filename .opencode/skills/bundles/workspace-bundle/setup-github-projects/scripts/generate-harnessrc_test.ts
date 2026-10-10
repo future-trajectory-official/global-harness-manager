@@ -609,3 +609,83 @@ Deno.test("Minor: --out の値欠落は parseArgs が拒否する", () => {
     "値",
   );
 });
+
+/**
+ * ユースケース: ownerType 指定時に boardOwner キーを生成すること (WP #828 AC-1)
+ * 検証意図: 構造化されたボード所有者(owner/ownerType)が機械可読キーで出力される
+ */
+Deno.test("boardOwner: ownerType 指定時に boardOwner キーを生成する", () => {
+  const json = generateHarnessRc(boards, { owner: "board-user", ownerType: "user" });
+  const parsed = JSON.parse(json) as Record<string, unknown>;
+  assertEquals(parsed.boardOwner, { owner: "board-user", ownerType: "user" });
+});
+
+/**
+ * ユースケース: ownerType 未指定の既存生成が不変であること
+ * 検証意図: boardOwner キーを出力せず既存動作が不変であること (後方互換)
+ */
+Deno.test("boardOwner: 未指定時は boardOwner キーを生成しない", () => {
+  const parsed = JSON.parse(generateHarnessRc(boards)) as Record<string, unknown>;
+  assertEquals("boardOwner" in parsed, false);
+});
+
+/**
+ * ユースケース: owner のみで ownerType がない場合はキーを生成しないこと
+ * 検証意図: 片方欠落の半端指定が黙って旧形式になること (後方互換)
+ */
+Deno.test("boardOwner: ownerのみ指定時は boardOwner キーを生成しない", () => {
+  const parsed = JSON.parse(generateHarnessRc(boards, { owner: "board-user" })) as Record<
+    string,
+    unknown
+  >;
+  assertEquals("boardOwner" in parsed, false);
+});
+
+/**
+ * ユースケース: --owner-type の不正値・値欠落を拒否すること
+ * 検証意図: 不正値は値不正エラー、終端欠落は値欠落エラーになること
+ */
+Deno.test("boardOwner: --owner-type 不正値・値欠落は parseArgs が拒否する", () => {
+  assertThrows(
+    () => parseArgs(["--boards-json", JSON.stringify(boards), "--owner-type", "group"]),
+    Error,
+    "organization または user",
+  );
+  assertThrows(
+    () => parseArgs(["--boards-json", JSON.stringify(boards), "--owner-type"]),
+    Error,
+    "値",
+  );
+});
+
+/**
+ * ユースケース: --board-owner で所有者を上書きできること
+ * 検証意図: repo の owner と異なるボード所有者を生成物へ反映できること
+ */
+Deno.test("boardOwner: --board-owner で所有者を上書きできる", () => {
+  const opts = parseArgs([
+    "--boards-json",
+    JSON.stringify(boards),
+    "--board-owner",
+    "board-user",
+    "--owner-type",
+    "user",
+  ]);
+  assertEquals(opts.boardOwner, "board-user");
+  assertEquals(opts.ownerType, "user");
+  const parsed = JSON.parse(
+    generateHarnessRc(opts.boards, { owner: opts.boardOwner, ownerType: opts.ownerType }),
+  ) as Record<string, unknown>;
+  assertEquals(parsed.boardOwner, { owner: "board-user", ownerType: "user" });
+});
+
+/**
+ * ユースケース: 生成物が loadHarnessRcConfig で読み戻せること
+ * 検証意図: 生成→読込のラウンドトリップで boardOwner が一致すること
+ */
+Deno.test("boardOwner: 生成→読込のラウンドトリップが一致する", () => {
+  const json = generateHarnessRc(boards, { owner: "board-user", ownerType: "user" });
+  const config = loadHarnessRcConfig("/tmp/.harnessrc", () => json);
+  assertEquals(config?.boardOwner, { owner: "board-user", ownerType: "user" });
+  assertEquals(config?.projects, { productBacklog: 10, sprintBoard: 11, retrospectiveBoard: 12 });
+});
