@@ -1,11 +1,11 @@
 /**
- * create-boards／create-fields 共通のCLI引数パーサ（WP #763 レビュー指摘対応）。
+ * create-boards／create-fields／create-labels 共通のCLI引数パーサ（WP #763 レビュー指摘対応）。
  *
  * `--owner`／`--repo`／`--dry-run`／`--help` の解析を本モジュールに一元化し、
- * 両CLI間の文言driftを防止する。各CLI固有の要素（位置引数の解釈・固有フラグ・
+ * 各CLI間の文言driftを防止する。各CLI固有の要素（位置引数の解釈・固有フラグ・
  * 利用法文字列）は呼出元が担い、本モジュールは共通部分のみ扱う。
  *
- * 厳格化の仕様（両CLI同一）:
+ * 厳格化の仕様（各CLI同一）:
  * - 未知の `--*` フラグは `Error` を投げる（タイポ時の実作成への進行を防止）。
  * - 余剰の位置引数は各CLIの解析関数が利用法エラー（`Error`）として扱う。
  */
@@ -22,6 +22,9 @@ export const BOARDS_USAGE =
 /** create-fields の利用法（`--help` 表示・引数エラーの報告で共用）。 */
 export const FIELDS_USAGE =
   "usage: create-fields [--owner <owner>] [--repo <owner/repo>] [--dry-run] <board-number> <productBacklog|sprintBoard|retrospectiveBoard>";
+
+/** create-labels の利用法（`--help` 表示・引数エラーの報告で共用）。 */
+export const LABELS_USAGE = "usage: create-labels --repo <owner/repo> [--dry-run]";
 
 /** 共通オプション（`--owner`／`--repo`／`--dry-run`／`--help`）の解析結果。 */
 export interface CommonCliOptions {
@@ -113,7 +116,7 @@ export function parseCommonArgs(
 /**
  * 解決済みの対象アカウントを検証し、所有者を返す。検証失敗時は終了する。
  *
- * create-boards／create-fields の `import.meta.main` 入口で重複していた
+ * create-boards／create-fields／create-labels の `import.meta.main` 入口で重複していた
  * ガード（誘導文表示＋非ゼロ終了・所有者未特定時の報告＋非ゼロ終了）を集約した
  * 共通ハンドラ。`console.error` の文言・終了コード（1）は従来どおり不変。
  *
