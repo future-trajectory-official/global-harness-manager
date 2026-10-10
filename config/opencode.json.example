@@ -3,7 +3,7 @@
   "instructions": ["AGENTS.md", ".github/context/*.md"],
   "compaction": {
     "auto": false,
-    "prune": ["tool-results", "stale-context"],
-    "reserved": [".session/task.md", ".session/plan.md"]
+    "prune": true,
+    "reserved": 10000
   }
 }
