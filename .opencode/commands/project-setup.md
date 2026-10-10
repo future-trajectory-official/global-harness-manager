@@ -133,7 +133,8 @@ subtask: false
 
 - **実行スキル**:
   `[setup-github-projects](/.opencode/skills/bundles/workspace-bundle/setup-github-projects/SKILL.md)`
-- **手順**: スキルの使用方法に従い、boards → fields → harnessrc の順に実行する（詳細はスキル側が正）。
+- **手順**: スキルの使用方法に従い、boards → fields → labels → link → harnessrc
+  の順に実行する（詳細はスキル側が正）。
   harnessrc 生成と同時に同一ディレクトリへ2行の `.gitignore`
   （`.harnessrc`＋`.gitignore` 自身）が併置されること（WP#786 AC-1）。
 - **入力**: `1-5. リポジトリの確保` で確定した `<owner/repo>`。
@@ -141,6 +142,7 @@ subtask: false
 - **前提条件**: `1-3. 認証設定` で `project` スコープが付与済みであること（確認: `gh auth status` の出力に `project` が含まれること）。
 - **セルフチェック**:
   - [ ] 3ボード (productBacklog/sprintBoard/retrospectiveBoard) が利用可能か（例: `gh project view <番号> --owner <owner>` の成功）。
+  - [ ] 8件のtype:*ラベルが対象リポジトリに存在するか（例: `gh label list --repo <owner/repo>`）。
   - [ ] `.harnessrc` が生成されているか（`.github/schemas/.harnessrc` の存在と `projects` キーの有無）。
   - [ ] 同階層の `.gitignore` が2行（`.harnessrc`＋`.gitignore`）であるか。
 
