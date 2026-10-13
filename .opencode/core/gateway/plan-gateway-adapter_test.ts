@@ -7,6 +7,7 @@ import {
   toUserProjectQuery,
   upsertVelocitySection,
 } from "./plan-gateway-adapter.ts";
+import type { UnreplacedAcJudgment } from "./plan-gateway-adapter.ts";
 import { FIELD, HARNESS_FIELDS } from "./field-registry.ts";
 import type { Plan } from "../domain/types.ts";
 
@@ -718,13 +719,7 @@ Deno.test("Review plan - should work without milestone", async () => {
 });
 
 Deno.test("Review report - should call gh issue edit", async () => {
-  const runner = fixedRunner(JSON.stringify({ body: "existing body" }));
-  const calls: { cmd: string; args: string[] }[] = [];
-  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
-    calls.push({ cmd, args });
-    return runner(cmd, args);
-  };
-  const adapter = makeAdapter(trackingRunner);
+  const { calls, adapter } = setupIssueBodyRunner("existing body");
   const plan: Plan = {
     summary: "test",
     steps: [
@@ -755,6 +750,56 @@ function extractEditedBody(calls: { cmd: string; args: string[] }[]): string {
   return editCall.args[bodyIdx + 1];
 }
 
+/** gh issue edit が呼ばれた場合のみ newBody を返す（no-op スキップ時は undefined）。 */
+function findEditedBody(calls: { cmd: string; args: string[] }[]): string | undefined {
+  const editCall = calls.find((c) => c.args[0] === "issue" && c.args[1] === "edit");
+  if (!editCall) return undefined;
+  return editCall.args[editCall.args.indexOf("--body") + 1];
+}
+
+/** 本文fixture注入＋gh呼出追跡付きadapter生成の定型セットアップ。 */
+function setupIssueBodyRunner(body: string) {
+  const runner = fixedRunner(JSON.stringify({ body }));
+  const calls: { cmd: string; args: string[] }[] = [];
+  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return runner(cmd, args);
+  };
+  return { calls, adapter: makeAdapter(trackingRunner) };
+}
+
+interface ReviewAcJudgmentInput {
+  number: string;
+  judgment: string;
+}
+
+interface ReviewAcGroupInput {
+  pbiNumber?: number;
+  wpNumber?: string;
+  acJudgments: ReviewAcJudgmentInput[];
+}
+
+/** Review report 単発ステップの Plan を組み立てる。可変部は postPlanAcGroups のみ。 */
+function buildReportPlan(postPlanAcGroups: ReviewAcGroupInput[]): Plan {
+  return {
+    summary: "test",
+    steps: [
+      {
+        entity: "Review",
+        operation: "report",
+        params: { itemId: "42", postPlanAcGroups },
+      },
+    ],
+  };
+}
+
+/** report 結果の警告 output を取り出すヘルパー。 */
+function extractUnreplacedOutput(result: { stepResults: readonly { output?: unknown }[] }) {
+  return result.stepResults[0].output as
+    | { unreplaced: UnreplacedAcJudgment[]; note: string }
+    | undefined;
+}
+
 const REVIEW_BODY_WITH_ADDED_SECTION = `## スプリント開始時検証計画
 
 ### 📦 PBI: [2] [CorePlatform/EntityLifecycle]/Session-Lifecycle-Persistence
@@ -777,13 +822,7 @@ const REVIEW_BODY_WITH_ADDED_SECTION = `## スプリント開始時検証計画
 - ❔ AC_8: Sprint未紐付けWPの開始・完了をブロック`;
 
 Deno.test("Review report - added-plan new ACs replace only in added section", async () => {
-  const runner = fixedRunner(JSON.stringify({ body: REVIEW_BODY_WITH_ADDED_SECTION }));
-  const calls: { cmd: string; args: string[] }[] = [];
-  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
-    calls.push({ cmd, args });
-    return runner(cmd, args);
-  };
-  const adapter = makeAdapter(trackingRunner);
+  const { calls, adapter } = setupIssueBodyRunner(REVIEW_BODY_WITH_ADDED_SECTION);
   const plan: Plan = {
     summary: "test",
     steps: [
@@ -838,13 +877,7 @@ Deno.test("Review report - start-plan ACs replace in start section", async () =>
 #### WP_1: 
 
 - ❔ AC_5: 計画前effortが独立フィールド harness-effort-summary に記録されること`;
-  const runner = fixedRunner(JSON.stringify({ body }));
-  const calls: { cmd: string; args: string[] }[] = [];
-  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
-    calls.push({ cmd, args });
-    return runner(cmd, args);
-  };
-  const adapter = makeAdapter(trackingRunner);
+  const { calls, adapter } = setupIssueBodyRunner(body);
   const plan: Plan = {
     summary: "test",
     steps: [
@@ -878,6 +911,461 @@ Deno.test("Review report - start-plan ACs replace in start section", async () =>
   );
 });
 
+/** 開始時・追加の両セクションに同番号AC_1を持つ最小ボディ（WP841回帰用）。 */
+const REVIEW_BODY_TWO_SECTIONS_SAME_AC = `## スプリント開始時検証計画
+
+### 📦 PBI: [7] StartPBI
+
+#### WP_1: StartWork
+
+- ❔ AC_1: start task
+
+## スプリント中追加検証計画
+
+### 📦 PBI: [8] AddedPBI
+
+#### WP_3: AddedWork
+
+- ❔ AC_1: added task`;
+
+/**
+ * ユースケース: 実Review相当の複合ボディで各判定が自文脈行にのみ反映されること
+ * 検証意図: Sprint 28 Review #825相当の構造（凡例・総合判定・開始時3WP・追加1WP・重複AC番号）で誤帰属が起きないことを確認する（WP841 AC-3）
+ */
+Deno.test("Review report WP841 AC-3 - Sprint28-Review-equivalent body attributes each judgment to its own row", async () => {
+  const body = `## 凡例
+
+- ❔ 未確認（初期状態。レビュー時に全ACを確認し、結果に応じて下記のいずれかに上書きする）
+- ✅ 合格
+- ⚠️ 条件付き合格
+- ❌ 不合格
+- ➖ 論理削除（スプリント中の仕様変更等により確認対象外となったもの）
+
+## 概要
+
+- **対象スプリント**: Sprint 28
+
+## 総合判定
+
+### 判定結果
+
+❔
+
+### PO意見
+
+❔
+
+## スプリント開始時検証計画
+
+### 📦 PBI: [821] Fix-Feature-ParentEpic-Link-On-Create
+
+#### WP_822: Fix parentEpic code mapping
+
+- ❔ AC_1: define-feature dry-run Plan contains parentEpic
+- ❔ AC_2: Created Feature shows Parent Epic link
+
+### 📦 PBI: [754] SSoT連動のコンパクション戦略
+
+#### WP_823: SSoT update discipline
+
+- ❔ AC_1: SSoT update discipline documented before STOP gates
+- ❔ AC_2: Read-back instruction persisted to AGENTS.md
+
+#### WP_824: Compaction config
+
+- ❔ AC_1: Compaction settings added to config example
+- ❔ AC_2: PO-led manual compact procedure established
+
+## スプリント中追加検証計画
+
+### 📦 PBI: [827] Fix-ProjectV2-Board-Resolution-For-User-Owned-Boards
+
+#### WP_828: Resolve user-owned ProjectV2 boards
+
+- ❔ AC_1: User-owned board resolvable via dry-run queries
+- ❔ AC_2: PBI creation auto-registers to user-owned board`;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    {
+      pbiNumber: 821,
+      wpNumber: "822",
+      acJudgments: [
+        { number: "1", judgment: "pass" },
+        { number: "2", judgment: "fail" },
+      ],
+    },
+    { pbiNumber: 754, wpNumber: "823", acJudgments: [{ number: "1", judgment: "pass" }] },
+    {
+      pbiNumber: 754,
+      wpNumber: "824",
+      acJudgments: [{ number: "2", judgment: "conditional" }],
+    },
+    {
+      pbiNumber: 827,
+      wpNumber: "828",
+      acJudgments: [
+        { number: "1", judgment: "pass" },
+        { number: "2", judgment: "pass" },
+      ],
+    },
+  ]);
+  const result = await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "- ✅ AC_1: define-feature dry-run Plan contains parentEpic");
+  assertStringIncludes(newBody, "- ❌ AC_2: Created Feature shows Parent Epic link");
+  assertStringIncludes(newBody, "- ✅ AC_1: SSoT update discipline documented before STOP gates");
+  assertStringIncludes(newBody, "- ❔ AC_2: Read-back instruction persisted to AGENTS.md");
+  assertStringIncludes(newBody, "- ❔ AC_1: Compaction settings added to config example");
+  assertStringIncludes(newBody, "- ⚠️ AC_2: PO-led manual compact procedure established");
+  assertStringIncludes(newBody, "- ✅ AC_1: User-owned board resolvable via dry-run queries");
+  assertStringIncludes(newBody, "- ✅ AC_2: PBI creation auto-registers to user-owned board");
+  assertStringIncludes(newBody, "### 判定結果\n\n❔");
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].output, undefined);
+});
+
+/**
+ * ユースケース: どのセクションにも文脈一致しない判定は置換されず警告として可視化されること
+ * 検証意図: 複数セクションに同番号ACがあっても誤帰属せず、未置換リストが結果に出力されることを確認する（WP841 AC-2）
+ */
+Deno.test("Review report WP841 AC-2 - unmatched judgment leaves markers untouched and reports unreplaced", async () => {
+  const body = REVIEW_BODY_TWO_SECTIONS_SAME_AC;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { pbiNumber: 99, wpNumber: "9", acJudgments: [{ number: "1", judgment: "pass" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  // no-op のため gh issue edit を呼ばない。両セクションとも untouched のまま。
+  assertEquals(findEditedBody(calls), undefined);
+  assertEquals(result.stepResults[0].success, true);
+  const output = extractUnreplacedOutput(result);
+  assert(output, "unreplaced warning output expected");
+  assertEquals(output.unreplaced, [
+    { pbiNumber: 99, wpNumber: "9", acNumber: "1", reason: "no-match" },
+  ]);
+  assert(output.note.length > 0, "human-readable note expected");
+});
+
+/**
+ * ユースケース: 同番号ACが複数セクションにあっても各文脈へ独立に判定が反映されること
+ * 検証意図: 1回のreport呼出で2判定が各セクションの正しい行に置換されることを確認する（WP841 AC-1の完全一致置換＋AC-2の回帰）
+ */
+Deno.test("Review report WP841 AC-2 - same-numbered ACs in both sections are replaced independently", async () => {
+  const body = REVIEW_BODY_TWO_SECTIONS_SAME_AC;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { pbiNumber: 7, wpNumber: "1", acJudgments: [{ number: "1", judgment: "pass" }] },
+    { pbiNumber: 8, wpNumber: "3", acJudgments: [{ number: "1", judgment: "fail" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "- ✅ AC_1: start task");
+  assertStringIncludes(newBody, "- ❌ AC_1: added task");
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].output, undefined);
+});
+
+/**
+ * ユースケース: 開始時セクション所属のACに対する合否判定が、追加セクションの同番号ACへ誤帰属しないこと
+ * 検証意図: (PBI,WP,AC)のキーが一致する行のみ置換され、文脈不一致のセクションは盲目置換されないことを確認する（WP841 AC-1）
+ */
+Deno.test("Review report WP841 AC-1 - judgment replaces only the matching-context AC across sections", async () => {
+  const body = REVIEW_BODY_TWO_SECTIONS_SAME_AC;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { pbiNumber: 7, wpNumber: "1", acJudgments: [{ number: "1", judgment: "pass" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "- ✅ AC_1: start task");
+  assertStringIncludes(newBody, "- ❔ AC_1: added task");
+  assert(!newBody.includes("✅ AC_1: added task"), "added-section AC must not be misattributed");
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].output, undefined);
+});
+
+/**
+ * ユースケース: 対象WPに無いAC番号の判定が後続PBIブロックの同番号ACへ波及しないこと
+ * 検証意図: contextPattern がPBI/WP境界を越えないことを固定する（C1の回帰）
+ */
+Deno.test("Review report WP841 - judgment does not spill across PBI boundaries", async () => {
+  const body = `## スプリント開始時検証計画
+
+### 📦 PBI: [7] StartPBI
+
+#### WP_1: StartWork
+
+- ❔ AC_2: start second task
+
+### 📦 PBI: [9] OtherPBI
+
+#### WP_5: OtherWork
+
+- ❔ AC_1: other task`;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { pbiNumber: 7, wpNumber: "1", acJudgments: [{ number: "1", judgment: "pass" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  assertEquals(findEditedBody(calls), undefined);
+  assertEquals(result.stepResults[0].success, true);
+  const output = extractUnreplacedOutput(result);
+  assert(output, "unreplaced warning output expected");
+  assertEquals(output.unreplaced, [
+    { pbiNumber: 7, wpNumber: "1", acNumber: "1", reason: "no-match" },
+  ]);
+});
+
+/**
+ * ユースケース: 対象WPに無いAC番号の判定が同一PBI内の兄弟WPへ波及しないこと
+ * 検証意図: WPブロック境界を越えないことを固定する（M-bの回帰）
+ */
+Deno.test("Review report WP841 - judgment does not spill to sibling WP in same PBI", async () => {
+  const body = `## スプリント開始時検証計画
+
+### 📦 PBI: [7] StartPBI
+
+#### WP_1: StartWork
+
+- ❔ AC_1: start first task
+
+#### WP_2: SecondWork
+
+- ❔ AC_2: second task`;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { pbiNumber: 7, wpNumber: "1", acJudgments: [{ number: "2", judgment: "pass" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  assertEquals(findEditedBody(calls), undefined);
+  assertEquals(result.stepResults[0].success, true);
+  const output = extractUnreplacedOutput(result);
+  assert(output, "unreplaced warning output expected");
+  assertEquals(output.unreplaced, [
+    { pbiNumber: 7, wpNumber: "1", acNumber: "2", reason: "no-match" },
+  ]);
+});
+
+/**
+ * ユースケース: 同一PBIが両セクションに跨っても各WP文脈へ独立に判定が反映されること
+ * 検証意図: セクションを跨いだ同PBI配置の最難ケースを固定する（M-c-2の回帰）
+ */
+Deno.test("Review report WP841 - same PBI across sections resolves per WP context", async () => {
+  const body = `## スプリント開始時検証計画
+
+### 📦 PBI: [2] SharedPBI
+
+#### WP_1: StartWork
+
+- ❔ AC_1: start task
+
+## スプリント中追加検証計画
+
+### 📦 PBI: [2] SharedPBI
+
+#### WP_9: AddedWork
+
+- ❔ AC_1: added task`;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { pbiNumber: 2, wpNumber: "1", acJudgments: [{ number: "1", judgment: "pass" }] },
+    { pbiNumber: 2, wpNumber: "9", acJudgments: [{ number: "1", judgment: "fail" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "- ✅ AC_1: start task");
+  assertStringIncludes(newBody, "- ❌ AC_1: added task");
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].output, undefined);
+});
+
+/**
+ * ユースケース: 同一キー行が両セクションに存在する場合は最初に一致したセクションでのみ適用されること
+ * 検証意図: 先勝ち意味論を固定し、後続セクションへの波及も盲目置換も起きないことを確認する
+ */
+Deno.test("Review report WP841 - same key in both sections applies first-match only", async () => {
+  const body = `## スプリント開始時検証計画
+
+### 📦 PBI: [2] SharedPBI
+
+#### WP_1: StartWork
+
+- ❔ AC_1: original task
+
+## スプリント中追加検証計画
+
+### 📦 PBI: [2] SharedPBI
+
+#### WP_1: AddedWork
+
+- ❔ AC_1: added follow-up`;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { pbiNumber: 2, wpNumber: "1", acJudgments: [{ number: "1", judgment: "pass" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "- ✅ AC_1: added follow-up");
+  assertStringIncludes(newBody, "- ❔ AC_1: original task");
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].output, undefined);
+});
+
+/**
+ * ユースケース: 一致・不一致が混在する部分成功で一致分のみ更新＋不一致分のみ警告されること
+ * 検証意図: unreplaced蓄積ループの本命経路を固定する（M-c-3の回帰）
+ */
+Deno.test("Review report WP841 - partial success updates matched rows and warns unmatched only", async () => {
+  const body = REVIEW_BODY_TWO_SECTIONS_SAME_AC;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { pbiNumber: 7, wpNumber: "1", acJudgments: [{ number: "1", judgment: "pass" }] },
+    { pbiNumber: 99, wpNumber: "9", acJudgments: [{ number: "1", judgment: "fail" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "- ✅ AC_1: start task");
+  assertStringIncludes(newBody, "- ❔ AC_1: added task");
+  assertEquals(result.stepResults[0].success, true);
+  const output = extractUnreplacedOutput(result);
+  assert(output, "unreplaced warning output expected");
+  assertEquals(output.unreplaced, [
+    { pbiNumber: 99, wpNumber: "9", acNumber: "1", reason: "no-match" },
+  ]);
+});
+
+/**
+ * ユースケース: 論理削除（➖）行を狙った判定が上書きされず警告になること
+ * 検証意図: ➖除外ガードが新ロジックでも維持されることを固定する（M-c-4の回帰）
+ */
+Deno.test("Review report WP841 - logically deleted row is never overwritten", async () => {
+  const body = `## スプリント開始時検証計画
+
+### 📦 PBI: [7] StartPBI
+
+#### WP_1: StartWork
+
+- ➖ AC_1: retired task
+
+## スプリント中追加検証計画
+
+### 📦 PBI: [8] AddedPBI
+
+#### WP_3: AddedWork
+
+- ❔ AC_1: added task`;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { pbiNumber: 7, wpNumber: "1", acJudgments: [{ number: "1", judgment: "pass" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  assertEquals(findEditedBody(calls), undefined);
+  assertEquals(result.stepResults[0].success, true);
+  const output = extractUnreplacedOutput(result);
+  assert(output, "unreplaced warning output expected");
+  assertEquals(output.unreplaced, [
+    { pbiNumber: 7, wpNumber: "1", acNumber: "1", reason: "no-match" },
+  ]);
+});
+
+/**
+ * ユースケース: 文脈なし旧来呼び出しが従来通り先頭一致で置換されること
+ * 検証意図: 旧来パス温存のロックイン（M-c-5aの回帰）
+ */
+Deno.test("Review report WP841 - context-less legacy call replaces first match", async () => {
+  const body = REVIEW_BODY_TWO_SECTIONS_SAME_AC;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { acJudgments: [{ number: "1", judgment: "fail" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "- ❌ AC_1: added task");
+  assertStringIncludes(newBody, "- ❔ AC_1: start task");
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].output, undefined);
+});
+
+/**
+ * ユースケース: 片方のみ指定の部分文脈が盲目置換されず警告になること
+ * 検証意図: 部分文脈の抜け穴（M-a）が塞がれていることを固定する
+ */
+Deno.test("Review report WP841 - partial context falls back to unreplaced warning", async () => {
+  const body = REVIEW_BODY_TWO_SECTIONS_SAME_AC;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { pbiNumber: 7, acJudgments: [{ number: "1", judgment: "pass" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  assertEquals(findEditedBody(calls), undefined);
+  assertEquals(result.stepResults[0].success, true);
+  const output = extractUnreplacedOutput(result);
+  assert(output, "unreplaced warning output expected");
+  assertEquals(output.unreplaced, [
+    { pbiNumber: 7, wpNumber: undefined, acNumber: "1", reason: "no-match" },
+  ]);
+});
+
+/**
+ * ユースケース: ⚠️行への再判定が残骸なく上書きされること
+ * 検証意図: サロゲートペア由来の文字クラス破損（M-d）が alternation＋u フラグで解消されたことを固定する
+ */
+Deno.test("Review report WP841 - conditional marker row is re-judged without residue", async () => {
+  const body = `## スプリント開始時検証計画
+
+### 📦 PBI: [7] StartPBI
+
+#### WP_1: StartWork
+
+- ⚠️ AC_1: flaky task
+
+#### WP_2: SecondWork
+
+- ❔ AC_2: fresh task`;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { pbiNumber: 7, wpNumber: "1", acJudgments: [{ number: "1", judgment: "fail" }] },
+    { pbiNumber: 7, wpNumber: "2", acJudgments: [{ number: "2", judgment: "conditional" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "- ❌ AC_1: flaky task");
+  assertStringIncludes(newBody, "- ⚠️ AC_2: fresh task");
+  assert(!newBody.includes("⚠❌"), "no mangled marker residue must remain");
+  assert(!newBody.includes("⚠️ AC_1"), "conditional row must be fully replaced");
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(result.stepResults[0].output, undefined);
+});
+
+/**
+ * ユースケース: 同一ブロック内の重複行は先頭1件のみ適用＋残存が警告されること
+ * 検証意図: サイレント部分成功を可視化することを固定する（Developer M3の回帰）
+ */
+Deno.test("Review report WP841 - duplicate rows in one block warn after first-match", async () => {
+  const body = `## スプリント開始時検証計画
+
+### 📦 PBI: [7] StartPBI
+
+#### WP_1: StartWork
+
+- ❔ AC_1: first entry
+- ❔ AC_1: duplicated entry`;
+  const { calls, adapter } = setupIssueBodyRunner(body);
+  const plan = buildReportPlan([
+    { pbiNumber: 7, wpNumber: "1", acJudgments: [{ number: "1", judgment: "pass" }] },
+  ]);
+  const result = await adapter.execute(plan);
+  const newBody = extractEditedBody(calls);
+  assertStringIncludes(newBody, "- ✅ AC_1: first entry");
+  assertStringIncludes(newBody, "- ❔ AC_1: duplicated entry");
+  assertEquals(result.stepResults[0].success, true);
+  const output = extractUnreplacedOutput(result);
+  assert(output, "duplicate warning output expected");
+  assertEquals(output.unreplaced, [
+    { pbiNumber: 7, wpNumber: "1", acNumber: "1", reason: "duplicate" },
+  ]);
+});
+
 Deno.test("Review report - overallResult updates judgment and PO opinion", async () => {
   const body = `## 総合判定
 
@@ -888,13 +1376,7 @@ Deno.test("Review report - overallResult updates judgment and PO opinion", async
 ### PO意見
 
 ❔`;
-  const runner = fixedRunner(JSON.stringify({ body }));
-  const calls: { cmd: string; args: string[] }[] = [];
-  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
-    calls.push({ cmd, args });
-    return runner(cmd, args);
-  };
-  const adapter = makeAdapter(trackingRunner);
+  const { calls, adapter } = setupIssueBodyRunner(body);
   const plan: Plan = {
     summary: "test",
     steps: [
@@ -934,13 +1416,7 @@ Deno.test("Review revise - removedScoped removes only the AC in the matching sec
 #### WP_1: 
 
 - ❔ AC_3: WP完了時に兄弟WP検索し親PBI Doneへ`;
-  const runner = fixedRunner(JSON.stringify({ body }));
-  const calls: { cmd: string; args: string[] }[] = [];
-  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
-    calls.push({ cmd, args });
-    return runner(cmd, args);
-  };
-  const adapter = makeAdapter(trackingRunner);
+  const { calls, adapter } = setupIssueBodyRunner(body);
   const plan: Plan = {
     summary: "test",
     steps: [
@@ -980,13 +1456,7 @@ Deno.test("Review revise - removedScoped removes start-plan AC when added sectio
 #### WP_1: 
 
 - ❔ AC_3: WP完了時に兄弟WP検索し親PBI Doneへ`;
-  const runner = fixedRunner(JSON.stringify({ body }));
-  const calls: { cmd: string; args: string[] }[] = [];
-  const trackingRunner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
-    calls.push({ cmd, args });
-    return runner(cmd, args);
-  };
-  const adapter = makeAdapter(trackingRunner);
+  const { calls, adapter } = setupIssueBodyRunner(body);
   const plan: Plan = {
     summary: "test",
     steps: [
