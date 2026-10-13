@@ -18,6 +18,9 @@ export * from "./shared/io/command.ts";
 // ロガー (logger)
 export * from "./shared/io/logger.ts";
 
+// Git Hooks セットアップ (setupGitHooks) — WP#840で core/shared/io へ移設
+export { setupGitHooks } from "./shared/io/setup-hooks.ts";
+
 // Markdown 操作 (mdUtil)
 export * from "./shared/parse/markdown.ts";
 

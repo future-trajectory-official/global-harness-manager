@@ -6,8 +6,8 @@ import {
   getSkillAssetPath,
   logger,
   PATHS,
+  setupGitHooks,
 } from "../../../../../core/harness-core.ts";
-import { setupGitHooks } from "../../../../../skills/bundles/workspace-bundle/setup-harness-env/scripts/setup-hooks.ts";
 
 const DEFAULT_SANDBOX_BASE = "/tmp/harness-sandboxes";
 

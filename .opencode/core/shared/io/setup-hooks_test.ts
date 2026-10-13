@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "@std/assert";
 import { join } from "@std/path";
-import { fsUtil } from "../../../../../core/shared/io/fs.ts";
+import { fsUtil } from "./fs.ts";
 import { setupGitHooks } from "./setup-hooks.ts";
 
 /**
@@ -60,6 +60,26 @@ Deno.test("setup-hooks - should create commit-msg hook in target directory", asy
   }
 });
 
+/**
+ * setup-hooks - hooks/ が存在しない場合に自動生成されることを検証する。
+ * .git のみ作成し hooks/ なしで実行し、3フック生成成功を確認する。
+ */
+Deno.test("setup-hooks - should auto-create hooks directory if missing", async () => {
+  const tempDir = await Deno.makeTempDir();
+  const gitDir = join(tempDir, ".git");
+  await Deno.mkdir(gitDir, { recursive: true });
+
+  try {
+    await setupGitHooks({ gitDir });
+
+    const hooksDir = join(gitDir, "hooks");
+    for (const name of ["pre-push", "pre-commit", "commit-msg"]) {
+      assertEquals(await fsUtil.exists(join(hooksDir, name)), true);
+    }
+  } finally {
+    await Deno.remove(tempDir, { recursive: true });
+  }
+});
 /**
  * setup-hooks - .git ディレクトリが存在しない場合にエラーが発生することを検証する。
  * 異常系として、無効なパス指定時のエラーハンドリングを確認する。

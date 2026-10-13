@@ -288,6 +288,32 @@ Deno.test("rewriteSkillImports - .ts内のスキル参照をglobal-化する", a
   }
 });
 
+/**
+ * ユースケース: core/shared へのimportは配布時リネームの影響を受けない
+ * 検証意図: rewriteSkillImports 後も core/shared/io へのimportが不変であることを確認する（WP#840）
+ */
+Deno.test("rewriteSkillImports - core/sharedへのimportは不変", async () => {
+  const root = await Deno.makeTempDir({ prefix: "dist-ts-" });
+  try {
+    const dir = `${root}/skills/bundles/development-bundle/develop-environment-setup/scripts`;
+    await Deno.mkdir(dir, { recursive: true });
+    const before =
+      'import { setupGitHooks } from "../../../../../core/shared/io/setup-hooks.ts";\n';
+    await Deno.writeTextFile(`${dir}/manage-sandbox.ts`, before);
+    const map = [{
+      before: "workspace-bundle/setup-harness-env",
+      after: "global-setup-harness-env",
+      bundle: "workspace-bundle",
+      name: "setup-harness-env",
+    }];
+    await rewriteSkillImports(root, map, false);
+    const content = await Deno.readTextFile(`${dir}/manage-sandbox.ts`);
+    assertEquals(content, before, "core/shared import must remain unchanged");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
 Deno.test("rewriteSkillImports - 既にglobal-化済みは変更しない(冪等)", async () => {
   const root = await Deno.makeTempDir({ prefix: "dist-ts-" });
   try {
@@ -364,6 +390,25 @@ Deno.test("distribute E2E - 実配布が配布先へ到達する", async () => {
       workspaceExists = false;
     }
     assert(!workspaceExists, "workspace-bundle must be excluded after distribution");
+    // WP#840: 除外後も manage-sandbox 系が解決可能であること（デカップルの回帰ガード）
+    // 配布先のスキル名は global- リネーム済みのため rename 後のパスで参照する
+    const destManageSandbox = await Deno.readTextFile(
+      join(
+        dest,
+        "skills",
+        "bundles",
+        "development-bundle",
+        "global-develop-environment-setup",
+        "scripts",
+        "manage-sandbox.ts",
+      ),
+    );
+    assert(
+      !destManageSandbox.includes("workspace-bundle"),
+      "manage-sandbox must not reference workspace-bundle after exclusion",
+    );
+    const destSetupHooks = await Deno.stat(join(dest, "core", "shared", "io", "setup-hooks.ts"));
+    assert(destSetupHooks.isFile, "core/shared/io/setup-hooks.ts must be distributed");
     let contextExists = true;
     try {
       await Deno.stat(join(dest, "context"));
