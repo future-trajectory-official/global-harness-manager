@@ -35,6 +35,37 @@ function escapeRegex(s: string): string {
 }
 
 /**
+ * report で置換できなかった AC 判定1件の警告エントリ。
+ * 未定義の文脈キー（部分文脈など）は JSON 化でキーが落ちるため、欠落＝未指定として読む。
+ */
+export interface UnreplacedAcJudgment {
+  pbiNumber: number | undefined;
+  wpNumber: string | undefined;
+  acNumber: string;
+  /** no-match＝該当行なし、duplicate＝同一ブロック内に重複行があり先頭1件のみ適用 */
+  reason: "no-match" | "duplicate";
+}
+
+/**
+ * report の部分成功時に StepResult.output へ載せる警告。
+ * 部分成功も success:true で返すため、呼出側は output.unreplaced の有無で
+ * 全件成功と部分成功を区別すること（欠落＝全件成功）。
+ */
+export interface ReviewReportOutput {
+  unreplaced: UnreplacedAcJudgment[];
+  /** 人間可読の要約。output を見ない呼出側への注意喚起用。 */
+  note: string;
+}
+
+function buildUnreplacedOutput(unreplaced: UnreplacedAcJudgment[]): ReviewReportOutput {
+  return {
+    unreplaced,
+    note: `${unreplaced.length} AC judgment(s) did not fully apply; ` +
+      `markers left unchanged. See output.unreplaced for details.`,
+  };
+}
+
+/**
  * Milestone description の `## Velocity` セクションを追記・更新する。
  * 既存セクションがあれば置換し、`## Goal` 等の他セクションは保持する。
  * セクションが1つもない場合は末尾に追記する。
@@ -1451,33 +1482,82 @@ export class PlanGatewayAdapter implements PlanGateway {
     let { beforeStart, startSection, addedSection } = this.splitReviewSections(newBody);
 
     // 対象セクション内の AC マーカーを置換する。論理削除済み（➖）は上書きしない。
-    // 置換対象セクションは「追加検証計画 → 開始時検証計画 → 全体（フォールバック）」の順。
+    // 置換探索順は「追加検証計画 → 開始時検証計画 → 全体」。文脈指定あり（PBI・WP両方）は
+    // 各セクションでキー完全一致のみで置換し、盲目フォールバックは行わない。
+    // 文脈指定なしの旧来呼び出しのみ盲目置換を維持する（全体で先頭1件のみ・短絡）。
+    // 片方のみ指定の部分文脈は不一致として未置換（警告）に回す。同一ブロック内の重複行は
+    // 先頭1件のみ置換し、残存は未置換として報告する（サイレント部分成功の防止）。
+    // 1件の判定は最初に一致したセクションでのみ適用する（先勝ち・後続セクションへ波及しない）。
     const replaceInSection = (
       section: string,
       pbiNumber: number | undefined,
       wpNumber: string | undefined,
       acNumber: string,
       marker: string,
-    ): { section: string; replaced: boolean } => {
-      let replaced = false;
-      if (pbiNumber !== undefined && wpNumber !== undefined) {
-        const escapedWp = String(wpNumber).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    ): { section: string; replaced: boolean; duplicateCount: number } => {
+      // ⚠️ は2コードポイント（U+26A0＋U+FE0F）のため文字クラス [...] では壊れる。
+      // alternation＋u フラグで1記号として扱う。
+      const markerAlternatives = "❔|✅|❌|⚠️";
+      const hasFullContext = pbiNumber !== undefined && wpNumber !== undefined;
+      if (hasFullContext) {
+        // 中間の任意文字列は PBI（### 📦）・WP（#### WP_）ヘッダを跨がない。
+        // 対象WP内に該当ACが無い場合の後続ブロックへの誤到達（誤帰属）を防ぐ。
         const contextPattern = new RegExp(
-          `(### 📦 PBI: \\[${pbiNumber}\\][\\s\\S]*?#### WP_${escapedWp}:.*?\\n[\\s\\S]*?)([❔✅❌⚠️])\\s*(AC_${acNumber}:)`,
+          `(### 📦 PBI: \\[${escapeRegex(String(pbiNumber))}\\]` +
+            `(?:(?!### 📦)[\\s\\S])*?` +
+            `#### WP_${escapeRegex(String(wpNumber))}:.*?\\n` +
+            `(?:(?!### 📦|#### WP_)[\\s\\S])*?` +
+            `)(${markerAlternatives})\\s*(AC_${escapeRegex(String(acNumber))}:)`,
+          "u",
         );
-        if (contextPattern.test(section)) {
-          section = section.replace(contextPattern, `$1${marker} $3`);
-          replaced = true;
+        const matched = contextPattern.exec(section);
+        if (!matched) return { section, replaced: false, duplicateCount: 0 };
+        section = section.replace(contextPattern, `$1${marker} $3`);
+        // 同一WPブロック内の同キー残存行を数える。先頭1件のみ適用のため残りは警告する。
+        // PBIアンカー付き全体パターンは全体で1件しか数えられないため、ブロック範囲で行を数える。
+        const wpHeaderLiteral = `#### WP_${String(wpNumber)}:`;
+        const wpStart = section.indexOf(wpHeaderLiteral, matched.index);
+        let blockEnd = section.length;
+        for (const delimiter of ["### 📦", "#### WP_"]) {
+          const idx = section.indexOf(delimiter, wpStart + wpHeaderLiteral.length);
+          if (idx !== -1 && idx < blockEnd) blockEnd = idx;
         }
+        const rowPattern = new RegExp(
+          `-\\s*(?:${markerAlternatives})\\s*AC_${escapeRegex(String(acNumber))}:`,
+          "gu",
+        );
+        const rowCount = section.slice(wpStart, blockEnd).match(rowPattern)?.length ?? 0;
+        return { section, replaced: true, duplicateCount: Math.max(0, rowCount - 1) };
       }
-      if (!replaced) {
-        const acPattern = new RegExp(`([❔✅❌⚠️])\\s*(AC_${acNumber}:)`);
+      if (pbiNumber === undefined && wpNumber === undefined) {
+        const acPattern = new RegExp(
+          `(${markerAlternatives})\\s*(AC_${escapeRegex(String(acNumber))}:)`,
+          "u",
+        );
         if (acPattern.test(section)) {
           section = section.replace(acPattern, `${marker} $2`);
-          replaced = true;
+          return { section, replaced: true, duplicateCount: 0 };
         }
+        return { section, replaced: false, duplicateCount: 0 };
       }
-      return { section, replaced };
+      // 部分文脈（片方のみ指定）は盲目置換に落とさず、未置換として呼出側で警告化する。
+      return { section, replaced: false, duplicateCount: 0 };
+    };
+
+    const unreplaced: UnreplacedAcJudgment[] = [];
+
+    // 成功応答の組み立て。部分成功も success:true で返し、呼出側は
+    // output.unreplaced の有無で全件成功と部分成功を区別する。
+    const reportSuccess = (): StepResult => {
+      if (unreplaced.length > 0) {
+        return {
+          operation: "report",
+          success: true,
+          itemId,
+          output: buildUnreplacedOutput(unreplaced),
+        };
+      }
+      return { operation: "report", success: true, itemId };
     };
 
     if (postPlanAcGroups) {
@@ -1487,15 +1567,40 @@ export class PlanGatewayAdapter implements PlanGateway {
           const pbiNumber = group.pbiNumber;
           const wpNumber = group.wpNumber;
 
-          let r = replaceInSection(addedSection, pbiNumber, wpNumber, ac.number, marker);
-          addedSection = r.section;
-          if (!r.replaced) {
-            r = replaceInSection(startSection, pbiNumber, wpNumber, ac.number, marker);
-            startSection = r.section;
+          let replaceResult = replaceInSection(
+            addedSection,
+            pbiNumber,
+            wpNumber,
+            ac.number,
+            marker,
+          );
+          addedSection = replaceResult.section;
+          if (!replaceResult.replaced) {
+            replaceResult = replaceInSection(
+              startSection,
+              pbiNumber,
+              wpNumber,
+              ac.number,
+              marker,
+            );
+            startSection = replaceResult.section;
           }
-          if (!r.replaced) {
-            r = replaceInSection(beforeStart, pbiNumber, wpNumber, ac.number, marker);
-            beforeStart = r.section;
+          if (!replaceResult.replaced) {
+            // beforeStart（凡例・概要・総合判定）は PBI/WP ヘッダを含まないため
+            // 文脈あり経路では一致しない。文脈なし旧来呼び出し用にのみ試行する。
+            replaceResult = replaceInSection(
+              beforeStart,
+              pbiNumber,
+              wpNumber,
+              ac.number,
+              marker,
+            );
+            beforeStart = replaceResult.section;
+          }
+          if (!replaceResult.replaced) {
+            unreplaced.push({ pbiNumber, wpNumber, acNumber: ac.number, reason: "no-match" });
+          } else if (replaceResult.duplicateCount > 0) {
+            unreplaced.push({ pbiNumber, wpNumber, acNumber: ac.number, reason: "duplicate" });
           }
         }
       }
@@ -1516,6 +1621,12 @@ export class PlanGatewayAdapter implements PlanGateway {
       }
     }
 
+    if (postPlanAcGroups && newBody === currentBody && !params.overallResult) {
+      // 判定入力あり・本文無改変・総合判定なし＝実質 no-op のため gh issue edit を呼ばない。
+      // 無駄な書込みと履歴ノイズを避ける。判定入力なしの旧来呼び出しの無条件 edit 契約は維持する。
+      return reportSuccess();
+    }
+
     const editResult = await this.runCommand("gh", [
       "issue",
       "edit",
@@ -1528,7 +1639,9 @@ export class PlanGatewayAdapter implements PlanGateway {
       return { operation: "report", success: false, error: editResult.stderr };
     }
 
-    return { operation: "report", success: true, itemId };
+    // 文脈不一致で置換できなかった判定を警告として可視化する。
+    // 部分成功も success:true で返すため、呼出側は output.unreplaced の有無で区別すること。
+    return reportSuccess();
   }
 
   /**
