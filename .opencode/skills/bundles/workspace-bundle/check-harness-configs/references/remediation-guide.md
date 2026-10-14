@@ -9,7 +9,6 @@
 - **対処法**: テンプレートをコピーして実体を作成してください。
   ```bash
   cp config/identities.txt.example config/identities.txt
-  cp config/global-skills-path.txt.example config/global-skills-path.txt
   ```
 
 ## 2. ファイルが空の場合 (Empty File)
@@ -17,7 +16,7 @@
 ファイルは存在しても、中身が空（0バイト）の場合はエラーとなります。
 
 - **対処法**: ファイルを開き、自身の環境に合わせた適切な値を記述してください。
-  - アカウント名、メールアドレス、あるいはディレクトリの絶対パスなど。
+  - アカウント名、メールアドレスなど。
 
 ## 3. 再チェックの実施
 
