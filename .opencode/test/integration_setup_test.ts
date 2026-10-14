@@ -12,9 +12,6 @@ Deno.test({
   ignore: !Deno.env.get("CI"),
   fn: async () => {
     const tempHome = await Deno.makeTempDir();
-    let originalConfigExisted = false;
-    let originalConfigContent = "";
-    let configPath = "";
     try {
       // 1. Prepare mock HOME environment
       const mockBashrc = join(tempHome, ".bashrc");
@@ -27,17 +24,6 @@ Deno.test({
       );
 
       const harnessRoot = fromFileUrl(new URL("../..", import.meta.url));
-
-      configPath = join(harnessRoot, "config", "global-skills-path.txt");
-      if (await fsUtil.exists(configPath)) {
-        originalConfigExisted = true;
-        originalConfigContent = await Deno.readTextFile(configPath);
-      }
-      // テスト用のダミー設定を Bundles 構造で作成
-      await Deno.writeTextFile(
-        configPath,
-        join(PATHS.SKILLS_ROOT, PATHS.BUNDLES.ONBOARDING, "distribute-harness") + "\n",
-      );
 
       const tempBinDir = join(tempHome, "bin");
       await Deno.mkdir(tempBinDir, { recursive: true });
@@ -108,12 +94,10 @@ Deno.test({
         }
       }
 
-      // Verify skills.txt was created (Always check, even in CI)
+      // setup.ts は skills.txt（~/.gemini/antigravity/skills.txt）を作成しない。
+      // 旧Antigravity登録ブロックは WP #839 で撤去されたため、非作成をアサーションする。
       const skillsFilePath = join(tempHome, ".gemini", "antigravity", "skills.txt");
-      assertEquals(await fsUtil.exists(skillsFilePath), true, "skills.txt should be created");
-
-      const skillsContent = await Deno.readTextFile(skillsFilePath);
-      assertStringIncludes(skillsContent, "distribute-harness");
+      assertEquals(await fsUtil.exists(skillsFilePath), false, "skills.txt should not be created");
 
       // Verify bin/ was NOT polluted in the real project root
       if (!realGhExistedInitially) {
@@ -125,11 +109,6 @@ Deno.test({
         );
       }
     } finally {
-      if (originalConfigExisted) {
-        await Deno.writeTextFile(configPath, originalConfigContent);
-      } else {
-        await Deno.remove(configPath).catch(() => {});
-      }
       await Deno.remove(tempHome, { recursive: true });
     }
   },

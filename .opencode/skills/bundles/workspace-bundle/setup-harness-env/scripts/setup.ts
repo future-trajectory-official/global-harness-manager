@@ -1,11 +1,5 @@
 import { join } from "@std/path";
-import {
-  executeCommand,
-  fsUtil,
-  logger,
-  pathUtil,
-  PROJECT_ROOT,
-} from "../../../../../core/harness-core.ts";
+import { executeCommand, fsUtil, logger, PROJECT_ROOT } from "../../../../../core/harness-core.ts";
 
 export type FsDeps = Pick<
   typeof fsUtil,
@@ -264,7 +258,6 @@ async function main() {
 
   const harnessRoot = PROJECT_ROOT;
   const binDir = resolveBinDir(harnessRoot);
-  const configPath = join(harnessRoot, "config", "global-skills-path.txt");
 
   await installGh(binDir, os, arch);
 
@@ -299,52 +292,6 @@ async function main() {
         logger.info(`Added to ${profileFile}. Please run 'source ${profileFile}'.`);
       }
     }
-  }
-
-  logger.info("Registering skills...");
-  if (await fsUtil.exists(configPath)) {
-    const configContent = await fsUtil.readTextFile(configPath);
-    const lines = configContent.split(/\r?\n/);
-    const skillsFilePath = join(
-      Deno.env.get("HOME") || Deno.env.get("USERPROFILE") || "",
-      ".gemini",
-      "antigravity",
-      "skills.txt",
-    );
-
-    let existingPaths: string[] = [];
-    if (await fsUtil.exists(skillsFilePath)) {
-      const existingContent = await fsUtil.readTextFile(skillsFilePath);
-      existingPaths = existingContent.split(/\r?\n/).filter((p) => p.trim() !== "");
-    }
-
-    let modified = false;
-    for (const line of lines) {
-      if (line.trim() === "" || line.startsWith("#")) continue;
-      const absPath = pathUtil.resolvePath(harnessRoot, line.trim());
-
-      if (!(await fsUtil.exists(absPath))) {
-        await Deno.mkdir(absPath, { recursive: true });
-      }
-
-      if (!existingPaths.includes(absPath)) {
-        existingPaths.push(absPath);
-        modified = true;
-      }
-    }
-
-    if (modified) {
-      const skillsDir = join(skillsFilePath, "..");
-      if (!(await fsUtil.exists(skillsDir))) {
-        await Deno.mkdir(skillsDir, { recursive: true });
-      }
-      await fsUtil.writeTextFile(skillsFilePath, existingPaths.join("\n") + "\n");
-      logger.info("Updated skills.txt successfully.");
-    } else {
-      logger.info("Skills already registered.");
-    }
-  } else {
-    logger.warn(`Config file not found: ${configPath}`);
   }
 
   logger.info("--- Setup Complete ---");
