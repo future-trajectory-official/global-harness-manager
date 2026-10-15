@@ -3,7 +3,6 @@
   "instructions": ["AGENTS.md", ".github/context/*.md"],
   "compaction": {
     "auto": false,
-    "prune": true,
-    "reserved": 10000
+    "buffer": 10000
   }
 }

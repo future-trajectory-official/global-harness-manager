@@ -342,5 +342,5 @@ Review / Retrospective）をどの時点で・どの操作で管理するかの�
 2. POが `/compact` を実行する。
 3. コンパクション直後に Read ツールで `.session/task.md` を読み戻し、現在のPhaseを宣言して再開する。
 
-関連設定: `config/opencode.json.example` の `compaction`
-キー（auto/prune/reserved。公式スキーマ準拠）を参照。
+関連設定: `config/opencode.json.example` の `compaction` キー（auto/buffer。v2 ネイティブ型。旧 v1
+の prune は v2 で無視されるため廃止、reserved は buffer に改名）を参照。

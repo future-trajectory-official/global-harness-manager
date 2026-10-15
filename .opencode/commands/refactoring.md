@@ -1,6 +1,6 @@
 ---
 description: メトリクスとテストに基づく安全な構造改善サイクル
-subtask: false
+subagent: false
 ---
 
 # /refactoring — リファクタリング・ワークフロー

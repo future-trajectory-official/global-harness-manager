@@ -15,7 +15,7 @@
  *      末尾に `## 遵守事項` 3項（共有テンプレートと一字一句同一）を付与する。
  *   2. 新規コマンドの `<!-- STOP -->` 数を `rg -o '<!-- STOP -->' | wc -l` で実測し、
  *      STOP_BASELINE へ登録する（未登録はレジストリテストが失敗させる）。
- *   3. コマンド本文は frontmatter（description 非空・subtask:false の2キーのみ）の構造を維持し、
+ *   3. コマンド本文は frontmatter（description 非空・subagent:false の2キーのみ）の構造を維持し、
  *      新規 description を FRONTMATTER_SNAPSHOT へ登録する。
  *   4. 新規コマンドのリーフフェーズ見出し一覧を PHASE_SNAPSHOT へ登録する。
  *   5. 新規コマンドの `/.opencode/agents/`・`/.opencode/skills/` 参照件数を実測し、
@@ -381,20 +381,20 @@ function parseFrontmatter(content: string): Record<string, unknown> {
 
 /**
  * 各コマンドは Opencode 形式 frontmatter（description）を持ち、
- * subtask:false が明示設定されている。キーは description/subtask の2つのみ、
+ * subagent:false が明示設定されている。キーは description/subagent の2つのみ、
  * description は非空文字列であること（比較対象の workflow 原文は存在しない）。
  */
-Deno.test("frontmatter has non-empty description and explicit subtask:false", async () => {
+Deno.test("frontmatter has non-empty description and explicit subagent:false", async () => {
   for (const file of await listCommandFiles()) {
     const name = baseName(file);
     const command = await readTarget(commandPath(file));
     const fm = parseFrontmatter(command);
     assertEquals(
       Object.keys(fm).sort(),
-      ["description", "subtask"],
-      `${name}.md must declare exactly description and subtask`,
+      ["description", "subagent"],
+      `${name}.md must declare exactly description and subagent`,
     );
-    assertEquals(fm.subtask, false, `${name}.md must set subtask: false explicitly`);
+    assertEquals(fm.subagent, false, `${name}.md must set subagent: false explicitly`);
     assert(
       typeof fm.description === "string" && fm.description.length > 0,
       `${name}.md must have a non-empty description`,

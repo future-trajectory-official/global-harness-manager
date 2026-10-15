@@ -1,6 +1,6 @@
 ---
 description: スプリントの開始プロセス（プロダクトゴール確認、プロダクトバックログリファインメント、分類階層改善、スプリント開始宣言、スプリントプランニング、作業分解、レビュー計画、振り返りの計画）を安全に1ステップずつ実行するワークフロー。
-subtask: false
+subagent: false
 ---
 
 # /sprint-start — Sprint Start Workflow

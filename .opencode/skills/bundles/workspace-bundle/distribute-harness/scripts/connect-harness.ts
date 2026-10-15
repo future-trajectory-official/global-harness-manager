@@ -7,7 +7,7 @@ import { errorUtil, fsUtil, logger, pathUtil } from "../../../../../core/harness
  * 具体的には以下の設定を冪等に適用する（PO合意: 既存の model/provider/permission.bash は保持）。
  *
  * - `OPENCODE_CONFIG_DIR=~/.harness`（agents/commands を自動検出）をシェル設定へ冪等追記。
- * - `~/.config/opencode/opencode.jsonc` へ `skills`/`instructions`/`permission.skill` を追加マージ。
+ * - `~/.config/opencode/opencode.jsonc` へ `skills`/`instructions`/v2ネイティブ `permissions` を追加マージ。
  *
  * 【設計方針】配布（`distribute-harness.ts`）とは責務を分離し、本スクリプトは「接続設定の適用」に専念する。
  * 適用先はホストのグローバル設定であるため、`--dry-run` で安全に試行できるようにする。
@@ -34,6 +34,13 @@ export const GLOBAL_DENY_SKILLS = [
   "global-setup-harness-env",
   "global-check-harness-configs",
 ] as const;
+
+/** v2 ネイティブ権限ルール（`permissions` 配列の1要素）。 */
+export interface PermissionRule {
+  action: string;
+  resource: string;
+  effect: string;
+}
 
 /** JSONC のコメントを除去する（行コメント・ブロックコメント・末尾カンマ）。 */
 export function stripJsoncComments(text: string): string {
@@ -98,22 +105,25 @@ export function stripJsoncComments(text: string): string {
   return out;
 }
 
-/** 接続設定の追加分（マージ対象）を組み立てる。 */
+/** 接続設定の追加分（マージ対象）を組み立てる。v2 ネイティブ型で返す。 */
 export function buildConnectionConfig(
   harnessHome: string,
-): { skills: string[]; instructions: string[]; permission: { skill: Record<string, string> } } {
+): { skills: string[]; instructions: string[]; permissions: PermissionRule[] } {
   return {
     skills: [`${harnessHome}/${SKILLS_DIR}`],
     instructions: [`${harnessHome}/${CONTEXT_DIR}/*.md`, `${harnessHome}/AGENTS.md`],
-    permission: {
-      skill: Object.fromEntries(GLOBAL_DENY_SKILLS.map((name) => [name, "deny"])),
-    },
+    permissions: GLOBAL_DENY_SKILLS.map((name) => ({
+      action: "skill",
+      resource: name,
+      effect: "deny",
+    })),
   };
 }
 
 /**
- * 既存設定に接続設定をマージする。既存キー（model/provider/permission.bash 等）は保持し、
- * `skills`/`instructions` は上書き、`permission.skill` は既存の permission を壊さず追加する。
+ * 既存設定に接続設定をマージする。既存キー（model/providers/permissions 等）は保持し、
+ * `skills`/`instructions` は上書き、`permissions` は既存ルールを壊さず不足分のみ追加する。
+ * 旧 v1 型の `permission` オブジェクトが残っている場合は untouched とする（v2 が正規化するため）。
  * @param existing - 既存のグローバル設定
  * @param addition - `buildConnectionConfig` の出力
  * @returns マージ後の設定オブジェクト
@@ -123,23 +133,26 @@ export function mergeConfig(
   addition: {
     skills: string[];
     instructions: string[];
-    permission: { skill: Record<string, string> };
+    permissions: PermissionRule[];
   },
 ): Record<string, unknown> {
-  const existingPermission = (existing.permission && typeof existing.permission === "object")
-    ? { ...(existing.permission as Record<string, unknown>) }
-    : {};
-  // 既存 permission.skill（利用者設定の allow/ask 等）を保持しつつ、deny を追加マージする（M1対応）。
-  const existingSkill =
-    (existingPermission["skill"] && typeof existingPermission["skill"] === "object")
-      ? { ...(existingPermission["skill"] as Record<string, unknown>) }
-      : {};
-  existingPermission["skill"] = { ...existingSkill, ...addition.permission.skill };
+  const existingPermissions = Array.isArray(existing.permissions)
+    ? [...(existing.permissions as PermissionRule[])]
+    : [];
+  // 同一 action+resource が既存にある場合は利用者設定を優先し、不足分のみ追加する。
+  const known = new Set(existingPermissions.map((rule) => `${rule.action}\n${rule.resource}`));
+  for (const rule of addition.permissions) {
+    const key = `${rule.action}\n${rule.resource}`;
+    if (!known.has(key)) {
+      known.add(key);
+      existingPermissions.push({ ...rule });
+    }
+  }
   return {
     ...existing,
     skills: addition.skills,
     instructions: addition.instructions,
-    permission: existingPermission,
+    permissions: existingPermissions,
   };
 }
 
