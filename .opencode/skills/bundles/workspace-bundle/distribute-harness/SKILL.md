@@ -24,8 +24,8 @@ deno run -A "$SCRIPT" --dest ~/.harness
 ```
 
 > [!NOTE]
-> `deno.json` の正はリポジトリ root 版であり、配布先では `<dest>/deno.json` と同一になる
-> （`.opencode/deno.json` は配布しない）。詳細は
+> `deno.json` の正はリポジトリ root 版であり、配布先では `<dest>/deno.json` へ dest 用に tasks
+> を書き換えた内容になる（`.opencode/deno.json` は配布しない）。詳細は
 > [deno-json-authority.md](references/deno-json-authority.md) を参照。
 
 ## 位置づけ
@@ -39,7 +39,7 @@ workspace-bundle のスキルは `.opencode/commands/project-setup.md`
 配布先に残すと不要スキルのグローバル化・誤実行・スキルリスト肥大を招くため、 配布後に除外する。
 
 配布対象は [copy-plan.md](references/copy-plan.md)、リネーム規則は
-[rename-rule.md](references/rename-rule.md)、deno.json の正本と制約は
+[rename-rule.md](references/rename-rule.md)、deno.json の正本と配布時書換えは
 [deno-json-authority.md](references/deno-json-authority.md) を参照。
 
 ## 前提条件
@@ -60,11 +60,11 @@ workspace-bundle のスキルは `.opencode/commands/project-setup.md`
 4. コピー計画を実行する（`executeCopyPlan`）。
 5. スキルを `global-` リネームし（`applyRenameMap`）、frontmatter と参照を書き換える
    （`rewriteSkillFrontmatter`・`rewriteReferences`・`rewriteSkillImports`）。 `rewriteReferences`
-   は `context` を書換対象外とする（配布物にcontextを含まないため）。
+   は `context` を書換え対象外とする（配布物にcontextを含まないため）。
 6. 実配布の後に配布先 `<dest>/skills/bundles/workspace-bundle/` を削除する（既定 `<dest>` は
    `~/.harness`）。本体スクリプトは改修せず、手順として事後除外する。
 7. グローバル配置手順（配布コピーとは別枠）で、本repo `.github/context/` の
-   `management.md`＋`product.md.example` の2件を `<dest>/context/` へコピーする（WP #791・B案）。
+   `management.md`＋`product.md.example` の2件を `<dest>/context/` へコピーする。
 
 ```bash
 rm -rf <dest>/skills/bundles/workspace-bundle
@@ -97,7 +97,7 @@ cp <repo>/.github/context/product.md.example <dest>/context/product.md.example
 
 - `<dest>/skill-rename-map.json` に適用マップが登録されていること。
 - 配布先各スキルの frontmatter `name:` がディレクトリ名（`global-<name>`）と一致すること。
-- 配布先 `<dest>/deno.json` がリポジトリ root 版と同一内容であること。
+- 配布先 `<dest>/deno.json` が dest 用に tasks を書き換えた内容であること。
 - `<dest>/skills/bundles/workspace-bundle` が存在しないこと（配布後除外済みであること）。
 - `<dest>/skills/bundles/` 配下に他 bundle（`management-bundle` 等）が残存していること。
 
@@ -123,12 +123,12 @@ ls "<dest>/skills/bundles"
 # 6. 退役スキル global-publish-harness-rules／global-publish-harness-skills が配布先に残留していないこと（残留時は手動削除）
 ```
 
-配布仕様では `context/` 全件を配布しない（WP #791・B案）ため、手順 4 では本repo `.github/context/`
-と配布先 `<dest>/context/` の2件が同一であることをもって配置成功と判定する。手順 5 では
+配布仕様では `context/` 全件を配布しないため、手順 4 では本repo `.github/context/` と配布先
+`<dest>/context/` の2件が同一であることをもって配置成功と判定する。手順 5 では
 `test ! -e "<dest>/skills/bundles/workspace-bundle"`
 が成功（不存在）し、`ls "<dest>/skills/bundles"` に `management-bundle`
-等が残存していることをもって除外成功と判定する。配布先での `deno task qa`
-実行不能制約は既知の制約であり、接続検証は次工程に申し送る。 詳細は
+等が残存していることをもって除外成功と判定する。配布物の正しさは配布前の repo 側 `deno task qa`
+と書換え処理の単体テストで保証し、配布先での qa 実行は行わない。詳細は
 [deno-json-authority.md](references/deno-json-authority.md) を参照。
 
 ## 証跡テンプレート
@@ -139,5 +139,5 @@ ls "<dest>/skills/bundles"
 - 他 bundle 残存: OK / NG (`ls <dest>/skills/bundles` に management-bundle 等あり)
 - rename-map 登録: OK / NG (<dest>/skill-rename-map.json あり)
 - frontmatter 照合: 差分なし / あり
-- deno.json 同一: OK / NG
+- deno.json dest用書換え: OK / NG
 ```

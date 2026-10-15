@@ -13,16 +13,11 @@ import { stripJsoncComments } from "./connect-harness.ts";
  * `.opencode/` の中身を `~/.harness/` フラット単一ルートへ構造保持で配布する。
  * 既存 `publish-skills.ts` は破壊せず、本スクリプトを新規実装とする。
  *
- * 【既知の制約（M6: 同梱deno.json）】
- * 配布物として同梱する `deno.json` はリポジトリ root 版（単一の正）である。root版は
- * `setup-hooks`/`validate-task`/`phase-gate`/`validate:jsdoc` 等のタスクが `.opencode/...`
- * を参照するため、フラットな配布先 `~/.harness/` では実行不能になる（import map の `@std/*`
- * はパス非依存のため core 相対 import は解決される）。これは WP_2 で接続検証時に顕在化する
- * 既知の制約として申し送る（本 WP 範囲外）。
- *
- * 【#852追記】
- * dest の `deno.json` tasks は `rewriteDenoJsonTasks` で dest 用に書き換える
- * （`core/`→相対・`skills/bundles/<b>/<n>/`→`global-<n>` 化）。文書改訂は #853 の範囲。
+ * 配布物として同梱する `deno.json` はリポジトリ root 版（単一の正）である。
+ * 配布時は dest 用に tasks を書き換える（`rewriteDenoJsonTasks`）。
+ * `core/` 系参照は dest 相対に、`skills/bundles/<bundle>/<name>/` 系参照は
+ * 配布名基準の `global-<name>` に変換する。書換えは冪等であり、JSONC の
+ * コメント・整形を温存する。
  */
 
 /** 構造保持コピー対象ディレクトリ（`.opencode/` 配下。AC1）。
