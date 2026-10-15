@@ -1,6 +1,6 @@
 ---
 description: 価値観同期・Work Package特定・戦略策定を段階的に行う高度なセッション開始儀式
-subtask: false
+subagent: false
 ---
 
 # /session-start — セッション開始ワークフロー

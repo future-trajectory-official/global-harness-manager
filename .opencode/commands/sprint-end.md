@@ -1,6 +1,6 @@
 ---
 description: スプリントの終了プロセス（レビューのアーカイブ、effort分析、サイズ確定、スプリントKPT記録、ベロシティ記録、スプリント評価記録、振り返りのアーカイブ、完了PBI/WPのアーカイブ、自己スキル最適化、スプリント終了、ステートレスリセット）を安全に1ステップずつ実行するワークフロー。
-subtask: false
+subagent: false
 ---
 
 # /sprint-end — Sprint End Workflow

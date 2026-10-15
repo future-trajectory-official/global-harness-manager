@@ -1,6 +1,6 @@
 ---
 description: プロジェクトの立ち上げ（キックオフ）を、情熱の検証から技術選定まで段階的に行い、開発開始の合意を形成するワークフロー。
-subtask: false
+subagent: false
 ---
 
 # /kickoff — Kickoff Workflow

@@ -1,6 +1,6 @@
 ---
 description: セッションの成果を要約し、内省（KPT）とメトリクス記録を行うセッション終了儀式
-subtask: false
+subagent: false
 ---
 
 # /session-end — セッション終了ワークフロー

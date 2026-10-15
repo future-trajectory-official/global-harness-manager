@@ -1,6 +1,6 @@
 ---
 description: スプリントレビューを意識合わせから検証実行まで段階的に行うワークフロー
-subtask: false
+subagent: false
 ---
 
 # /sprint-review — Sprint Review Workflow
