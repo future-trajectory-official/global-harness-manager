@@ -31,22 +31,21 @@ Deno.test("stripJsoncComments - 文字列内の // を除去しない", () => {
   assertEquals(parsed, { url: "https://example.com/a//b" });
 });
 
-Deno.test("buildConnectionConfig - skills/instructions/permission.skill を組み立てる", () => {
+Deno.test("buildConnectionConfig - skills/instructions/ネイティブpermissions を組み立てる", () => {
   const cfg = buildConnectionConfig("~/.harness");
   assertEquals(cfg.skills, ["~/.harness/skills"]);
   assertEquals(cfg.instructions, ["~/.harness/context/*.md", "~/.harness/AGENTS.md"]);
-  assertEquals(cfg.permission.skill["global-harness-clone"], "deny");
-  assertEquals(cfg.permission.skill["global-setup-harness-env"], "deny");
+  assertEquals(cfg.permissions.length, GLOBAL_DENY_SKILLS.length);
+  for (const name of GLOBAL_DENY_SKILLS) {
+    assert(
+      cfg.permissions.some((rule) =>
+        rule.action === "skill" && rule.resource === name && rule.effect === "deny"
+      ),
+      `deny rule must exist for ${name}`,
+    );
+  }
   assert(
-    !(GLOBAL_DENY_SKILLS as readonly string[]).includes("global-publish-harness-skills"),
-    "retired global-publish-harness-skills must be absent from the deny list",
-  );
-  assert(
-    !(GLOBAL_DENY_SKILLS as readonly string[]).includes("global-publish-harness-rules"),
-    "retired global-publish-harness-rules must be absent from the deny list",
-  );
-  assert(
-    GLOBAL_DENY_SKILLS.every((name) => !name.includes("publish")),
+    cfg.permissions.every((rule) => !rule.resource.includes("publish")),
     "retired distribution skills must not remain in the deny list",
   );
 });
@@ -62,15 +61,21 @@ Deno.test("mergeConfig - 既存の model/provider/permission.bash を保持す�
     provider: object;
     skills: string[];
     permission: Record<string, Record<string, unknown>>;
+    permissions: Array<{ action: string; resource: string; effect: string }>;
   };
   assertEquals(merged.model, "opencode-go/model");
   assertEquals(merged.provider, { llama: { name: "local" } });
   assertEquals(merged.permission.bash, { "rm -rf *": "deny" });
-  assertEquals(merged.permission.skill["global-harness-init"], "deny");
+  assert(
+    merged.permissions.some((rule) =>
+      rule.action === "skill" && rule.resource === "global-harness-init" && rule.effect === "deny"
+    ),
+    "deny rule for global-harness-init must be appended",
+  );
   assertEquals(merged.skills, ["~/.harness/skills"]);
 });
 
-Deno.test("mergeConfig - 既存 permission.skill を保持して追加マージする(M1)", () => {
+Deno.test("mergeConfig - 既存 permission.skill は untouched、deny は permissions 配列へ(M1)", () => {
   const existing = {
     model: "x",
     permission: {
@@ -80,18 +85,49 @@ Deno.test("mergeConfig - 既存 permission.skill を保持して追加マージ�
   };
   const merged = mergeConfig(existing, buildConnectionConfig("~/.harness")) as {
     permission: Record<string, Record<string, unknown>>;
+    permissions: Array<{ action: string; resource: string; effect: string }>;
   };
   assertEquals(merged.permission.bash, { "rm -rf *": "deny" });
   assertEquals(merged.permission.skill["user-skill"], "allow");
   assertEquals(merged.permission.skill["internal-*"], "ask");
-  assertEquals(merged.permission.skill["global-harness-init"], "deny");
+  assertEquals(
+    (merged.permission.skill as Record<string, unknown>)["global-harness-init"],
+    undefined,
+    "legacy permission.skill must not gain new entries",
+  );
+  assert(
+    merged.permissions.some((rule) =>
+      rule.action === "skill" && rule.resource === "global-harness-init" && rule.effect === "deny"
+    ),
+    "deny rule for global-harness-init must be in permissions array",
+  );
 });
 
-Deno.test("mergeConfig - permission 未存在でも追加できる", () => {
-  const merged = mergeConfig({ model: "x" }, buildConnectionConfig("~/.harness")) as {
-    permission: Record<string, Record<string, unknown>>;
+Deno.test("mergeConfig - 既存 permissions の同 action+resource は利用者設定を優先する", () => {
+  const existing = {
+    model: "x",
+    permissions: [{ action: "skill", resource: "global-harness-init", effect: "allow" }],
   };
-  assertEquals(merged.permission.skill["global-harness-clone"], "deny");
+  const merged = mergeConfig(existing, buildConnectionConfig("~/.harness")) as {
+    permissions: Array<{ action: string; resource: string; effect: string }>;
+  };
+  const initRules = merged.permissions.filter((rule) =>
+    rule.action === "skill" && rule.resource === "global-harness-init"
+  );
+  assertEquals(initRules.length, 1, "duplicate rule must not be appended");
+  assertEquals(initRules[0].effect, "allow", "existing user setting must win");
+});
+
+Deno.test("mergeConfig - permissions 未存在でも追加できる", () => {
+  const merged = mergeConfig({ model: "x" }, buildConnectionConfig("~/.harness")) as {
+    permissions: Array<{ action: string; resource: string; effect: string }>;
+  };
+  assert(
+    merged.permissions.some((rule) =>
+      rule.action === "skill" && rule.resource === "global-harness-clone" && rule.effect === "deny"
+    ),
+    "deny rule for global-harness-clone must be added",
+  );
 });
 
 Deno.test("GLOBAL_DENY_SKILLS - 全て global- 変換後名である", () => {
