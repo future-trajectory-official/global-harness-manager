@@ -6,6 +6,7 @@ import {
   pathUtil,
   verifyTarget,
 } from "../../../../../core/harness-core.ts";
+import { stripJsoncComments } from "./connect-harness.ts";
 
 /**
  * WP_1 #748: グローバル配布機構（構造保持コピー＋global-名前変換）。
@@ -18,6 +19,10 @@ import {
  * を参照するため、フラットな配布先 `~/.harness/` では実行不能になる（import map の `@std/*`
  * はパス非依存のため core 相対 import は解決される）。これは WP_2 で接続検証時に顕在化する
  * 既知の制約として申し送る（本 WP 範囲外）。
+ *
+ * 【#852追記】
+ * dest の `deno.json` tasks は `rewriteDenoJsonTasks` で dest 用に書き換える
+ * （`core/`→相対・`skills/bundles/<b>/<n>/`→`global-<n>` 化）。文書改訂は #853 の範囲。
  */
 
 /** 構造保持コピー対象ディレクトリ（`.opencode/` 配下。AC1）。
@@ -281,6 +286,101 @@ export async function rewriteSkillFrontmatter(
   }
 }
 
+/**
+ * 配布先の `deno.json` の tasks 参照を dest 用に書き換える（#852・親PBI #847 How手順1）。
+ * - `.opencode/core/` → `core/`（dest 相対。先頭 `/` の有無を吸収）
+ * - `.opencode/skills/bundles/<bundle>/<name>/` → `skills/bundles/<bundle>/global-<name>/`
+ *   （`buildRenameMap` 由来のマップ駆動。未知パスは素通り。二重 `global-` 化なし＝冪等）
+ * 対象は tasks の文字列値（string形式・object形式の `command` を含む）。
+ * `deno.json` はJSONC（コメント可）のため `stripJsoncComments` で読解し、
+ * 書込みは原文テキスト置換でコメント・整形を温存する（全面再フォーマットしない）。
+ * `context/` 配布対象外方針に抵触しない。
+ * @param destRoot - 配布先ルート
+ * @param renameMap - `buildRenameMap` の出力全件（再実行時の空問題回避のため `appliedMap` ではなく全件を使う）
+ * @param isDryRun - true の場合は書き換えせずログのみ
+ */
+export async function rewriteDenoJsonTasks(
+  destRoot: string,
+  renameMap: RenameEntry[],
+  isDryRun: boolean,
+): Promise<void> {
+  const denoJsonPath = pathUtil.joinPath(destRoot, "deno.json");
+  if (!(await fsUtil.exists(denoJsonPath))) {
+    logger.warn(`deno.json not found: ${denoJsonPath}. Skipping.`);
+    return;
+  }
+  const raw = await fsUtil.readTextFile(denoJsonPath);
+  let parsed: { tasks?: Record<string, unknown> };
+  try {
+    parsed = JSON.parse(stripJsoncComments(raw)) as { tasks?: Record<string, unknown> };
+  } catch (e) {
+    logger.warn(`deno.json parse failed: ${denoJsonPath}. Skipping. ${(e as Error).message}`);
+    return;
+  }
+  if (!parsed.tasks || typeof parsed.tasks !== "object") {
+    logger.warn(`deno.json tasks not found: ${denoJsonPath}. Skipping.`);
+    return;
+  }
+  const rewriteValue = (value: string): string => {
+    let updated = value;
+    // (a) core 系 → dest 相対
+    updated = updated.replace(/(?:\/)?\.opencode\/core\//g, "core/");
+    // (b) skills 系 → マップ駆動で global- 化
+    for (const entry of renameMap) {
+      const afterName = entry.after.split("/").pop()!;
+      updated = updated.replace(
+        new RegExp(
+          `(?:\\/)?\\.opencode\\/skills\\/bundles\\/${escapeRegExp(entry.bundle)}/${
+            escapeRegExp(entry.name)
+          }/`,
+          "g",
+        ),
+        `skills/bundles/${entry.bundle}/${afterName}/`,
+      );
+    }
+    return updated;
+  };
+  let needsRewrite = false;
+  for (const value of Object.values(parsed.tasks)) {
+    if (typeof value === "string") {
+      if (rewriteValue(value) !== value) {
+        needsRewrite = true;
+        break;
+      }
+    } else if (value !== null && typeof value === "object" && "command" in value) {
+      const cmd = (value as Record<string, unknown>).command;
+      if (typeof cmd === "string" && rewriteValue(cmd) !== cmd) {
+        needsRewrite = true;
+        break;
+      }
+    }
+  }
+  if (!needsRewrite) {
+    return;
+  }
+  // コメント・整形温存のため原文テキストに同一パターンを適用する。
+  // tasks以外の `exclude`（`.opencode/node_modules`）やコメント中の
+  // `.opencode/agents` 等には一致しないため安全である。
+  let updatedRaw = raw.replace(/(?:\/)?\.opencode\/core\//g, "core/");
+  for (const entry of renameMap) {
+    const afterName = entry.after.split("/").pop()!;
+    updatedRaw = updatedRaw.replace(
+      new RegExp(
+        `(?:\\/)?\\.opencode\\/skills\\/bundles\\/${escapeRegExp(entry.bundle)}/${
+          escapeRegExp(entry.name)
+        }/`,
+        "g",
+      ),
+      `skills/bundles/${entry.bundle}/${afterName}/`,
+    );
+  }
+  if (updatedRaw === raw) {
+    return;
+  }
+  await fsUtil.writeTextFile(denoJsonPath, updatedRaw, isDryRun);
+  logger.info(`  Rewrote deno.json tasks: ${denoJsonPath}`);
+}
+
 /** 正規表現用にメタ文字をエスケープする。 */
 function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -445,6 +545,7 @@ async function main(): Promise<void> {
     // rename が skip され appliedMap が空になるため、全件の renameMap を使う）。
     await rewriteSkillFrontmatter(destRoot, renameMap, isDryRun);
     await rewriteReferences(destRoot, isDryRun);
+    await rewriteDenoJsonTasks(destRoot, renameMap, isDryRun);
     await rewriteSkillImports(destRoot, renameMap, isDryRun);
 
     logger.info("Distribute completed.");
