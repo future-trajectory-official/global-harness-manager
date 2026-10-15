@@ -8,6 +8,7 @@ import {
   COPY_DIRS,
   executeCopyPlan,
   normalizeSkillName,
+  rewriteDenoJsonTasks,
   rewriteReferences,
   rewriteSkillFrontmatter,
   rewriteSkillImports,
@@ -355,7 +356,7 @@ Deno.test("distribute E2E - dry-run は無副作用で計画7件を返す", asyn
 
 /**
  * ユースケース: 実配布でハーネス資源が配布先へ到達する
- * 検証意図: 一時ディレクトリへの実実行後にコピー7件・rename-map登録・deno.json同一・workspace-bundle除外・他bundle残存を確認する
+ * 検証意図: 一時ディレクトリへの実実行後にコピー7件・rename-map登録・deno.json書換え済み（#852）・workspace-bundle除外・他bundle残存を確認する
  */
 Deno.test("distribute E2E - 実配布が配布先へ到達する", async () => {
   const sourceRoot = join(REPO_ROOT, ".opencode");
@@ -371,6 +372,7 @@ Deno.test("distribute E2E - 実配布が配布先へ到達する", async () => {
     await writeRenameMap(dest, applied, false);
     await rewriteSkillFrontmatter(dest, renameMap, false);
     await rewriteReferences(dest, false);
+    await rewriteDenoJsonTasks(dest, renameMap, false);
     await rewriteSkillImports(dest, renameMap, false);
     // 配布後除外（SKILL.md 全量配布手順6と同一。利用者の ~/.harness には触れない）
     await Deno.remove(join(dest, "skills", "bundles", "workspace-bundle"), {
@@ -382,7 +384,34 @@ Deno.test("distribute E2E - 実配布が配布先へ到達する", async () => {
       Deno.readTextFile(join(REPO_ROOT, "deno.json")),
       Deno.readTextFile(join(dest, "deno.json")),
     ]);
-    assertEquals(destDenoJson, repoDenoJson, "dest deno.json must equal repo root");
+    assert(
+      !destDenoJson.includes(".opencode/core/"),
+      "dest deno.json tasks must not reference .opencode/core/",
+    );
+    assert(
+      destDenoJson.includes("core/shared/io/setup-hooks.ts"),
+      "dest deno.json tasks must reference dest-relative core/",
+    );
+    assert(
+      destDenoJson.includes("global-session-planning"),
+      "dest deno.json tasks must reference global- renamed skill (L15例)",
+    );
+    assert(
+      !destDenoJson.includes(".opencode/skills/bundles/management-bundle/session-planning/"),
+      "old skill path must be gone from dest deno.json",
+    );
+    assert(
+      destDenoJson.includes(".opencode/node_modules"),
+      "exclude field must be preserved (tasks以外は不変)",
+    );
+    assert(
+      destDenoJson.includes(".opencode/agents"),
+      "JSONCコメントは温存されること（全面再フォーマット禁止）",
+    );
+    assert(
+      destDenoJson.length !== repoDenoJson.length || destDenoJson !== repoDenoJson,
+      "dest deno.json must be rewritten for dest (not byte-identical)",
+    );
     let workspaceExists = true;
     try {
       await Deno.stat(join(dest, "skills", "bundles", "workspace-bundle"));
@@ -418,6 +447,213 @@ Deno.test("distribute E2E - 実配布が配布先へ到達する", async () => {
     assert(!contextExists, "context must not be distributed (WP #791)");
     const other = await Deno.stat(join(dest, "skills", "bundles", "management-bundle"));
     assert(other.isDirectory, "other bundles must remain after exclusion");
+  } finally {
+    await Deno.remove(dest, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: destのcore参照tasksをdest相対へ書換える
+ * 検証意図: `.opencode/core/` が `core/` になること・exclude不変を確認する（#852 AC1）
+ */
+Deno.test("rewriteDenoJsonTasks - core参照をdest相対へ書換える(#852 AC1)", async () => {
+  const dest = await Deno.makeTempDir({ prefix: "dist-denojson-core-" });
+  try {
+    await Deno.writeTextFile(
+      join(dest, "deno.json"),
+      JSON.stringify(
+        {
+          tasks: {
+            "setup-hooks": "deno run -A .opencode/core/shared/io/setup-hooks.ts",
+            "phase-gate": "deno run -A .opencode/core/shared/workflow/phase-gate.ts",
+          },
+          exclude: [".opencode/node_modules"],
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    await rewriteDenoJsonTasks(dest, [], false);
+    const raw = await Deno.readTextFile(join(dest, "deno.json"));
+    const parsed = JSON.parse(raw);
+    assertEquals(parsed.tasks["setup-hooks"], "deno run -A core/shared/io/setup-hooks.ts");
+    assertEquals(parsed.tasks["phase-gate"], "deno run -A core/shared/workflow/phase-gate.ts");
+    assertEquals(parsed.exclude, [".opencode/node_modules"], "tasks以外は書換えない");
+  } finally {
+    await Deno.remove(dest, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: L15例のスキル参照をglobal-化する
+ * 検証意図: `session-planning` → `global-session-planning` のマップ駆動書換えを確認する（#852 AC1）
+ */
+Deno.test("rewriteDenoJsonTasks - skills参照をglobal-化する(L15例含む)(#852 AC1)", async () => {
+  const dest = await Deno.makeTempDir({ prefix: "dist-denojson-skills-" });
+  try {
+    await Deno.writeTextFile(
+      join(dest, "deno.json"),
+      JSON.stringify(
+        {
+          tasks: {
+            "validate-task":
+              "deno run -A .opencode/skills/bundles/management-bundle/session-planning/scripts/validate-task.ts --template .opencode/skills/bundles/management-bundle/session-planning/references/task-template.md",
+          },
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    const map = buildRenameMap([{ bundle: "management-bundle", name: "session-planning" }]);
+    await rewriteDenoJsonTasks(dest, map, false);
+    const parsed = JSON.parse(await Deno.readTextFile(join(dest, "deno.json")));
+    assertEquals(
+      parsed.tasks["validate-task"],
+      "deno run -A skills/bundles/management-bundle/global-session-planning/scripts/validate-task.ts --template skills/bundles/management-bundle/global-session-planning/references/task-template.md",
+    );
+  } finally {
+    await Deno.remove(dest, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: 未知スキル・無関係文字列を壊さない
+ * 検証意図: マップ外パスと無関係文字列が素通りすることを確認する（#852 境界）
+ */
+Deno.test("rewriteDenoJsonTasks - 未知スキル・無関係文字列は素通りする(#852 境界)", async () => {
+  const dest = await Deno.makeTempDir({ prefix: "dist-denojson-boundary-" });
+  try {
+    const before = {
+      tasks: {
+        "unknown": "deno run -A .opencode/skills/bundles/unknown-bundle/unknown-skill/x.ts",
+        "std": "deno run -A --allow-read main.ts # @std/path利用",
+      },
+    };
+    await Deno.writeTextFile(join(dest, "deno.json"), JSON.stringify(before, null, 2) + "\n");
+    const map = buildRenameMap([{ bundle: "management-bundle", name: "session-planning" }]);
+    await rewriteDenoJsonTasks(dest, map, false);
+    const parsed = JSON.parse(await Deno.readTextFile(join(dest, "deno.json")));
+    assertEquals(
+      parsed.tasks["unknown"],
+      before.tasks["unknown"],
+      "未知スキルパスは素通りすること",
+    );
+    assertEquals(parsed.tasks["std"], before.tasks["std"], "無関係文字列は素通りすること");
+  } finally {
+    await Deno.remove(dest, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: 再配布時に二重global-化しない
+ * 検証意図: 書換え済みへの再適用が無変化であることを確認する（#852 冪等）
+ */
+Deno.test("rewriteDenoJsonTasks - 書換え済みへの再適用で変化しない(冪等)(#852)", async () => {
+  const dest = await Deno.makeTempDir({ prefix: "dist-denojson-idem-" });
+  try {
+    const rewritten = {
+      tasks: {
+        "setup-hooks": "deno run -A core/shared/io/setup-hooks.ts",
+        "validate-task":
+          "deno run -A skills/bundles/management-bundle/global-session-planning/scripts/validate-task.ts",
+      },
+    };
+    await Deno.writeTextFile(join(dest, "deno.json"), JSON.stringify(rewritten, null, 2) + "\n");
+    const before = await Deno.readTextFile(join(dest, "deno.json"));
+    const map = buildRenameMap([{ bundle: "management-bundle", name: "session-planning" }]);
+    await rewriteDenoJsonTasks(dest, map, false);
+    const after = await Deno.readTextFile(join(dest, "deno.json"));
+    assertEquals(after, before, "冪等：二重global-化や変化があってはならない");
+    assert(!after.includes("global-global-"), "二重global-化があってはならない");
+  } finally {
+    await Deno.remove(dest, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: 実deno.json（JSONCコメント付き）を壊さず書換える
+ * 検証意図: C1回帰ガード。コメント温存・tasks書換え・exclude不変を確認する（#852 C1）
+ */
+Deno.test("rewriteDenoJsonTasks - JSONCコメント付きでも書換えコメント温存する(#852 C1)", async () => {
+  const dest = await Deno.makeTempDir({ prefix: "dist-denojson-jsonc-" });
+  try {
+    const raw =
+      `{\n  // .opencode/agents はfmt対象外のためコメント\n  "tasks": {\n    "setup-hooks": "deno run -A .opencode/core/shared/io/setup-hooks.ts"\n  },\n  "exclude": [".opencode/node_modules"]\n}\n`;
+    await Deno.writeTextFile(join(dest, "deno.json"), raw);
+    await rewriteDenoJsonTasks(dest, [], false);
+    const after = await Deno.readTextFile(join(dest, "deno.json"));
+    assert(after.includes("core/shared/io/setup-hooks.ts"), "tasksは書換わること");
+    assert(!after.includes(".opencode/core/"), "旧core参照が残ってはならない");
+    assert(after.includes("// .opencode/agents"), "コメントは温存されること");
+    assert(after.includes(".opencode/node_modules"), "excludeは不変であること");
+  } finally {
+    await Deno.remove(dest, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: deno.json不在・tasks欠落・不正JSONでも配布を壊さない
+ * 検証意図: warn-skip/return系の仕様を担保する（#852 M3/M4）
+ */
+Deno.test("rewriteDenoJsonTasks - 不在・tasks欠落・不正JSONはwarn-skipする(#852)", async () => {
+  const dest = await Deno.makeTempDir({ prefix: "dist-denojson-skip-" });
+  try {
+    await rewriteDenoJsonTasks(dest, [], false);
+    await Deno.writeTextFile(join(dest, "deno.json"), `{"exclude": []}\n`);
+    await rewriteDenoJsonTasks(dest, [], false);
+    await Deno.writeTextFile(join(dest, "deno.json"), `not-json {{{\n`);
+    await rewriteDenoJsonTasks(dest, [], false);
+  } finally {
+    await Deno.remove(dest, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: 非文字列tasks値・object形式commandに対応する
+ * 検証意図: 数値/配列では落ちず、object形式のcommandは書換わること（#852 M5）
+ */
+Deno.test("rewriteDenoJsonTasks - 非文字列値は素通りしobject-commandは書換える(#852)", async () => {
+  const dest = await Deno.makeTempDir({ prefix: "dist-denojson-obj-" });
+  try {
+    await Deno.writeTextFile(
+      join(dest, "deno.json"),
+      JSON.stringify(
+        {
+          tasks: {
+            num: 42,
+            arr: ["a"],
+            obj: { command: "deno run -A .opencode/core/shared/io/setup-hooks.ts" },
+          },
+        },
+        null,
+        2,
+      ) + "\n",
+    );
+    await rewriteDenoJsonTasks(dest, [], false);
+    const raw = await Deno.readTextFile(join(dest, "deno.json"));
+    assert(raw.includes("core/shared/io/setup-hooks.ts"), "object-commandは書換わること");
+    assert(!raw.includes(".opencode/core/"), "旧参照が残ってはならない");
+  } finally {
+    await Deno.remove(dest, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: dry-runでは配布先へ書込まない
+ * 検証意図: isDryRun=trueの無副作用を確認する（#852 Minor）
+ */
+Deno.test("rewriteDenoJsonTasks - dry-runは書込まない(#852)", async () => {
+  const dest = await Deno.makeTempDir({ prefix: "dist-denojson-dry-" });
+  try {
+    const before = JSON.stringify(
+      { tasks: { hook: "deno run -A .opencode/core/shared/io/setup-hooks.ts" } },
+      null,
+      2,
+    ) +
+      "\n";
+    await Deno.writeTextFile(join(dest, "deno.json"), before);
+    await rewriteDenoJsonTasks(dest, [], true);
+    assertEquals(await Deno.readTextFile(join(dest, "deno.json")), before);
   } finally {
     await Deno.remove(dest, { recursive: true });
   }
