@@ -50,16 +50,16 @@ deno run -A .opencode/skills/bundles/management-bundle/read-project-state/script
 
 ## params キー一覧
 
-| キー         | 対象操作 | 型     | 説明                                                                           |
-| ------------ | -------- | ------ | ------------------------------------------------------------------------------ |
-| itemId       | find     | string | Issue番号。**find の主キー**。`"42"` のように指定                              |
-| code         | find     | string | itemId の別名。どちらかを指定すればよい                                        |
-| id           | find     | string | 任意。node ID等。省略可能                                                      |
-| number       | find     | string | Sprint 専用。スプリント番号（itemId/code の別名）                              |
-| status       | search   | string | ステータス（Todo / In Progress / Done 等）                                     |
-| state        | search   | string | Issue の状態（open / closed）。**Sprint search 専用の値**: open / closed / all |
-| sprintNumber | search   | string | スプリント番号で絞り込み                                                       |
-| keyword      | search   | string | タイトル等のキーワード検索                                                     |
+| キー         | 対象操作 | 型     | 説明                                                                            |
+| ------------ | -------- | ------ | ------------------------------------------------------------------------------- |
+| itemId       | find     | string | Issue番号。**find の主キー**。`"42"` のように指定                               |
+| code         | find     | string | itemId の別名。どちらかを指定すればよい                                         |
+| id           | find     | string | 任意。node ID等。省略可能                                                       |
+| number       | find     | string | Sprint 専用。スプリント番号（itemId/code の別名）                               |
+| status       | search   | string | ステータス（Todo / In Progress / Done）。**Idea（Status 未設定）は `__none__`** |
+| state        | search   | string | Issue の状態（open / closed）。**Sprint search 専用の値**: open / closed / all  |
+| sprintNumber | search   | string | スプリント番号で絞り込み                                                        |
+| keyword      | search   | string | タイトル等のキーワード検索                                                      |
 
 ## 実行例
 
@@ -82,6 +82,19 @@ deno run -A .opencode/skills/bundles/management-bundle/read-project-state/script
   "params": { "status": "Todo" }
 }
 ```
+
+### search（Idea = Status 未設定の PBI を探す）
+
+```json
+{
+  "entityType": "ProductBacklogItem",
+  "operation": "search",
+  "params": { "status": "__none__" }
+}
+```
+
+Project V2 の Status には `Idea` 選択肢が無い。Status が未設定（null）の PBI / WP が管理概念の
+`Idea`（発案）に対応する。
 
 ### find（最新の Sprint を調べる）
 

@@ -903,11 +903,15 @@ export class PlanGatewayAdapter implements PlanGateway {
       );
       return;
     }
-    const stageToStatus: Record<Stage, string> = {
+    // Idea は Project V2 の Status 選択肢に存在しない（Status 未設定 = null で表現する）。
+    // 既存 Status を保持したまま何も書き込まない。
+    if (stage === "idea") {
+      return;
+    }
+    const stageToStatus: Record<Exclude<Stage, "idea">, string> = {
       todo: "Todo",
       inProgress: "In Progress",
       done: "Done",
-      idea: "Idea",
     };
     const statusName = stageToStatus[stage];
     if (!statusName) {
