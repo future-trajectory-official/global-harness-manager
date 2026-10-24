@@ -18,6 +18,16 @@ PBI**（子先にアーカイブ）です。
 - アーカイブ対象のPBI/WPが完了状態（`[DONE]`）であること
 - 既にアーカイブ済みの場合はエラーとなる
 
+> [!WARNING]
+> **ProjectV2 の Status と Issue state は別物**
+>
+> `Done` は ProjectV2 の Status であり、Issue が `open` であることを意味しない。
+> 本スキルの対象は「**open かつ Status=Done**」に限る。`read-project-state` の `search` は Status
+> で絞り込むが Issue state を返さないため、対象確認には次のいずれかを用いること。
+>
+> - `find` の `issueState`（`OPEN` / `CLOSED`）を確認する
+> - 対象スプリント（Milestone）で絞り込む
+
 ## Quick-Start
 
 ```bash
@@ -36,6 +46,7 @@ echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/archive-p
 ### 1. アーカイブ対象の特定と提示
 
 - スプリント内の完了済み（`[DONE]`）PBI/WP を一覧でPOに提示する。
+- **対象スプリント（Milestone）で絞り込み**、Issue state が `OPEN` のものだけを対象とする。
 - アーカイブ対象に漏れがないかPOと確認する。
 
 ### 2. アーカイブ順序の確定
