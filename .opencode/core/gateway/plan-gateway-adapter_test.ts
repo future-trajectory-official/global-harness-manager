@@ -4061,6 +4061,50 @@ Deno.test("WorkPackage view - should expose all harness ProjectV2 fields in proj
   assertEquals(fields["Status"], "Done");
 });
 
+/**
+ * ユースケース: handleFindItem が Issue の open/closed を issueState として公開すること
+ * 検証意図: ProjectV2 の Status（Done 等）と Issue state（OPEN/CLOSED）は別概念であり、
+ *   アーカイブ状態の確認を read-project-state の1回の参照で行えるようにする。
+ */
+Deno.test("WorkPackage view - should expose issueState separately from ProjectV2 Status", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  let callCount = 0;
+  const adapter = makeAdapter((cmd, args) => {
+    calls.push({ cmd, args });
+    callCount++;
+    if (callCount === 1) {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({
+          number: 51,
+          title: "WP_1",
+          body: "body",
+          labels: [{ name: "type:WP" }],
+          id: "node-wp-51",
+          state: "OPEN",
+        }),
+        stderr: "",
+      });
+    }
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ data: { repository: { issue: null } } }),
+      stderr: "",
+    });
+  });
+  const plan: Plan = {
+    summary: "view WP",
+    steps: [{ entity: "WorkPackage", operation: "view", params: { itemId: "51" } }],
+  };
+  const result = await adapter.execute(plan);
+  assertEquals(result.stepResults.length, 1);
+  assertEquals(result.stepResults[0].success, true);
+  // gh issue view の取得対象に state が含まれること
+  assertStringIncludes(calls[0].args.join(" "), "state");
+  const output = result.stepResults[0].output as Record<string, unknown>;
+  assertEquals(output.issueState, "OPEN");
+});
+
 // ===== Sprint recordVelocity =====
 
 /**

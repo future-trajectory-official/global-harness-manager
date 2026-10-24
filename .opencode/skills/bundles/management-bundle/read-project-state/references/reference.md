@@ -52,6 +52,20 @@ Labels: <labels>
 - `AC 本文`: body 内の受入基準
 - `labels`: ラベル一覧
 
+### 出力に含まれる構造化情報（find）
+
+`find` の `output` には表示用の本文に加え、以下の構造化情報が含まれる。
+
+| キー                    | 内容                                                                 | 用途                                                                               |
+| ----------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `issueState`            | Issue の状態（`OPEN` / `CLOSED`）                                    | アーカイブ済み判定。**ProjectV2 の Status（Todo / In Progress / Done）とは別概念** |
+| `projectItems[].fields` | 所属ボードの ProjectV2 カスタムフィールド（`harness-*` と `Status`） | effort / size / KPT / メトリクスの参照                                             |
+| `milestone`             | 所属スプリント（Milestone）                                          | スプリント絞り込み                                                                 |
+| `parent` / `children`   | 親Issue / 子Issue                                                    | 親子関係の確認                                                                     |
+
+> `search` は一覧（番号・タイトル・ラベル）のみを返し、`issueState` や `fields` は含まない。
+> 状態やフィールド値が必要な場合は `find` を用いること。
+
 ## エラー時の表示
 
 | 状況                              | 表示                                                                                        |

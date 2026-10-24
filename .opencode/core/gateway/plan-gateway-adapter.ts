@@ -1789,7 +1789,7 @@ export class PlanGatewayAdapter implements PlanGateway {
       "view",
       itemId,
       "--json",
-      "number,title,body,labels,comments,id",
+      "number,title,body,labels,comments,id,state",
       ...this.buildRepoArg(),
     ];
     let result;
@@ -1805,6 +1805,12 @@ export class PlanGatewayAdapter implements PlanGateway {
     const output = parseJsonOutput(result.stdout) as Record<string, unknown> | undefined;
     if (!output) {
       return { operation: "view", success: false, error: "Failed to parse gh output" };
+    }
+
+    // Issue の open/closed を issueState として明示する。
+    // ProjectV2 の Status（Todo/In Progress/Done）とは別概念のため、キーを分けて公開する。
+    if (typeof output.state === "string") {
+      output.issueState = output.state;
     }
 
     if (this.resolvedScope) {
