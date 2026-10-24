@@ -31,8 +31,13 @@ POへの問いかけが曖昧な場合は、**必ず以下の3点を尋ねて**�
 
 - `number`: Issue番号
 - `title`: タイトル
-- `状態`: ステータス（Todo / In Progress / Done）または Issue state（open / closed）
+- `状態`: Project V2 Status（Todo / In Progress / Done）。**Status が未設定の場合は Idea（発案）**
+  として提示する。Issue 単体の場合は Issue state（open / closed）
 - `labels`: ラベル一覧
+
+> **Idea（Status 未設定）の扱い**: Project V2 の Status には `Idea` 選択肢が無い。Status
+> が未設定（null）の PBI / WP を管理概念の `Idea`（発案）として扱う。Idea を検索する場合は
+> `params.status` に `"__none__"` を指定する（空文字では条件が付かない）。
 
 ### 詳細表示（find）の表示形式
 
@@ -47,7 +52,8 @@ Labels: <labels>
 ```
 
 - `title`: タイトル
-- `状態`: ステータスまたは Issue state
+- `状態`: Project V2 Status（Todo / In Progress / Done）または Issue state。**Status が未設定の
+  場合は Idea（発案）** として提示する
 - `body`: Issue 本文（説明）
 - `AC 本文`: body 内の受入基準
 - `labels`: ラベル一覧
@@ -59,7 +65,7 @@ Labels: <labels>
 | キー                    | 内容                                                                 | 用途                                                                               |
 | ----------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `issueState`            | Issue の状態（`OPEN` / `CLOSED`）                                    | アーカイブ済み判定。**ProjectV2 の Status（Todo / In Progress / Done）とは別概念** |
-| `projectItems[].fields` | 所属ボードの ProjectV2 カスタムフィールド（`harness-*` と `Status`） | effort / size / KPT / メトリクスの参照                                             |
+| `projectItems[].fields` | 所属ボードの ProjectV2 カスタムフィールド（`harness-*` と `Status`） | effort / size / KPT / メトリクスの参照。**`Status` 未設定は Idea（発案）**         |
 | `milestone`             | 所属スプリント（Milestone）                                          | スプリント絞り込み                                                                 |
 | `parent` / `children`   | 親Issue / 子Issue                                                    | 親子関係の確認                                                                     |
 

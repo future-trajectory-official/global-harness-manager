@@ -151,7 +151,7 @@ Project V2 ボードでは、**Status
 | ビュー名             | フィルタ条件                                                          | 活用シーン                    |
 | -------------------- | --------------------------------------------------------------------- | ----------------------------- |
 | スプリントバックログ | Milestone = `Sprint N`, Status != `Done`                              | スプリント中に対象のPBI一覧   |
-| 未着手候補           | Status = `Backlog`                                                    | 将来のスプリントで検討するPBI |
+| 未着手候補           | Status が未設定（`no:status`）                                        | 将来のスプリントで検討するPBI |
 | 未着手（コミット済） | Status = `Todo`                                                       | 次の着手候補の選定            |
 | 進行中PBI            | Status = `In Progress`                                                | 日次の進捗確認・滞りの発見    |
 | 完了PBI              | Status = `Done`                                                       | スプリント終了時の成果確認    |
@@ -190,17 +190,17 @@ flowchart LR
 
 GitHub 上の状態表現は下記のとおりです。管理概念としての状態遷移の**定義**は context §3 を参照。
 
-- **Backlog**: 将来のスプリントで実施を検討するPBI。Project V2 上で薄灰色表示。**管理概念の
-  `Idea`（発案）に対応**。
+- **Idea（Status 未設定）**: 将来のスプリントで実施を検討するPBI。Project V2 の Status は
+  **未設定（null）**。ボード上は Status なしで表示される（`Backlog` という選択肢は存在しない）。
 - **Todo**: スプリント計画で実施すると決定し、コミットされたPBI。Project V2 上で灰色表示。
 - **In Progress**: 現在開発中のPBI。Project V2 上で青色表示。子Issueの進捗で進行度を確認。
 - **Done**: 全ACが完了しPO承認を得たPBI。Project V2 上で緑色表示。スプリント終了時に Close。
 
 > **Note**: 従来のカスタムフィールド `harness-status`（IDEA/TODO/WIP/DONE）は削除された。Project V2
-> 内蔵Status（Backlog/Todo/In
-> Progress/Done）を使用する。管理概念の状態（`Idea/Todo/InProgress/Done`） と Project V2
-> 内蔵Statusの対応は、初期状態以外は同名（Idea↔Backlog / Todo / In Progress /
-> Done）。機械値（Internal Stage値 `idea|todo|inProgress|done`）との関係は context §3 を参照。
+> 内蔵Status は `Todo` / `In Progress` / `Done` の3値のみで、`Idea` ラベルは存在しない。管理概念の
+> `Idea`（発案）は **Status 未設定（null）** で表現する。検索では Project UI フィルタの
+> `no:status`、CLI の `status` 条件では `__none__` を用いる。機械値（Internal Stage値
+> `idea|todo|inProgress|done`）との関係は context §3 を参照。
 
 ## 3. Entity 操作の責任者区分と dry-run
 
