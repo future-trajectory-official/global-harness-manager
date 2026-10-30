@@ -2,6 +2,7 @@ import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/
 import type { ExecuteResult } from "../shared/io/command.ts";
 import {
   aliasUserAsOrganization,
+  applyAcceptanceCriteriaDone,
   isOrganizationUnresolved,
   PlanGatewayAdapter,
   toUserProjectQuery,
@@ -3303,7 +3304,16 @@ Deno.test("WorkPackage start - should succeed with valid itemId and milestone", 
 });
 
 Deno.test("WorkPackage complete - should succeed with valid itemId and milestone", async () => {
-  const adapter = makeAdapter(milestoneRunner({ number: 19, title: "Sprint 19" }));
+  // AC書換が本文読取を伴うため、body も返すランナーを使う（fail-closed のためAC行が必須）。
+  const runner = (_cmd: string, args: string[]): Promise<ExecuteResult> => {
+    const jsonIndex = args.indexOf("--json");
+    const json = jsonIndex >= 0 ? args[jsonIndex + 1] : "";
+    const stdout = json === "body"
+      ? JSON.stringify({ body: "- [ ] AC1: a\n" })
+      : JSON.stringify({ milestone: { number: 19, title: "Sprint 19" } });
+    return Promise.resolve({ code: 0, stdout, stderr: "" });
+  };
+  const adapter = makeAdapter(runner);
   const plan: Plan = {
     summary: "complete WP",
     steps: [
@@ -3817,7 +3827,14 @@ Deno.test("WorkPackage recordAnalysis - should read/write board field for proces
 });
 
 Deno.test("WorkPackage recordSessionMetrics - should write to board field for session metrics", async () => {
-  const adapter = makeBoardMockAdapter();
+  // 本文追記のみを行うケース。呼出順ではなく --json の種別で応答を返す
+  //（本文読取は応答の body が文字列であることを検証するため）。
+  const adapter = makeAdapter((_cmd, args) => {
+    const jsonIndex = args.indexOf("--json");
+    const json = jsonIndex >= 0 ? args[jsonIndex + 1] : "";
+    const stdout = json === "body" ? JSON.stringify({ body: "Existing body content" }) : "";
+    return Promise.resolve({ code: 0, stdout, stderr: "" });
+  });
   const result = await adapter.execute({
     summary: "record session metrics",
     steps: [{
@@ -7336,4 +7353,687 @@ Deno.test("WP809 review comment - should cleanup temp input after GraphQL runner
     exists = false;
   }
   assertEquals(exists, false, "temporary input should be removed when runner rejects");
+});
+
+/** ProjectV2 items 応答を組み立てる共通フィクスチャ（AC1-877: WP検索の射影）。 */
+function projectItemsPayload(
+  nodes: Array<{
+    number: number;
+    title: string;
+    id?: string;
+    state?: string;
+    body?: string;
+    parent?: { number: number; title: string; id: string } | null;
+    status?: string | null;
+    effort?: string | null;
+  }>,
+): string {
+  return JSON.stringify({
+    data: {
+      organization: {
+        projectV2: {
+          items: {
+            pageInfo: { hasNextPage: false, endCursor: null },
+            nodes: nodes.map((n) => ({
+              content: {
+                number: n.number,
+                title: n.title,
+                id: n.id ?? `I_node${n.number}`,
+                state: n.state ?? "OPEN",
+                body: n.body ?? "",
+                parent: n.parent ?? null,
+              },
+              fieldValueByName: n.status === null ? null : { name: n.status ?? "Todo" },
+              effort: n.effort === undefined ? null : { text: n.effort },
+            })),
+          },
+        },
+      },
+    },
+  });
+}
+
+/**
+ * ユースケース: WP検索結果をWP操作スキルへ渡す場合
+ * 検証意図: 射影が reference.md の記述（id/code/status/issueState/parentPbi/見積2種/acCount）と一致すること (AC1-877)
+ */
+Deno.test("handleProjectSearchItems - should project WP identifiers, statuses, estimates and AC count (AC1-877)", async () => {
+  const body = [
+    "## Acceptance Criteria",
+    "",
+    "- [ ] AC1: first",
+    "  - evidence line kept",
+    "- [x] AC2: second",
+    "- [ ] AC3: third",
+  ].join("\n");
+  const adapter = makeAdapter(fixedRunner(projectItemsPayload([{
+    number: 877,
+    title: "WP1",
+    id: "I_node877",
+    body,
+    parent: { number: 876, title: "PBI876", id: "I_node876" },
+    status: "In Progress",
+    effort: '{"initial_estimate":3,"planned_estimate":4}',
+  }])));
+
+  const result = await adapter.handleProjectSearchItems({
+    status: "In Progress",
+    labelType: "WP",
+    boardNumber: 11,
+  });
+
+  assertEquals(result.success, true);
+  assertEquals(result.output, [{
+    number: 877,
+    title: "WP1",
+    id: "I_node877",
+    code: "877",
+    status: "In Progress",
+    issueState: "OPEN",
+    parentPbi: { title: "PBI876", id: "I_node876", code: "876" },
+    initialEstimate: 3,
+    plannedEstimate: 4,
+    acCount: 3,
+  }]);
+});
+
+/**
+ * ユースケース: 親PBI配下のWPだけを列挙する場合
+ * 検証意図: parentPbiNumber でローカル絞り込みされ、他PBIのWPが混ざらないこと (AC1-877)
+ */
+Deno.test("handleProjectSearchItems - should filter by parentPbiNumber (AC1-877)", async () => {
+  const adapter = makeAdapter(fixedRunner(projectItemsPayload([
+    { number: 877, title: "WP1", parent: { number: 876, title: "PBI876", id: "I_876" } },
+    { number: 878, title: "WP2", parent: { number: 876, title: "PBI876", id: "I_876" } },
+    { number: 879, title: "WP3", parent: { number: 800, title: "PBI800", id: "I_800" } },
+    { number: 880, title: "WP4", parent: null },
+  ])));
+
+  const result = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "WP",
+    boardNumber: 11,
+    parentPbiNumber: 876,
+  });
+
+  assertEquals(result.success, true);
+  const output = result.output as Array<{ number: number }>;
+  assertEquals(output.map((o) => o.number), [877, 878]);
+});
+
+/**
+ * ユースケース: 見積・親PBIが未設定のWPや完了済みIssueを検索する場合
+ * 検証意図: 未設定値が null で表現され、Issue開閉が issueState に分離されること (AC1-877)
+ */
+Deno.test("handleProjectSearchItems - should return null for missing effort and parent, and keep issueState separate (AC1-877)", async () => {
+  const adapter = makeAdapter(fixedRunner(projectItemsPayload([{
+    number: 500,
+    title: "WP-no-effort",
+    state: "CLOSED",
+    body: "## Acceptance Criteria\n",
+    parent: null,
+    status: null,
+    effort: null,
+  }])));
+
+  const result = await adapter.handleProjectSearchItems({
+    status: "__none__",
+    labelType: "WP",
+    boardNumber: 11,
+  });
+
+  assertEquals(result.success, true);
+  assertEquals(result.output, [{
+    number: 500,
+    title: "WP-no-effort",
+    id: "I_node500",
+    code: "500",
+    status: null,
+    issueState: "CLOSED",
+    parentPbi: null,
+    initialEstimate: null,
+    plannedEstimate: null,
+    acCount: 0,
+  }]);
+});
+
+/** AC2-877 用のWP本文フィクスチャ（AC1〜AC3＋AC1の付随エビデンス行）。 */
+const AC_BODY = [
+  "# WP: サンプル",
+  "",
+  "作業メモ: この行は変更されてはならない。",
+  "",
+  "## Acceptance Criteria",
+  "",
+  "- [ ] AC1: first",
+  "  - evidence: kept as-is",
+  "- [ ] AC2: second",
+  "- [x] AC3: third",
+  "",
+  "## 補足",
+  "",
+  "本文末尾も保持されること。",
+].join("\n");
+
+/**
+ * ユースケース: 指定したAC番号だけを✅化する場合
+ * 検証意図: 指定外のAC行・付随エビデンス行・本文の他領域がバイト単位で保持されること (AC2-877)
+ */
+Deno.test("applyAcceptanceCriteriaDone - should check only specified ACs and preserve other text (AC2-877)", () => {
+  const result = applyAcceptanceCriteriaDone(AC_BODY, [1]);
+
+  assertEquals(result.updated, [1]);
+  assertEquals(result.missing, []);
+  assertEquals(
+    result.body,
+    AC_BODY.replace("- [ ] AC1: first", "- [x] AC1: first"),
+  );
+  assert(result.body.includes("  - evidence: kept as-is"));
+  assert(result.body.includes("- [ ] AC2: second"));
+  assert(result.body.includes("作業メモ: この行は変更されてはならない。"));
+});
+
+/**
+ * ユースケース: AC番号を指定せずに完了する場合
+ * 検証意図: 本文中の全ACが✅化され、既✅の行はそのまま維持されること (AC2-877)
+ */
+Deno.test("applyAcceptanceCriteriaDone - should check every AC when numbers are omitted (AC2-877)", () => {
+  const result = applyAcceptanceCriteriaDone(AC_BODY);
+
+  assertEquals(result.updated, [1, 2]);
+  assertEquals(result.missing, []);
+  assertEquals(
+    result.body,
+    AC_BODY
+      .replace("- [ ] AC1: first", "- [x] AC1: first")
+      .replace("- [ ] AC2: second", "- [x] AC2: second"),
+  );
+});
+
+/**
+ * ユースケース: 同じACに対して✅化を再実行する場合
+ * 検証意図: 冪等であり、2回目は本文が変化せず updated が空になること (AC2-877)
+ */
+Deno.test("applyAcceptanceCriteriaDone - should be idempotent on already checked ACs (AC2-877)", () => {
+  const first = applyAcceptanceCriteriaDone(AC_BODY, [1]);
+  const second = applyAcceptanceCriteriaDone(first.body, [1]);
+
+  assertEquals(second.body, first.body);
+  assertEquals(second.updated, []);
+  assertEquals(second.alreadyDone, [1]);
+  assertEquals(second.missing, []);
+});
+
+/**
+ * ユースケース: 本文に存在しないAC番号を指定する場合
+ * 検証意図: 存在しない番号が missing として報告されること (AC2-877)
+ */
+Deno.test("applyAcceptanceCriteriaDone - should report missing AC numbers (AC2-877)", () => {
+  const result = applyAcceptanceCriteriaDone(AC_BODY, [2, 99]);
+
+  assertEquals(result.updated, [2]);
+  assertEquals(result.missing, [99]);
+  assertEquals(result.body.includes("- [ ] AC99"), false);
+});
+
+/**
+ * ユースケース: 存在しないAC番号を指定して書込を試みる場合
+ * 検証意図: INVALID_INPUT で失敗し、本文を書き換えないこと (AC2-877)
+ */
+Deno.test("handleCheckAcceptanceCriteria - should fail without writing when AC number does not exist (AC2-877)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return Promise.resolve({ code: 0, stdout: JSON.stringify({ body: AC_BODY }), stderr: "" });
+  };
+  const adapter = makeAdapter(runner);
+
+  const result = await adapter.handleCheckAcceptanceCriteria({
+    itemId: "877",
+    acceptanceCriteria: [99],
+  });
+
+  assertEquals(result.success, false);
+  assertStringIncludes(result.error ?? "", "INVALID_INPUT");
+  assertEquals(calls.some((c) => c.args.includes("edit")), false);
+});
+
+/**
+ * ユースケース: WP完了時にACを✅化してからProject StatusをDoneにする場合
+ * 検証意図: 本文更新がStatus更新より先に実行され、✅化された本文が送信されること (AC2-877)
+ */
+Deno.test("WorkPackage complete - should check ACs before changing board status (AC2-877)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const jsonIndex = args.indexOf("--json");
+    const json = jsonIndex >= 0 ? args[jsonIndex + 1] : "";
+    if (json === "milestone") {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ milestone: { number: 31, title: "Sprint 31" } }),
+        stderr: "",
+      });
+    }
+    if (json === "body") {
+      return Promise.resolve({ code: 0, stdout: JSON.stringify({ body: AC_BODY }), stderr: "" });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(runner);
+  adapter.setProjectBoardNumbers(10, 11);
+
+  // Status更新の内部実装（GraphQL往復）に依存せず、呼出順序だけを検証する。
+  const order: string[] = [];
+  const originalAc = adapter.handleCheckAcceptanceCriteria.bind(adapter);
+  adapter.handleCheckAcceptanceCriteria = async (p) => {
+    order.push("acceptanceCriteria");
+    return await originalAc(p);
+  };
+  adapter.setBoardStatus = () => {
+    order.push("status");
+    return Promise.resolve({ ok: true });
+  };
+
+  const result = await adapter.execute({
+    summary: "complete WP with AC",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "complete",
+      params: { itemId: "877", acceptanceCriteria: [1] },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, true);
+  assertEquals(order, ["acceptanceCriteria", "status"], "AC書換がStatus更新より先であること");
+  const editIndex = calls.findIndex((c) => c.args.includes("edit"));
+  assert(editIndex >= 0, "AC本文の更新が実行されること");
+  const editedBody = calls[editIndex].args[calls[editIndex].args.indexOf("--body") + 1];
+  assert(editedBody.includes("- [x] AC1: first"));
+  assert(editedBody.includes("- [ ] AC2: second"));
+});
+
+/**
+ * ユースケース: AC本文の更新が失敗した場合
+ * 検証意図: Project Status を変更せずに complete が失敗を返すこと (AC2-877)
+ */
+Deno.test("WorkPackage complete - should not change board status when AC write fails (AC2-877)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const jsonIndex = args.indexOf("--json");
+    const json = jsonIndex >= 0 ? args[jsonIndex + 1] : "";
+    if (json === "milestone") {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ milestone: { number: 31, title: "Sprint 31" } }),
+        stderr: "",
+      });
+    }
+    if (json === "body") {
+      return Promise.resolve({ code: 0, stdout: JSON.stringify({ body: AC_BODY }), stderr: "" });
+    }
+    if (args.includes("edit")) {
+      return Promise.resolve({ code: 1, stdout: "", stderr: "edit rejected" });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(runner);
+  adapter.setProjectBoardNumbers(10, 11);
+
+  const result = await adapter.execute({
+    summary: "complete WP with failing AC write",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "complete",
+      params: { itemId: "877", acceptanceCriteria: [1] },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "edit rejected");
+  assertEquals(
+    calls.some((c) => {
+      const jsonIndex = c.args.indexOf("--json");
+      return jsonIndex >= 0 && c.args[jsonIndex + 1] === "id";
+    }),
+    false,
+  );
+});
+
+/**
+ * ユースケース: CRLF 改行のIssue本文を完了処理する場合
+ * 検証意図: CRLF本文でもAC行が検出・✅化され、改行コードが保持されること (C1-877)
+ */
+Deno.test("applyAcceptanceCriteriaDone - should handle CRLF bodies identically to LF (C1-877)", () => {
+  const body = "## AC\r\n\r\n- [ ] AC1: a\r\n- [ ] AC2: b\r\n";
+  const result = applyAcceptanceCriteriaDone(body, [1]);
+
+  assertEquals(result.updated, [1]);
+  assertEquals(result.missing, []);
+  assertEquals(result.total, 2);
+  assertEquals(result.body, "## AC\r\n\r\n- [x] AC1: a\r\n- [ ] AC2: b\r\n");
+  assert(result.body.includes("\r\n"), "CRLFが保持されること");
+});
+
+/**
+ * ユースケース: AC行が1件も無い本文を完了処理する場合
+ * 検証意図: 省略時の無言スキップをやめ、INVALID_INPUT で失敗すること (C2-877)
+ */
+Deno.test("handleCheckAcceptanceCriteria - should fail when the body has no AC lines (C2-877)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ body: "## Acceptance Criteria\n\n- [ ] AC-1: 別形式\n" }),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+
+  const result = await adapter.handleCheckAcceptanceCriteria({ itemId: "877" });
+
+  assertEquals(result.success, false);
+  assertStringIncludes(result.error ?? "", "no acceptance criteria lines");
+  assertEquals(calls.some((c) => c.args.includes("edit")), false);
+});
+
+/**
+ * ユースケース: 番号なし形式・全角・アスタリスク・コードフェンスを含む本文
+ * 検証意図: management.md の番号なし形式を受理し、フェンス内の書式例は対象外とすること (C2-877)
+ */
+Deno.test("applyAcceptanceCriteriaDone - should accept documented AC formats and skip fenced samples (C2-877)", () => {
+  const body = [
+    "- [ ] AC: 番号なし",
+    "* [ ] AC２：全角",
+    "- [ ] AC3: 通常",
+    "```md",
+    "- [ ] AC9: 書式例（対象外）",
+    "```",
+  ].join("\n");
+
+  const result = applyAcceptanceCriteriaDone(body);
+
+  assertEquals(result.total, 3);
+  assertEquals(result.updated, [1, 2, 3]);
+  assert(result.body.includes("- [x] AC: 番号なし"), "番号なし形式が✅化されること");
+  assert(result.body.includes("* [x] AC２：全角"), "全角形式が✅化されること");
+  assert(result.body.includes("- [ ] AC9: 書式例（対象外）"), "フェンス内は変更されないこと");
+});
+
+/**
+ * ユースケース: 同一AC番号の行が複数ある本文
+ * 検証意図: 先頭行のみ✅化し、重複番号を duplicates として報告すること (C2-877)
+ */
+Deno.test("applyAcceptanceCriteriaDone - should rewrite only the first duplicate AC line (C2-877)", () => {
+  const body = "- [ ] AC1: 先頭\n- [ ] AC1: 重複\n";
+
+  const result = applyAcceptanceCriteriaDone(body, [1]);
+
+  assertEquals(result.updated, [1]);
+  assertEquals(result.duplicates, [1]);
+  assertEquals(result.body, "- [x] AC1: 先頭\n- [ ] AC1: 重複\n");
+});
+
+/**
+ * ユースケース: acceptanceCriteria に空配列を渡す場合
+ * 検証意図: 「全AC」に拡大解釈せず INVALID_INPUT で拒否すること (M3-877)
+ */
+Deno.test("handleCheckAcceptanceCriteria - should reject an empty acceptanceCriteria array (M3-877)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return Promise.resolve({ code: 0, stdout: JSON.stringify({ body: AC_BODY }), stderr: "" });
+  };
+  const adapter = makeAdapter(runner);
+
+  const result = await adapter.handleCheckAcceptanceCriteria({
+    itemId: "877",
+    acceptanceCriteria: [],
+  });
+
+  assertEquals(result.success, false);
+  assertStringIncludes(result.error ?? "", "INVALID_INPUT");
+  assertEquals(calls.length, 0, "入力を拒否する場合は gh を呼ばないこと");
+});
+
+/**
+ * ユースケース: 既に全ACが✅の本文を再度✅化する場合
+ * 検証意図: 書込を行わず skipped:true を返し、契約化された output を返すこと (M8-877)
+ */
+Deno.test("handleCheckAcceptanceCriteria - should skip GitHub write and report counts when already done (M8-877)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    return Promise.resolve({
+      code: 0,
+      stdout: JSON.stringify({ body: "- [x] AC1: a\n- [x] AC2: b\n" }),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+
+  const result = await adapter.handleCheckAcceptanceCriteria({
+    itemId: "877",
+    acceptanceCriteria: [1, 2],
+  });
+
+  assertEquals(result.success, true);
+  assertEquals(result.output, {
+    itemId: "877",
+    updated: [],
+    alreadyDone: [1, 2],
+    duplicates: [],
+    total: 2,
+    skipped: true,
+  });
+  assertEquals(calls.some((c) => c.args.includes("edit")), false);
+});
+
+/**
+ * ユースケース: AC本文の取得に失敗した場合
+ * 検証意図: complete が失敗し、ステータスを変更しないこと (M8-877)
+ */
+Deno.test("WorkPackage complete - should not change board status when AC body fetch fails (M8-877)", async () => {
+  const calls: { cmd: string; args: string[] }[] = [];
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    calls.push({ cmd, args });
+    const jsonIndex = args.indexOf("--json");
+    const json = jsonIndex >= 0 ? args[jsonIndex + 1] : "";
+    if (json === "milestone") {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ milestone: { number: 31, title: "Sprint 31" } }),
+        stderr: "",
+      });
+    }
+    if (json === "body") {
+      return Promise.resolve({ code: 1, stdout: "", stderr: "view failed" });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(runner);
+  adapter.setProjectBoardNumbers(10, 11);
+
+  const result = await adapter.execute({
+    summary: "complete WP with failing AC read",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "complete",
+      params: { itemId: "877", acceptanceCriteria: [1] },
+    }],
+  });
+
+  assertEquals(result.stepResults[0].success, false);
+  assertStringIncludes(result.stepResults[0].error ?? "", "view failed");
+  assertEquals(
+    calls.some((c) => {
+      const jsonIndex = c.args.indexOf("--json");
+      return jsonIndex >= 0 && c.args[jsonIndex + 1] === "id";
+    }),
+    false,
+  );
+});
+
+/**
+ * ユースケース: AC書換は成功したがStatus更新に失敗した場合
+ * 検証意図: 握り潰さず STATUS_UPDATE_FAILED で失敗を返すこと (M4-877)
+ */
+Deno.test("WorkPackage complete - should fail when the status update fails after AC write (M4-877)", async () => {
+  const runner = (_cmd: string, args: string[]): Promise<ExecuteResult> => {
+    const jsonIndex = args.indexOf("--json");
+    const json = jsonIndex >= 0 ? args[jsonIndex + 1] : "";
+    if (json === "milestone") {
+      return Promise.resolve({
+        code: 0,
+        stdout: JSON.stringify({ milestone: { number: 31, title: "Sprint 31" } }),
+        stderr: "",
+      });
+    }
+    if (json === "body") {
+      return Promise.resolve({ code: 0, stdout: JSON.stringify({ body: AC_BODY }), stderr: "" });
+    }
+    if (json === "id") {
+      return Promise.resolve({ code: 1, stdout: "", stderr: "node id unavailable" });
+    }
+    return Promise.resolve({ code: 0, stdout: "", stderr: "" });
+  };
+  const adapter = makeAdapter(runner);
+  adapter.setProjectBoardNumbers(10, 11);
+
+  const result = await adapter.execute({
+    summary: "complete WP with failing status update",
+    steps: [{
+      entity: "WorkPackage",
+      operation: "complete",
+      params: { itemId: "877", acceptanceCriteria: [1] },
+    }],
+  });
+
+  const step = result.stepResults[0];
+  assertEquals(step.success, false);
+  assertStringIncludes(step.error ?? "", "STATUS_UPDATE_FAILED");
+});
+
+/**
+ * ユースケース: parentPbiNumber に不正値を指定する場合
+ * 検証意図: 無言の0件ではなく INVALID_INPUT を返すこと (M2-877)
+ */
+Deno.test("handleProjectSearchItems - should reject non-integer parentPbiNumber (M2-877)", async () => {
+  const adapter = makeAdapter(fixedRunner(projectItemsPayload([{ number: 877, title: "WP1" }])));
+
+  for (const invalid of ["abc", 0, -1, 1.5]) {
+    const result = await adapter.handleProjectSearchItems({
+      status: "Todo",
+      labelType: "WP",
+      boardNumber: 11,
+      parentPbiNumber: invalid,
+    });
+    assertEquals(result.success, false, `parentPbiNumber=${String(invalid)} は拒否されること`);
+    assertStringIncludes(result.error ?? "", "INVALID_INPUT");
+  }
+});
+
+/**
+ * ユースケース: PBI検索で親を返す場合
+ * 検証意図: WP以外は汎用キー parent で返し、parentPbi を含めないこと (M5-877)
+ */
+Deno.test("handleProjectSearchItems - should use the generic parent key for non-WP searches (M5-877)", async () => {
+  const adapter = makeAdapter(fixedRunner(projectItemsPayload([{
+    number: 500,
+    title: "PBI500",
+    parent: { number: 400, title: "Feature400", id: "I_400" },
+  }])));
+
+  const result = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "PBI",
+    boardNumber: 10,
+  });
+
+  assertEquals(result.success, true);
+  const output = result.output as Array<Record<string, unknown>>;
+  assertEquals(output[0].parent, { title: "Feature400", id: "I_400", code: "400" });
+  assertEquals("parentPbi" in output[0], false);
+});
+
+/**
+ * ユースケース: 複数ページにまたがるボードを検索する場合
+ * 検証意図: 2ページ目でも新フィールド（parent/effort/acCount）が射影されること (M8-877)
+ */
+Deno.test("handleProjectSearchItems - should project new fields on every page (M8-877)", async () => {
+  const page = (next: string | null, number: number) =>
+    JSON.stringify({
+      data: {
+        organization: {
+          projectV2: {
+            items: {
+              pageInfo: { hasNextPage: next !== null, endCursor: next },
+              nodes: [{
+                content: {
+                  id: `I_${number}`,
+                  number,
+                  title: `WP${number}`,
+                  state: "OPEN",
+                  body: "- [ ] AC1: a\n- [x] AC2: b\n",
+                  parent: { id: "I_876", number: 876, title: "PBI876" },
+                },
+                fieldValueByName: { name: "Todo" },
+                effort: { text: '{"initial_estimate":"2","planned_estimate":3}' },
+              }],
+            },
+          },
+        },
+      },
+    });
+  const runner = (_cmd: string, args: string[]): Promise<ExecuteResult> => {
+    const hasCursor = args.some((a) => a === "cursor=c1");
+    return Promise.resolve({
+      code: 0,
+      stdout: hasCursor ? page(null, 2) : page("c1", 1),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+
+  const result = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "WP",
+    boardNumber: 11,
+    parentPbiNumber: 876,
+  });
+
+  const output = result.output as Array<Record<string, unknown>>;
+  assertEquals(output.map((o) => o.number), [1, 2]);
+  assertEquals(output[1].acCount, 2);
+  assertEquals(output[1].initialEstimate, 2, "数値文字列の見積も数値として解釈されること");
+  assertEquals(output[1].plannedEstimate, 3);
+  assertEquals(output[1].parentPbi, { title: "PBI876", id: "I_876", code: "876" });
+});
+
+/**
+ * ユースケース: acCount と実際に✅化できるAC行数が一致するか
+ * 検証意図: 投影（acCount）と完了処理（applyAcceptanceCriteriaDone）が同じAC行集合を見ること (C1/C2-877)
+ */
+Deno.test("acCount should equal the number of AC lines applyAcceptanceCriteriaDone rewrites (C1/C2-877)", async () => {
+  const bodies = [
+    "- [ ] AC1: a\n- [ ] AC2: b\n",
+    "- AC: 番号なし\r\n- [x] AC2：全角\r\n",
+    "- [ ] AC1: a\n```\n- [ ] AC2: sample\n```\n",
+  ];
+  for (const body of bodies) {
+    const adapter = makeAdapter(
+      fixedRunner(projectItemsPayload([{ number: 1, title: "T", body }])),
+    );
+    const result = await adapter.handleProjectSearchItems({
+      status: "Todo",
+      labelType: "WP",
+      boardNumber: 11,
+    });
+    const acCount = (result.output as Array<{ acCount: number }>)[0].acCount;
+    const applied = applyAcceptanceCriteriaDone(body);
+    assertEquals(acCount, applied.total, `body=${JSON.stringify(body)}`);
+    assertEquals(applied.updated.length + applied.alreadyDone.length, acCount);
+  }
 });
