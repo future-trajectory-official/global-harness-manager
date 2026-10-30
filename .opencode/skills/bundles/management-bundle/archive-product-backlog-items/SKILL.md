@@ -27,6 +27,11 @@ PBI**（子先にアーカイブ）です。
 >
 > - `find` の `issueState`（`OPEN` / `CLOSED`）を確認する
 > - 対象スプリント（Milestone）で絞り込む
+>
+> **PR本文のクローズキーワード（`Closes #N` 等）で Issue が自動 CLOSED になっている場合**は、 Status
+> が `Done` でも本スキルの対象外となる。`complete-work-package` 実行前に Issue が OPEN
+> であることを確認し、意図しない CLOSED は POの判断で `gh issue reopen` により復帰させること
+> （`create-pull-request` の手順4・`merge-branch` の手順7を参照）。
 
 ## Quick-Start
 
