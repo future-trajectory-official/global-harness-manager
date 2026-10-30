@@ -69,8 +69,10 @@ Labels: <labels>
 | `milestone`             | 所属スプリント（Milestone）                                          | スプリント絞り込み                                                                 |
 | `parent` / `children`   | 親Issue / 子Issue                                                    | 親子関係の確認                                                                     |
 
-> `search` は一覧（番号・タイトル・ラベル）のみを返し、`issueState` や `fields` は含まない。
-> 状態やフィールド値が必要な場合は `find` を用いること。
+> `search` は一覧（番号・タイトル・ラベル）を基本とするが、WP/PBI を ProjectV2 ボード経由で検索する
+> 場合は `status` / `issueState` / `parent`（WPは `parentPbi`）/ `initialEstimate` /
+> `plannedEstimate` / `acCount` などの追加キーも返る（`select-work-package` の `search_wp.ts`
+> と共通の 射影）。フィールド値の完全な一覧が必要な場合は `find` を用いること。
 
 ## エラー時の表示
 

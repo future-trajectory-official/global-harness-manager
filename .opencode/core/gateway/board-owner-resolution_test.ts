@@ -285,7 +285,20 @@ Deno.test("handleProjectSearchItems - searches user-owned board (AC-1)", async (
     boardNumber: 11,
   });
   assert(result.success, `search must succeed: ${result.error}`);
-  assertEquals(result.output, [{ number: 1, title: "T" }]);
+  // 既存キー（number/title）は維持しつつ、WP操作スキル向けの射影（id/code/status/...）が追加される。
+  // フィクスチャに id/state/body/parent/effort が無いため、それらは空値・null になる。
+  assertEquals(result.output, [{
+    number: 1,
+    title: "T",
+    id: "",
+    code: "1",
+    status: "Todo",
+    issueState: "",
+    parentPbi: null,
+    initialEstimate: null,
+    plannedEstimate: null,
+    acCount: 0,
+  }]);
   assert(
     calls.some((c) => c.args.some((a) => a.includes("user(login:"))),
     "item fetch must use user query",

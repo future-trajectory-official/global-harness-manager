@@ -23,6 +23,7 @@ import {
   type BoardKey,
   type BoardOwner,
   type BoardOwnerType,
+  FIELD,
   type FieldRef,
   HARNESS_FIELDS,
   STATUS_FIELD,
@@ -32,6 +33,208 @@ export type CommandRunner = (cmd: string, args: string[]) => Promise<ExecuteResu
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * ProjectV2 ボードから取得したWP検索用の生アイテム。
+ * 射影前の情報を保持し、`handleProjectSearchItems` が公開用の形へ変換する。
+ */
+interface ProjectSearchItem {
+  number: number;
+  title: string;
+  id: string;
+  issueState: string;
+  /** Issue本文。AC件数の算出にのみ使い、出力には含めない。 */
+  body: string;
+  status: string | null;
+  parent: { number: number; title: string; id: string } | null;
+  /** `harness-effort-summary` の生テキスト（TEXTフィールド）。 */
+  effortText: string | null;
+}
+
+/** ACチェックボックス行の解析結果。 */
+interface AcLineMatch {
+  indent: string;
+  marker: string;
+  /** 明示番号の原文（全角数字や先行ゼロを保持するため文字列で持つ）。番号省略形式では空文字。 */
+  digits: string;
+  rest: string;
+  /** 行末の改行記号（CRLF の `\r` を保持するため）。 */
+  eol: string;
+}
+
+/**
+ * ACチェックボックス行に一致する正規表現。
+ *
+ * 受理する書式（`management.md` §5.1 の番号なし形式も含む）:
+ * - ビュレット: `-` または `*`
+ * - チェックボックス: `[ ]` / `[x]` / `[X]`
+ * - 番号: `AC1:`（半角/全角コロン、全角数字、番号省略可）
+ * - 行末に `\r` があっても一致する（CRLF 本文対応）
+ */
+const AC_LINE_RE = /^([ \t]*)([-*]) \[( |x|X)\] AC([0-9０-９]*)[ \t]*[:：](.*?)(\r?)$/;
+
+/**
+ * 全角数字を半角数字へ変換する。
+ * @param text 変換対象
+ * @returns 半角数字に置換した文字列
+ */
+function toHalfWidthDigits(text: string): string {
+  return text.replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+
+/**
+ * 1行をACチェックボックス行として解析する。
+ * 付随行（エビデンス等）は一致しない。
+ *
+ * @param line 対象行（改行を含まない）
+ * @returns 解析結果。AC行でなければ null
+ */
+function matchAcLine(line: string): AcLineMatch | null {
+  const m = line.match(AC_LINE_RE);
+  if (!m) return null;
+  return { indent: m[1], marker: m[3], digits: m[4], rest: m[5], eol: m[6] };
+}
+
+/** 本文中のAC行1件分の位置情報。 */
+interface AcLineInfo extends AcLineMatch {
+  /** 本文を行分割した際のインデックス。 */
+  lineIndex: number;
+  /** AC番号。番号省略形式では出現順（1始まり）を割り当てる。 */
+  number: number;
+}
+
+/**
+ * 本文からAC行を抽出する。
+ *
+ * コードフェンス（``` / ~~~）内の行は「書式例」とみなして対象外とする。
+ * 番号省略形式（`- [ ] AC: 内容`）は出現順に1始まりの番号を割り当てる。
+ *
+ * @param body Issue本文
+ * @returns AC行の位置情報一覧
+ */
+function collectAcLines(body: string): AcLineInfo[] {
+  const infos: AcLineInfo[] = [];
+  let inFence = false;
+  body.split("\n").forEach((line, lineIndex) => {
+    if (/^[ \t]*(```|~~~)/.test(line)) {
+      inFence = !inFence;
+      return;
+    }
+    if (inFence) return;
+    const match = matchAcLine(line);
+    if (!match) return;
+    const explicit = match.digits === "" ? undefined : Number(toHalfWidthDigits(match.digits));
+    infos.push({ ...match, lineIndex, number: explicit ?? infos.length + 1 });
+  });
+  return infos;
+}
+
+/**
+ * Issue本文中のACチェックボックス行を数える。
+ * 未✅・✅の双方を1件として数え、コードフェンス内の行は対象外とする。
+ *
+ * @param body Issue本文
+ * @returns AC行の件数。AC行が無ければ 0
+ */
+function countAcceptanceCriteria(body: string): number {
+  return collectAcLines(body).length;
+}
+
+/**
+ * Issue本文中のACチェックボックス行のうち、対象番号のものだけを✅化する純関数。
+ *
+ * 更新するのはAC行のチェックボックス（`[ ]` → `[x]`）のみで、付随行（ネストした
+ * エビデンス）・本文の他領域・改行コード（LF/CRLF）はバイト単位で保持する。
+ * 既に✅の行は変更しない（冪等）。同一番号の行が複数ある場合は先頭行のみ✅化し、
+ * その番号を `duplicates` として報告する。
+ *
+ * @param body Issue本文
+ * @param numbers ✅化するAC番号。省略または空配列の場合は本文中の全ACを対象にする
+ * @returns 更新後本文、✅化したAC番号（updated）、既に✅だったAC番号（alreadyDone）、
+ *          本文に存在しなかったAC番号（missing）、重複していたAC番号（duplicates）、
+ *          本文中のAC行数（total）
+ */
+export function applyAcceptanceCriteriaDone(
+  body: string,
+  numbers?: readonly number[],
+): {
+  body: string;
+  updated: number[];
+  alreadyDone: number[];
+  missing: number[];
+  duplicates: number[];
+  total: number;
+} {
+  const lines = body.split("\n");
+  const infos = collectAcLines(body);
+  const requested = numbers && numbers.length > 0 ? new Set(numbers) : null;
+
+  const grouped = new Map<number, AcLineInfo[]>();
+  for (const info of infos) {
+    const list = grouped.get(info.number);
+    if (list) list.push(info);
+    else grouped.set(info.number, [info]);
+  }
+
+  const updated: number[] = [];
+  const alreadyDone: number[] = [];
+  const duplicates: number[] = [];
+
+  for (const [number, group] of grouped) {
+    if (requested && !requested.has(number)) continue;
+    if (group.length > 1) duplicates.push(number);
+    const first = group[0];
+    if (first.marker !== " ") {
+      alreadyDone.push(number);
+      continue;
+    }
+    // チェックボックス記号のみを置換する（番号表記・全角コロン・改行コードを保持）。
+    lines[first.lineIndex] = lines[first.lineIndex].replace("[ ]", "[x]");
+    updated.push(number);
+  }
+
+  const missing = requested ? [...requested].filter((n) => !grouped.has(n)) : [];
+  const sortAsc = (a: number, b: number) => a - b;
+  return {
+    body: lines.join("\n"),
+    updated: updated.sort(sortAsc),
+    alreadyDone: alreadyDone.sort(sortAsc),
+    missing: missing.sort(sortAsc),
+    duplicates: duplicates.sort(sortAsc),
+    total: infos.length,
+  };
+}
+
+/**
+ * `harness-effort-summary` のJSONテキストから計画前・計画後の見積を取り出す。
+ * 未設定・不正JSON・キー欠落は `null` として扱う（例外にしない）。
+ *
+ * @param text Sprint Board の `harness-effort-summary`（TEXT）値
+ * @returns 計画前見積（initialEstimate）と計画後見積（plannedEstimate）
+ */
+function parseEffortEstimates(
+  text: string | null | undefined,
+): { initialEstimate: number | null; plannedEstimate: number | null } {
+  if (!text) return { initialEstimate: null, plannedEstimate: null };
+  let data: Record<string, unknown>;
+  try {
+    data = JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    return { initialEstimate: null, plannedEstimate: null };
+  }
+  const toNumber = (v: unknown): number | null => {
+    if (typeof v === "number") return Number.isFinite(v) ? v : null;
+    if (typeof v === "string" && v.trim() !== "") {
+      const parsed = Number(v);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
+  };
+  return {
+    initialEstimate: toNumber(data.initial_estimate),
+    plannedEstimate: toNumber(data.planned_estimate),
+  };
 }
 
 /**
@@ -894,19 +1097,33 @@ export class PlanGatewayAdapter implements PlanGateway {
     return { operation: "updateField", success: true };
   }
 
-  /** IssueのV2ボード上のStatusを設定する（stage値→V2 Status名に自動変換）。 */
-  async setBoardStatus(itemId: string, ref: FieldRef, stage: Stage): Promise<void> {
+  /**
+   * IssueのV2ボード上のStatusを設定する（stage値→V2 Status名に自動変換）。
+   *
+   * ボード未設定・`idea`（Status未設定で表現）はスキップとして扱い `ok: true` を返す。
+   * 設定を試みて失敗した場合は `ok: false` と理由を返すため、呼出側は不一致の発生を検知できる。
+   *
+   * @param itemId Issue番号
+   * @param ref 対象ボードのStatusフィールド参照
+   * @param stage 遷移先の作業段階
+   * @returns `ok` は更新成功またはスキップ、`error` は失敗理由
+   */
+  async setBoardStatus(
+    itemId: string,
+    ref: FieldRef,
+    stage: Stage,
+  ): Promise<{ ok: boolean; error?: string }> {
     const boardNumber = this.resolveRefBoardNumber(ref);
     if (boardNumber === undefined) {
       logger.warn(
         `[setBoardStatus] Board "${ref.boardKey}" is not configured; status update skipped`,
       );
-      return;
+      return { ok: true };
     }
     // Idea は Project V2 の Status 選択肢に存在しない（Status 未設定 = null で表現する）。
     // 既存 Status を保持したまま何も書き込まない。
     if (stage === "idea") {
-      return;
+      return { ok: true };
     }
     const stageToStatus: Record<Exclude<Stage, "idea">, string> = {
       todo: "Todo",
@@ -915,8 +1132,9 @@ export class PlanGatewayAdapter implements PlanGateway {
     };
     const statusName = stageToStatus[stage];
     if (!statusName) {
-      logger.warn(`[setBoardStatus] Unknown stage "${stage}"; status update skipped`);
-      return;
+      const error = `Unknown stage "${stage}"`;
+      logger.warn(`[setBoardStatus] ${error}; status update skipped`);
+      return { ok: false, error };
     }
     const nodeResult = await this.runCommand("gh", [
       "issue",
@@ -927,27 +1145,30 @@ export class PlanGatewayAdapter implements PlanGateway {
       ...this.buildRepoArg(),
     ]);
     if (nodeResult.code !== 0) {
-      logger.warn(`[setBoardStatus] Failed to resolve issue node id: ${nodeResult.stderr}`);
-      return;
+      const error = `Failed to resolve issue node id: ${nodeResult.stderr}`;
+      logger.warn(`[setBoardStatus] ${error}`);
+      return { ok: false, error };
     }
     try {
       const nodeData = JSON.parse(nodeResult.stdout) as { id: string };
       const { projectItemNodeId } = await this.addItemToProject(nodeData.id, boardNumber);
       const optionId = await this.resolveSingleSelectOptionId(ref, statusName);
       if (!optionId) {
-        logger.warn(
-          `[setBoardStatus] Status option "${statusName}" not found on board "${ref.boardKey}"`,
-        );
-        return;
+        const error = `Status option "${statusName}" not found on board "${ref.boardKey}"`;
+        logger.warn(`[setBoardStatus] ${error}`);
+        return { ok: false, error };
       }
       const result = await this.setSingleSelectFieldValue(projectItemNodeId, ref, optionId);
       if (!result.success) {
-        logger.warn(`[setBoardStatus] Failed to set status: ${result.error ?? "unknown error"}`);
+        const error = result.error ?? "unknown error";
+        logger.warn(`[setBoardStatus] Failed to set status: ${error}`);
+        return { ok: false, error };
       }
+      return { ok: true };
     } catch (e) {
-      logger.warn(
-        `[setBoardStatus] Status update failed: ${e instanceof Error ? e.message : String(e)}`,
-      );
+      const error = e instanceof Error ? e.message : String(e);
+      logger.warn(`[setBoardStatus] Status update failed: ${error}`);
+      return { ok: false, error };
     }
   }
 
@@ -2021,9 +2242,18 @@ export class PlanGatewayAdapter implements PlanGateway {
 
   /**
    * Project V2 Board の Status フィールドでアイテムを検索する。
-   * @param params.status - 検索する Status 名（"Todo", "In Progress", "Done" 等）
-   * @param params.labelType - ラベル種別（例: "PBI"）
+   *
+   * 返却する各アイテムはWP操作スキルへそのまま渡せる識別子と、判断材料を含む：
+   * `number` / `title` / `id`（node id）/ `code`（Issue番号文字列）/ `status`（ProjectV2 Status）/
+   * `issueState`（Issueの開閉。Statusとは別概念）/ `parentPbi`（親PBI識別子。無ければ null）/
+   * `initialEstimate` / `plannedEstimate`（Sprint Boardの `harness-effort-summary`。未設定は null）/
+   * `acCount`（本文中のAC行数）。
+   *
+   * @param params.status - 検索する Status 名（"Todo", "In Progress", "Done", "__none__" 等）
+   * @param params.labelType - ラベル種別（例: "WP"）
    * @param params.boardNumber - Project V2 ボード番号
+   * @param params.parentPbiNumber - 親PBIのIssue番号。指定時は当該PBI配下のWPのみに絞り込む
+   * @param params.sprintNumber - スプリント番号。指定時はマイルストーンで絞り込む
    */
   async handleProjectSearchItems(params: Record<string, unknown>): Promise<StepResult> {
     const status = String(params.status ?? "");
@@ -2053,6 +2283,18 @@ export class PlanGatewayAdapter implements PlanGateway {
     // status と sprintNumber はスキル呼出時の引数（WorkPackageSearchCondition）をそのまま使う。
     const sprintNumber = params.sprintNumber;
     const isNoneStatus = status === "__none__";
+    const rawParentPbiNumber = params.parentPbiNumber;
+    const parentPbiNumber = rawParentPbiNumber === undefined || rawParentPbiNumber === null ||
+        rawParentPbiNumber === ""
+      ? null
+      : Number(rawParentPbiNumber);
+    if (parentPbiNumber !== null && (!Number.isInteger(parentPbiNumber) || parentPbiNumber <= 0)) {
+      return {
+        operation: "search",
+        success: false,
+        error: "INVALID_INPUT: parentPbiNumber must be a positive integer",
+      };
+    }
 
     const filterParts: string[] = [];
     if (!isNoneStatus) {
@@ -2078,25 +2320,53 @@ export class PlanGatewayAdapter implements PlanGateway {
     }
 
     // `__none__`（status未設定）はクエリDSLで表現できないため、取得後にローカルで判定する。
+    // `parentPbiNumber` もクエリDSLで表現できないため、同じく取得後にローカルで絞り込む
+    //（100件上限を超えるボードでは取りこぼし得る既知の制約）。
     const matched = items.filter((item) => {
       if (isNoneStatus) {
         if (item.status != null) return false;
       } else {
         if ((item.status ?? null) !== status) return false;
       }
+      if (parentPbiNumber !== null && item.parent?.number !== parentPbiNumber) return false;
       return true;
     });
     return {
       operation: "search",
       success: true,
-      output: matched.map((item) => ({ number: item.number, title: item.title })),
+      output: matched.map((item) => {
+        const { initialEstimate, plannedEstimate } = parseEffortEstimates(item.effortText);
+        // 親の意味は entity で異なる（WPの親はPBI、PBIの親はFeature）。
+        // WP検索は `parentPbi`、それ以外は汎用キー `parent` で返す。
+        const parentKey = labelType === "WP" ? "parentPbi" : "parent";
+        const parent = item.parent
+          ? {
+            title: item.parent.title,
+            id: item.parent.id,
+            code: String(item.parent.number),
+          }
+          : null;
+        return {
+          number: item.number,
+          title: item.title,
+          id: item.id,
+          code: String(item.number),
+          status: item.status,
+          issueState: item.issueState,
+          [parentKey]: parent,
+          initialEstimate,
+          plannedEstimate,
+          acCount: countAcceptanceCriteria(item.body),
+        };
+      }),
     };
   }
 
   /**
    * ProjectV2 ボードの項目を GraphQL で取得する。
    * `ProjectV2.items` の `query` 引数（プロジェクトUIフィルタDSL）でサーバー側フィルタし、
-   * 必要なフィールド（Issue番号・タイトル・Status値）のみ取得する。ページネーション対応。
+   * WP検索に必要なフィールド（Issue番号・タイトル・node id・開閉・本文・親PBI・Status・
+   * effort見積）のみ取得する。ページネーション対応。
    * @returns 取得した項目の配列。取得失敗時は null
    */
   async #fetchProjectItems(
@@ -2104,7 +2374,7 @@ export class PlanGatewayAdapter implements PlanGateway {
     boardNumber: number,
     filterQuery: string,
     ownerType: BoardOwnerType = "organization",
-  ): Promise<Array<{ number: number; title: string; status: string | null }> | null> {
+  ): Promise<ProjectSearchItem[] | null> {
     const root = projectV2OwnerRoot(ownerType);
     const query = `query($owner: String!, $number: Int!, $filter: String, $cursor: String) {
       ${root}(login: $owner) {
@@ -2112,14 +2382,24 @@ export class PlanGatewayAdapter implements PlanGateway {
           items(first: 100, after: $cursor, query: $filter) {
             pageInfo { hasNextPage endCursor }
             nodes {
-              content { ... on Issue { number title } }
+              content {
+                ... on Issue {
+                  id
+                  number
+                  title
+                  state
+                  body
+                  parent { ... on Issue { id number title } }
+                }
+              }
               fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
+              effort: fieldValueByName(name: "${FIELD.effortSummary}") { ... on ProjectV2ItemFieldTextValue { text } }
             }
           }
         }
       }
     }`;
-    const items: Array<{ number: number; title: string; status: string | null }> = [];
+    const items: ProjectSearchItem[] = [];
     let cursor: string | null = null;
     while (true) {
       const args = [
@@ -2146,8 +2426,16 @@ export class PlanGatewayAdapter implements PlanGateway {
               items?: {
                 pageInfo?: { hasNextPage?: boolean; endCursor?: string | null };
                 nodes?: Array<{
-                  content?: { number?: number; title?: string } | null;
+                  content?: {
+                    id?: string;
+                    number?: number;
+                    title?: string;
+                    state?: string;
+                    body?: string;
+                    parent?: { id?: string; number?: number; title?: string } | null;
+                  } | null;
                   fieldValueByName?: { name?: string } | null;
+                  effort?: { text?: string } | null;
                 }>;
               };
             };
@@ -2160,7 +2448,19 @@ export class PlanGatewayAdapter implements PlanGateway {
         const number = node.content?.number;
         const title = node.content?.title;
         if (number === undefined || title === undefined) continue;
-        items.push({ number, title, status: node.fieldValueByName?.name ?? null });
+        const parent = node.content?.parent;
+        items.push({
+          number,
+          title,
+          id: node.content?.id ?? "",
+          issueState: node.content?.state ?? "",
+          body: node.content?.body ?? "",
+          status: node.fieldValueByName?.name ?? null,
+          parent: parent && parent.number !== undefined && parent.title !== undefined
+            ? { number: parent.number, title: parent.title, id: parent.id ?? "" }
+            : null,
+          effortText: node.effort?.text ?? null,
+        });
       }
       if (conn.pageInfo?.hasNextPage && conn.pageInfo.endCursor) {
         cursor = conn.pageInfo.endCursor;
@@ -2425,6 +2725,153 @@ export class PlanGatewayAdapter implements PlanGateway {
   }
 
   /**
+   * AC指定値（数値配列・単一値・未指定）を正規化する。
+   * @param value `acceptanceCriteria` の生値
+   * @returns 番号配列。未指定なら undefined、不正値なら null
+   */
+  #normalizeAcNumbers(value: unknown): number[] | undefined | null {
+    if (value === undefined || value === null) return undefined;
+    const raw = Array.isArray(value) ? value : [value];
+    if (raw.length === 0) return null;
+    const numbers: number[] = [];
+    for (const item of raw) {
+      const number = typeof item === "number" ? item : Number(String(item));
+      if (!Number.isInteger(number) || number <= 0) return null;
+      numbers.push(number);
+    }
+    return numbers;
+  }
+
+  /**
+   * Issue本文を取得する。
+   * `handleCheckAcceptanceCriteria` と `updateItemWithBodyAppend` で共通利用する。
+   *
+   * @param itemId 対象Issue番号
+   * @returns `body` または `error`（gh失敗・応答不正）
+   */
+  async #readIssueBody(itemId: string): Promise<{ body: string } | { error: string }> {
+    let result: ExecuteResult;
+    try {
+      result = await this.runCommand("gh", [
+        "issue",
+        "view",
+        itemId,
+        "--json",
+        "body",
+        ...this.buildRepoArg(),
+      ]);
+    } catch (e) {
+      return { error: String(e) };
+    }
+    if (result.code !== 0) return { error: result.stderr };
+    const parsed = parseJsonOutput(result.stdout);
+    if (!isRecord(parsed) || typeof parsed.body !== "string") {
+      return { error: "Failed to parse gh output" };
+    }
+    return { body: parsed.body };
+  }
+
+  /**
+   * Issue本文中のACチェックボックス行を✅化する。
+   *
+   * 更新範囲はAC行のみに限定され（付随エビデンス行・本文の他領域・改行コードは保持）、
+   * 本文全体を差し替えるインターフェースは提供しない。
+   *
+   * 失敗させる条件（fail-closed）:
+   * - `acceptanceCriteria` が空配列、または正の整数でない
+   * - 指定AC番号が本文に存在しない
+   * - AC番号を省略したが、本文にAC行が1件も無い（書式不一致の無言スキップを防ぐ）
+   *
+   * 書換が不要（全て既に✅）ならGitHubへの書込を行わず `skipped: true` を返す。
+   *
+   * @param params.itemId - 対象WPのIssue番号
+   * @param params.acceptanceCriteria - ✅化するAC番号の配列。省略時は本文中の全AC
+   * @returns 更新結果。`output.updated` に✅化したAC番号、`output.alreadyDone` に既✅、
+   *          `output.duplicates` に重複番号、`output.total` に本文中のAC行数、
+   *          `output.skipped` に書込省略の有無
+   */
+  async handleCheckAcceptanceCriteria(params: Record<string, unknown>): Promise<StepResult> {
+    const operation = "checkAcceptanceCriteria";
+    const itemId = String(params.itemId ?? "");
+    if (!itemId) {
+      return { operation, success: false, error: "itemId is required" };
+    }
+    const numbers = this.#normalizeAcNumbers(params.acceptanceCriteria);
+    if (numbers === null) {
+      return {
+        operation,
+        success: false,
+        itemId,
+        error: "INVALID_INPUT: acceptanceCriteria must be a non-empty array of positive integers",
+      };
+    }
+
+    const view = await this.#readIssueBody(itemId);
+    if ("error" in view) {
+      return { operation, success: false, itemId, error: view.error };
+    }
+
+    const result = applyAcceptanceCriteriaDone(view.body, numbers);
+    if (result.missing.length > 0) {
+      return {
+        operation,
+        success: false,
+        itemId,
+        error: `INVALID_INPUT: acceptance criteria not found: ${result.missing.join(", ")}`,
+      };
+    }
+    // AC番号を省略したのにAC行が1件も無い場合は、書式不一致による無言スキップとみなして失敗させる。
+    if (numbers === undefined && result.total === 0) {
+      return {
+        operation,
+        success: false,
+        itemId,
+        error: "INVALID_INPUT: no acceptance criteria lines found in the issue body",
+      };
+    }
+    if (result.updated.length === 0) {
+      return {
+        operation,
+        success: true,
+        itemId,
+        output: {
+          itemId,
+          updated: [],
+          alreadyDone: result.alreadyDone,
+          duplicates: result.duplicates,
+          total: result.total,
+          skipped: true,
+        },
+      };
+    }
+
+    const edit = await this.runCommand("gh", [
+      "issue",
+      "edit",
+      itemId,
+      "--body",
+      result.body,
+      ...this.buildRepoArg(),
+    ]);
+    if (edit.code !== 0) {
+      return { operation, success: false, itemId, error: edit.stderr };
+    }
+    return {
+      operation,
+      success: true,
+      itemId,
+      output: {
+        itemId,
+        updated: result.updated,
+        alreadyDone: result.alreadyDone,
+        duplicates: result.duplicates,
+        total: result.total,
+        skipped: false,
+      },
+    };
+  }
+
+  /**
    * updateItem 操作を処理する。GitHub Issue のタイトル更新および本文操作を行う。
    * @param params.itemId - 更新対象の Issue 番号
    * @param params.title - 新しいタイトル（省略時は変更なし）
@@ -2465,23 +2912,11 @@ export class PlanGatewayAdapter implements PlanGateway {
     title: string | undefined,
     bodyAppend: string,
   ): Promise<StepResult> {
-    let viewResult;
-    try {
-      viewResult = await this.runCommand(
-        "gh",
-        ["issue", "view", itemId, "--json", "body", ...this.buildRepoArg()],
-      );
-    } catch (e) {
-      return { operation: "update", success: false, error: String(e) };
+    const view = await this.#readIssueBody(itemId);
+    if ("error" in view) {
+      return { operation: "update", success: false, error: view.error };
     }
-    if (viewResult.code !== 0) {
-      return { operation: "update", success: false, error: viewResult.stderr };
-    }
-    const parsed = parseJsonOutput(viewResult.stdout) as { body?: string } | undefined;
-    if (!parsed) {
-      return { operation: "update", success: false, error: "Failed to parse gh output" };
-    }
-    const currentBody = parsed.body ?? "";
+    const currentBody = view.body;
     // 既存本文と追記内容の間に空行を入れて Markdown 構造（見出し・リスト）の連結崩れを防ぐ。
     const newBody = currentBody ? `${currentBody}\n\n${bodyAppend}` : bodyAppend;
     const args = ["issue", "edit", itemId, "--body", newBody, ...this.buildRepoArg()];

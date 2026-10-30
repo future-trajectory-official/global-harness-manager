@@ -27,8 +27,9 @@ tags:
    を参照すること。
 
 3. **親PBIの補完検索**: `search_wp.ts`
-   の出力には親PBIの詳細（見積サイズ・状態）が含まれないため、各WPの親PBI番号を特定後、**read-project-state
-   の find に委譲**して補完する（gh api・GraphQL 直操作での代替は禁止）。
+   の出力には親PBIの詳細（見積サイズ・状態）が含まれないため、`parentPbi.code`（親PBIのIssue番号）を
+   特定後、**read-project-state の find に委譲**して補完する（gh api・GraphQL
+   直操作での代替は禁止）。
    ```bash
    echo '{"entityType":"ProductBacklogItem","operation":"find","params":{"itemId":"<親PBI番号>"}}' | deno run -A .opencode/skills/bundles/management-bundle/read-project-state/scripts/read_project_state.ts
    ```
