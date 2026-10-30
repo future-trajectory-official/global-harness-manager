@@ -34,3 +34,9 @@ tags:
    - `git branch -d [作業ブランチ名]`
    - ※すでに自動削除されて `not found`
      になる場合は、クリーンアップ完了とみなしてエラーを無視し、正常終了とします。
+7. **[Post-check] 対象WP/PBIの Issue state を確認する**。
+   - PR本文にクローズキーワードが残っていると、マージによって Issue が**意図せず CLOSED**
+     になる（`Status` は変わらないため「CLOSED かつ In Progress」というねじれが生じ、後の
+     `archive-product-backlog-items` が前提（`open` かつ `Status=Done`）を満たせなくなる）。
+   - 意図しない CLOSED を検出した場合は、POに報告し、`gh issue reopen <N>`
+     で復帰させるか否かの判断を仰ぐこと。**AIの判断だけで reopen しない。**
