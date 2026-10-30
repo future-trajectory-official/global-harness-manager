@@ -125,14 +125,44 @@ export class WorkPackageHandler {
       }
       const milestoneMissing = await this.requireMilestone(itemId, "complete");
       if (milestoneMissing) return milestoneMissing;
+      // AC完了の記録は Status 変更より先に行う。書換に失敗した場合は Status を変更せず、
+      // Issue本文と Project Status の不一致を残さない（execute は失敗後も後続stepを実行するため、
+      // 別stepに分けず本ハンドラ内で順序を保証する）。
+      const acResult = await this.adapter.handleCheckAcceptanceCriteria({
+        itemId,
+        acceptanceCriteria: params.acceptanceCriteria,
+      });
+      if (!acResult.success) {
+        return {
+          ...acResult,
+          operation: "complete",
+          output: { acceptanceCriteria: acResult.output, statusChanged: false },
+        };
+      }
       if (this.adapter.sprintBoardNumber) {
-        await this.adapter.setBoardStatus(
+        const statusResult = await this.adapter.setBoardStatus(
           itemId,
           statusRef("sprintBoard"),
           (params.stage as Stage) ?? "done",
         );
+        if (!statusResult.ok) {
+          // ACは✅化済みだが Status は未更新。成功として返すと「本文とStatusの一致」が
+          // 壊れたまま完了扱いになるため、再実行可能な失敗として返す。
+          return {
+            operation: "complete",
+            success: false,
+            itemId,
+            error: `STATUS_UPDATE_FAILED: ${statusResult.error ?? "unknown error"}`,
+            output: { acceptanceCriteria: acResult.output, statusChanged: false },
+          };
+        }
       }
-      return Promise.resolve({ operation: "complete", success: true, itemId });
+      return Promise.resolve({
+        operation: "complete",
+        success: true,
+        itemId,
+        output: { acceptanceCriteria: acResult.output, statusChanged: true },
+      });
     });
 
     handlers.set("update", async (_op, params) => {

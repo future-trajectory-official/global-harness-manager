@@ -120,9 +120,17 @@ export interface WorkPackageUseCase {
    * 親PBIの完了判定（全子WP完了→親PBI昇格）は本メソッドの責務とせず、
    * Skill層で行う。WP完了後、Skill層が親PBI配下の全WPをsearchし、
    * 全件doneの場合に親PBI UseCaseのcompleteを呼び出すこと。
+   *
+   * AC完了の記録（Issue本文のチェックボックス✅化）は Status 変更より先に実行され、
+   * 書換に失敗した場合は Status を変更しない。
+   *
+   * @param identifier - 完了対象のWP識別子
+   * @param options.acceptanceCriteria - ✅化するAC番号。省略時は本文中の全ACを✅化する
    */
-  /** WPを完了状態に遷移する。完了済み(done)への遷移をPlanに含める。既存WPを対象とし、code（Issue番号）から node-id を内部解決して操作する。 */
-  complete(identifier: WorkPackageIdentifier): Plan;
+  complete(
+    identifier: WorkPackageIdentifier,
+    options?: { readonly acceptanceCriteria?: readonly number[] },
+  ): Plan;
 
   /** WPをアーカイブする。(done,open)→(done,closed) への遷移をPlanに含める。processEvidence必須。既存WPを対象とし、code（Issue番号）から node-id を内部解決して操作する。 */
   archive(identifier: WorkPackageIdentifier): Plan;
@@ -287,7 +295,7 @@ export const workPackageUseCase: WorkPackageUseCase & {
     };
   },
 
-  complete(identifier): Plan {
+  complete(identifier, options): Plan {
     assertTitleNonEmpty(identifier.title, "WP title");
     assertIdDefined(identifier.id, "complete a WP");
     return {
@@ -301,6 +309,7 @@ export const workPackageUseCase: WorkPackageUseCase & {
             itemId: identifier.code,
             stage: "done",
             state: "open",
+            acceptanceCriteria: options?.acceptanceCriteria,
           },
         },
       ],

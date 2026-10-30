@@ -707,6 +707,8 @@ export interface WorkPackageData {
 export interface WorkPackageSearchCondition extends SearchCondition {
   readonly keyword?: string;
   readonly parentPbi?: ProductBacklogItemIdentifier;
+  /** 親PBIのIssue番号。指定すると当該PBI配下のWPのみに絞り込む。 */
+  readonly parentPbiNumber?: number;
   readonly sprintNumber?: number;
   readonly status?: string;
 }
