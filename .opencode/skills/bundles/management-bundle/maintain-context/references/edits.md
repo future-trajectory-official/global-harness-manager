@@ -35,16 +35,22 @@
 `product.md` を編集した後、`management.md` に差分がないことを機械的に確認する。
 
 ```bash
-# management.md に変更がないこと
-git diff --name-only .github/context/management.md
-# → 空（出力なし）であれば OK。何か出力された場合は編集を取り消す。
-
-git diff --name-only .github/context/product.md.example
-# → 空（出力なし）であれば OK。
+deno run -A .opencode/skills/bundles/management-bundle/maintain-context/scripts/verify_immutable_context.ts
+# → {"ok": true, "source": "local", "checks": [...], "warnings": []}
 ```
 
-- 上記の出力が空でない場合は、`management.md` または `product.md.example`
+- `ok: false`（exit 1）の場合は、`management.md` または `product.md.example`
   を誤って変更したことを示す。`git restore` で取り消し、`product.md` のみに限定し直すこと。
+- **なぜ `git diff` を先に打たないのか**: 正本が**未追跡**のリポジトリでは、未追跡パスに `git diff`
+  を打つと git がパスをリビジョンと解釈し、`fatal: ambiguous argument` で停止する。 スクリプトは
+  `git ls-files` で**追跡有無を先に判定**し、未追跡なら差分検証を行わない。
+- 追跡下の判定は `git status --porcelain` を使う。`git diff` だけでは**ステージ済み**の改変
+  （WIPセーブポイントの `git add -A` 直後など）を見逃すため。
+- 差分を取得できない場合は `ok: false`（`status: "error"`）として扱う（fail-closed）。
+  検証未完了を成功とみなさない。
+- 正本がローカルに無い場合はグローバル `~/.harness/context/management.md` を参照し
+  `source: "global"` を返す。どちらにも無い場合も `exit 0` ＋ warning とし、停止しない
+  （環境不備の判定は `setup-harness-env` / `assess-context` の責務）。
 - **破壊的操作の禁止**: `management.md` の再生成を目的とした編集は行わない。
 
 ## 5. gitignore 運用（`product.md` の追跡維持）

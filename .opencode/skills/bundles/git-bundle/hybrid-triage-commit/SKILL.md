@@ -42,7 +42,8 @@ git add -A && git commit -m "chore(wip): セーブポイント"
 [hybrid-triage-commit-process.md](/.opencode/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)
 で確認すること：
 
-- `<base>` — ベースブランチ名の導出方法
+- `<base>` — 分岐元。`deno run -A .opencode/core/shared/git/resolve_base_branch.ts` の
+  `baseBranch`（`--base <branch>` で明示上書き可）
 - `<wip-branch>` — WIPブランチ名の特定方法
 - `<clean-name>` — 新ブランチ名の命名規則
 - 意味単位の分類基準（feat / fix / refactor / test / docs / chore の定義）

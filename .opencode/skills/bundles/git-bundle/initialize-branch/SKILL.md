@@ -22,11 +22,16 @@ tags:
    を実行し、作業ツリーに未コミットの変更がない（クリーンである）ことを確認する。変更がある場合は、ユーザーに相談するか
    stash して安全を確保する。
 
-2. **[ベースブランチの移動]** `git checkout main` (または適切なベースブランチ)
-   を実行し、作業基準となるブランチに移動する。
+2. **[ベースブランチの解決と移動]** 分岐元を共有スクリプトで解決し、そのブランチへ移動する。
+   ```bash
+   deno run -A .opencode/core/shared/git/resolve_base_branch.ts
+   # → {"baseBranch":"master","source":"remote-head"}
+   ```
+   - 出力の `baseBranch` を `<base>` として `git checkout <base>` を実行する。 **`main`
+     を決め打ちしない**（master 既定のリポジトリでは `pathspec 'main' did not match` で停止する）。
+   - 分岐元と異なるブランチから作業を始めたい場合は `--base <branch>` で明示指定する。
 
-3. **[リモート状態の取得]** `git pull origin main` (または対象ブランチ)
-   を実行し、最新状態を取得する。
+3. **[リモート状態の取得]** `git pull origin <base>` を実行し、最新状態を取得する。
 
 4. **[作業ブランチの作成]** `git checkout -b [prefix]/[ブランチ名]`
    を実行し、新しいブランチを作成して移動する。
