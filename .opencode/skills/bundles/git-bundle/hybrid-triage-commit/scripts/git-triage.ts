@@ -14,6 +14,10 @@
  */
 
 import { parseArgs } from "@std/cli";
+import {
+  type CommandRunner,
+  resolveBaseBranch,
+} from "../../../../../core/shared/git/resolve_base_branch.ts";
 
 /**
  * ステージングされた変更ファイルの情報。
@@ -88,22 +92,6 @@ function commitAllAsWip(): void {
   } else {
     console.error(result.stderr || "nothing to commit");
   }
-}
-
-/**
- * リモート origin のデフォルトブランチ名（HEADが指すブランチ）を取得する。
- * 取得できない場合は "main" を返す。
- * @returns デフォルトブランチ名
- */
-function getDefaultBranch(): string {
-  const remoteResult = runGit(["remote", "get-url", "origin"]);
-  if (remoteResult.code === 0) {
-    const headResult = runGit(["symbolic-ref", "refs/remotes/origin/HEAD"]);
-    if (headResult.code === 0) {
-      return headResult.stdout.replace("refs/remotes/origin/", "");
-    }
-  }
-  return "main";
 }
 
 /**
@@ -186,9 +174,37 @@ export function validateTypeConsistency(
   return null;
 }
 
-async function runTriage(): Promise<void> {
-  const baseBranch = getDefaultBranch();
-  printHeader(`Triage Mode (base: ${baseBranch})`);
+/**
+ * triage 用のコマンド実行関数。git 以外（gh 等）は使わない。
+ * @param cmd - 実行ファイル名
+ * @param args - 引数リスト
+ * @returns 実行結果（git 以外は code=127）
+ */
+function makeGitOnlyRunner(): CommandRunner {
+  return (cmd, args) =>
+    Promise.resolve(
+      cmd === "git" ? runGit(args) : {
+        code: 127,
+        stdout: "",
+        stderr: `${cmd} is not available in triage`,
+      },
+    );
+}
+
+/**
+ * triage モードを実行する。
+ * ベースブランチ（分岐元）は共有の resolveBaseBranch で解決する。
+ * 分岐元がズレると、エラーにならずに別ブランチの差分を混ぜたアトミックコミットを作るため、
+ * 既定ブランチの決め打ちは行わない。
+ * @param explicitBase - `--base` による明示指定（あれば最優先）
+ */
+async function runTriage(explicitBase?: string): Promise<void> {
+  const resolved = await resolveBaseBranch({
+    explicitBase,
+    run: makeGitOnlyRunner(),
+  });
+  const baseBranch = resolved.baseBranch;
+  printHeader(`Triage Mode (base: ${baseBranch} [${resolved.source}])`);
 
   const allChanged = hasUncommittedChanges();
   if (!allChanged) {
@@ -371,7 +387,7 @@ async function main() {
       commitAllAsWip();
       break;
     case "triage":
-      await runTriage();
+      await runTriage(typeof args.base === "string" ? args.base : undefined);
       break;
     default:
       console.error(`Unknown mode: ${mode}. Use 'wip' or 'triage'.`);
@@ -380,5 +396,5 @@ async function main() {
 }
 
 if (import.meta.main) {
-  main();
+  await main();
 }

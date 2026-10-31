@@ -86,7 +86,8 @@ graph TD
 スクリプトが使用できない環境では、以下の手動手順でアトミックコミットを再構築します。歴史改変コマンドは使用しません。
 
 1. **WIPブランチの最新状態を確認**: `git log --oneline <wip-branch>`
-2. **ベースブランチに移動**: `git checkout <base-branch> && git pull`
+2. **ベースブランチに移動**: `git checkout <base-branch> && git pull` （`<base-branch>` は
+   `resolve_base_branch.ts` の `baseBranch`。分岐元を決め打ちしない）
 3. **新ブランチを作成**: `git checkout -b <clean-branch-name>`
 4. **差分ファイルの確認**: `git diff --name-only <base-branch>..<wip-branch>` で全変更を把握
 5. **論理グループへの分割**:

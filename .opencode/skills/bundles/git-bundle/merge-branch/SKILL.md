@@ -19,22 +19,40 @@ tags:
 
 // turbo-all
 
-1. **[Pre-check]** ユーザーの承認があっても、マージ前に `gh pr status` や `gh pr checks`
-   等でコンフリクトがないことやCIがパスしていることを確認する。
-2. `gh pr merge` コマンド等を用いて、承認されたPRを自動マージする。
+0. **[PRの事実と宛先の確定]** マージ先は**推測せず、PRが持つ情報を正**とする。
+   ```bash
+   # 1) 提示用の情報（PR概要・head/base・状態・CI）
+   gh pr view <N> --json number,title,headRefName,baseRefName,state,mergeable,statusCheckRollup
+
+   # 2) マージ先（復帰先）の確定。PRの baseRefName を最優先で返す
+   deno run -A .opencode/core/shared/git/resolve_base_branch.ts --from-pr <N>
+   # → {"baseBranch":"release/1.2","source":"pr-base"}
+   ```
+   - 出力の `baseBranch` を以降の `<base>` として使う。**`main` を決め打ちしない。**
+   - `source` が `pr-base` 以外（`fallback` 等）のときは推定値である。`gh pr view` の `baseRefName`
+     と一致するか確認し、食い違う場合は**必ず** PO に報告する。
+1. **[Pre-check]** `gh pr status` / `gh pr checks` 等で、コンフリクトがないこと・CIがパスして
+   いること・PR が `OPEN` であることを確認する。
+2. **[承認ゲート]**
+   マージ前に、以下を**1つの画面で提示**して承認を求める。**提示せずにマージしない。**
+   - PR: `#<N> <title>`（`<headRefName>` → `<baseRefName>`）
+   - 状態: CI（パス / 失敗）、コンフリクトの有無、`state`
+   - マージ後のローカル操作: `git checkout <base>` → `git pull origin <base>`
+   - ⚠️ **推測と事実が食い違う場合は隠さず明示する** （例: 「推測=main / PRの宛先=release/1.2」）
+3. `gh pr merge` コマンド等を用いて、承認されたPRを自動マージする。
    - **⚠️ 必須要件**: 非対話モードで実行すること（例: `gh pr merge --merge --delete-branch` など）。
-3. GitHub上で削除されたリモートブランチの情報をローカルに反映するため、`git fetch --prune origin`
+4. GitHub上で削除されたリモートブランチの情報をローカルに反映するため、`git fetch --prune origin`
    を実行する。
-4. ローカル環境のベースブランチ（例: `main`）に切り替える。
-   - `git checkout main`
-   - ※すでに `gh pr merge` の自動クリーンアップで `main`
+5. ローカル環境のベースブランチ（分岐元）に切り替える。
+   - `git checkout <base>`
+   - ※すでに `gh pr merge` の自動クリーンアップで `<base>`
      に切り替わっている場合は、本ステップはスキップまたは確認のみとします。
-5. ローカルのベースブランチを最新化するため、`git pull origin main` を実行する。
-6. マージ済みのローカル作業用ブランチが残っている場合は、安全に削除する。
+6. ローカルのベースブランチを最新化するため、`git pull origin <base>` を実行する。
+7. マージ済みのローカル作業用ブランチが残っている場合は、安全に削除する。
    - `git branch -d [作業ブランチ名]`
    - ※すでに自動削除されて `not found`
      になる場合は、クリーンアップ完了とみなしてエラーを無視し、正常終了とします。
-7. **[Post-check] 対象WP/PBIの Issue state を確認する**。
+8. **[Post-check] 対象WP/PBIの Issue state を確認する**。
    - PR本文にクローズキーワードが残っていると、マージによって Issue が**意図せず CLOSED**
      になる（`Status` は変わらないため「CLOSED かつ In Progress」というねじれが生じ、後の
      `archive-product-backlog-items` が前提（`open` かつ `Status=Done`）を満たせなくなる）。
