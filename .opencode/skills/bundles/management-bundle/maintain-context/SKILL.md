@@ -37,6 +37,10 @@ AI がプロジェクト固有の用語集 `product.md` に、固有用語を追
 3. 編集対象の確認と編集の作法は `references/edits.md` §1・§3 に従う。
 4. 編集後、`references/edits.md` §4 のガード検証手順に従い、`management.md`
    に差分がないことを検証する。
+   - 実行:
+     `deno run -A .opencode/skills/bundles/management-bundle/maintain-context/scripts/verify_immutable_context.ts`
+   - `ok: false`（exit 1）のときのみ修正する。正本が無いリポジトリでも `exit 0` で返るため、
+     ガードが作業を止めることはない。
 
 ## セッション中の扱い
 
