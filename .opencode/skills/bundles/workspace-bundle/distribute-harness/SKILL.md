@@ -60,7 +60,8 @@ workspace-bundle のスキルは `.opencode/commands/project-setup.md`
 4. コピー計画を実行する（`executeCopyPlan`）。
 5. スキルを `global-` リネームし（`applyRenameMap`）、frontmatter と参照を書き換える
    （`rewriteSkillFrontmatter`・`rewriteReferences`・`rewriteSkillImports`）。 `rewriteReferences`
-   は `context` を書換え対象外とする（配布物にcontextを含まないため）。
+   は配布対象外の `context` 資源を書換対象外とし、`.github/context/` を素通しする（WP #791）。
+   一方、グローバル層表記 `~/.harness/`（`~/.harness/context/` を含む）は `<dest>/` へ解決する。
 6. 実配布の後に配布先 `<dest>/skills/bundles/workspace-bundle/` を削除する（既定 `<dest>` は
    `~/.harness`）。本体スクリプトは改修せず、手順として事後除外する。
 7. グローバル配置手順（配布コピーとは別枠）で、本repo `.github/context/` の

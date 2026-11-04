@@ -383,9 +383,11 @@ function escapeRegExp(text: string): string {
 
 /**
  * 配布先の Markdown ファイルの参照を書き換える（AC2・PO指摘対応。WP #791でcontext除外）。
- * - `.opencode/skills/bundles/<bundle>/<name>` → `<destRoot>/skills/bundles/<bundle>/global-<name>`
+ * - `.opencode/skills/bundles/<bundle>/<name>` または `~/.harness/skills/bundles/<bundle>/<name>`
+ *   → `<destRoot>/skills/bundles/<bundle>/global-<name>`
  * - `.opencode/{agents,commands,guides,core}/` → `<destRoot>/{dir}/`（`context` は配布対象外のため書換対象外）
  * - `[skill:<name>]` → `[skill:global-<name>]`
+ * - `~/.harness/` → `<destRoot>/`（グローバル層表記を実際の配布先へ解決する。末尾 `/` 必須）
  * - `.github/context/` 参照は呼出元相対解決のため素通し（書換えない）
  * 対象は .md のみ（.ts の相対 import や設定は構造保持のため触れない）。
  * ただしスキルディレクトリ名（`global-` リネーム）の影響を受ける .ts 内参照は
@@ -398,22 +400,29 @@ export async function rewriteReferences(
   isDryRun: boolean,
 ): Promise<void> {
   const files = await collectMarkdownFiles(destRoot);
+  // 置換文字列中の `$&` 等の特殊展開を避け、destRoot をリテラルとして扱う（AC3）。
+  // replaceAll("$", "$$") は置換文字列側の解釈で潰れるため split/join を使う。
+  const destLiteral = destRoot.split("$").join("$$");
   for (const file of files) {
     const content = await fsUtil.readTextFile(file);
     let updated = content;
-    // 1) スキルパス＋名前（先頭 / の有無を吸収）
+    // 1) スキルパス＋名前（`.opencode/` と `~/.harness/` の両方。先頭 / の有無を吸収）
     updated = updated.replace(
-      /(?:\/)?\.opencode\/skills\/bundles\/([a-z0-9-]+)\/([a-z0-9-]+)/g,
-      `${destRoot}/skills/bundles/$1/global-$2`,
+      /(?:\/)?(?:\.opencode|~\/\.harness)\/skills\/bundles\/([a-z0-9-]+)\/([a-z0-9-]+)/g,
+      `${destLiteral}/skills/bundles/$1/global-$2`,
     );
     // 2) その他の .opencode ディレクトリ参照（contextは配布対象外のため除外。WP #791）
     // .github/context/ は呼出元相対のため素通し（ここでは触れない）
     updated = updated.replace(
       /(?:\/)?\.opencode\/(agents|commands|guides|core)\//g,
-      `${destRoot}/$1/`,
+      `${destLiteral}/$1/`,
     );
     // 3) スキル呼出（skill tool）名。既に global- 化済みは置換しない（冪等。C2対応）。
     updated = updated.replace(/\[skill:(?!global-)([a-z0-9-]+)\]/g, "[skill:global-$1]");
+    // 4) グローバル層の `~/.harness/` を実際の配布先へ解決する（AC3）。
+    //    既存3規則の後段に固定する（先に置くと挿入した destRoot が規則1・2で再走査される）。
+    //    destRoot は絶対パスへ展開済みのため `--dest` 変更に追従し、再実行時は `~` を含まないため冪等。
+    updated = updated.replace(/~\/\.harness\//g, `${destLiteral}/`);
     if (updated !== content) {
       await fsUtil.writeTextFile(file, updated, isDryRun);
       logger.info(`  Rewrote references: ${file}`);

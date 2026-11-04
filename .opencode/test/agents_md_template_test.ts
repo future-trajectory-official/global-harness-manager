@@ -112,3 +112,22 @@ Deno.test("T8: local example contains no unexpanded template expressions", async
     "配布実体に未展開のテンプレート式 }} が残っています",
   );
 });
+
+/**
+ * ユースケース: 配布用 AGENTS.md テンプレートの資源モデルを保守する
+ * 検証意図: 2層構造（グローバル層／リポジトリ固有層）・配置判断基準・グローバル用語集参照が維持され、
+ * 「単一ルート」表記やリポジトリ内 management.md 参照が再混入しないこと（AC1/AC2）
+ */
+Deno.test("T9 (AC1/AC2): local example keeps two-layer model and global glossary refs", async () => {
+  const content = await readLocalAgentsExample();
+  assert(!content.includes("単一ルート"), "単一ルート表記は撤去済みであること");
+  for (const keyword of ["グローバル層", "リポジトリ固有層", "配置判断基準"]) {
+    assertStringIncludes(content, keyword);
+  }
+  assertStringIncludes(content, "~/.harness/context/management.md");
+  assertStringIncludes(content, "~/.harness/commands/");
+  assert(
+    !content.includes(".github/context/management.md"),
+    "management.md はグローバル参照へ統一されていること",
+  );
+});

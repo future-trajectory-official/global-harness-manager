@@ -240,6 +240,134 @@ Deno.test("rewriteReferences - contextは書換対象外で.github/contextは素
   }
 });
 
+/**
+ * ユースケース: 実配布された AGENTS.md をエージェントが読む
+ * 検証意図: テンプレート実文の `~/.harness/` 参照が配布先の実パスへ解決され、表記が残らないこと（AC3）
+ */
+Deno.test("rewriteReferences - AGENTS.mdテンプレートの探索パスと用語集参照をdestへ書換える(AC3)", async () => {
+  const root = await Deno.makeTempDir({ prefix: "dist-agents-" });
+  try {
+    const template = await Deno.readTextFile(join(REPO_ROOT, "config/AGENTS.md.example"));
+    assert(
+      template.includes("~/.harness/"),
+      "前提: テンプレートに ~/.harness/ が存在すること（空振り防止）",
+    );
+    await Deno.writeTextFile(`${root}/AGENTS.md`, template);
+    await rewriteReferences(root, false);
+    const content = await Deno.readTextFile(`${root}/AGENTS.md`);
+    assertEquals((content.match(/~\/\.harness\//g) ?? []).length, 0);
+    assert(content.includes(`${root}/commands/`), "workflow search path must point to dest");
+    assert(content.includes(`${root}/context/management.md`), "glossary must point to dest");
+    assert(content.includes(`${root}/agents/`), "global layer agents path must point to dest");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: 再配布や二重実行で配布先文書を壊さない
+ * 検証意図: `~/.harness/` 書換が冪等で、同じ参照が二重に書換わらないこと（AC3）
+ */
+Deno.test("rewriteReferences - AGENTS.mdの~/.harness参照は再実行しても二重書換しない(冪等・AC3)", async () => {
+  const root = await Deno.makeTempDir({ prefix: "dist-agents-" });
+  try {
+    const file = `${root}/AGENTS.md`;
+    await Deno.writeTextFile(
+      file,
+      "workflow ~/.harness/commands/session-start.md\n" +
+        "glossary ~/.harness/context/management.md\n",
+    );
+    await rewriteReferences(root, false);
+    const first = await Deno.readTextFile(file);
+    await rewriteReferences(root, false);
+    const second = await Deno.readTextFile(file);
+    assertEquals(second, first);
+    assertEquals((second.match(/~\/\.harness\//g) ?? []).length, 0);
+    assertEquals(
+      (second.match(new RegExp(`${root}/context/management\\.md`, "g")) ?? []).length,
+      1,
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: グローバル層参照を追加した後もリポジトリ固有層の参照を壊さない
+ * 検証意図: `.github/context/` は素通しし、`~/.harness/context/` のみが書換対象であること（WP #791維持・AC3）
+ */
+Deno.test("rewriteReferences - グローバル参照の追加後も.github/contextは素通しする(WP #791維持・AC3)", async () => {
+  const root = await Deno.makeTempDir({ prefix: "dist-agents-" });
+  try {
+    const file = `${root}/AGENTS.md`;
+    await Deno.writeTextFile(
+      file,
+      "global ~/.harness/context/management.md\n" +
+        "repo .github/context/management.md\n" +
+        "repo .github/context/product.md\n",
+    );
+    await rewriteReferences(root, false);
+    const content = await Deno.readTextFile(file);
+    assert(content.includes(`${root}/context/management.md`));
+    assert(!content.includes("~/.harness/"), "~/.harness must be rewritten");
+    assert(
+      content.includes(".github/context/management.md"),
+      ".github/context must pass through",
+    );
+    assert(
+      content.includes(".github/context/product.md"),
+      ".github/context must pass through",
+    );
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: グローバル層のスキルパスを参照する文書を配布する
+ * 検証意図: `~/.harness/skills/bundles/<bundle>/<name>` も `global-` リネーム済みの配布先パスへ解決されること（AC3）
+ */
+Deno.test("rewriteReferences - グローバル層のスキルパスもglobal-リネームする(AC3)", async () => {
+  const root = await Deno.makeTempDir({ prefix: "dist-agents-" });
+  try {
+    const file = `${root}/AGENTS.md`;
+    await Deno.writeTextFile(
+      file,
+      "see ~/.harness/skills/bundles/management-bundle/session-planning/SKILL.md\n",
+    );
+    await rewriteReferences(root, false);
+    const content = await Deno.readTextFile(file);
+    assert(
+      content.includes(`${root}/skills/bundles/management-bundle/global-session-planning`),
+      "global layer skill path must be renamed to global-",
+    );
+    assert(!content.includes("bundle/session-planning"), "old skill path must be gone");
+    assert(!content.includes("~/.harness/"), "~/.harness must be rewritten");
+  } finally {
+    await Deno.remove(root, { recursive: true });
+  }
+});
+
+/**
+ * ユースケース: `$` を含むディレクトリへ配布する
+ * 検証意図: 置換文字列の `$&` 等が特殊展開されず、dest パスがリテラルに保たれること（AC3）
+ */
+Deno.test("rewriteReferences - destに$を含んでも特殊展開で壊れない(AC3)", async () => {
+  const base = await Deno.makeTempDir({ prefix: "dist-dollar-" });
+  const root = `${base}/dest$&x`;
+  await Deno.mkdir(root);
+  try {
+    const file = `${root}/AGENTS.md`;
+    await Deno.writeTextFile(file, "see ~/.harness/commands/session-start.md\n");
+    await rewriteReferences(root, false);
+    const content = await Deno.readTextFile(file);
+    assertEquals(content, `see ${root}/commands/session-start.md\n`);
+    assert(!content.includes("~/.harness/"), "~/.harness must be rewritten");
+  } finally {
+    await Deno.remove(base, { recursive: true });
+  }
+});
+
 Deno.test("rewriteReferences - 既にglobal-化済みのskill名は二重化しない(冪等・C2)", async () => {
   const root = await Deno.makeTempDir({ prefix: "dist-ref-" });
   try {
@@ -374,6 +502,17 @@ Deno.test("distribute E2E - 実配布が配布先へ到達する", async () => {
     await rewriteReferences(dest, false);
     await rewriteDenoJsonTasks(dest, renameMap, false);
     await rewriteSkillImports(dest, renameMap, false);
+    // 生成された AGENTS.md の参照解決（AC2/AC3。手動検証に依存しない回帰ガード）
+    const destAgents = await Deno.readTextFile(join(dest, "AGENTS.md"));
+    assertEquals((destAgents.match(/~\/\.harness\//g) ?? []).length, 0);
+    assert(
+      destAgents.includes(join(dest, "context", "management.md")),
+      "AGENTS.md must reference dest context/management.md",
+    );
+    assert(
+      destAgents.includes(".github/context/product.md"),
+      ".github/context must pass through in AGENTS.md (WP #791)",
+    );
     // 配布後除外（SKILL.md 全量配布手順6と同一。利用者の ~/.harness には触れない）
     await Deno.remove(join(dest, "skills", "bundles", "workspace-bundle"), {
       recursive: true,
