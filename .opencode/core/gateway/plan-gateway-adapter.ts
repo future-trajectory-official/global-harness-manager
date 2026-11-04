@@ -337,8 +337,8 @@ export function isOrganizationUnresolved(stdout: string): boolean {
  * ProjectV2 参照クエリのルートフィールドを `organization(login:` から
  * `user(login:` へ書き換える（純関数）。
  *
- * 現状の参照クエリは単一ルートのため全件置換と単発置換は等価だが、将来の
- * 複数ルート混在（半端な混成クエリ生成）を避けるため全件置換とする。
+ * 現状の参照クエリはルートフィールドが単一（`organization` のみ）のため全件置換と単発置換は
+ * 等価だが、将来の複数ルート混在（半端な混成クエリ生成）を避けるため全件置換とする。
  * 該当箇所が無い場合は無変更。
  *
  * @param query organization 版の GraphQL クエリ文字列
