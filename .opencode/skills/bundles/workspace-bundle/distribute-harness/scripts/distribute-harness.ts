@@ -10,7 +10,10 @@ import { stripJsoncComments } from "./connect-harness.ts";
 
 /**
  * WP_1 #748: グローバル配布機構（構造保持コピー＋global-名前変換）。
- * `.opencode/` の中身を `~/.harness/` フラット単一ルートへ構造保持で配布する。
+ * `.opencode/` 配下の資源を配布先ルート（既定 `~/.harness`）へ構造保持で配布する。
+ * 配布先の `skills` / `core` / `agents` / `commands` / `guides` は、全リポジトリ共通の能力・
+ * 管理プロセスを提供するグローバル層となり、各リポジトリの `.opencode/`（リポジトリ固有層）と
+ * 2層構造で運用される。
  * 既存 `publish-skills.ts` は破壊せず、本スクリプトを新規実装とする。
  *
  * 配布物として同梱する `deno.json` はリポジトリ root 版（単一の正）である。
