@@ -40,10 +40,19 @@
 
 ## rewriteReferences（対象 .md のみ）
 
-1. `(/)?\.opencode/skills/bundles/<bundle>/<name>` →
-   `<dest>/skills/bundles/<bundle>/global-<name>`。
-2. `(/)?\.opencode/(agents|commands|guides|context|core)/` → `<dest>/$1/`。
+1. `(/)?\.opencode/skills/bundles/<bundle>/<name>` または
+   `~/.harness/skills/bundles/<bundle>/<name>` → `<dest>/skills/bundles/<bundle>/global-<name>`。
+2. `(/)?\.opencode/(agents|commands|guides|core)/` → `<dest>/$1/`（`context`
+   は配布対象外のため除外。WP #791）。
 3. `[skill:<name>]` → `[skill:global-<name>]`（既存 `global-` は置換しない冪等）。
+4. `~/.harness/` → `<dest>/`（末尾 `/` を含む表記のみ対象。`--dest` 追従・冪等）。
+
+`<dest>` は絶対パスへ展開済みのため、置換文字列中の `$` は `$&` 等の特殊展開を避けて
+リテラル化する（`destRoot.split("$").join("$$")`。`replaceAll`
+は置換文字列側の解釈で潰れるため不可）。
+
+`.github/context/` は呼出元相対のため素通しし、グローバル層の `~/.harness/context/` とは区別する
+（前者は不変、後者は `<dest>/context/` へ解決）。
 
 ## rewriteSkillImports（対象 skills/ 配下 .ts のみ）
 
