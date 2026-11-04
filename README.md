@@ -88,7 +88,9 @@ flowchart TD
 
 ## ディレクトリ構成
 
-- `.opencode/`: ハーネスの中核となるエージェント資源（単一ルート）。
+- `.opencode/`: ハーネス資源の定義元（配布元リポジトリ）。ここで定義した資源は `distribute-harness`
+  によりグローバル層 `~/.harness/` へ配布される。配布先リポジトリでは、`~/.harness/`（グローバル層）
+  と自リポジトリの `.opencode/`（リポジトリ固有層）を2層構造で使い分ける。
   - `skills/bundles/`: 機能ごとにカプセル化されたスキル群。
     - `workspace-bundle`: 環境構築や検証に関わるスキル。
     - `management-bundle`: 計画策定やバックログ管理に関わるスキル。
@@ -97,13 +99,16 @@ flowchart TD
     - `meta-bundle`: エージェント自身の最適化や文脈同期に関わるスキル。
   - `agents/`: 各ロール（専門家）の定義。
   - `commands/`: タスク完遂までの標準化された手順書（ワークフロー入口）。
-  - `context/`: 管理概念・プロジェクト固有の用語集。
   - `core/`: ハーネス全体で共有される共通ユーティリティ。
+  - `test/`: リポジトリ横断の回帰ガード（配布対象外）。
+  - `guides/`: ユーザー向けガイドドキュメント。
+    - [プロダクトバックログ運用ガイドライン](/.opencode/guides/backlog-guidelines.md)
+    - [運用ガイド（Operations Guide）](/.opencode/guides/operations-guide.md)
+    - [スプリント振り返りガイドライン](/.opencode/guides/sprint-reflection-guide.md)
+    - [スプリントレビューガイドライン](/.opencode/guides/sprint-review-guidelines.md)
+    - [メトリクス評価ガイド](/.opencode/guides/metrics-guide.md)
+    - [セッション振り返りガイド（KPTA）](/.opencode/guides/reflection-guide.md)
+- `.github/context/`: 用語集。`management.md`（管理概念の不変定義の正本）と `product.md.example`
+  （リポジトリ固有用語のひな形）を置く。`distribute-harness` の自動コピー対象外であり、
+  `~/.harness/context/` へは同スキルの手順7で別枠配置する。
 - `config/`: 環境固有の設定。`.example` ファイルを元に作成します。
-- `.opencode/guides/`: ユーザー向けガイドドキュメント。
-  - [プロダクトバックログ運用ガイドライン](/.opencode/guides/backlog-guidelines.md)
-  - [運用ガイド（Operations Guide）](/.opencode/guides/operations-guide.md)
-  - [スプリント振り返りガイドライン](/.opencode/guides/sprint-reflection-guide.md)
-  - [スプリントレビューガイドライン](/.opencode/guides/sprint-review-guidelines.md)
-  - [メトリクス評価ガイド](/.opencode/guides/metrics-guide.md)
-  - [セッション振り返りガイド（KPTA）](/.opencode/guides/reflection-guide.md)

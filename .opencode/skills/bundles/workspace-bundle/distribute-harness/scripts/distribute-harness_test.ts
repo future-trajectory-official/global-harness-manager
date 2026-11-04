@@ -18,6 +18,12 @@ import {
 /** このテストファイルの位置から解決したリポジトリルートディレクトリ */
 const REPO_ROOT = join(dirname(fromFileUrl(import.meta.url)), "../../../../../..");
 
+/**
+ * AC1 の走査テストは skills/ 配下も全走査するため、検証語はリテラルで書かず実行時に連結する
+ * （このファイル自身が違反として検出されるのを避ける）。
+ */
+const LEGACY_WORDING = ["単一", "ルート"].join("");
+
 Deno.test("normalizeSkillName - global-接頭辞を付与し小文字ハイフン化する", () => {
   assertEquals(normalizeSkillName("select-work-package"), "global-select-work-package");
   assertEquals(normalizeSkillName("Select_Work_Package"), "global-select-work-package");
@@ -483,8 +489,67 @@ Deno.test("distribute E2E - dry-run は無副作用で計画7件を返す", asyn
 });
 
 /**
+ * WP #880 AC2: SKILL.md 手順7（context の別枠配置）を適用し、配布先の整合を検証する。
+ * @param dest - 配布先ルート
+ * @param destAgents - 配布先 `AGENTS.md` の内容
+ */
+async function applyStep7AndVerifyAc2(dest: string, destAgents: string): Promise<void> {
+  // 手順7: 自動コピー計画に含まれない context 2件を別枠配置する。
+  await Deno.mkdir(join(dest, "context"), { recursive: true });
+  for (const name of ["management.md", "product.md.example"]) {
+    await Deno.copyFile(
+      join(REPO_ROOT, ".github", "context", name),
+      join(dest, "context", name),
+    );
+  }
+  // AC1 の走査テストは skills/ 配下も全走査するため、検証語はリテラルで書かず実行時に連結する
+  // （このファイル自身が違反として検出されるのを避ける）。
+  assertEquals(
+    destAgents.split(LEGACY_WORDING).length - 1,
+    0,
+    "AC2: AGENTS.md must not contain legacy single-root wording",
+  );
+  // グローバル層へ配布される commands/agents/core/guides を .opencode/ で参照してはならない。
+  // skills はリポジトリ固有層の置場として .opencode/skills/ への言及が正当なため対象外。
+  assertEquals(
+    (destAgents.match(/\.opencode\/(agents|commands|core|guides)/g) ?? []).length,
+    0,
+    "AC2: AGENTS.md must not reference .opencode/ for globally distributed dirs",
+  );
+  for (const dir of COPY_DIRS.filter((name) => name !== "skills")) {
+    assert(
+      destAgents.includes(`${join(dest, dir)}/`),
+      `AC2: AGENTS.md must reference the destination ${dir}/ path`,
+    );
+    const dirStat = await Deno.stat(join(dest, dir));
+    assert(dirStat.isDirectory, `AC2: destination ${dir}/ must exist`);
+  }
+  // 手順7の成果物が正本と一致すること（存在確認だけでは自己成就になる）。
+  for (const name of ["management.md", "product.md.example"]) {
+    const [source, copied] = await Promise.all([
+      Deno.readTextFile(join(REPO_ROOT, ".github", "context", name)),
+      Deno.readTextFile(join(dest, "context", name)),
+    ]);
+    assertEquals(copied, source, `AC2: ${name} must be copied verbatim by step 7`);
+  }
+  // AGENTS.md が参照する配布先パスが実在すること（プレースホルダ `<...>` は除外）。
+  const destRefs = new Set<string>();
+  const destPrefix = `${dest}/`;
+  for (const line of destAgents.split("\n")) {
+    for (const token of line.split(/[\s`()[\]（）]+/)) {
+      if (!token.startsWith(destPrefix) || token.includes("<")) continue;
+      destRefs.add(token.replace(/[*.,;:、。]+$/, "").replace(/\/$/, ""));
+    }
+  }
+  assert(destRefs.size > 0, "AC2: AGENTS.md must reference destination paths");
+  for (const ref of destRefs) {
+    await Deno.stat(ref);
+  }
+}
+
+/**
  * ユースケース: 実配布でハーネス資源が配布先へ到達する
- * 検証意図: 一時ディレクトリへの実実行後にコピー7件・rename-map登録・deno.json書換え済み（#852）・workspace-bundle除外・他bundle残存を確認する
+ * 検証意図: 一時ディレクトリへの実実行後にコピー7件・rename-map登録・deno.json書換え済み（#852）・workspace-bundle除外・他bundle残存を確認する。加えて WP #880 AC2 として、手順6/7適用後の AGENTS.md 参照解決（旧表記・.opencode参照なし、配布先パス実在）と context 配置の正本一致を確認する
  */
 Deno.test("distribute E2E - 実配布が配布先へ到達する", async () => {
   const sourceRoot = join(REPO_ROOT, ".opencode");
@@ -586,6 +651,8 @@ Deno.test("distribute E2E - 実配布が配布先へ到達する", async () => {
     assert(!contextExists, "context must not be distributed (WP #791)");
     const other = await Deno.stat(join(dest, "skills", "bundles", "management-bundle"));
     assert(other.isDirectory, "other bundles must remain after exclusion");
+    // 手順7（context の別枠配置）の適用と AC2 検証（WP #880）
+    await applyStep7AndVerifyAc2(dest, destAgents);
   } finally {
     await Deno.remove(dest, { recursive: true });
   }
