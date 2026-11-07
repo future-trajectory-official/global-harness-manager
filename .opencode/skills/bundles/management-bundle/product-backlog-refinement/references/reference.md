@@ -57,8 +57,10 @@ echo '{"sprintNumber": 19}' | deno run -A .opencode/skills/bundles/management-bu
 | `proofMethod`   | `string`            | 任意 | 証明方法（例: `"E2Eテスト"`, `"コードレビュー"`）                  |
 | `parentFeature` | `{title, id, code}` | 任意 | 親Featureの識別子。`id` は必須                                     |
 
-`artifacts` はL2仕様（design-spec.md PBI Body推奨構造）に基づくカテゴリ階層形式である。`string[]`
-の簡易リストは受け付けない（`TypeError: statement.artifacts.categories is not iterable`）。
+`artifacts` は
+[body-structure.md](/.opencode/skills/bundles/management-bundle/product-backlog-refinement/references/body-structure.md)
+に定義するカテゴリ階層形式である。`string[]` の簡易リストは受け付けない
+（`TypeError: statement.artifacts.categories is not iterable`）。
 
 ```json
 // artifacts の入力形式

@@ -12,6 +12,8 @@ tags:
 
 PBIのタスク分解としてWPを作成し、初期見積りを記録する。入力形式と実行コマンドの詳細は
 [references/reference.md](/.opencode/skills/bundles/management-bundle/define-work-package/references/reference.md)
+を参照。WP本文の推奨構造（AC＋エビデンス）は
+[references/body-structure.md](/.opencode/skills/bundles/management-bundle/define-work-package/references/body-structure.md)
 を参照。
 
 ## 操作スクリプト
