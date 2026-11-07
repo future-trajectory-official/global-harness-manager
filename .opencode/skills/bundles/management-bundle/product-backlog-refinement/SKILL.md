@@ -14,6 +14,8 @@ tags:
 [references/reference.md](/.opencode/skills/bundles/management-bundle/product-backlog-refinement/references/reference.md)
 を参照。PBIの深掘りディスカッションの進め方は
 [references/pbi-deep-dive.md](/.opencode/skills/bundles/management-bundle/product-backlog-refinement/references/pbi-deep-dive.md)
+を参照。PBI本文の推奨構造（Summary / Artifacts / Proof Method）は
+[references/body-structure.md](/.opencode/skills/bundles/management-bundle/product-backlog-refinement/references/body-structure.md)
 を参照。
 
 ## 操作スクリプト
