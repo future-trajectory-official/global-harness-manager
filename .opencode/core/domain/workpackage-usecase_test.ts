@@ -214,6 +214,49 @@ Deno.test("revise should return Plan with update and comment", () => {
   assertEquals(plan.steps[2].operation, "comment");
 });
 
+/**
+ * ユースケース: WP を改訂する（本文は全置換）
+ * 検証意図: 改訂後の本文も AC＋エビデンス形式で再生成され、`statement` にエビデンスを
+ *           載せない場合はプレースホルダへ戻ること（`body-structure.md` に記載の既知挙動）
+ */
+Deno.test("revise should regenerate body with evidence placeholders", () => {
+  const plan = workPackageUseCase.revise(makeWpId(), makeStatement(), makeReason());
+  assertEquals(
+    plan.steps[1].params.body,
+    "## Acceptance Criteria\n\n" +
+      "- [ ] AC1: Login form works\n" +
+      "  - エビデンス: （未記入）\n" +
+      "- [ ] AC2: Token refresh works\n" +
+      "  - エビデンス: （未記入）",
+  );
+});
+
+/**
+ * ユースケース: 判定・エビデンスを保持したまま WP を改訂する
+ * 検証意図: `statement` の `judgment` / `evidence` が本文へ反映され、実値が失われないこと
+ */
+Deno.test("revise should keep evidence and judgment given in the statement", () => {
+  const statement: WorkPackageStatement = {
+    acceptanceCriteria: {
+      items: [
+        {
+          number: "1",
+          description: "Login form works",
+          judgment: "pass",
+          evidence: "deno task qa → exit 0（2026-11-08）",
+        },
+      ],
+    },
+  };
+  const plan = workPackageUseCase.revise(makeWpId(), statement, makeReason());
+  assertEquals(
+    plan.steps[1].params.body,
+    "## Acceptance Criteria\n\n" +
+      "- [x] AC1: Login form works\n" +
+      "  - エビデンス: deno task qa → exit 0（2026-11-08）",
+  );
+});
+
 Deno.test("revise should throw for empty title", () => {
   assertThrows(
     () =>

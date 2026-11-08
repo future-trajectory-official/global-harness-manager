@@ -7506,7 +7506,7 @@ const AC_BODY = [
   "## Acceptance Criteria",
   "",
   "- [ ] AC1: first",
-  "  - evidence: kept as-is",
+  "  - エビデンス: （未記入）",
   "- [ ] AC2: second",
   "- [x] AC3: third",
   "",
@@ -7528,7 +7528,7 @@ Deno.test("applyAcceptanceCriteriaDone - should check only specified ACs and pre
     result.body,
     AC_BODY.replace("- [ ] AC1: first", "- [x] AC1: first"),
   );
-  assert(result.body.includes("  - evidence: kept as-is"));
+  assert(result.body.includes("  - エビデンス: （未記入）"));
   assert(result.body.includes("- [ ] AC2: second"));
   assert(result.body.includes("作業メモ: この行は変更されてはならない。"));
 });
