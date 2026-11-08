@@ -34,12 +34,36 @@ import {
   assertTitleNonEmpty,
 } from "./validation.ts";
 
+/** エビデンス未設定の AC に出力するプレースホルダ文言。 */
+const EVIDENCE_PLACEHOLDER = "（未記入）";
+
+/**
+ * WP 本文（Issue Body）を生成する。
+ *
+ * `## Acceptance Criteria` 見出しの下に、AC 行とその直下へネストしたエビデンス行
+ * （インデント半角スペース2）を AC の件数だけ並べる。書式の正は
+ * `define-work-package` スキルの `references/body-structure.md`
+ * （配布先では `global-` 接頭辞が付く）。
+ *
+ * チェックボックスは `judgment === "pass"` のときのみ `[x]`、それ以外は `[ ]`。
+ * エビデンス行は `evidence` があればその値、無ければプレースホルダ
+ * `（未記入）` を出力する。
+ *
+ * したがって WP 作成（`define`）は常に未チェック・未記入で生成し、WP 改訂
+ * （`revise`）は渡された `statement` の値を反映する。`evidence` を載せずに
+ * 改訂した場合は既存エビデンスがプレースホルダへ戻る（本文は全置換）。
+ *
+ * @param statement 生成元の WP 記述（受入基準のリスト）
+ * @returns Markdown 形式の WP 本文
+ */
 function formatWpBody(statement: WorkPackageStatement): string {
   const lines: string[] = [];
   lines.push("## Acceptance Criteria");
   lines.push("");
   statement.acceptanceCriteria.items.forEach((ac) => {
-    lines.push(`- [ ] AC${ac.number}: ${ac.description}`);
+    const checkbox = ac.judgment === "pass" ? "x" : " ";
+    lines.push(`- [${checkbox}] AC${ac.number}: ${ac.description}`);
+    lines.push(`  - エビデンス: ${ac.evidence ?? EVIDENCE_PLACEHOLDER}`);
   });
   return lines.join("\n");
 }
