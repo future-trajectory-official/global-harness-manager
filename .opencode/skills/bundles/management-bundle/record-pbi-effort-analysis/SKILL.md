@@ -20,6 +20,14 @@ AIが乖離分析（planning / execution / improvement）を実施して対象PB
 
 ## Quick-Start
 
+> `<JSON>` の `identifier` には次の3キーを必ず指定する。
+>
+> - `title`（空文字不可）
+> - `id`（Issue の node ID）
+> - `code`（Issue 番号）
+>
+> `title` を省略・空文字にすると `INVALID_INPUT` で失敗する。
+
 ```bash
 # dry-run: 集計Planを確認
 echo '<JSON>' | deno run -A .opencode/skills/bundles/management-bundle/record-pbi-effort-analysis/scripts/record_pbi_effort_analysis.ts --dry-run
