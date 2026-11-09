@@ -4,6 +4,8 @@ description: スプリント終了時にPBI配下の全WPのeffort（initial/pla
 tags:
   - trigger: record-pbi-effort-analysis
   - trigger: record-pbi-analysis
+  - trigger: effort-variance
+  - trigger: estimate-analysis
   - trigger: sprint-end
   - category: management
 ---
