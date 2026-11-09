@@ -50,16 +50,23 @@ deno run -A .opencode/skills/bundles/management-bundle/read-project-state/script
 
 ## params キー一覧
 
-| キー         | 対象操作 | 型     | 説明                                                                            |
-| ------------ | -------- | ------ | ------------------------------------------------------------------------------- |
-| itemId       | find     | string | Issue番号。**find の主キー**。`"42"` のように指定                               |
-| code         | find     | string | itemId の別名。どちらかを指定すればよい                                         |
-| id           | find     | string | 任意。node ID等。省略可能                                                       |
-| number       | find     | string | Sprint 専用。スプリント番号（itemId/code の別名）                               |
-| status       | search   | string | ステータス（Todo / In Progress / Done）。**Idea（Status 未設定）は `__none__`** |
-| state        | search   | string | Issue の状態（open / closed）。**Sprint search 専用の値**: open / closed / all  |
-| sprintNumber | search   | string | スプリント番号で絞り込み                                                        |
-| keyword      | search   | string | タイトル等のキーワード検索                                                      |
+| キー         | 対象操作 | 型     | 説明                                                                                                  |
+| ------------ | -------- | ------ | ----------------------------------------------------------------------------------------------------- |
+| itemId       | find     | string | Issue番号。**find の主キー**。`"42"` のように指定                                                     |
+| code         | find     | string | itemId の別名。どちらかを指定すればよい                                                               |
+| id           | find     | string | 任意。node ID等。省略可能                                                                             |
+| number       | find     | string | Sprint 専用。**Milestone 番号**（itemId/code の別名）。Sprint 番号（例: Sprint 31）とは別物のため注意 |
+| status       | search   | string | ステータス（Todo / In Progress / Done）。**Idea（Status 未設定）は `__none__`**                       |
+| state        | search   | string | Issue の状態（open / closed）。**Sprint search 専用の値**: open / closed / all                        |
+| sprintNumber | search   | string | スプリント番号で絞り込み                                                                              |
+| keyword      | search   | string | タイトル等のキーワード検索                                                                            |
+
+> **Sprint の find は Milestone 番号で解決される**
+>
+> - `find` の `number` / `code` は Milestone 番号として扱われる。
+> - スプリント番号（例: `31`）をそのまま渡すと、番号が一致する別の Milestone を取得する場合がある。
+> - スプリント番号しか分からない場合は `search`（`state: "open"` 等）で一覧を取得し、`title`（例:
+>   `Sprint 31`）と対応する Milestone 番号を確認してから `find` に渡す。
 
 ## 実行例
 

@@ -69,6 +69,10 @@
 `code` 未指定の dry-run では `resolvedTarget` に `{"note":"実行時に検索します"}` が入る（dry-run
 は検索を実行しない）。
 
+> **`sprintNumber` 指定の dry-run について**: 検索を行わないため、`steps` の `itemId` は
+> `"0"`（プレースホルダ）で表示される。実実行時は `sprintNumber` から正しい Retrospective を
+> 検索する。dry-run で対象を確認したい場合は `code` を指定すること。
+
 ```json
 {
   "summary": "Record Sprint Metrics: Sprint 20 Retrospective",
