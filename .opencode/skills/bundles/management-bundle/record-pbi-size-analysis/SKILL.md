@@ -4,6 +4,9 @@ description: スプリント終了時にPBIの実感サイズ（size_actual）�
 tags:
   - trigger: record-pbi-size-analysis
   - trigger: record-size-analysis
+  - trigger: size-variance
+  - trigger: size-actual
+  - trigger: estimate-vs-actual
   - trigger: sprint-end
   - category: management
 ---

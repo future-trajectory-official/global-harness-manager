@@ -4,6 +4,8 @@ description: スプリント終了時に、完了済みのWPとPBIをアーカ�
 tags:
   - trigger: archive-product-backlog-items
   - trigger: archive-backlog-items
+  - trigger: close-issue
+  - trigger: archive-pbi
   - trigger: sprint-end
   - category: management
 ---
