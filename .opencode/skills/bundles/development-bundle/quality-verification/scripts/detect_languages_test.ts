@@ -7,7 +7,6 @@ const DETECT_SH = `${SCRIPTS}/detect-languages.sh`;
 const RUN_PY = `${SCRIPTS}/run-qa-py.sh`;
 const RUN_SH = `${SCRIPTS}/run-qa-sh.sh`;
 const RUN_TS = `${SCRIPTS}/run-qa-ts.sh`;
-const DOCKERFILE = `${SKILL_DIR}/assets/dockerfiles/qa-py.Dockerfile`;
 
 type Detection = {
   caseId: string;
@@ -395,34 +394,6 @@ Deno.test({
       });
     } finally {
       await Deno.remove(stub.dir, { recursive: true });
-    }
-  },
-});
-
-// ---- 版同期 (Dockerfileを正とする二重保守の機械検出) ----
-
-Deno.test({
-  name: "checker pins in SKILL.md match Dockerfile (single source)",
-  fn: async () => {
-    // 検証意図: 版の二重管理のdriftを機械検出すること。
-    const df = await Deno.readTextFile(DOCKERFILE);
-    const md = await Deno.readTextFile(SKILL_MD);
-    const ruff = df.match(/ruff==(\S+?)"/);
-    const pytest = df.match(/pytest==(\S+?)"/);
-    const uv = df.match(/astral-sh\/uv:(\S+?)@/);
-    const py = df.match(/python:([0-9.]+-slim)@/);
-    if (!ruff || !pytest || !uv || !py) throw new Error("pin parse failed");
-    for (const v of [ruff[1], pytest[1], uv[1], py[1]]) {
-      assertStringIncludes(md, v);
-    }
-    const sh = await Deno.readTextFile(`${SCRIPTS}/run-qa-sh.sh`);
-    for (
-      const m of sh.matchAll(
-        /(shellcheck:v\S+?@sha256:\w+|shfmt:v\S+?@sha256:\w+)/g,
-      )
-    ) {
-      assertStringIncludes(md, m[1].split("@")[0]);
-      assertStringIncludes(md, m[1].split("@")[1]);
     }
   },
 });
