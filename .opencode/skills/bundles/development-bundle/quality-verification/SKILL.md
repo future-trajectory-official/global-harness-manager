@@ -73,8 +73,8 @@ sh <skill-dir>/scripts/detect-languages.sh <caller-dir>
 
 除外 (共通): `.git` / `node_modules` / `cov_profile` / `dist` / `build` / `__pycache__` / `vendor`
 (`.opencode/node_modules` を含む、任意階層)。 除外リストの正は `scripts/lib-targets.sh`
-であり、本表は参照である (二重保守のdriftは `detect_languages_test.ts` の版同期テストで検出する)。
-`git ls-files` はuntracked欠落のため不採用 (代償として `.gitignore`
+であり、本表は参照である (二重保守のdriftは `detect_languages_test.ts` で検出する)。 `git ls-files`
+はuntracked欠落のため不採用 (代償として `.gitignore`
 は無視する。生成物の誤検出は件数ログで人間が判断する)。
 
 判定フロー (ゲートG → A〜E)。D1/D2はOR結合、P1/S1はAND・単独で分岐する:
@@ -165,25 +165,16 @@ runnerの要点 (詳細は各スクリプトのヘッダコメントを正とす
   (明示列挙) / `test` の直接実行。config不在時の `deno check`
   空振りはスキップ成功として警告記録する。
 
-checker提供の版 (2026-10-21確定・証跡。Dockerfileを正とし、本表との一致は `detect_languages_test.ts`
-の版同期テストで機械検出する):
+checker が提供するツールと版は `assets/dockerfiles/qa-py.Dockerfile` を正とする (両イメージの
+entrypoint 実体も同 Dockerfile と `run-qa-sh.sh` を正とする)。SKILL.md には版を記載しない
+(版の変遷はコミット/PR で追う)。ビルドは runner が実行の都度行い、不変時はキャッシュで即時。
+実行後は `docker inspect` の digest を Report に記録する (タグではなく digest で検証する)。
 
-| checker    | 提供形態                                                                                              | 版      |
-| ---------- | ----------------------------------------------------------------------------------------------------- | ------- |
-| ruff       | `harness-qa-py:20261021` 内蔵                                                                         | 0.17.1  |
-| pytest     | `harness-qa-py:20261021` 内蔵                                                                         | 9.1.1   |
-| uv         | `harness-qa-py:20261021` 内蔵                                                                         | 0.13.4  |
-| shellcheck | `koalaman/shellcheck:v0.11.0@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d` | 0.11.0  |
-| shfmt      | `mvdan/shfmt:v3.14.1@sha256:8c06884a35683d8763fba6c0d9484d11a61a96da65f8d497d6f625825a6043f2`         | v3.14.1 |
-
-`harness-qa-py:20261021` はローカルビルドイメージである (基盤
-`python:3.12-slim@sha256:6c4dd321d176d61ea848dc8c73a4f7dbae8f70e0ee48bb411ea2f045b599fa8e`
-
-- `ghcr.io/astral-sh/uv:0.13.4@sha256:9f130421e930bfbdc563c00740466603f8723158e90297d07957c2294640262b`
-  由来のuv同梱 + `ruff==0.17.1` `pytest==9.1.1` をpip固定)。 版タグは可変名 (`latest`/`stable`)
-  を使わず版対応タグ＋digestで固定する。 ビルドは runner が実行の都度行う
-  (不変時はキャッシュで即時)。実行後は `docker inspect` の digest を Report に記録する
-  (タグではなくdigestで検証する)。 再ビルド手順: `assets/dockerfiles/qa-py.Dockerfile` を正とする。
+`run-qa-py.sh` のイメージは `PyYAML` を同梱している。checker 自身の用途ではなく、**呼出元の Python
+が `yaml` に依存する場合の「沈黙skip」防止**のためである。未導入だと pytest は収集時に
+エラー終了するか、`import yaml` をガードしたテストを丸ごと skip したまま `qa:py` が緑を返し、
+検証対象のロジックが1行も検査されない。同種の不足を見つけた場合は Dockerfile に追加し、 ビルド時に
+import で存在を保証すること。
 
 ### Step 3: 結果の確認
 
