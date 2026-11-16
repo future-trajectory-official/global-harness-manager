@@ -30,7 +30,7 @@ if [ ! -d "$CALLER" ]; then
   exit 2
 fi
 
-IMAGE="harness-qa-py:20261021"
+IMAGE="harness-qa-py:20261116"
 DOCKERFILE="$SKILL_DIR/assets/dockerfiles/qa-py.Dockerfile"
 
 echo "qa:py: building checker image (cached when unchanged)..."

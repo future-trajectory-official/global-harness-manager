@@ -409,10 +409,13 @@ Deno.test({
     const md = await Deno.readTextFile(SKILL_MD);
     const ruff = df.match(/ruff==(\S+?)"/);
     const pytest = df.match(/pytest==(\S+?)"/);
+    const pyyaml = df.match(/PyYAML==(\S+?)"/);
     const uv = df.match(/astral-sh\/uv:(\S+?)@/);
     const py = df.match(/python:([0-9.]+-slim)@/);
-    if (!ruff || !pytest || !uv || !py) throw new Error("pin parse failed");
-    for (const v of [ruff[1], pytest[1], uv[1], py[1]]) {
+    if (!ruff || !pytest || !pyyaml || !uv || !py) {
+      throw new Error("pin parse failed");
+    }
+    for (const v of [ruff[1], pytest[1], pyyaml[1], uv[1], py[1]]) {
       assertStringIncludes(md, v);
     }
     const sh = await Deno.readTextFile(`${SCRIPTS}/run-qa-sh.sh`);

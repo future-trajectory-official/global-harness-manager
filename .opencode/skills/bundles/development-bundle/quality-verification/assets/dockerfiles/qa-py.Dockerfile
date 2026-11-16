@@ -15,12 +15,16 @@
 # <context> is the Dockerfile's own directory (no COPY . is used; only
 # COPY --from pinned images + pip installs from the network at build time).
 # Runtime: docker run --rm --network none --user UID:GID -v <CWD>:/app:ro -w /app <image> <checker...>
+#
+# 2026-11-16: PyYAML を追加（呼出元の Python が yaml に依存する場合、未導入だと
+#   テストが丸ごと skip され「検証したつもり」になるため。comfyui-local-ops WP#122 で実測）。
 FROM python:3.12-slim@sha256:6c4dd321d176d61ea848dc8c73a4f7dbae8f70e0ee48bb411ea2f045b599fa8e
 
 COPY --from=ghcr.io/astral-sh/uv:0.13.4@sha256:9f130421e930bfbdc563c00740466603f8723158e90297d07957c2294640262b /uv /uvx /bin/
 
-RUN pip install --no-cache-dir "ruff==0.17.1" "pytest==9.1.1" \
+RUN pip install --no-cache-dir "ruff==0.17.1" "pytest==9.1.1" "PyYAML==6.0.3" \
   && ruff --version \
   && pytest --version \
+  && python3 -c "import yaml; print('PyYAML', yaml.__version__)" \
   && uv --version \
   && python3 --version

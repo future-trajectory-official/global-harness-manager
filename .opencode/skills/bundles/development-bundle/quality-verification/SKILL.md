@@ -165,25 +165,33 @@ runnerの要点 (詳細は各スクリプトのヘッダコメントを正とす
   (明示列挙) / `test` の直接実行。config不在時の `deno check`
   空振りはスキップ成功として警告記録する。
 
-checker提供の版 (2026-10-21確定・証跡。Dockerfileを正とし、本表との一致は `detect_languages_test.ts`
+checker提供の版 (2026-11-16確定・証跡。Dockerfileを正とし、本表との一致は `detect_languages_test.ts`
 の版同期テストで機械検出する):
 
 | checker    | 提供形態                                                                                              | 版      |
 | ---------- | ----------------------------------------------------------------------------------------------------- | ------- |
-| ruff       | `harness-qa-py:20261021` 内蔵                                                                         | 0.17.1  |
-| pytest     | `harness-qa-py:20261021` 内蔵                                                                         | 9.1.1   |
-| uv         | `harness-qa-py:20261021` 内蔵                                                                         | 0.13.4  |
+| ruff       | `harness-qa-py:20261116` 内蔵                                                                         | 0.17.1  |
+| pytest     | `harness-qa-py:20261116` 内蔵                                                                         | 9.1.1   |
+| uv         | `harness-qa-py:20261116` 内蔵                                                                         | 0.13.4  |
+| PyYAML     | `harness-qa-py:20261116` 内蔵                                                                         | 6.0.3   |
 | shellcheck | `koalaman/shellcheck:v0.11.0@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d` | 0.11.0  |
 | shfmt      | `mvdan/shfmt:v3.14.1@sha256:8c06884a35683d8763fba6c0d9484d11a61a96da65f8d497d6f625825a6043f2`         | v3.14.1 |
 
-`harness-qa-py:20261021` はローカルビルドイメージである (基盤
+`harness-qa-py:20261116` はローカルビルドイメージである (基盤
 `python:3.12-slim@sha256:6c4dd321d176d61ea848dc8c73a4f7dbae8f70e0ee48bb411ea2f045b599fa8e`
 
 - `ghcr.io/astral-sh/uv:0.13.4@sha256:9f130421e930bfbdc563c00740466603f8723158e90297d07957c2294640262b`
-  由来のuv同梱 + `ruff==0.17.1` `pytest==9.1.1` をpip固定)。 版タグは可変名 (`latest`/`stable`)
-  を使わず版対応タグ＋digestで固定する。 ビルドは runner が実行の都度行う
+  由来のuv同梱 + `ruff==0.17.1` `pytest==9.1.1` `PyYAML==6.0.3` をpip固定)。 版タグは可変名
+  (`latest`/`stable`) を使わず版対応タグ＋digestで固定する。 ビルドは runner が実行の都度行う
   (不変時はキャッシュで即時)。実行後は `docker inspect` の digest を Report に記録する
   (タグではなくdigestで検証する)。 再ビルド手順: `assets/dockerfiles/qa-py.Dockerfile` を正とする。
+
+PyYAML は checker 自身の用途ではなく、**呼出元の Python が `yaml`
+に依存する場合の「沈黙skip」防止**のために同梱している。 未導入だと pytest
+は収集時にエラー終了するか、`import yaml` をガードしたテストを丸ごと skip したまま `qa:py`
+が緑を返し、検証対象のロジックが1行も検査されない (comfyui-local-ops WP#122 で実測)。
+同種の依存不足を見つけたら、この表と Dockerfile の両方へ追加し、`detect_languages_test.ts`
+の版同期テストにもそのピンを検査する行を加えること。
 
 ### Step 3: 結果の確認
 
