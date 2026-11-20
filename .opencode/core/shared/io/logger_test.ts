@@ -1,4 +1,5 @@
 import { assertEquals } from "@std/assert";
+import { stub } from "@std/testing/mock";
 import { logger } from "./logger.ts";
 
 /**
@@ -26,4 +27,24 @@ Deno.test("logger - methods should execute without throwing", () => {
   logger.dryRun("Test dryRun");
   logger.success("Test success");
   logger.debug("Test debug");
+});
+
+/**
+ * logger - debug の出力先が stderr であることを検証する。
+ * スキルは JSON を stdout に出すため、debug が stdout へ戻ると出力契約が壊れる（WP #908）。
+ */
+Deno.test("logger - debug should write to stderr and keep stdout clean", () => {
+  const errorStub = stub(console, "error");
+  const logStub = stub(console, "log");
+  try {
+    logger.debug("debug-contract-check");
+
+    assertEquals(errorStub.calls.length, 1);
+    assertEquals(String(errorStub.calls[0].args[0]).includes("[DEBUG]"), true);
+    assertEquals(String(errorStub.calls[0].args[0]).includes("debug-contract-check"), true);
+    assertEquals(logStub.calls.length, 0, "debug が stdout に出力されている");
+  } finally {
+    errorStub.restore();
+    logStub.restore();
+  }
 });
