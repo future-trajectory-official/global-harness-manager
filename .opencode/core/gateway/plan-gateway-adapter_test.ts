@@ -1,13 +1,17 @@
 import { assert, assertEquals, assertRejects, assertStringIncludes } from "@std/assert";
+import { stub } from "@std/testing/mock";
 import type { ExecuteResult } from "../shared/io/command.ts";
 import {
   aliasUserAsOrganization,
   applyAcceptanceCriteriaDone,
+  filterProjectSearchItems,
   isOrganizationUnresolved,
   PlanGatewayAdapter,
   toUserProjectQuery,
   upsertVelocitySection,
 } from "./plan-gateway-adapter.ts";
+import type { ProjectSearchItem } from "./plan-gateway-adapter.ts";
+import { logger } from "../shared/io/logger.ts";
 import type { UnreplacedAcJudgment } from "./plan-gateway-adapter.ts";
 import { FIELD, HARNESS_FIELDS } from "./field-registry.ts";
 import type { Plan } from "../domain/types.ts";
@@ -7355,7 +7359,12 @@ Deno.test("WP809 review comment - should cleanup temp input after GraphQL runner
   assertEquals(exists, false, "temporary input should be removed when runner rejects");
 });
 
-/** ProjectV2 items 応答を組み立てる共通フィクスチャ（AC1-877: WP検索の射影）。 */
+/**
+ * ProjectV2 items 応答を組み立てる共通フィクスチャ（AC1-877: WP検索の射影）。
+ *
+ * `repository` / `labels` は未指定なら GraphQL 応答からノード自体を省略する。
+ * これは「取得できない（不明）」を表し、絞り込みでは除外されない（AC5-908）。
+ */
 function projectItemsPayload(
   nodes: Array<{
     number: number;
@@ -7366,6 +7375,10 @@ function projectItemsPayload(
     parent?: { number: number; title: string; id: string } | null;
     status?: string | null;
     effort?: string | null;
+    repository?: string | null;
+    labels?: string[] | null;
+    /** ラベルの総件数。取得窓（first）より大きい場合は切り捨てを表す。既定は labels.length。 */
+    labelTotalCount?: number;
   }>,
 ): string {
   return JSON.stringify({
@@ -7382,6 +7395,15 @@ function projectItemsPayload(
                 state: n.state ?? "OPEN",
                 body: n.body ?? "",
                 parent: n.parent ?? null,
+                ...(n.repository === undefined || n.repository === null
+                  ? {}
+                  : { repository: { nameWithOwner: n.repository } }),
+                ...(n.labels === undefined || n.labels === null ? {} : {
+                  labels: {
+                    totalCount: n.labelTotalCount ?? n.labels.length,
+                    nodes: n.labels.map((name) => ({ name })),
+                  },
+                }),
               },
               fieldValueByName: n.status === null ? null : { name: n.status ?? "Todo" },
               effort: n.effort === undefined ? null : { text: n.effort },
@@ -7495,6 +7517,471 @@ Deno.test("handleProjectSearchItems - should return null for missing effort and 
     plannedEstimate: null,
     acCount: 0,
   }]);
+});
+
+/**
+ * ユースケース: 別リポジトリのIssueが混在するボードを検索する場合
+ * 検証意図: 解決済みスコープと異なるリポジトリの項目が結果に含まれず、大文字小文字差は同一視されること (AC1-908)
+ */
+Deno.test("handleProjectSearchItems - should exclude items from other repositories (AC1-908)", async () => {
+  const adapter = makeAdapter(fixedRunner(projectItemsPayload([
+    { number: 1, title: "own", repository: `${OWNER}/${REPO}` },
+    { number: 2, title: "other", repository: "another-org/another-repo" },
+    {
+      number: 3,
+      title: "own-uppercase",
+      repository: `${OWNER.toUpperCase()}/${REPO.toUpperCase()}`,
+    },
+    // 同一 org 配下の別リポジトリ（owner だけを比較する退行を検出する）
+    { number: 4, title: "same-org-other-repo", repository: `${OWNER}/other-repo` },
+  ])));
+
+  const result = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "PBI",
+    boardNumber: 10,
+  });
+
+  assertEquals(result.success, true);
+  const output = result.output as Array<{ number: number }>;
+  assertEquals(output.map((o) => o.number), [1, 3]);
+});
+
+/**
+ * ユースケース: 別リポジトリのIssueを混ぜたボードを PBI検索・WP検索の両方で引く場合
+ * 検証意図: どちらの種別検索でも自リポジトリの項目だけが返ること (AC2-908)
+ */
+Deno.test("handleProjectSearchItems - should return only own repository for PBI and WP searches (AC2-908)", async () => {
+  const adapter = makeAdapter(fixedRunner(projectItemsPayload([
+    {
+      number: 1,
+      title: "own-pbi",
+      repository: `${OWNER}/${REPO}`,
+      labels: ["type:PBI"],
+      status: "Todo",
+    },
+    {
+      number: 2,
+      title: "other-pbi",
+      repository: "another-org/another-repo",
+      labels: ["type:PBI"],
+      status: "Todo",
+    },
+    {
+      number: 3,
+      title: "own-wp",
+      repository: `${OWNER}/${REPO}`,
+      labels: ["type:WP"],
+      status: "Todo",
+      parent: { number: 1, title: "own-pbi", id: "I_node1" },
+    },
+    {
+      number: 4,
+      title: "other-wp",
+      repository: "another-org/another-repo",
+      labels: ["type:WP"],
+      status: "Todo",
+      parent: { number: 2, title: "other-pbi", id: "I_node2" },
+    },
+  ])));
+
+  const pbi = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "PBI",
+    boardNumber: 10,
+  });
+  const wp = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "WP",
+    boardNumber: 11,
+  });
+
+  assertEquals(pbi.success, true);
+  assertEquals(wp.success, true);
+  // 種別ラベル絞り込み（AC6）導入後は集合一致まで厳格化する。
+  assertEquals((pbi.output as Array<{ number: number }>).map((o) => o.number), [1]);
+  assertEquals((wp.output as Array<{ number: number }>).map((o) => o.number), [3]);
+});
+
+/**
+ * ユースケース: 同一条件をラベル検索（REST）とボード検索（GraphQL）の両方で引く場合
+ * 検証意図: リポジトリ絞り込み後、open のIssue集合が両経路で一致すること (AC3-908)
+ *
+ * ラベル検索は `--state open` 既定、ボード検索は開閉を絞らないため、比較対象は open に限定する
+ * （PO決定 2026-11-20）。closed のIssueと他リポジトリのIssueは比較から除外されることを併せて確認する。
+ */
+Deno.test("handleProjectSearchItems - should match label search results for open issues (AC3-908)", async () => {
+  const labelSearchPayload = JSON.stringify([
+    { number: 1, title: "pbi-open-1", labels: [{ name: "type:PBI" }] },
+    { number: 2, title: "pbi-open-2", labels: [{ name: "type:PBI" }] },
+  ]);
+  const runner = (cmd: string, args: string[]): Promise<ExecuteResult> => {
+    if (cmd === "gh" && args.includes("list")) {
+      return Promise.resolve({ code: 0, stdout: labelSearchPayload, stderr: "" });
+    }
+    return Promise.resolve({
+      code: 0,
+      stdout: projectItemsPayload([
+        {
+          number: 1,
+          title: "pbi-open-1",
+          repository: `${OWNER}/${REPO}`,
+          labels: ["type:PBI"],
+        },
+        {
+          number: 2,
+          title: "pbi-open-2",
+          repository: `${OWNER}/${REPO}`,
+          labels: ["type:PBI"],
+        },
+        {
+          number: 3,
+          title: "pbi-closed",
+          state: "CLOSED",
+          repository: `${OWNER}/${REPO}`,
+          labels: ["type:PBI"],
+        },
+        {
+          number: 4,
+          title: "pbi-other-repo",
+          repository: "another-org/another-repo",
+          labels: ["type:PBI"],
+        },
+      ]),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+
+  const labelResult = await adapter.handleSearchItems({ type: "PBI" });
+  const boardResult = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "PBI",
+    boardNumber: 10,
+  });
+
+  assertEquals(labelResult.success, true);
+  assertEquals(boardResult.success, true);
+  const labelNumbers = (labelResult.output as Array<{ number: number }>)
+    .map((o) => o.number)
+    .sort((a, b) => a - b);
+  const boardOpenNumbers = (boardResult.output as Array<{ number: number; issueState: string }>)
+    .filter((o) => o.issueState === "OPEN")
+    .map((o) => o.number)
+    .sort((a, b) => a - b);
+  assertEquals(boardOpenNumbers, labelNumbers);
+
+  // 比較対象から外した closed 項目が実際にボード側へ含まれていることを固定する
+  // （GraphQL 側に state フィルタを追加する変更が入れば、この断言で検知できる）。
+  const boardOutput = boardResult.output as Array<{ number: number; issueState: string }>;
+  assertEquals(
+    boardOutput.some((o) => o.number === 3 && o.issueState === "CLOSED"),
+    true,
+    "closed 項目がボード検索結果に含まれていない（比較前提が崩れている）",
+  );
+});
+
+/**
+ * ユースケース: 他リポジトリ・種別違いの項目が混在し、除外が発生するボードを検索する場合
+ * 検証意図: 除外件数が logger.debug に種別ごとの2行で残り、除外0件のときは出力されないこと (AC4-908)
+ */
+Deno.test("handleProjectSearchItems - should log excluded counts only when exclusions occur (AC4-908)", async () => {
+  const mixed = makeAdapter(fixedRunner(projectItemsPayload([
+    { number: 1, title: "own", repository: `${OWNER}/${REPO}`, labels: ["type:PBI"] },
+    { number: 2, title: "other-1", repository: "another-org/another-repo", labels: ["type:PBI"] },
+    { number: 3, title: "other-2", repository: "another-org/another-repo", labels: ["type:PBI"] },
+    // 自リポジトリだが種別ラベルが違う項目（2行目のログを駆動する）
+    { number: 5, title: "own-wrong-type", repository: `${OWNER}/${REPO}`, labels: ["bug"] },
+  ])));
+  const noExclusion = makeAdapter(fixedRunner(projectItemsPayload([
+    { number: 4, title: "own-only", repository: `${OWNER}/${REPO}`, labels: ["type:PBI"] },
+  ])));
+
+  // AC の要求は「logger.debug に残る」ため、出力先（console）ではなく logger を直接捕捉する。
+  const debugStub = stub(logger, "debug");
+  try {
+    await mixed.handleProjectSearchItems({ status: "Todo", labelType: "PBI", boardNumber: 10 });
+    const mixedMessages = debugStub.calls.map((c) => String(c.args[0]));
+    assertEquals(
+      mixedMessages.includes(
+        "[handleProjectSearchItems] excluded 2 item(s) from other repositories",
+      ),
+      true,
+      "他リポジトリ除外件数のdebugログが出ていない",
+    );
+    assertEquals(
+      mixedMessages.includes(
+        "[handleProjectSearchItems] excluded 1 item(s) without label type:PBI",
+      ),
+      true,
+      "種別ラベル除外件数のdebugログが出ていない",
+    );
+    assertEquals(
+      mixedMessages.some((m) =>
+        m.includes("fetched=4 matched=1") && m.includes("other repositories=2") &&
+        m.includes("labelType=1")
+      ),
+      true,
+      "取得件数と採用件数・除外内訳のdebugログが出ていない",
+    );
+  } finally {
+    debugStub.restore();
+  }
+
+  const noExclusionStub = stub(logger, "debug");
+  try {
+    const result = await noExclusion.handleProjectSearchItems({
+      status: "Todo",
+      labelType: "PBI",
+      boardNumber: 10,
+    });
+    assertEquals(result.success, true);
+    assertEquals(
+      noExclusionStub.calls.filter((c) => String(c.args[0]).includes("handleProjectSearchItems"))
+        .length,
+      0,
+      "除外0件なのにdebugログが出ている",
+    );
+  } finally {
+    noExclusionStub.restore();
+  }
+});
+
+/**
+ * ユースケース: repository / labels を取得できない項目が混在する場合
+ * 検証意図: 取得不能（＝不明）の項目は除外されず残ること (AC5-908)
+ *
+ * 補足: GraphQL スキーマ上 `Issue.repository` / `Issue.labels` は non-null のため、この状態は
+ * 通常発生しない（異常応答時の防御）。DraftIssue は `... on Issue` に一致せず number 欠落で
+ * 取得段階で落ちるため、本テストの対象外。
+ */
+Deno.test("handleProjectSearchItems - should keep items without repository or labels (AC5-908)", async () => {
+  const adapter = makeAdapter(fixedRunner(projectItemsPayload([
+    { number: 1, title: "known-both", repository: `${OWNER}/${REPO}`, labels: ["type:PBI"] },
+    { number: 2, title: "unknown-both" },
+    { number: 3, title: "unknown-repository", labels: ["type:PBI"] },
+    { number: 4, title: "unknown-labels", repository: `${OWNER}/${REPO}` },
+  ])));
+
+  const result = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "PBI",
+    boardNumber: 10,
+  });
+
+  assertEquals(result.success, true);
+  const output = result.output as Array<{ number: number }>;
+  assertEquals(output.map((o) => o.number), [1, 2, 3, 4]);
+});
+
+/**
+ * ユースケース: PBI と WP が同じボードに混在している場合
+ * 検証意図: 種別ラベルで絞り込まれ、PBI検索にWPが混入せず、WP検索にPBIが混入しないこと (AC6-908)
+ *
+ * PO決定C（2026-11-20）: labels が取得できない項目は「不明」として残し、
+ * 取得できて `type:<labelType>` を持たない項目は除外する。
+ */
+Deno.test("handleProjectSearchItems - should separate PBI and WP by type label (AC6-908)", async () => {
+  const adapter = makeAdapter(fixedRunner(projectItemsPayload([
+    { number: 1, title: "pbi", labels: ["type:PBI"] },
+    { number: 2, title: "wp", labels: ["type:WP"] },
+    { number: 3, title: "other-label", labels: ["bug"] },
+    { number: 4, title: "no-label", labels: [] },
+    { number: 5, title: "labels-unknown" },
+  ])));
+
+  const pbi = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "PBI",
+    boardNumber: 10,
+  });
+  const wp = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "WP",
+    boardNumber: 11,
+  });
+
+  assertEquals(pbi.success, true);
+  assertEquals(wp.success, true);
+  assertEquals((pbi.output as Array<{ number: number }>).map((o) => o.number), [1, 5]);
+  assertEquals((wp.output as Array<{ number: number }>).map((o) => o.number), [2, 5]);
+});
+
+/**
+ * ユースケース: ラベルが取得上限を超えて切り捨てられた項目が混在する場合
+ * 検証意図: 完全性を保証できない項目を「未付与」と誤判定して除外せず、不明として残すこと (AC1-908)
+ */
+Deno.test("handleProjectSearchItems - should keep items whose labels were truncated (AC1-908)", async () => {
+  const adapter = makeAdapter(fixedRunner(projectItemsPayload([
+    {
+      number: 1,
+      title: "truncated",
+      repository: `${OWNER}/${REPO}`,
+      labels: ["bug", "docs"],
+      labelTotalCount: 150,
+    },
+    {
+      number: 2,
+      title: "complete",
+      repository: `${OWNER}/${REPO}`,
+      labels: ["type:PBI"],
+      labelTotalCount: 1,
+    },
+  ])));
+
+  const result = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "PBI",
+    boardNumber: 10,
+  });
+
+  assertEquals(result.success, true);
+  assertEquals((result.output as Array<{ number: number }>).map((o) => o.number), [1, 2]);
+});
+
+/**
+ * ユースケース: ボード検索の GraphQL クエリを組み立てる場合
+ * 検証意図: リポジトリ・種別ラベルの判定に必要なフィールドがクエリに含まれること (AC1-908)
+ *
+ * レスポンスだけを差し替えるモックでは選択フィールドの欠落を検出できないため、送信引数を検証する。
+ */
+Deno.test("handleProjectSearchItems - should request repository and labels in the GraphQL query (AC1-908)", async () => {
+  const { runner, calls } = mockRunner();
+  const adapter = makeAdapter(runner);
+
+  await adapter.handleProjectSearchItems({ status: "Todo", labelType: "PBI", boardNumber: 10 });
+
+  const graphqlCall = calls.find((c) => c.cmd === "gh" && c.args.includes("graphql"));
+  assert(graphqlCall, "GraphQL 呼出が行われていない");
+  const query = graphqlCall.args.find((a) => a.startsWith("query=")) ?? "";
+  assertStringIncludes(query, "repository { nameWithOwner }");
+  assertStringIncludes(query, "totalCount");
+  assertStringIncludes(query, "nodes { name }");
+});
+
+/**
+ * ユースケース: フィルタ条件を直接検証する場合
+ * 検証意図: 判定順序と除外件数の計上規則（1項目1カテゴリ・status/親PBIは計上しない）が仕様どおりであること (AC1/AC4/AC6-908)
+ */
+Deno.test("filterProjectSearchItems - should count exclusions per category in order (AC4-908)", () => {
+  const items: ProjectSearchItem[] = [
+    {
+      number: 1,
+      title: "own-pbi",
+      id: "1",
+      issueState: "OPEN",
+      body: "",
+      status: "Todo",
+      parent: null,
+      effortText: null,
+      repository: `${OWNER}/${REPO}`,
+      labels: ["type:PBI"],
+    },
+    {
+      number: 2,
+      title: "other-repo",
+      id: "2",
+      issueState: "OPEN",
+      body: "",
+      status: "Todo",
+      parent: null,
+      effortText: null,
+      repository: "another-org/another-repo",
+      labels: ["type:PBI"],
+    },
+    {
+      number: 3,
+      title: "own-wp",
+      id: "3",
+      issueState: "OPEN",
+      body: "",
+      status: "Todo",
+      parent: null,
+      effortText: null,
+      repository: `${OWNER}/${REPO}`,
+      labels: ["type:WP"],
+    },
+    {
+      number: 4,
+      title: "other-repo-and-wp",
+      id: "4",
+      issueState: "OPEN",
+      body: "",
+      status: "Todo",
+      parent: null,
+      effortText: null,
+      repository: "another-org/another-repo",
+      labels: ["type:WP"],
+    },
+    {
+      number: 5,
+      title: "wrong-status",
+      id: "5",
+      issueState: "OPEN",
+      body: "",
+      status: "Done",
+      parent: null,
+      effortText: null,
+      repository: "another-org/another-repo",
+      labels: ["type:WP"],
+    },
+    {
+      number: 6,
+      title: "unknown-labels",
+      id: "6",
+      issueState: "OPEN",
+      body: "",
+      status: "Todo",
+      parent: null,
+      effortText: null,
+      repository: `${OWNER}/${REPO}`,
+    },
+  ];
+
+  const result = filterProjectSearchItems(items, {
+    status: "Todo",
+    parentPbiNumber: null,
+    labelType: "PBI",
+    scope: { owner: OWNER, repository: REPO },
+  });
+
+  assertEquals(result.matched.map((i) => i.number), [1, 6]);
+  // #2,#4 はリポジトリ不一致（#4 は種別も不一致だがリポジトリ側にのみ計上）
+  assertEquals(result.repositoryExcluded, 2);
+  // #3 のみ種別不一致（#4 はリポジトリで先に除外済み）
+  assertEquals(result.labelTypeExcluded, 1);
+  // #5 は status 不一致で、除外件数には計上しない
+  assertEquals(result.matched.length + result.repositoryExcluded + result.labelTypeExcluded, 5);
+});
+
+/**
+ * ユースケース: labels が空配列（取得できて付与0件）の項目を検索する場合
+ * 検証意図: 空配列は「不明」ではなく「未付与」として除外されること (AC6-908)
+ */
+Deno.test("filterProjectSearchItems - should exclude empty labels but keep undefined labels (AC6-908)", () => {
+  const base = {
+    id: "x",
+    issueState: "OPEN",
+    body: "",
+    status: "Todo",
+    parent: null,
+    effortText: null,
+    repository: `${OWNER}/${REPO}`,
+  };
+  const items: ProjectSearchItem[] = [
+    { ...base, number: 1, title: "empty", labels: [] },
+    { ...base, number: 2, title: "undefined" },
+  ];
+
+  const result = filterProjectSearchItems(items, {
+    status: "Todo",
+    parentPbiNumber: null,
+    labelType: "PBI",
+    scope: { owner: OWNER, repository: REPO },
+  });
+
+  assertEquals(result.matched.map((i) => i.number), [2]);
+  assertEquals(result.labelTypeExcluded, 1);
 });
 
 /** AC2-877 用のWP本文フィクスチャ（AC1〜AC3＋AC1の付随エビデンス行）。 */
@@ -8010,6 +8497,70 @@ Deno.test("handleProjectSearchItems - should project new fields on every page (M
   assertEquals(output[1].initialEstimate, 2, "数値文字列の見積も数値として解釈されること");
   assertEquals(output[1].plannedEstimate, 3);
   assertEquals(output[1].parentPbi, { title: "PBI876", id: "I_876", code: "876" });
+});
+
+/**
+ * ユースケース: 複数ページにまたがるボードでリポジトリ混在を絞り込む場合
+ * 検証意図: 2ページ目でも repository / labels が取得され、絞り込みが効くこと (AC2-908)
+ */
+Deno.test("handleProjectSearchItems - should filter by repository on every page (AC2-908)", async () => {
+  const page = (
+    next: string | null,
+    nodes: Array<{ number: number; repository: string; labels: string[] }>,
+  ) =>
+    JSON.stringify({
+      data: {
+        organization: {
+          projectV2: {
+            items: {
+              pageInfo: { hasNextPage: next !== null, endCursor: next },
+              nodes: nodes.map((n) => ({
+                content: {
+                  id: `I_${n.number}`,
+                  number: n.number,
+                  title: `PBI${n.number}`,
+                  state: "OPEN",
+                  body: "",
+                  repository: { nameWithOwner: n.repository },
+                  labels: {
+                    totalCount: n.labels.length,
+                    nodes: n.labels.map((name) => ({ name })),
+                  },
+                  parent: null,
+                },
+                fieldValueByName: { name: "Todo" },
+                effort: null,
+              })),
+            },
+          },
+        },
+      },
+    });
+  const runner = (_cmd: string, args: string[]): Promise<ExecuteResult> => {
+    const hasCursor = args.some((a) => a === "cursor=c1");
+    return Promise.resolve({
+      code: 0,
+      stdout: hasCursor
+        ? page(null, [
+          { number: 2, repository: "another-org/another-repo", labels: ["type:PBI"] },
+          { number: 3, repository: `${OWNER}/${REPO}`, labels: ["type:PBI"] },
+        ])
+        : page("c1", [
+          { number: 1, repository: `${OWNER}/${REPO}`, labels: ["type:PBI"] },
+        ]),
+      stderr: "",
+    });
+  };
+  const adapter = makeAdapter(runner);
+
+  const result = await adapter.handleProjectSearchItems({
+    status: "Todo",
+    labelType: "PBI",
+    boardNumber: 10,
+  });
+
+  assertEquals(result.success, true);
+  assertEquals((result.output as Array<{ number: number }>).map((o) => o.number), [1, 3]);
 });
 
 /**
