@@ -39,7 +39,7 @@ function escapeRegex(s: string): string {
  * ProjectV2 ボードから取得したWP検索用の生アイテム。
  * 射影前の情報を保持し、`handleProjectSearchItems` が公開用の形へ変換する。
  */
-interface ProjectSearchItem {
+export interface ProjectSearchItem {
   number: number;
   title: string;
   id: string;
@@ -50,6 +50,38 @@ interface ProjectSearchItem {
   parent: { number: number; title: string; id: string } | null;
   /** `harness-effort-summary` の生テキスト（TEXTフィールド）。 */
   effortText: string | null;
+  /** 所属リポジトリ（`owner/name`）。取得できない場合は undefined（＝不明）。 */
+  repository?: string;
+  /**
+   * Issue のラベル名一覧。取得自体ができない場合、または取得上限を超えて
+   * 切り捨てられた場合（＝完全性を保証できない）は undefined（不明）とする。
+   */
+  labels?: string[];
+}
+
+/**
+ * ボード検索で1項目あたりに取得するラベル上限。
+ * 超過時は「未付与」と区別できないため、パース段階で `labels` を不明（undefined）に落とす。
+ */
+const PROJECT_ITEM_LABEL_LIMIT = 100;
+
+/** ProjectV2 items 応答の1ノード（本実装が必要とするフィールドのみ）。 */
+interface ProjectItemNode {
+  content?: {
+    id?: string;
+    number?: number;
+    title?: string;
+    state?: string;
+    body?: string;
+    repository?: { nameWithOwner?: string } | null;
+    labels?: {
+      totalCount?: number;
+      nodes?: Array<{ name?: string }>;
+    } | null;
+    parent?: { id?: string; number?: number; title?: string } | null;
+  } | null;
+  fieldValueByName?: { name?: string } | null;
+  effort?: { text?: string } | null;
 }
 
 /** ACチェックボックス行の解析結果。 */
@@ -422,6 +454,129 @@ export function aliasUserAsOrganization(stdout: string): string {
   if (organization !== null && organization !== undefined) return stdout;
   if (user === null || user === undefined) return stdout;
   return JSON.stringify({ ...rest, data: { ...others, organization: user } });
+}
+
+/**
+ * ProjectV2 ボード検索のローカル絞り込み条件。
+ * `status` / `parentPbiNumber` / リポジトリ / 種別ラベルはクエリDSLの
+ * 取りこぼし（DraftIssue・未登録項目）を避けるため取得後に判定する。
+ */
+export interface ProjectSearchFilter {
+  /** 検索する ProjectV2 Status 名。`__none__` は Status 未設定を意味する。 */
+  status: string;
+  /** 親PBIのIssue番号。null なら絞り込まない。 */
+  parentPbiNumber: number | null;
+  /** ラベル種別（`PBI` / `WP` 等）。`type:<labelType>` を要求する。 */
+  labelType: string;
+  /** 解決済みスコープ。このリポジトリ以外の項目は除外する。 */
+  scope: EntityScope;
+}
+
+/** `filterProjectSearchItems` の結果。除外理由ごとの件数を含む。 */
+export interface ProjectSearchFilterResult {
+  /** 条件に一致した項目。 */
+  matched: ProjectSearchItem[];
+  /** 他リポジトリだったため除外した件数。 */
+  repositoryExcluded: number;
+  /** 種別ラベルを持たないため除外した件数。 */
+  labelTypeExcluded: number;
+}
+
+/**
+ * ボード検索の取得結果をローカルで絞り込む。
+ *
+ * 判定順は「Status → 親PBI → リポジトリ → 種別ラベル」で、1項目につき最大1カテゴリだけを
+ * 除外件数として計上する（status/親PBI による除外は件数に含めない）。
+ * `repository` / `labels` が `undefined` の項目は「取得できない＝不明」を意味するため除外しない。
+ * これは GraphQL スキーマ上は通常発生しない防御的分岐であり、取得不能時に結果を落とさないためのもの。
+ *
+ * @param items GraphQL で取得したボード項目
+ * @param filter 絞り込み条件
+ * @returns 一致した項目と除外件数
+ */
+export function filterProjectSearchItems(
+  items: ProjectSearchItem[],
+  filter: ProjectSearchFilter,
+): ProjectSearchFilterResult {
+  const expectedRepository = `${filter.scope.owner}/${filter.scope.repository}`.toLowerCase();
+  const expectedLabel = `type:${filter.labelType}`.toLowerCase();
+  const isNoneStatus = filter.status === "__none__";
+  let repositoryExcluded = 0;
+  let labelTypeExcluded = 0;
+
+  const matched = items.filter((item) => {
+    if (isNoneStatus) {
+      if (item.status != null) return false;
+    } else if (item.status !== filter.status) {
+      return false;
+    }
+    if (filter.parentPbiNumber !== null && item.parent?.number !== filter.parentPbiNumber) {
+      return false;
+    }
+    // GitHub の owner/repo は大文字小文字を区別しないため小文字化して比較する。
+    if (
+      item.repository !== undefined &&
+      item.repository.toLowerCase() !== expectedRepository
+    ) {
+      repositoryExcluded++;
+      return false;
+    }
+    // labels が undefined の場合は「取得できない＝不明」のため残す（PO決定C）。
+    if (
+      item.labels !== undefined &&
+      !item.labels.some((label) => label.toLowerCase() === expectedLabel)
+    ) {
+      labelTypeExcluded++;
+      return false;
+    }
+    return true;
+  });
+
+  return { matched, repositoryExcluded, labelTypeExcluded };
+}
+
+/**
+ * GraphQL のボード項目1件を `ProjectSearchItem` へ変換する。
+ *
+ * Issue 以外（DraftIssue・RedactedItem 等）や必須項目の欠落したノードは `null` を返す。
+ * `repository` / `labels` は「取得できない場合」と「切り捨てられた場合」に欠落させ、
+ * 絞り込み側で「不明」として扱わせる。
+ *
+ * @param node ProjectV2 items 応答の1ノード
+ * @returns 変換結果。採用しないノードは null
+ */
+function parseProjectSearchItem(node: ProjectItemNode): ProjectSearchItem | null {
+  const number = node.content?.number;
+  const title = node.content?.title;
+  if (number === undefined || title === undefined) return null;
+
+  const parent = node.content?.parent;
+  const repositoryName = node.content?.repository?.nameWithOwner;
+  const labelConnection = node.content?.labels;
+  const labelNodes = labelConnection?.nodes;
+  // 取得上限を超えている場合、type ラベルが窓の外にある可能性があり「未付与」と区別できない。
+  // 完全性を保証できないため「不明」として undefined にする（AC1-908）。
+  const labelsTruncated = labelConnection !== undefined && labelConnection !== null &&
+    typeof labelConnection.totalCount === "number" && labelNodes !== undefined &&
+    labelConnection.totalCount > labelNodes.length;
+
+  const item: ProjectSearchItem = {
+    number,
+    title,
+    id: node.content?.id ?? "",
+    issueState: node.content?.state ?? "",
+    body: node.content?.body ?? "",
+    status: node.fieldValueByName?.name ?? null,
+    parent: parent && parent.number !== undefined && parent.title !== undefined
+      ? { number: parent.number, title: parent.title, id: parent.id ?? "" }
+      : null,
+    effortText: node.effort?.text ?? null,
+  };
+  if (repositoryName) item.repository = repositoryName;
+  if (labelNodes && !labelsTruncated) {
+    item.labels = labelNodes.map((label) => label.name ?? "").filter((name) => name !== "");
+  }
+  return item;
 }
 
 export type OperationHandler = (
@@ -2243,6 +2398,10 @@ export class PlanGatewayAdapter implements PlanGateway {
   /**
    * Project V2 Board の Status フィールドでアイテムを検索する。
    *
+   * 解決済みスコープと異なるリポジトリの項目、および `type:<labelType>` を持たない項目は
+   * 結果から除外する（取得できなかった項目は残す）。除外が発生した場合は、理由別の件数を
+   * `logger.debug`（stderr）に出力する。
+   *
    * 返却する各アイテムはWP操作スキルへそのまま渡せる識別子と、判断材料を含む：
    * `number` / `title` / `id`（node id）/ `code`（Issue番号文字列）/ `status`（ProjectV2 Status）/
    * `issueState`（Issueの開閉。Statusとは別概念）/ `parentPbi`（親PBI識別子。無ければ null）/
@@ -2278,9 +2437,20 @@ export class PlanGatewayAdapter implements PlanGateway {
     if (!board.login) {
       return { operation: "search", success: false, error: "Scope not resolved" };
     }
+    // リポジトリ絞り込みの基準。未解決のまま絞り込みを黙って無効化しないよう明示的に弾く。
+    const scope = this.resolvedScope;
+    if (!scope) {
+      return { operation: "search", success: false, error: "Scope not resolved" };
+    }
 
     // ProjectV2 の `query` 引数（プロジェクトUIフィルタDSL）でサーバー側フィルタする。
     // status と sprintNumber はスキル呼出時の引数（WorkPackageSearchCondition）をそのまま使う。
+    //
+    // リポジトリ（`repo:`）と種別ラベル（`label:`）もDSLで表現できるが、本実装では
+    // あえてローカル絞り込みにしている。理由は (1)「取得できなかった項目は残す」という
+    // フェイルオープンの意味論を保ちつつ除外件数をログに残せること、(2) サーバー側フィルタは
+    // 対象外項目を取得段階で落とすため、除外の内訳を観測できないこと。件数・コスト面の
+    // 最適化（`repo:` への移行）は将来の課題として切り分ける。
     const sprintNumber = params.sprintNumber;
     const isNoneStatus = status === "__none__";
     const rawParentPbiNumber = params.parentPbiNumber;
@@ -2319,18 +2489,32 @@ export class PlanGatewayAdapter implements PlanGateway {
       };
     }
 
-    // `__none__`（status未設定）はクエリDSLで表現できないため、取得後にローカルで判定する。
-    // `parentPbiNumber` もクエリDSLで表現できないため、同じく取得後にローカルで絞り込む
-    //（100件上限を超えるボードでは取りこぼし得る既知の制約）。
-    const matched = items.filter((item) => {
-      if (isNoneStatus) {
-        if (item.status != null) return false;
-      } else {
-        if ((item.status ?? null) !== status) return false;
-      }
-      if (parentPbiNumber !== null && item.parent?.number !== parentPbiNumber) return false;
-      return true;
+    // `__none__`（status未設定）・`parentPbiNumber`・リポジトリ・種別ラベルは
+    // 取得後にローカルで絞り込む（全ページ取得後に判定するため件数上限の影響は受けない）。
+    const { matched, repositoryExcluded, labelTypeExcluded } = filterProjectSearchItems(items, {
+      status,
+      parentPbiNumber,
+      labelType,
+      scope,
     });
+    // 除外は「静かに結果が減る」ため、原因別の件数と取得/採用件数を debug に残す（AC4-908）。
+    // 除外0件のときは出力しない（ノイズ防止）。
+    if (repositoryExcluded > 0 || labelTypeExcluded > 0) {
+      logger.debug(
+        `[handleProjectSearchItems] fetched=${items.length} matched=${matched.length} ` +
+          `(excluded: other repositories=${repositoryExcluded}, labelType=${labelTypeExcluded})`,
+      );
+    }
+    if (repositoryExcluded > 0) {
+      logger.debug(
+        `[handleProjectSearchItems] excluded ${repositoryExcluded} item(s) from other repositories`,
+      );
+    }
+    if (labelTypeExcluded > 0) {
+      logger.debug(
+        `[handleProjectSearchItems] excluded ${labelTypeExcluded} item(s) without label type:${labelType}`,
+      );
+    }
     return {
       operation: "search",
       success: true,
@@ -2389,6 +2573,11 @@ export class PlanGatewayAdapter implements PlanGateway {
                   title
                   state
                   body
+                  repository { nameWithOwner }
+                  labels(first: ${PROJECT_ITEM_LABEL_LIMIT}) {
+                    totalCount
+                    nodes { name }
+                  }
                   parent { ... on Issue { id number title } }
                 }
               }
@@ -2425,18 +2614,7 @@ export class PlanGatewayAdapter implements PlanGateway {
             projectV2?: {
               items?: {
                 pageInfo?: { hasNextPage?: boolean; endCursor?: string | null };
-                nodes?: Array<{
-                  content?: {
-                    id?: string;
-                    number?: number;
-                    title?: string;
-                    state?: string;
-                    body?: string;
-                    parent?: { id?: string; number?: number; title?: string } | null;
-                  } | null;
-                  fieldValueByName?: { name?: string } | null;
-                  effort?: { text?: string } | null;
-                }>;
+                nodes?: ProjectItemNode[];
               };
             };
           };
@@ -2445,22 +2623,8 @@ export class PlanGatewayAdapter implements PlanGateway {
       const conn = parsed?.data?.organization?.projectV2?.items;
       if (!conn) return null;
       for (const node of conn.nodes ?? []) {
-        const number = node.content?.number;
-        const title = node.content?.title;
-        if (number === undefined || title === undefined) continue;
-        const parent = node.content?.parent;
-        items.push({
-          number,
-          title,
-          id: node.content?.id ?? "",
-          issueState: node.content?.state ?? "",
-          body: node.content?.body ?? "",
-          status: node.fieldValueByName?.name ?? null,
-          parent: parent && parent.number !== undefined && parent.title !== undefined
-            ? { number: parent.number, title: parent.title, id: parent.id ?? "" }
-            : null,
-          effortText: node.effort?.text ?? null,
-        });
+        const item = parseProjectSearchItem(node);
+        if (item !== null) items.push(item);
       }
       if (conn.pageInfo?.hasNextPage && conn.pageInfo.endCursor) {
         cursor = conn.pageInfo.endCursor;

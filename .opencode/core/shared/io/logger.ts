@@ -16,7 +16,8 @@ export const logger = {
     console.log(`%c[SUCCESS] %c${msg}`, "color: lime; font-weight: bold", "");
   },
   debug: (msg: string) => {
-    // デバッグ出力は通常抑制されるが、ここでは実装を統合
-    console.debug(`%c[DEBUG] %c${msg}`, "color: gray; font-weight: bold", "");
+    // デバッグ出力は JSON を stdout に出すスキル（read-project-state 等）の契約を壊さないよう、
+    // stderr へ書く。console.debug は Deno では stdout に出力されるため使わない。
+    console.error(`%c[DEBUG] %c${msg}`, "color: gray; font-weight: bold", "");
   },
 };
