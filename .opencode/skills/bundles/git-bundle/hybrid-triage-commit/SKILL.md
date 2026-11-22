@@ -1,6 +1,6 @@
 ---
 name: hybrid-triage-commit
-description: 開発・リファクタリング中のWIP一時コミットと、完了後のアトミックコミット再構築（ポストトリアージ）を制御するスキル。コミット実行・WIP保存・プッシュ前の局面では必ず想起し、「今回は不要」との独自判断でスキップしないこと（未精読でのスキップは規律違反として検出済み）。
+description: 開発・リファクタリング中のWIP一時コミットと、完了後のアトミックコミット再構築（ポストトリアージ）を制御するスキル。コミット実行・WIP保存・プッシュ前・PR作成前の局面では必ず想起し、「今回は不要」との独自判断でスキップしないこと（未精読でのスキップは規律違反として検出済み）。
 tags:
   trigger:
     - save-wip
@@ -9,6 +9,8 @@ tags:
     - wip-commit
     - atomic-commit
     - pre-push
+    - pre-pr-triage
+    - pre-pr
     - before-commit
     - コミット前に
   category: git
@@ -36,7 +38,10 @@ tags:
 git add -A && git commit -m "chore(wip): セーブポイント"
 ```
 
-### triage モード（プッシュ直前）
+### triage モード（プッシュ直前・PR作成前に最終確認）
+
+> PR作成前の想起は「push 前の triage が完了済みか」の最終確認である。未実施なら push 前に戻って
+> triage する（PR作成後の再 triage は force push 前提となり、本スキルの制約に反する）。
 
 **「意味単位で分割する」** が唯一の目的。以下の値は
 [hybrid-triage-commit-process.md](/.opencode/skills/bundles/git-bundle/hybrid-triage-commit/references/hybrid-triage-commit-process.md)
