@@ -107,14 +107,14 @@ Deno.test("Retrospective skills are integrated into sprint workflows", async () 
 
   // 5. フェーズ番号が1から連番で、各フェーズの「次のフェーズ」参照が N+1 であること
   const phaseNumbers = [...endPhases.keys()].sort((a, b) => a - b);
-  assertEquals(phaseNumbers.length, 11, "sprint-end.md must have 11 phases");
+  assertEquals(phaseNumbers.length, 12, "sprint-end.md must have 12 phases");
   for (let n = 1; n <= phaseNumbers.length; n++) {
     assert(
       phaseNumbers.includes(n),
       `sprint-end.md phases must be sequential and include Phase ${n}`,
     );
   }
-  for (let n = 1; n < 11; n++) {
+  for (let n = 1; n < 12; n++) {
     const body = normalize(endPhases.get(n));
     assert(
       body.includes(normalize(`次のフェーズ（Phase ${n + 1}`)),

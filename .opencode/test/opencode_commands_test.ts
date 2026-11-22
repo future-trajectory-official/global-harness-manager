@@ -41,7 +41,7 @@ const SKILL_LINK_FILES: string[] = [
 /**
  * コマンド別の `<!-- STOP -->` 数ベースライン（2026-09-12 実測・旧 wf 値と同数、
  * project-setup.md のみ WP#778 AC-1 の Phase B 置換で 9→8）。
- * 合計57。AC4「STOPマーカーは変更不要」の機械的担保。コマンド追加時はプレイブック②で登録し、
+ * 合計61（WP #909 で sprint-start/review/end に各1件追加）。コマンド追加時はプレイブック②で登録し、
  * レジストリテストが commands 実走査との集合同値を強制する。
  */
 const STOP_BASELINE: Record<string, number> = {
@@ -50,9 +50,9 @@ const STOP_BASELINE: Record<string, number> = {
   "refactoring.md": 10,
   "session-end.md": 5,
   "session-start.md": 5,
-  "sprint-end.md": 12,
-  "sprint-review.md": 3,
-  "sprint-start.md": 9,
+  "sprint-end.md": 13,
+  "sprint-review.md": 4,
+  "sprint-start.md": 10,
 };
 
 /**
@@ -140,11 +140,13 @@ const PHASE_SNAPSHOT: Record<string, string[]> = {
     "Phase 9. 自己スキルオプティマイザー",
     "Phase 10. スプリント終了",
     "Phase 11. ステートレスリセットの検討",
+    "Phase 12. セッションアーティファクトのクリーンアップ",
   ],
   "sprint-review.md": [
     "Phase 1. スプリントレビューの意識合わせ",
     "Phase 2. アライメントチェック",
     "Phase 3. スプリントレビュー実行",
+    "Phase 4. セッションアーティファクトのクリーンアップ",
   ],
   "sprint-start.md": [
     "Phase 1-0. 用語の同期",
@@ -156,6 +158,7 @@ const PHASE_SNAPSHOT: Record<string, string[]> = {
     "Phase 6. 作業分解",
     "Phase 7. スプリントレビュー計画",
     "Phase 8. 振り返りの計画",
+    "Phase 9. セッションアーティファクトのクリーンアップ",
   ],
 };
 
@@ -169,9 +172,9 @@ const ROLE_LINK_COUNTS: Record<string, number> = {
   "refactoring.md": 10,
   "session-end.md": 6,
   "session-start.md": 4,
-  "sprint-end.md": 14,
-  "sprint-review.md": 6,
-  "sprint-start.md": 14,
+  "sprint-end.md": 15,
+  "sprint-review.md": 7,
+  "sprint-start.md": 15,
 };
 
 /**
@@ -485,11 +488,16 @@ function complianceItems(command: string): string[] {
   if (start < 0) {
     return [];
   }
-  return command
-    .slice(start)
-    .split("\n")
-    .filter((line) => line.startsWith("- "))
-    .map((line) => line.slice(2));
+  const items: string[] = [];
+  for (const line of command.slice(start).split("\n")) {
+    if (line.startsWith("- ")) {
+      items.push(line.slice(2));
+    } else if (items.length > 0 && line.trim() !== "" && !line.startsWith("#")) {
+      // 折り返し行は直前の項目へ連結する（項目内の文言を分割で失わないため）。
+      items[items.length - 1] += line.trim();
+    }
+  }
+  return items;
 }
 
 /**
@@ -538,7 +546,7 @@ Deno.test("commands keep the approved leaf phase baseline", async () => {
 /**
  * 遵守事項の一貫性: 8本同一4項＋STOP/単一の正/内部操作/サブエージェント宣言。
  * 第1項は計数干渉回避のためリテラルでなく「STOP マーカー」と表記する。
- * 第4項はSSoT更新規律（WP #823で追加。終了時クリーンアップ後の最終ゲートの例外を含む）。
+ * 第4項はSSoT更新規律（WP #823で追加。クリーンアップPhase後の最終ゲートの例外を含む。WP #909で一般化）。
  */
 Deno.test("commands share identical compliance items and declare STOP/subagent policy", async () => {
   const commands = await listCommandFiles();
@@ -570,6 +578,173 @@ Deno.test("commands share identical compliance items and declare STOP/subagent p
     assert(
       command.includes("コマンド自身はサブエージェントを起動せず"),
       `${name}.md must state the command itself does not spawn subagents`,
+    );
+  }
+});
+
+/**
+ * クリーンアップPhaseを持つコマンドと、そのPhase見出し（WP #909 AC1）。
+ * `session-end.md` は 4-2 に独自手順を持つため本マップの対象外（PO決定G）。
+ */
+const CLEANUP_PHASE_HEADINGS: Record<string, string> = {
+  "sprint-start.md": "## Phase 9: セッションアーティファクトのクリーンアップ",
+  "sprint-review.md": "## Phase 4: セッションアーティファクトのクリーンアップ",
+  "sprint-end.md": "## Phase 12: セッションアーティファクトのクリーンアップ",
+};
+
+/**
+ * コマンド本文から指定見出しの Phase セクション（次の `## ` まで）を抽出する。
+ *
+ * @param content - コマンド本文
+ * @param heading - 抽出起点の見出し行（例: `## Phase 9: ...`）
+ * @returns 見出し以降のセクション本文。見出しが無ければ空文字
+ */
+function phaseSection(content: string, heading: string): string {
+  const start = content.indexOf(heading);
+  if (start < 0) return "";
+  const rest = content.slice(start + heading.length);
+  const end = rest.indexOf("\n## ");
+  return end < 0 ? rest : rest.slice(0, end);
+}
+
+/**
+ * クリーンアップPhaseの「手続き」＋「期待される結果」ブロックを抽出する。
+ * 最終案内（`> [!IMPORTANT]`）はコマンドごとに文言が異なるため比較対象から除く。
+ *
+ * @param content - コマンド本文
+ * @param heading - クリーンアップPhaseの見出し行
+ * @returns 正規化前の手続きブロック。見出しが無ければ空文字
+ */
+function cleanupProcedureBlock(content: string, heading: string): string {
+  const section = phaseSection(content, heading);
+  const from = section.indexOf("- **手続き**:");
+  if (from < 0) return "";
+  const to = section.indexOf("> [!IMPORTANT]");
+  return (to < 0 ? section.slice(from) : section.slice(from, to)).trim();
+}
+
+/**
+ * コマンド本文から `## Phase N:` 見出しを数値キーで分割する。
+ *
+ * @param content - コマンド本文
+ * @returns Phase 番号 → 本文のマップ
+ */
+function phaseBodiesByNumber(content: string): Map<number, string> {
+  const map = new Map<number, string>();
+  const matches = [...content.matchAll(/^## Phase (\d+):.*$/gm)];
+  matches.forEach((match, i) => {
+    const start = (match.index ?? 0) + match[0].length;
+    const end = i + 1 < matches.length ? (matches[i + 1].index ?? content.length) : content.length;
+    map.set(Number(match[1]), content.slice(start, end));
+  });
+  return map;
+}
+
+/**
+ * 【ユースケース】クリーンアップPhaseが、退避承認ゲート→削除→再作成→確認の安全手順を保つ
+ * 【検証意図】不可逆削除（`.session/` の再帰削除）に先立つPO承認ゲート、不存在時の非エラー、
+ * `.gitkeep` 復元、4つの手順コマンドの順序、新規セッション案内が欠落・順序逆転していないことを検証する
+ * （WP #909 AC3/AC4/AC6、レビュー C-1/C-2/C-3）。
+ */
+Deno.test("cleanup phases keep the safe procedure (WP #909 AC3/AC4/AC6)", async () => {
+  for (const [file, heading] of Object.entries(CLEANUP_PHASE_HEADINGS)) {
+    const content = await readTarget(commandPath(file));
+    const section = phaseSection(content, heading);
+    assert(section !== "", `${file} must have the cleanup phase: ${heading}`);
+
+    const evacIndex = section.indexOf("退避確認");
+    const approvalIndex = section.indexOf("承認を得る");
+    const removeIndex = section.indexOf("Deno.removeSync");
+    assert(evacIndex >= 0, `${file} cleanup must start with 退避確認`);
+    assert(approvalIndex >= 0, `${file} cleanup must require PO approval before deletion`);
+    assert(removeIndex > approvalIndex, `${file} cleanup must obtain approval before deletion`);
+    assert(
+      evacIndex < removeIndex,
+      `${file} cleanup must place 退避確認 before the destructive removal`,
+    );
+    assert(
+      /存在しない場合[\s\S]{0,80}エラーにしない/.test(section),
+      `${file} cleanup must skip safely when .session/ is absent`,
+    );
+    assert(section.includes("mkdir -p .session/"), `${file} cleanup must recreate .session/`);
+    assert(section.includes("ls -la .session/"), `${file} cleanup must verify with ls -la`);
+    assert(
+      section.includes(".session/.gitkeep"),
+      `${file} cleanup must restore the tracked .session/.gitkeep`,
+    );
+    assert(
+      section.includes("新しいセッションで開始する"),
+      `${file} cleanup must guide the next workflow to a new session`,
+    );
+
+    const testD = section.indexOf("test -d .session/");
+    const mkdir = section.indexOf("mkdir -p .session/");
+    const lsLa = section.indexOf("ls -la .session/");
+    assert(
+      testD >= 0 && testD < removeIndex && removeIndex < mkdir && mkdir < lsLa,
+      `${file} cleanup steps must run in order: test -d → remove → mkdir -p → ls -la`,
+    );
+  }
+});
+
+/**
+ * 【ユースケース】3コマンドのクリーンアップ手順が逐語一致している
+ * 【検証意図】同一手順が複数コマンドへ複製されるため、片側だけ修正される drift を検出する
+ * （WP #909 レビュー M-1/M-6）。
+ */
+Deno.test("cleanup phase procedures are identical across commands", async () => {
+  const blocks = await Promise.all(
+    Object.entries(CLEANUP_PHASE_HEADINGS).map(async ([file, heading]) =>
+      cleanupProcedureBlock(await readTarget(commandPath(file)), heading)
+    ),
+  );
+  blocks.forEach((block, i) =>
+    assert(block !== "", `cleanup procedure block missing (index ${i})`)
+  );
+  for (let i = 1; i < blocks.length; i++) {
+    assertEquals(blocks[i], blocks[0], "cleanup procedures drifted between commands");
+  }
+});
+
+/**
+ * 【ユースケース】各コマンドのPhase番号が連番で、直前Phaseが次Phaseへの進行を案内している
+ * 【検証意図】Phase追加時に「次のフェーズ（Phase N+1）」の更新漏れを3コマンドすべてで検出する
+ * （WP #909 AC2 レビュー M-1。従来は sprint-end のみ検証していた）。
+ */
+Deno.test("phases are sequential and link to the next phase (WP #909 AC2)", async () => {
+  for (const file of Object.keys(CLEANUP_PHASE_HEADINGS)) {
+    const content = await readTarget(commandPath(file));
+    const bodies = phaseBodiesByNumber(content);
+    const numbers = [...bodies.keys()].sort((a, b) => a - b);
+    assertEquals(
+      numbers,
+      Array.from({ length: numbers.length }, (_, i) => i + 1),
+      `${file} must have sequential phase numbers starting at 1`,
+    );
+    for (let n = 1; n < numbers.length; n++) {
+      // 折り返し（blockquote の `> ` と改行）を除去してから参照を照合する。
+      const flattened = (bodies.get(n) ?? "")
+        .replace(/^>\s?/gm, "")
+        .replace(/\s+/g, "");
+      assert(
+        flattened.includes(`次のフェーズ（Phase${n + 1}`),
+        `${file} Phase ${n} must reference the next phase (Phase ${n + 1})`,
+      );
+    }
+  }
+});
+
+/**
+ * 【ユースケース】SSoT更新規律の例外条項が承認済み文言で固定されている
+ * 【検証意図】8コマンドが相互に同一であることだけでは全件差し戻しを検出できないため、
+ * 期待文言をリテラルで固定する（WP #909 AC5 レビュー M-2）。
+ */
+Deno.test("compliance item 4 fixes the cleanup-phase SSoT exception wording", async () => {
+  for (const file of await listCommandFiles()) {
+    const items = complianceItems(await readTarget(commandPath(file)));
+    assert(
+      items[3]?.includes("クリーンアップPhase後の最終ゲートは例外"),
+      `${file} compliance item 4 must state the cleanup-phase SSoT exception`,
     );
   }
 });
